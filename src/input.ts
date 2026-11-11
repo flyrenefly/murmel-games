@@ -17,10 +17,23 @@ export class Input {
       this.locked = document.pointerLockElement === this.target;
       onLockChange(this.locked);
     });
+    // Relative movement counts with and without pointer lock: some embedded
+    // browsers refuse the lock, then the plain mouse movement still steers.
+    // (The game only reads it while playing.)
+    let lastX: number | null = null;
+    let lastY: number | null = null;
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
-      this.mx += e.movementX;
-      this.my += e.movementY;
+      let dx = e.movementX;
+      let dy = e.movementY;
+      if (!this.locked && dx === 0 && dy === 0 && lastX !== null && lastY !== null) {
+        // Fallback for browsers that report no movementX/Y.
+        dx = e.clientX - lastX;
+        dy = e.clientY - lastY;
+      }
+      lastX = e.clientX;
+      lastY = e.clientY;
+      this.mx += dx;
+      this.my += dy;
     });
     window.addEventListener('keydown', (e) => this.keys.add(e.code));
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
