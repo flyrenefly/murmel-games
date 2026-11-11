@@ -241,3 +241,37 @@ describe('rubber bands (ot_rubberband)', () => {
     expect(w.rubbers[0].end).toBe(w.enemies[0].pos);
   });
 });
+
+describe('swamp (fl_swamp)', () => {
+  const swamp = () =>
+    new PhysicsWorld(
+      parseLevel({
+        id: 's',
+        title: 'S',
+        author: 'x',
+        license: 'GPL',
+        map: ['#######', '#@~~~A#', '#A....#', '#######'],
+        legend: { '~': { floor: 'fl_swamp' } },
+      }),
+    );
+
+  it('a resting marble sinks in 7/4 s and is reported once', () => {
+    const w = swamp();
+    w.respawn(3.5, 1.5);
+    const sunk = run(w, 1.7).filter((c) => c.kind === 'sunk');
+    expect(sunk).toEqual([]);
+    expect(w.marbles[0].sink).toBeGreaterThan(6);
+    const later = run(w, 0.1).filter((c) => c.kind === 'sunk');
+    expect(later).toEqual([{ kind: 'sunk', marble: 0 }]);
+  });
+
+  it('leaving the swamp resets the depth', () => {
+    const w = swamp();
+    w.respawn(2.5, 1.5);
+    run(w, 0.5);
+    expect(w.marbles[0].sink).toBeGreaterThan(1);
+    w.respawn(1.5, 2.5);
+    run(w, PHYSICS_DT);
+    expect(w.marbles[0].sink).toBe(0);
+  });
+});

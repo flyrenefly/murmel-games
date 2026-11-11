@@ -4,7 +4,7 @@ import { Input } from './input';
 import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
 import { ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
-import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, type Contact } from './game/physics';
+import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
 import { LEVELS } from './levels';
 import { listPacks, packLevels, packTitle } from './packs';
@@ -79,6 +79,8 @@ let acc = 0;
 let falls = 0;
 /** Per marble: seconds into the fall animation, -1 = not falling. */
 let falling: number[] = [-1];
+/** Per marble: how it died (sinking leaves nothing to see). */
+let deathKind: ('fall' | 'shatter' | 'sink')[] = [];
 /** Per marble: where it respawns. */
 let startPos: { x: number; y: number }[] = [];
 let startTime = 0;
@@ -131,6 +133,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   acc = 0;
   falls = 0;
   falling = physics.marbles.map(() => -1);
+  deathKind = physics.marbles.map(() => 'fall' as const);
   startPos = physics.marbles.map((m) => ({ ...m.pos }));
   btnSwap.hidden = physics.marbles.length < 2;
   startTime = 0;
@@ -369,6 +372,10 @@ function onContact(c: Contact): void {
     marbleDies(c.marble, true);
     return;
   }
+  if (c.kind === 'sunk') {
+    marbleDies(c.marble, 'sink');
+    return;
+  }
   if (c.kind === 'object') {
     if (c.by >= 0) objects.touch(c.col, c.row, c.by); // other actors only hit
     if (!c.hit) return;
@@ -383,13 +390,16 @@ function onContact(c: Contact): void {
 }
 
 /** Marble i dies: fall animation, then respawn at its start. */
-function marbleDies(i: number, shatter: boolean): void {
+function marbleDies(i: number, how: boolean | 'sink'): void {
   if (!physics || !(falling[i] < 0)) return;
+  const shatter = how === true;
+  deathKind[i] = how === 'sink' ? 'sink' : shatter ? 'shatter' : 'fall';
   falling[i] = 0;
   physics.setActive(false, i);
   objects.marbleGone(i);
   falls++;
-  if (shatter) sfx.shatter();
+  if (how === 'sink') sfx.swamped();
+  else if (shatter) sfx.shatter();
   else sfx.fall(FALL_SECONDS);
   updateHud();
 }
@@ -409,6 +419,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'pickup') sfx.pickup();
     else if (e.name === 'move') sfx.move();
     else if (e.name === 'explode') sfx.explode();
+    else if (e.name === 'fakeoxyd') sfx.fakeOxyd();
   }
 }
 
@@ -469,11 +480,13 @@ function frame(now: number): void {
   const marbles = (physics?.marbles ?? []).map((m, i) => ({
     kind: 'marble' as const,
     color: m.color,
-    fall: fallen[i] ?? -1,
+    // Sunk: invisible until the respawn (ac_marble-sunk).
+    fall: deathKind[i] === 'sink' && falling[i] >= 0 ? -1 : (fallen[i] ?? -1),
+    sink: deathKind[i] === 'sink' && falling[i] >= 0 ? SINK_DEPTH : m.sink,
     x: m.prev.x + (m.pos.x - m.prev.x) * a,
     y: m.prev.y + (m.pos.y - m.prev.y) * a,
   }));
-  const me = marbles[ci] ?? { kind: 'marble' as const, color: 0, fall: -1, x: 0, y: 0 };
+  const me = marbles[ci] ?? { kind: 'marble' as const, color: 0, fall: -1, sink: 0, x: 0, y: 0 };
   const { x, y } = me;
   const fall = me.fall;
   const actors: ActorSprite[] = (physics?.enemies ?? []).map((e) => ({
@@ -490,13 +503,15 @@ function frame(now: number): void {
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
-    classic.updateMarble(x, y, fall, me.color);
+    classic.updateMarble(x, y, fall, me.color, me.sink);
     classic.updateActors(actors);
     classic.updateRubbers(bands);
     classic.render(dt);
   } else {
     const v = physics?.velocity ?? { x: 0, y: 0 };
-    view.updateMarble(x, y, fall >= 0 ? 0 : v.x, fall >= 0 ? 0 : v.y, dt, fall);
+    // 3D: sinking looks like a slow fall.
+    const f3 = fall >= 0 ? fall : me.sink > 0 ? Math.min(1, me.sink / SINK_DEPTH) : -1;
+    view.updateMarble(x, y, f3 >= 0 ? 0 : v.x, f3 >= 0 ? 0 : v.y, dt, f3);
     view.updateActors(actors);
     view.updateRubbers(bands);
     view.render(dt);

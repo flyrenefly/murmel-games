@@ -11,6 +11,8 @@ export interface ActorSprite {
   y: number;
   /** Marbles: fall progress 0..1, -1 = not falling. */
   fall?: number;
+  /** Marbles: sink depth 0..7 (swamp). */
+  sink?: number;
 }
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -42,6 +44,8 @@ const BASE_IMAGES = [
   'ac_marble_black_fall',
   'sh_marble_fall',
 ];
+/** Swamp levels: sinking marbles (models-2d.lua, 7 frames). */
+const SINK_IMAGES = ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink'];
 type Images = Record<string, HTMLImageElement>;
 
 export type ClassicSet = 'gfx32' | 'gfx32-retro';
@@ -107,6 +111,7 @@ function levelImages(level: Level): string[] {
   for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
   for (const o of level.objects) names.push(...objectImages(o.k));
   for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
+  if (level.cells.some((c) => c.floor === 'fl_swamp')) names.push(...SINK_IMAGES);
   return names;
 }
 
@@ -125,7 +130,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_document') return ['it_document'];
   if (kind.startsWith('st_grate')) return ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed'];
   if (kind === 'st_timer') return ['st_timer', 'sh_round'];
-  if (kind === 'st_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
+  if (kind === 'st_quake' || kind === 'st_fake_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
@@ -148,7 +153,7 @@ export class ClassicView {
   private objects: ObjectWorld | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
-  private marble = { x: 0, y: 0, fall: -1, color: 0 };
+  private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0 };
   private actors: ActorSprite[] = [];
   private rubbers: number[] = [];
   private now = 0;
@@ -197,7 +202,8 @@ export class ClassicView {
   }
 
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
-  updateMarble(x: number, y: number, fall: number, color = 0): void {
+  updateMarble(x: number, y: number, fall: number, color = 0, sink = 0): void {
+    this.marble.sink = sink;
     this.marble.x = x;
     this.marble.y = y;
     this.marble.fall = fall;
@@ -517,7 +523,7 @@ export class ClassicView {
       if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
       const s = 0.4 * SPRITE;
       if (a.kind === 'marble') {
-        this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color });
+        this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0 });
         continue;
       }
       if (a.kind === 'killer') {
@@ -534,7 +540,7 @@ export class ClassicView {
     }
   }
 
-  private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number }): void {
+  private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number; sink: number }): void {
     const { ctx } = this;
     const img = this.img!;
     const name = m.color === 1 && img.ac_marble_white ? 'ac_marble_white' : 'ac_marble_black';
@@ -548,8 +554,18 @@ export class ClassicView {
       ctx.drawImage(img[`${name}_fall`] ?? img.ac_marble_black_fall, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
       return;
     }
+    if (m.sink >= 7) return; // sunk: invisible
+    if (m.sink > 0 && img[`${name}_sink`] && img.sh_marble_sink) {
+      // BasicBall::set_sink_model: frame = depth rounded down.
+      const f = Math.floor(m.sink);
+      ctx.drawImage(img.sh_marble_sink, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE * 0.4, cy - SPRITE * 0.4, SPRITE, SPRITE);
+      ctx.drawImage(img[`${name}_sink`], 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+      return;
+    }
+    // set_shine_model: the highlight alternates with the pixel position.
+    const shine = (Math.round(m.x * 32) + Math.round(m.y * 32)) % 2 !== 0 ? 1 : 0;
     ctx.drawImage(img.sh_marble, cx - SPRITE * 0.4, cy - SPRITE * 0.4);
-    ctx.drawImage(img[name], 0, 0, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+    ctx.drawImage(img[name], 0, shine * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
   }
 
   private drawStatusBar(): void {

@@ -17,6 +17,8 @@ const SAMPLES = [
   'st-move',
   'quake',
   'explosion0',
+  'swamped',
+  'st-fakeoxyd',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -111,6 +113,16 @@ export class Sfx {
 
   quake(): void {
     this.play('quake');
+  }
+
+  /** A fake stone (st_fake_quake) is hit. */
+  fakeOxyd(): void {
+    this.play('st-fakeoxyd');
+  }
+
+  /** The marble sank in the swamp. */
+  swamped(): void {
+    this.play('swamped');
   }
 
   /** A stone is pushed one cell (Enigma: movesmall). */

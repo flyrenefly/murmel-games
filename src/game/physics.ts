@@ -53,7 +53,9 @@ export type Contact =
   /** nx/ny: contact normal (stone → actor), vn: speed along it before the bounce (< 0). */
   | ({ kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean } & Toucher)
   /** A marble collided with another actor (rotor, top, killer). */
-  | { kind: 'actor'; actor: EnemyKind; marble: number; speed: number };
+  | { kind: 'actor'; actor: EnemyKind; marble: number; speed: number }
+  /** A marble sank in the swamp. */
+  | { kind: 'sunk'; marble: number };
 
 /** Who touched a stone: marble index (-1 = another actor) and its colour (0 black, 1 white, 2 none). */
 export interface Toucher {
@@ -68,7 +70,14 @@ export interface Marble extends Body {
   readonly prev: { x: number; y: number };
   /** false while falling/shattered. */
   active: boolean;
+  /** BasicBall::sinkDepth: 0 = on the floor, SINK_DEPTH = sunk. */
+  sink: number;
 }
+
+/** Swamp (Swamp::get_sink_speed, server::SwampSinkSpeed): sinks at 4, rises above speed 6. */
+const SWAMP_SINK_SPEED = 4;
+const SWAMP_RAISE_SPEED = 6;
+export const SINK_DEPTH = 7; // BasicBall::maxSinkDepth
 
 function makeMarble(color: number, x: number, y: number): Marble {
   return {
@@ -79,6 +88,7 @@ function makeMarble(color: number, x: number, y: number): Marble {
     mass: 1,
     color,
     active: true,
+    sink: 0,
     normals: [],
     touching: new Set(),
     nowTouching: new Set(),
@@ -248,11 +258,30 @@ export class PhysicsWorld {
       if (!f) return;
       this.advance(m, f);
       this.collide(m, onContact, { by: i, color: m.color });
+      this.sinkStep(m, i, onContact);
     });
     for (const e of this.enemies) {
       this.advance(e, forces.get(e)!);
       // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
       this.collide(e, onContact, { by: -1, color: e.kind === 'killer' ? e.color : 2 });
+    }
+  }
+
+  /** BasicBall::sink: sinking into the swamp, rising again when fast enough. */
+  private sinkStep(m: Marble, i: number, onContact: (c: Contact) => void): void {
+    const c = Math.floor(m.pos.x);
+    const r = Math.floor(m.pos.y);
+    const floor = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.cells[r * this.width + c].floor : '';
+    if (floor !== 'fl_swamp') {
+      m.sink = 0;
+      return;
+    }
+    const v = Math.hypot(m.vel.x, m.vel.y);
+    m.sink = Math.max(0, m.sink + SWAMP_SINK_SPEED * (1 - v / SWAMP_RAISE_SPEED) * PHYSICS_DT);
+    if (m.sink >= SINK_DEPTH) {
+      m.vel.x = m.vel.y = 0; // stop!
+      m.active = false; // BUBBLING until the respawn
+      onContact({ kind: 'sunk', marble: i });
     }
   }
 
@@ -456,6 +485,7 @@ export class PhysicsWorld {
     this.mouseTime = 0;
     m.touching.clear();
     m.normals = [];
+    m.sink = 0;
     m.prev.x = x;
     m.prev.y = y;
     m.active = true;

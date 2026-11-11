@@ -164,6 +164,18 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("a fake quake stone shakes on a hit but closes nothing and ignores signals", () => {
+    const w = world([{ x: 3, y: 0, k: "st_fake_quake", a: { name: "q" } }, { x: 1, y: 0, k: "it_trigger", a: { target: "q", action: "signal" } }]);
+    w.hit(3, 0);
+    expect(w.objects[0].moving).not.toBeNull();
+    expect(w.events).toContainEqual({ type: "sound", name: "fakeoxyd" });
+    expect(w.events.some((e) => e.type === "quake")).toBe(false);
+    w.update(1000);
+    w.events.length = 0;
+    w.marbleAt(1, 0);
+    expect(w.objects[0].moving).toBeNull();
+  });
+
   it("a quake stone shakes on a hit or signal and announces the quake once", () => {
     const w = world([{ x: 3, y: 0, k: "st_quake", a: { name: "q" } }, { x: 1, y: 0, k: "it_trigger", a: { target: "q", action: "signal" } }]);
     expect(w.blockAt(3, 0)).toBe(ALL_FACES);

@@ -148,6 +148,15 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **fl_inverse** (weiß/grau): Haftung −2 – Mausbewegung wirkt umgekehrt.
 - **fl_space**: Reibung und Haftung 0 (Murmel lässt sich nicht beschleunigen). Böden mit
   `force_x/force_y` bleiben vorerst draußen.
+- **fl_swamp** (`Swamp::get_sink_speed`, `BasicBall::sink`): die Murmel sinkt mit Tempo
+  4 · (1 − v/6) ein (schneller als 6 Felder/s steigt sie wieder), bei Tiefe 7 ist sie
+  versunken (Klang „swamped“, unsichtbar bis zum Neustart). Gezeichnet mit den 7
+  Sink-Bildern; außerhalb des Sumpfs ist die Tiefe sofort 0. Nebenbei: das Murmelbild
+  wechselt wie in Enigma je nach Pixelposition zwischen zwei Glanzbildern.
+- **fl_hay** (und die anderen FloodStream-Böden): gewöhnlicher Boden. Levels mit
+  flutendem Wasser (Zustand FLOODING, `fl_water_source`) bleiben draußen.
+- **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
+  (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
   umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
 

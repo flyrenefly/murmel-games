@@ -1,20 +1,20 @@
 # Enigma-Import
 
-83 von 1322 Levels übernommen (13 Pakete).
+93 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 361 | 26 |
+| Lua-Rückruf | 361 | 31 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
 | Akteur ac_pearl_white | 179 | 1 |
 | Stein st_passage_black | 152 | 2 |
 | Gegenstand it_meditation_hollow | 143 | 2 |
-| Gegenstand it_sensor | 139 | 1 |
+| Gegenstand it_sensor | 139 | 3 |
 | Stein st_boulder | 135 | 2 |
 | Stein st_passage_white | 134 | 0 |
-| Stein st_fourswitch | 131 | 1 |
+| Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
@@ -32,8 +32,6 @@
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
-| Boden fl_swamp | 84 | 3 |
-| Boden fl_hay | 82 | 3 |
 | Stein st_brownie | 77 | 2 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -64,9 +62,9 @@
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_chess_black | 49 | 1 |
+| Stein st_chess_black | 49 | 2 |
 | Stein st_pull | 48 | 1 |
-| Wurmloch ohne Ziel | 46 | 2 |
+| Wurmloch ohne Ziel | 46 | 3 |
 | Stein st_rawglass_movable | 46 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -79,7 +77,7 @@
 | Gegenstand it_springboard | 38 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
-| Stein st_lightglass | 36 | 1 |
+| Stein st_lightglass | 36 | 2 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
 | Stein st_plop | 34 | 1 |
@@ -87,7 +85,7 @@
 | Gegenstand it_wrench | 33 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
-| Gegenstand it_flag_black | 32 | 0 |
+| Gegenstand it_flag_black | 32 | 1 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_chess_white | 31 | 0 |
@@ -119,10 +117,9 @@
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
-| Puzzle hohl | 23 | 2 |
+| Puzzle hohl | 23 | 3 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_fake_quake | 22 | 3 |
 | Gegenstand it_spring_drop | 22 | 0 |
 | Stein st_chameleon | 22 | 0 |
 | Stein st_ghost_break | 22 | 0 |
@@ -142,8 +139,8 @@
 | Boden fl_scales_concrete | 19 | 0 |
 | Gegenstand it_spoon | 18 | 1 |
 | Stein st_shogun_l | 18 | 0 |
-| Stein st_rubberband | 18 | 0 |
-| Akteur ac_bug | 18 | 0 |
+| Stein st_rubberband | 18 | 1 |
+| Akteur ac_bug | 18 | 1 |
 | Gegenstand it_spade | 17 | 0 |
 | Gegenstand it_ring | 17 | 1 |
 | Gegenstand it_burnable_ignited | 17 | 0 |
@@ -162,11 +159,11 @@
 | Stein st_barrier | 15 | 0 |
 | Stein st_plaster_breakable | 14 | 0 |
 | Stein st_greenbrown_movable | 14 | 1 |
-| Stein st_magic_oxydc | 14 | 0 |
+| Stein st_magic_oxydc | 14 | 1 |
 | Stein st_lightglass_hollow | 14 | 0 |
 | Gegenstand it_magnet_off | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
-| Gegenstand it_bottle_broken | 14 | 1 |
+| Gegenstand it_bottle_broken | 14 | 0 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 0 |
 | Gegenstand it_weight | 14 | 0 |
@@ -202,6 +199,7 @@
 | Stein st_spitter | 9 | 0 |
 | Stein st_shogun_sml | 9 | 0 |
 | Stein st_redbrown_hollow | 9 | 1 |
+| Flut | 9 | 0 |
 | Stein st_mirror_sheets | 9 | 0 |
 | Boden fl_bridge_bn | 9 | 0 |
 | Stein st_break_bug | 9 | 0 |
@@ -260,7 +258,6 @@
 | Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
-| Boden fl_hay_framed | 3 | 0 |
 | Boden mit Kraft (fl_space) | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |

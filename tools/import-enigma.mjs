@@ -35,7 +35,7 @@ const STONES = new Set([
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
 const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
 const OXYD = /^st_oxyd(_([abcd]))?$/;
-const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|hay)/;
+const SPECIAL_FLOORS = /^fl_(slope|bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -46,7 +46,7 @@ const OBJECTS = [
   [/^it_document$/, ['it_document']],
   [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
   [/^st_timer$/, ['st_timer', 'sh_round']],
-  [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
+  [/^st_(fake_)?quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
   [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
   [/^st_stoneimpulse(_hollow)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
@@ -245,6 +245,8 @@ function convertLevel(pack, meta, xml, exp) {
         continue;
       }
       if (SPECIAL_FLOORS.test(fl.k)) reject(`Boden ${fl.k.replace(/_[nesw]+$/, '')}`);
+      // FloodStream (water, wood, hay, rock) in state FLOODING: water spreads – not built.
+      if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
       // Floor forces (force_x/force_y) are not modelled yet.
       if ((Number(fl.force_x) || 0) !== 0 || (Number(fl.force_y) || 0) !== 0) reject(`Boden mit Kraft (${fl.k})`);
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);

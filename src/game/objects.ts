@@ -109,7 +109,7 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -119,7 +119,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
   if (kind === 'st_timer') return 'timer';
-  if (kind === 'st_quake') return 'quake';
+  if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
@@ -272,11 +272,15 @@ export class ObjectWorld {
     }
   }
 
-  /** QuakeStone: an idle quake stone shakes and closes all Oxyd stones. */
+  /**
+   * QuakeStone: an idle quake stone shakes and closes all Oxyd stones.
+   * FakeStone (st_fake_quake): looks and shakes the same, but closes nothing.
+   */
   private quake(o: GameObject): void {
     if (o.moving) return; // already shaking
     o.moving = { to: 0, since: this.now, dur: QUAKE_MS };
-    this.events.push({ type: 'quake' });
+    if (o.kind === 'st_fake_quake') this.events.push({ type: 'sound', name: 'fakeoxyd' });
+    else this.events.push({ type: 'quake' });
   }
 
   /** Stone::move_stone: move a box one cell if the cell is free. */
@@ -672,7 +676,8 @@ export class ObjectWorld {
   private message(o: GameObject, msg: string, value: boolean): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
     if (o.cls === 'quake') {
-      if (msg === 'toggle' || (msg === 'signal' && value)) this.quake(o);
+      // A fake quake stone has no messages.
+      if (o.kind !== 'st_fake_quake' && (msg === 'toggle' || (msg === 'signal' && value))) this.quake(o);
       return;
     }
     if (o.cls === 'impulse') {
