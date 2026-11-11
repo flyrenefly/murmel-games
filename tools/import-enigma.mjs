@@ -247,6 +247,8 @@ function convertLevel(pack, meta, xml, exp) {
       if (SPECIAL_FLOORS.test(fl.k)) reject(`Boden ${fl.k.replace(/_[nesw]+$/, '')}`);
       // FloodStream (water, wood, hay, rock) in state FLOODING: water spreads – not built.
       if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
+      // Sinking marbles (models-2d.lua) for the renderer.
+      if (fl.k === 'fl_swamp') for (const i of ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink']) imgs.add(i);
       // Floor forces (force_x/force_y) are not modelled yet.
       if ((Number(fl.force_x) || 0) !== 0 || (Number(fl.force_y) || 0) !== 0) reject(`Boden mit Kraft (${fl.k})`);
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
