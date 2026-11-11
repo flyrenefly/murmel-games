@@ -150,6 +150,8 @@ function showOverlay(title: string, text: string, buttons: [string, () => void][
       if (i === 0) b.className = 'primary';
       b.addEventListener('click', (e) => {
         e.stopPropagation();
+        sfx.unlock();
+        sfx.menu();
         fn();
       });
       return b;
@@ -263,7 +265,7 @@ function handlePairEvents(events: PairEvent[]): void {
     switch (ev.type) {
       case 'opened':
         setStone(ev.index);
-        sfx.open(level.signals[ev.index].symbol);
+        sfx.open();
         break;
       case 'solved':
         setStone(ev.a);
@@ -283,8 +285,8 @@ function handlePairEvents(events: PairEvent[]): void {
 }
 
 function onContact(c: Contact): void {
+  sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
   if (c.kind === 'signal') handlePairEvents(board.hit(c.index));
-  else sfx.wall(c.speed);
 }
 
 // ---------- main loop ----------
@@ -318,7 +320,7 @@ function frame(now: number): void {
         falling = 0;
         physics.setActive(false);
         falls++;
-        sfx.fall();
+        sfx.fall(FALL_SECONDS);
         updateHud();
       }
       acc -= PHYSICS_DT;

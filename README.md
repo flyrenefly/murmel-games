@@ -14,6 +14,7 @@ Spielen: **https://murmel.games** (in Vorbereitung)
 - Rollphysik und Maussteuerung nach Enigma: Maus wirkt als Kraft, Reibung je Boden,
   einstellbare Mausgeschwindigkeit (`+`/`−`, wie in Enigma 1–15, Standard 4).
 - Paarregel wie in Enigma: ein offener Stein bleibt offen, ein falscher zweiter schließt ihn.
+- Original-Soundeffekte aus Enigma (Steinstoß, Oxyd öffnen, Paar, Absturz).
 - Steuerung außerdem per Pfeiltasten/WASD, Neigen, Gamepad.
 - Klein und schnell: rund 150 KB Code (gzip) plus 165 KB Grafik.
 
@@ -36,5 +37,6 @@ Spezifikation und Plan: [docs/SPEC.md](docs/SPEC.md)
 GPL-3.0-or-later, siehe [LICENSE](LICENSE).
 
 Die Grafiken in `public/enigma/` stammen aus [Enigma](https://github.com/Enigma-Game/Enigma)
-(GPL-2.0-or-later), siehe [public/enigma/README.md](public/enigma/README.md). Physik und
+(GPL-2.0-or-later), siehe [public/enigma/README.md](public/enigma/README.md); die Klänge in
+`public/sounds/` ebenfalls aus Enigma, siehe [public/sounds/README.md](public/sounds/README.md). Physik und
 Paarregel sind nach Enigmas Quellcode (`src/world.cc`, `src/stones/OxydStone.cc`) nachgebaut.

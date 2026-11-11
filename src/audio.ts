@@ -1,8 +1,15 @@
-// Small synthesized sound effects (Web Audio): no audio files to download.
+// Sound effects: Enigma's samples (public/sounds/, converted to PCM WAV by
+// tools/convert-sounds.mjs), mapped to game events as in Enigma's
+// data/sound-defaults.lua. Played through Web Audio for low latency.
+
+const SAMPLES = ['st-stone', 'st-oxydopen', 'st-oxydopened', 'shatter', 'menuok', 'menumove'] as const;
+type Sample = (typeof SAMPLES)[number];
 
 export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private readonly buffers = new Map<Sample, AudioBuffer>();
+  private lastStone = 0;
   muted = false;
 
   /** Must be called from a user gesture (browser autoplay rules). */
@@ -10,56 +17,70 @@ export class Sfx {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.35;
+      this.master.gain.value = 0.8;
       this.master.connect(this.ctx.destination);
+      void this.load(this.ctx);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
-  private tone(freq: number, dur: number, type: OscillatorType = 'sine', vol = 1, slideTo?: number, delay = 0): void {
-    if (!this.ctx || !this.master || this.muted) return;
-    const t0 = this.ctx.currentTime + delay;
-    const osc = this.ctx.createOscillator();
+  private async load(ctx: AudioContext): Promise<void> {
+    const base = `${import.meta.env.BASE_URL}sounds/`;
+    await Promise.all(
+      SAMPLES.map(async (name) => {
+        try {
+          const res = await fetch(`${base}${name}.wav`);
+          this.buffers.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
+        } catch {
+          /* a missing sound must never stop the game */
+        }
+      }),
+    );
+  }
+
+  private play(name: Sample, volume = 1, delay = 0): void {
+    const buf = this.buffers.get(name);
+    if (!this.ctx || !this.master || !buf || this.muted) return;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
     const g = this.ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t0);
-    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(this.master);
-    osc.start(t0);
-    osc.stop(t0 + dur + 0.02);
+    g.gain.value = volume;
+    src.connect(g).connect(this.master);
+    src.start(this.ctx.currentTime + delay);
   }
 
-  open(symbol: string): void {
-    const n = symbol.charCodeAt(0) - 65;
-    const scale = [0, 2, 4, 7, 9, 12, 14, 16];
-    this.tone(440 * Math.pow(2, scale[n % scale.length] / 12), 0.35, 'triangle', 0.6);
+  /** Marble bounces off a stone (Enigma: max(0.25, v/8), at most 1). */
+  stone(speed: number): void {
+    const now = performance.now();
+    if (now - this.lastStone < 40) return; // corner hits come in pairs
+    this.lastStone = now;
+    this.play('st-stone', Math.min(1, Math.max(0.25, speed / 8)));
   }
 
+  /** A single Oxyd stone opens. */
+  open(): void {
+    this.play('st-oxydopen');
+  }
+
+  /** A pair opens: Enigma plays both sounds together. */
   solved(): void {
-    [523.25, 659.25, 783.99].forEach((f, i) => this.tone(f, 0.45, 'triangle', 0.45, undefined, i * 0.07));
+    this.play('st-oxydopen');
+    this.play('st-oxydopened');
   }
 
-  mismatch(): void {
-    this.tone(180, 0.25, 'square', 0.18, 140);
-  }
+  /** Enigma has no sound for closing Oxyd stones. */
+  close(): void {}
 
-  close(): void {
-    this.tone(260, 0.12, 'sine', 0.2, 200);
-  }
-
-  wall(speed: number): void {
-    if (speed < 1.2) return;
-    this.tone(120 + Math.random() * 30, 0.06, 'sine', Math.min(speed / 10, 0.7));
-  }
-
-  fall(): void {
-    this.tone(520, 0.6, 'sine', 0.5, 70);
+  /** Marble falls into the abyss: shatter sound when the fall animation ends. */
+  fall(delaySeconds: number): void {
+    this.play('shatter', 0.8, delaySeconds);
   }
 
   win(): void {
-    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, 0.6, 'triangle', 0.5, undefined, i * 0.12));
+    this.play('menuok');
+  }
+
+  menu(): void {
+    this.play('menumove', 0.6);
   }
 }
