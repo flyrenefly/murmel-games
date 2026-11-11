@@ -1,0 +1,62 @@
+name: Deploy murmel.games
+
+# Builds the site and mirrors dist/ to the IONOS webspace folder /murmel-games
+# (the SFTP user is confined to that folder). Needs the repository variable
+# IONOS_SFTP_USER and the secret IONOS_SFTP_PASSWORD.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: vars.IONOS_SFTP_USER != ''
+    env:
+      SFTP_HOST: home19679418.1and1-data.host
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Check credentials
+        env:
+          SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$SFTP_USER" ] || [ -z "$LFTP_PASSWORD" ]; then
+            echo "::error::IONOS_SFTP_USER (variable) or IONOS_SFTP_PASSWORD (secret) missing"
+            exit 1
+          fi
+      - name: Upload via SFTP
+        env:
+          SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+        run: |
+          sudo apt-get install -y -qq lftp > /dev/null
+          mkdir -p ~/.ssh
+          cp deploy/ionos_known_hosts ~/.ssh/known_hosts
+          lftp --env-password -u "$SFTP_USER" "sftp://$SFTP_HOST" <<'EOF'
+          set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes"
+          set net:max-retries 3
+          set net:timeout 30
+          mirror --reverse --delete --verbose=1 --parallel=4 dist/ ./
+          bye
+          EOF
+      - name: Check site
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://murmel.games/ || true)
+          echo "http://murmel.games/ -> $code"
