@@ -29,7 +29,8 @@ export class Input {
 
   requestLock(): void {
     if (this.tiltEnabled || matchMedia('(pointer: coarse)').matches) return;
-    void this.canvas.requestPointerLock?.();
+    // Can be refused (e.g. embedded previews); the keyboard still works then.
+    Promise.resolve(this.canvas.requestPointerLock?.()).catch(() => undefined);
   }
 
   releaseLock(): void {

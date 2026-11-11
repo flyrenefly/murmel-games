@@ -219,3 +219,39 @@ button.level.current {
     font-size: 13px;
   }
 }
+
+/* ---------- 16-Bit style: scanlines and a chunky UI ---------- */
+#crt {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+body[data-theme='retro16'] #crt {
+  display: block;
+}
+
+body[data-theme='retro16'] {
+  --panel: #000024;
+  --accent: #dbb624;
+  --accent-2: #ff9200;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, 'Courier New', monospace;
+}
+
+body[data-theme='retro16'] button,
+body[data-theme='retro16'] .hud-left,
+body[data-theme='retro16'] .card {
+  border-radius: 0;
+  backdrop-filter: none;
+  border: 2px solid #6d6d92;
+  box-shadow: 4px 4px 0 #000;
+}
+
+body[data-theme='retro16'] button.primary {
+  background: #dbb624;
+  color: #000024;
+}
