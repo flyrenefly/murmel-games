@@ -9,7 +9,10 @@ export default defineConfig({
     assetsInlineLimit: 0,
     rollupOptions: {
       // Game plus the crawlable info page (SEO).
-      input: { main: resolve(__dirname, 'index.html'), ueber: resolve(__dirname, 'ueber.html') },
+      input: { main: resolve(__dirname, 'index.html'), ueber: resolve(__dirname, 'ueber.html'),
+        impressum: resolve(__dirname, 'impressum.html'),
+        datenschutz: resolve(__dirname, 'datenschutz.html'),
+      },
       output: {
         // Keep the big libraries in their own long-cacheable files.
         manualChunks(id) {

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05050c" />
+    <title>Impressum – Murmel</title>
+    <meta name="description" content="Impressum von murmel.games" />
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href="https://murmel.games/impressum.html" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #f7f6f2;
+        --fg: #1d1c1a;
+        --muted: #5d5a54;
+        --accent: #1f5fa8;
+        --card: #ffffff;
+        --line: #e3e0d8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0b12;
+          --fg: #e9e7e1;
+          --muted: #a6a29a;
+          --accent: #7fb2ff;
+          --card: #15151f;
+          --line: #2a2a38;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 17px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      header.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      header.top a.brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 20px;
+      }
+      a {
+        color: var(--accent);
+      }
+      .play {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: clamp(28px, 5vw, 40px);
+        line-height: 1.15;
+        margin: 0 0 12px;
+      }
+      h2 {
+        margin-top: 40px;
+        font-size: 24px;
+      }
+      .lead {
+        font-size: 19px;
+        color: var(--muted);
+      }
+      figure {
+        margin: 24px 0;
+      }
+      figure img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        image-rendering: pixelated;
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      dl dt {
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      dl dd {
+        margin: 4px 0 0;
+      }
+      footer {
+        margin-top: 48px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="brand" href="./"><img src="favicon.svg" width="28" height="28" alt="" />Murmel</a>
+        <a class="play" href="./">Jetzt spielen</a>
+      </header>
+
+      <h1>Impressum</h1>
+      <h2>Angaben gemäß § 5 DDG</h2>
+      <p>
+        Rene Benischka<br />
+        Mittelgasse 16<br />
+        67152 Ruppertsberg<br />
+        Deutschland
+      </p>
+      <p>E-Mail: <a href="mailto:info@murmel.games">info@murmel.games</a></p>
+
+      <h2>Verantwortlich für den Inhalt</h2>
+      <p>Rene Benischka, Anschrift wie oben.</p>
+
+      <h2>Hinweise</h2>
+      <p>
+        Murmel ist ein privates, nicht kommerzielles Freizeitprojekt ohne Werbung und ohne Bezahlinhalte.
+        Der Quellcode ist freie Software unter der GNU General Public License (Version 3 oder später) und
+        auf <a href="https://github.com/flyrenefly/murmel-games" rel="noopener">GitHub</a> einsehbar.
+      </p>
+      <p>
+        Grafik „Klassisch“, Klänge, Rollphysik und Levels stammen aus dem freien Spiel
+        <a href="https://github.com/Enigma-Game/Enigma" rel="noopener">Enigma</a> (GPL); die Herkunft der
+        einzelnen Dateien ist im Quellcode angegeben. Oxyd ist ein Spiel von Dongleware. Murmel ist ein
+        unabhängiges Projekt und steht in keiner Verbindung zu Dongleware oder den Enigma-Entwicklern.
+      </p>
+
+      <h2>Haftung für Links</h2>
+      <p>
+        Für Inhalte externer Seiten, auf die verlinkt wird, sind ausschließlich deren Betreiber verantwortlich.
+        Bei Bekanntwerden von Rechtsverletzungen werden entsprechende Links umgehend entfernt.
+      </p>
+      <footer>
+        <a href="./">Spiel</a> · <a href="ueber.html">Über das Spiel</a> · <a href="impressum.html">Impressum</a> ·
+        <a href="datenschutz.html">Datenschutz</a>
+      </footer>
+    </main>
+  </body>
+</html>
