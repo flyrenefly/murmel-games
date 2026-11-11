@@ -110,6 +110,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_grate_cross/framed:** für die rollende Murmel durchlässig.
 - **it_document:** beim Überrollen erscheint der Text (aus `el:string` des Levels,
   deutsch falls übersetzt); Abweichung: kein Inventar, der Zettel verschwindet sofort.
+- **st_box_wood/hay/rock** (`BoxStone.cc`, `maybe_push_stone`): trifft die Murmel eine
+  Seite (nicht die Ecke) mit mehr als 4 Feldern/s, rückt die Kiste ein Feld weiter,
+  wenn dort kein Stein ist; schiebt sie sich auf die Murmel, zerspringt diese. Auf
+  Abgrund, Wasser oder Sumpf wird sie zum Boden (`fl_wood_framed_h/_v`, Heu, Fels).
+  Kisten drücken Trigger. Noch nicht: mit Drähten verbundene Kisten, Axt.
 
 ## Enigma-Levels übernehmen (Phase 2)
 

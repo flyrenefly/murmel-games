@@ -47,7 +47,8 @@ export function floorProps(kind: string): { friction: number; adhesion: number }
 export type Contact =
   | { kind: 'signal'; index: number; speed: number }
   | { kind: 'wall'; speed: number }
-  | { kind: 'object'; col: number; row: number; speed: number };
+  /** nx/ny: contact normal (stone → marble), vn: speed along it before the bounce (< 0). */
+  | { kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number };
 
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
@@ -57,7 +58,7 @@ export interface Blockers {
 export class PhysicsWorld {
   /** Solid cells: -1 = free, -2 = wall, >= 0 = index of the signal stone. */
   private readonly solid: Int32Array;
-  private readonly floors: string[];
+  private readonly cells: Level['cells'];
   private readonly width: number;
   private readonly height: number;
   private readonly pos = { x: 0, y: 0 };
@@ -78,7 +79,7 @@ export class PhysicsWorld {
     this.width = level.width;
     this.height = level.height;
     this.solid = new Int32Array(level.width * level.height).fill(-1);
-    this.floors = level.cells.map((c) => c.floor);
+    this.cells = level.cells; // live: boxes turn into floors
     level.cells.forEach((c, i) => {
       if (c.stone !== null && c.stone !== 'st_oxyd') this.solid[i] = -2;
     });
@@ -94,7 +95,7 @@ export class PhysicsWorld {
   private floorProps(): { friction: number; adhesion: number } {
     const c = Math.floor(this.pos.x);
     const r = Math.floor(this.pos.y);
-    const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.floors[r * this.width + c] : 'fl_gray';
+    const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.cells[r * this.width + c].floor : 'fl_gray';
     return floorProps(kind);
   }
 
@@ -242,7 +243,7 @@ export class PhysicsWorld {
           kind >= 0
             ? { kind: 'signal', index: kind, speed }
             : kind === -3
-              ? { kind: 'object', col, row, speed }
+              ? { kind: 'object', col, row, speed, nx, ny, vn }
               : { kind: 'wall', speed },
         );
       }

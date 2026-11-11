@@ -45,6 +45,7 @@ const OBJECTS = [
   [/^it_trigger$/, ['it_trigger']],
   [/^it_document$/, ['it_document']],
   [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
+  [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop']);
@@ -221,6 +222,8 @@ function convertLevel(pack, meta, xml, exp) {
           oxyds++;
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
         } else if (objectImages(st.k)) {
+          // Boxes moved together by wires, or breaking into items, are not built yet.
+          if (/^st_box/.test(st.k) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {

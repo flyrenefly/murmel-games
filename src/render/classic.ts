@@ -103,6 +103,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_trigger') return ['it_trigger'];
   if (kind === 'it_document') return ['it_document'];
   if (kind.startsWith('st_grate')) return ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed'];
+  if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
   if (kind.startsWith('st_door')) {
@@ -150,6 +151,11 @@ export class ClassicView {
     this.offset.x = level.width < SCREEN_W ? Math.floor((SCREEN_W - level.width) / 2) : 0;
     this.offset.y = level.height < SCREEN_H ? Math.floor((SCREEN_H - level.height) / 2) : 0;
     this.resize();
+  }
+
+  /** A floor changed (box became a bridge): redraw the static layer. */
+  floorChanged(): void {
+    if (this.level && this.img) this.staticLayer = this.renderStatic(this.level, this.img);
   }
 
   setStoneState(index: number, state: StoneState): void {
@@ -220,9 +226,10 @@ export class ClassicView {
       const col = i % level.width;
       const row = Math.floor(i / level.width);
       // Floors with several images (stacked vertically) get a stable random variant.
-      const im = img[cell.floor] ?? img.fl_gray;
+      const [name, fixed] = floorImage(cell.floor, img);
+      const im = img[name] ?? img.fl_gray;
       const variants = Math.max(1, Math.floor(im.height / T));
-      const v = Math.floor(hash(col, row) * variants);
+      const v = fixed ?? Math.floor(hash(col, row) * variants);
       g.drawImage(im, 0, v * T, T, T, col * T, row * T, T, T);
     });
     // Shadows fall onto the floor before the stones are drawn.
@@ -332,6 +339,13 @@ export class ClassicView {
     };
     const p = world.progress(o);
     const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'box') {
+      if (o.gone) return;
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.kind.startsWith('st_box_wood')) this.frame('st_box_wood', o.kind.endsWith('_v') ? 1 : 0, px, py);
+      else this.image(o.kind, px, py);
+      return;
+    }
     if (o.cls === 'grate') {
       const v = o.kind.includes('framed') || o.attrs.flavor === 'framed' ? 'framed' : 'cross';
       this.image(pass === 'shadow' ? `sh_grate_${v}` : `st_grate_${v}`, px, py);
@@ -420,6 +434,19 @@ export class ClassicView {
     this.canvas.style.width = `${VIEW_W * css}px`;
     this.canvas.style.height = `${VIEW_H * css}px`;
   }
+}
+
+/**
+ * Image and fixed variant of a floor kind: bridges built from boxes use
+ * fl_wood_framed (variant 0 horizontal, 1 vertical); hay/rock bridges the plain floor.
+ */
+function floorImage(kind: string, img: Images): [string, number | undefined] {
+  if (kind === 'fl_wood_framed_h') return ['fl_wood_framed', 0];
+  if (kind === 'fl_wood_framed_v') return ['fl_wood_framed', 1];
+  if (img[kind]) return [kind, undefined];
+  let k = kind;
+  while (!img[k] && k.lastIndexOf('_') > 2) k = k.slice(0, k.lastIndexOf('_'));
+  return [k, undefined];
 }
 
 function hash(c: number, r: number): number {

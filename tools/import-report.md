@@ -1,25 +1,24 @@
 # Enigma-Import
 
-20 von 1322 Levels übernommen (7 Pakete).
+27 von 1322 Levels übernommen (7 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua-Rückruf | 318 | 8 |
 | keine Oxyd-Steine | 294 | 0 |
-| Stein st_box_wood | 245 | 9 |
 | Stein st_laser | 225 | 0 |
-| Akteure: ac_marble_black+ac_marble_white | 171 | 0 |
+| Akteure: ac_marble_black+ac_marble_white | 171 | 1 |
 | Stein st_passage_black | 152 | 0 |
-| Stein st_oneway | 149 | 2 |
+| Stein st_oneway | 149 | 3 |
 | Gegenstand it_meditation_hollow | 143 | 0 |
 | Boden fl_space | 140 | 5 |
 | Gegenstand it_sensor | 139 | 1 |
-| Stein st_boulder | 135 | 0 |
+| Stein st_boulder | 135 | 1 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 0 |
-| Stein st_death | 125 | 3 |
+| Stein st_death | 125 | 4 |
 | Boden fl_slope_ps | 119 | 0 |
-| Stein st_puzzle_yellow | 117 | 3 |
+| Stein st_puzzle_yellow | 117 | 4 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
@@ -32,15 +31,15 @@
 | Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 0 |
-| Stein st_stoneimpulse | 96 | 0 |
+| Stein st_stoneimpulse | 96 | 2 |
 | Gegenstand it_seed_wood | 96 | 0 |
 | Gegenstand it_key | 94 | 0 |
-| Gegenstand it_wormhole_on | 94 | 1 |
+| Gegenstand it_wormhole_on | 94 | 2 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 0 |
 | Stein st_key | 90 | 0 |
 | Boden fl_swamp | 84 | 2 |
-| Boden fl_hay | 82 | 1 |
+| Boden fl_hay | 82 | 2 |
 | Stein st_brownie | 77 | 2 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -70,7 +69,6 @@
 | Boden fl_slope_onw | 52 | 0 |
 | Stein st_rotator_ccw | 52 | 0 |
 | Stein st_puzzle | 52 | 3 |
-| Stein st_box_rock | 51 | 0 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
@@ -97,7 +95,6 @@
 | Stein st_plop | 34 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Stein st_oneway_white | 33 | 0 |
-| Stein st_box_hay | 33 | 1 |
 | Gegenstand it_wrench | 33 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
@@ -108,7 +105,7 @@
 | Stein st_lightpassenger_on | 31 | 0 |
 | Akteure: ac_pearl_black+ac_pearl_white | 31 | 0 |
 | Stein st_death_invisible | 30 | 0 |
-| Stein st_granite_hollow | 29 | 0 |
+| Stein st_granite_hollow | 29 | 1 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
@@ -138,7 +135,7 @@
 | Boden fl_slope_tw | 23 | 0 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_fake_quake | 22 | 1 |
+| Stein st_fake_quake | 22 | 2 |
 | Gegenstand it_spring_drop | 22 | 0 |
 | Stein st_chameleon | 22 | 0 |
 | Stein st_ghost_break | 22 | 0 |
@@ -181,7 +178,7 @@
 | Stein st_lightglass_hollow | 14 | 0 |
 | Gegenstand it_magnet_off | 14 | 0 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
-| Gegenstand it_bottle_broken | 14 | 0 |
+| Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 0 |
 | Gegenstand it_weight | 14 | 0 |
@@ -212,6 +209,7 @@
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Aktion openclose | 10 | 0 |
 | Stein it_magnet_off | 10 | 0 |
+| Stein st_box_wood (verbunden) | 10 | 2 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 0 |
@@ -234,6 +232,7 @@
 | Stein st_plaster_movable | 8 | 0 |
 | Stein it_vortex_closed | 8 | 0 |
 | Stein st_camouflage_movable | 8 | 0 |
+| Stein st_box_rock (verbunden) | 8 | 0 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Akteure: ac_marble_black+ac_marble_white+ac_pearl_white | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
@@ -247,6 +246,7 @@
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
+| Stein st_box_hay (verbunden) | 6 | 1 |
 | Stein st_disco_dark | 6 | 0 |
 | Stein st_flat_hollow | 6 | 0 |
 | Gegenstand it_sensor_exit | 5 | 0 |

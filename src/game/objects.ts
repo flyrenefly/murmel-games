@@ -1,7 +1,8 @@
 // Interactive Enigma objects (GPL-2.0-or-later, modelled on Enigma's src/Object.cc,
 // StateObject.cc, items/Trigger.cc, stones/Switch.cc, stones/Door.cc, SimpleStones.cc):
-// switches, triggers and doors that talk to each other by messages, grates and
-// documents. Times in milliseconds, cells in tile units.
+// switches, triggers and doors that talk to each other by messages, grates,
+// documents and pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone).
+// Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
 export interface ObjectDef {
@@ -11,7 +12,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -24,6 +25,20 @@ const FRAME_MS = 60;
 /** Number of animation frames of a door opening/closing (models-2d.lua). */
 const DOOR_FRAMES: Record<string, number> = { a: 2, b: 8, c: 2, d: 7 };
 const SWITCH_FRAMES = 3;
+/** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
+export const PUSH_SPEED = 4;
+/** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
+const SINK_FLOORS = new Set(['fl_abyss', 'fl_water', 'fl_swamp']);
+
+/** What the objects need to know about the level around them. */
+export interface ObjectEnv {
+  /** A fixed stone (wall, Oxyd stone) or the level border is at this cell. */
+  stoneAt(col: number, row: number): boolean;
+  floorAt(col: number, row: number): string;
+  setFloor(col: number, row: number, kind: string): void;
+}
+
+const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
 
 export interface GameObject {
   /** Enigma object id ("$id"), referenced as "#id". */
@@ -38,14 +53,15 @@ export interface GameObject {
   /** Running animation towards state `to`, started at `since`, `dur` ms long. */
   moving: { to: number; since: number; dur: number } | null;
   attrs: Record<string, string>;
-  /** Picked up (documents). */
+  /** Picked up (documents) or sunk into the floor (boxes). */
   gone: boolean;
 }
 
 export type ObjectEvent =
   | { type: 'text'; text: string }
   | { type: 'shatter' }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' };
+  | { type: 'floor'; col: number; row: number }
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -53,6 +69,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_trigger') return 'trigger';
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
+  if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
   return null;
 }
 
@@ -78,6 +95,8 @@ export class ObjectWorld {
     private readonly width: number,
     /** Localised texts of documents (key → text). */
     private readonly texts: Record<string, string> = {},
+    private readonly env: ObjectEnv = NO_ENV,
+    random: () => number = Math.random,
   ) {
     for (const d of defs) {
       const cls = objectClass(d.k);
@@ -95,12 +114,31 @@ export class ObjectWorld {
         attrs: a,
         gone: false,
       };
+      // Enigma clones a wood box as one of two grain directions (BoxStone::clone).
+      if (o.kind === 'st_box_wood') o.kind = random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v';
       this.objects.push(o);
-      const key = d.y * width + d.x;
-      const list = this.byCell.get(key);
-      if (list) list.push(o);
-      else this.byCell.set(key, [o]);
+      this.place(o);
     }
+  }
+
+  private place(o: GameObject): void {
+    const key = o.row * this.width + o.col;
+    const list = this.byCell.get(key);
+    if (list) list.push(o);
+    else this.byCell.set(key, [o]);
+  }
+
+  private unplace(o: GameObject): void {
+    const key = o.row * this.width + o.col;
+    const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
+    if (list.length) this.byCell.set(key, list);
+    else this.byCell.delete(key);
+  }
+
+  /** A stone (fixed or object) occupies the cell. */
+  private stoneAt(col: number, row: number): boolean {
+    if (this.env.stoneAt(col, row)) return true;
+    return this.at(col, row).some((o) => !o.gone && o.cls !== 'trigger' && o.cls !== 'document');
   }
 
   private at(col: number, row: number): GameObject[] {
@@ -117,18 +155,63 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch') return ALL_FACES;
+      if (o.cls === 'switch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
     }
     return 0;
   }
 
-  /** The marble hit the stone in this cell. color: 0 = black marble, 1 = white. */
-  hit(col: number, row: number, color = 0): void {
-    for (const o of this.at(col, row)) {
+  /**
+   * The marble hit the stone in this cell. color: 0 = black marble, 1 = white.
+   * nx/ny: contact normal (stone → marble), vn: marble speed along it (negative = into the stone).
+   */
+  hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0): void {
+    for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'box') {
+        // Only a hit on a face (axis normal) fast enough pushes, away from the marble.
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED && !o.gone) this.push(o, -nx, -ny);
+        continue;
+      }
       if (o.cls !== 'switch') continue;
       const c = o.attrs.color;
       const ic = c === undefined || c === '' ? 0 : Number(c) + 1;
       if (ic === 0 || ic === color + 1) this.setState(o, target(o) === 1 ? 0 : 1);
+    }
+  }
+
+  /** Stone::move_stone: move a box one cell if the cell is free. */
+  push(o: GameObject, dx: number, dy: number): boolean {
+    const col = o.col + dx;
+    const row = o.row + dy;
+    if (this.stoneAt(col, row)) return false;
+    const oldCol = o.col;
+    const oldRow = o.row;
+    this.unplace(o);
+    o.col = col;
+    o.row = row;
+    this.place(o);
+    this.events.push({ type: 'sound', name: 'move' });
+    // Stone::on_move: a stone moving onto the marble shatters it.
+    if (col === this.marble.col && row === this.marble.row) this.events.push({ type: 'shatter' });
+    if (SINK_FLOORS.has(this.env.floorAt(col, row))) {
+      o.gone = true;
+      this.unplace(o);
+      this.env.setFloor(col, row, bridgeFloor(o.kind));
+      this.events.push({ type: 'floor', col, row });
+    }
+    this.updateTriggers(oldCol, oldRow);
+    this.updateTriggers(col, row);
+    return true;
+  }
+
+  /** Trigger::updateIState: pressed by the marble or a stone on it. */
+  private updateTriggers(col: number, row: number): void {
+    const pressed = (col === this.marble.col && row === this.marble.row) || this.at(col, row).some((x) => x.cls === 'box' && !x.gone);
+    for (const o of this.at(col, row)) {
+      if (o.cls !== 'trigger' || o.state === (pressed ? 1 : 0)) continue;
+      o.state = pressed ? 1 : 0;
+      this.events.push({ type: 'sound', name: pressed ? 'triggerdown' : 'triggerup' });
+      this.performAction(o, pressed);
     }
   }
 
@@ -144,20 +227,8 @@ export class ObjectWorld {
     if (col === this.marble.col && row === this.marble.row) return;
     const old = this.marble;
     this.marble = { col, row };
-    for (const o of this.at(old.col, old.row)) {
-      if (o.cls === 'trigger' && o.state === 1) {
-        o.state = 0;
-        this.events.push({ type: 'sound', name: 'triggerup' });
-        this.performAction(o, false);
-      }
-    }
-    for (const o of this.at(col, row)) {
-      if (o.cls === 'trigger' && o.state === 0) {
-        o.state = 1;
-        this.events.push({ type: 'sound', name: 'triggerdown' });
-        this.performAction(o, true);
-      }
-    }
+    this.updateTriggers(old.col, old.row);
+    this.updateTriggers(col, row);
     this.pickUp(col, row);
   }
 
@@ -205,7 +276,7 @@ export class ObjectWorld {
   }
 
   private setState(o: GameObject, s: number): void {
-    if (o.cls === 'trigger' || o.cls === 'document' || o.cls === 'grate') return; // ignores writes
+    if (o.cls !== 'door' && o.cls !== 'switch') return; // others ignore state writes
     const to = target(o);
     if (s === to) return;
     const frames = o.cls === 'door' ? (DOOR_FRAMES[doorFlavor(o)] ?? 2) : SWITCH_FRAMES;
@@ -278,6 +349,13 @@ function initialState(kind: string, a: Record<string, string>): number {
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
   return kind.endsWith('_open') ? 1 : 0;
+}
+
+/** Floor a box turns into when it sinks (BoxStone::maybe_fall_or_stopfire). */
+export function bridgeFloor(kind: string): string {
+  if (kind === 'st_box_hay') return 'fl_hay_framed';
+  if (kind === 'st_box_rock') return 'fl_rock_framed';
+  return kind === 'st_box_wood_v' ? 'fl_wood_framed_v' : 'fl_wood_framed_h';
 }
 
 export function doorFlavor(o: GameObject): string {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_FACES, NORTH, ObjectWorld, SOUTH, type ObjectDef } from './objects';
+import { ALL_FACES, NORTH, ObjectWorld, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
 
 const W = 10;
 
@@ -105,5 +105,62 @@ describe('ObjectWorld', () => {
     const w = world([{ x: 2, y: 0, k: 'st_grate_cross' }, { x: 3, y: 0, k: 'it_trigger' }]);
     expect(w.blockAt(2, 0)).toBe(0);
     expect(w.blockAt(3, 0)).toBe(0);
+  });
+
+  describe("boxes", () => {
+    const floors = new Map<string, string>();
+    const env: ObjectEnv = {
+      stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 3 || (c === 9 && r === 1),
+      floorAt: (c, r) => floors.get(c + "," + r) ?? "fl_gray",
+      setFloor: (c, r, k) => void floors.set(c + "," + r, k),
+    };
+    const boxWorld = (defs: ObjectDef[]) => {
+      floors.clear();
+      const w = new ObjectWorld(defs, W, {}, env, () => 0.2);
+      w.marbleAt(0, 1);
+      return w;
+    };
+
+    it("a fast hit on a face pushes the box one cell away from the marble", () => {
+      const w = boxWorld([{ x: 3, y: 1, k: "st_box_wood" }]);
+      w.hit(3, 1, 0, -1, 0, -5); // marble west of the box, moving east
+      expect([w.objects[0].col, w.objects[0].row]).toEqual([4, 1]);
+      expect(w.blockAt(4, 1)).toBe(ALL_FACES);
+      expect(w.blockAt(3, 1)).toBe(0);
+    });
+
+    it("a slow hit or a hit on a corner does not push", () => {
+      const w = boxWorld([{ x: 3, y: 1, k: "st_box_rock" }]);
+      w.hit(3, 1, 0, -1, 0, -3);
+      w.hit(3, 1, 0, -Math.SQRT1_2, -Math.SQRT1_2, -8);
+      expect(w.objects[0].col).toBe(3);
+    });
+
+    it("stones and other boxes stop a push", () => {
+      const w = boxWorld([{ x: 8, y: 1, k: "st_box_hay" }, { x: 5, y: 1, k: "st_box_hay" }, { x: 6, y: 1, k: "st_box_hay" }]);
+      w.hit(8, 1, 0, -1, 0, -6); // fixed stone at (9, 1)
+      w.hit(5, 1, 0, -1, 0, -6); // box at (6, 1)
+      expect(w.objects.map((o) => o.col)).toEqual([8, 5, 6]);
+    });
+
+    it("a box pushed into water or abyss becomes a bridge", () => {
+      const w = boxWorld([{ x: 3, y: 1, k: "st_box_wood" }]);
+      floors.set("4,1", "fl_water");
+      w.hit(3, 1, 0, -1, 0, -5);
+      expect(floors.get("4,1")).toBe("fl_wood_framed_h");
+      expect(w.objects[0].gone).toBe(true);
+      expect(w.blockAt(4, 1)).toBe(0);
+      expect(w.events).toContainEqual({ type: "floor", col: 4, row: 1 });
+    });
+
+    it("a box on a trigger presses it, pushing it off releases it", () => {
+      const w = boxWorld([door(7), { x: 4, y: 1, k: "it_trigger", a: { target: "door1", action: "signal" } }, { x: 3, y: 1, k: "st_box_wood" }]);
+      w.hit(3, 1, 0, -1, 0, -5);
+      w.update(200);
+      expect(w.objects[0].state).toBe(1);
+      w.hit(4, 1, 0, -1, 0, -5);
+      w.update(200);
+      expect(w.objects[0].state).toBe(0);
+    });
   });
 });

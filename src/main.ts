@@ -112,7 +112,18 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   level = parseLevel(packList[i]);
   board = new PairBoard(level.signals.map((s) => s.symbol));
   physics?.dispose();
-  objects = new ObjectWorld(level.objects, level.width, level.texts);
+  const lv = level;
+  objects = new ObjectWorld(lv.objects, lv.width, lv.texts, {
+    stoneAt: (c, r) => {
+      const cell = cellAt(lv, c, r);
+      return !cell || cell.stone !== null;
+    },
+    floorAt: (c, r) => cellAt(lv, c, r)?.floor ?? 'fl_abyss',
+    setFloor: (c, r, kind) => {
+      const cell = cellAt(lv, c, r);
+      if (cell) cell.floor = kind;
+    },
+  });
   physics = new PhysicsWorld(level, objects);
   acc = 0;
   falls = 0;
@@ -353,7 +364,7 @@ function onContact(c: Contact): void {
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
     else sfx.stone(c.speed);
-    objects.hit(c.col, c.row, 0);
+    objects.hit(c.col, c.row, 0, c.nx, c.ny, c.vn);
     return;
   }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
@@ -376,10 +387,12 @@ function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
     if (e.type === 'shatter') marbleDies(true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
+    else if (e.type === 'floor') classic.floorChanged();
     else if (e.name === 'switch') sfx.switchOn();
     else if (e.name === 'triggerdown') sfx.trigger(true);
     else if (e.name === 'triggerup') sfx.trigger(false);
     else if (e.name === 'pickup') sfx.pickup();
+    else if (e.name === 'move') sfx.move();
   }
 }
 

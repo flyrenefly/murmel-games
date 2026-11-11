@@ -14,6 +14,7 @@ const SAMPLES = [
   'it-triggerdown',
   'it-triggerup',
   'pickup',
+  'st-move',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -99,6 +100,11 @@ export class Sfx {
 
   trigger(down: boolean): void {
     this.play(down ? 'it-triggerdown' : 'it-triggerup');
+  }
+
+  /** A stone is pushed one cell (Enigma: movesmall). */
+  move(): void {
+    this.play('st-move');
   }
 
   pickup(): void {
