@@ -15,15 +15,13 @@ const BAR_H = 64;
 const VIEW_W = SCREEN_W * T;
 const VIEW_H = SCREEN_H * T + BAR_H;
 
-const IMAGES = [
+// Always needed; the floor and stone images of a level are loaded on top.
+const BASE_IMAGES = [
   'fl_gray',
   'fl_abyss',
   'st_greenbrown',
   'sh_solid',
   'sh_round',
-  'st_oxyda',
-  'st_oxyda_open',
-  'st_oxyda_opening',
   'st_oxyd_colordots',
   'st_oxyd_questmark',
   'st_oxyd_blink',
@@ -31,13 +29,18 @@ const IMAGES = [
   'sh_marble',
   'ac_marble_black_fall',
   'sh_marble_fall',
-] as const;
-type ImageName = (typeof IMAGES)[number];
+];
+type Images = Record<string, HTMLImageElement>;
 
 export type ClassicSet = 'gfx32' | 'gfx32-retro';
 
-const OPEN_FRAME_MS = 35; // st_oxyda_opening: 10 frames à 35 ms
-const OPEN_FRAMES = 10;
+/** Opening animation per Oxyd flavor (models-2d.lua): frames and ms per frame. */
+const OXYD_ANIM: Record<string, { frames: number; ms: number; shadow: string }> = {
+  a: { frames: 10, ms: 35, shadow: 'sh_round' },
+  b: { frames: 14, ms: 25, shadow: 'sh_round' },
+  c: { frames: 5, ms: 70, shadow: 'sh_solid' },
+  d: { frames: 10, ms: 35, shadow: 'sh_solid' },
+};
 const FALL_MS = [70, 65, 60, 55, 50, 50, 50, 50, 50, 50];
 export const CLASSIC_FALL_SECONDS = FALL_MS.reduce((a, b) => a + b, 0) / 1000;
 
@@ -56,26 +59,46 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-const cache = new Map<ClassicSet, Promise<Record<ImageName, HTMLImageElement>>>();
+const cache = new Map<string, Promise<HTMLImageElement | null>>();
 
-function loadSet(set: ClassicSet): Promise<Record<ImageName, HTMLImageElement>> {
-  let p = cache.get(set);
+/** Loads one image; the retro set falls back to the normal set, a missing image yields null. */
+function loadOne(set: ClassicSet, name: string): Promise<HTMLImageElement | null> {
+  const key = `${set}/${name}`;
+  let p = cache.get(key);
   if (!p) {
     const base = `${import.meta.env.BASE_URL}enigma/`;
-    p = Promise.all(
-      IMAGES.map((n) =>
-        // The retro set has no colour dots; fall back to the normal set.
-        loadImage(`${base}${set}/${n}.png`).catch(() => loadImage(`${base}gfx32/${n}.png`)),
-      ),
-    ).then((imgs) => Object.fromEntries(IMAGES.map((n, i) => [n, imgs[i]])) as Record<ImageName, HTMLImageElement>);
-    cache.set(set, p);
+    p = loadImage(`${base}${set}/${name}.png`)
+      .catch(() => loadImage(`${base}gfx32/${name}.png`))
+      .catch(() => null);
+    cache.set(key, p);
   }
   return p;
 }
 
+async function loadImages(set: ClassicSet, names: Iterable<string>): Promise<Images> {
+  const list = [...new Set(names)];
+  const imgs = await Promise.all(list.map((n) => loadOne(set, n)));
+  const out: Images = {};
+  list.forEach((n, i) => {
+    if (imgs[i]) out[n] = imgs[i]!;
+  });
+  return out;
+}
+
+/** Image names a level needs besides the base images. */
+function levelImages(level: Level): string[] {
+  const names: string[] = [];
+  for (const c of level.cells) {
+    names.push(c.floor);
+    if (c.stone && c.stone !== 'st_oxyd') names.push(c.stone);
+  }
+  for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
+  return names;
+}
+
 export class ClassicView {
   private readonly ctx: CanvasRenderingContext2D;
-  private img: Record<ImageName, HTMLImageElement> | null = null;
+  private img: Images | null = null;
   private set: ClassicSet = 'gfx32';
   private level: Level | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
@@ -102,7 +125,7 @@ export class ClassicView {
     this.set = set;
     this.stones = states.map((s) => ({ state: s, prev: s, since: -1e9 }));
     this.img = null;
-    const img = await loadSet(set);
+    const img = await loadImages(set, [...BASE_IMAGES, ...levelImages(level)]);
     if (this.level !== level || this.set !== set) return; // superseded meanwhile
     this.img = img;
     this.staticLayer = this.renderStatic(level, img);
@@ -148,7 +171,7 @@ export class ClassicView {
       const px = ox + s.col * T;
       const py = oy + s.row * T;
       if (px < -T || py < -T || px > VIEW_W || py > SCREEN_H * T) continue;
-      this.drawOxyd(px, py, s.symbol, this.stones[s.index]);
+      this.drawOxyd(px, py, s.symbol, s.flavor, this.stones[s.index]);
     }
 
     this.drawMarble(ox, oy);
@@ -166,7 +189,7 @@ export class ClassicView {
     this.screen.y = Math.min(sy * STEP_Y, Math.max(0, level.height - SCREEN_H));
   }
 
-  private renderStatic(level: Level, img: Record<ImageName, HTMLImageElement>): HTMLCanvasElement {
+  private renderStatic(level: Level, img: Images): HTMLCanvasElement {
     const c = document.createElement('canvas');
     c.width = level.width * T + T; // room for shadows on the right/bottom edge
     c.height = level.height * T + T;
@@ -174,58 +197,59 @@ export class ClassicView {
     g.imageSmoothingEnabled = false;
     g.fillStyle = '#000';
     g.fillRect(0, 0, c.width, c.height);
-    const variants = img.fl_gray.height / T;
     level.cells.forEach((cell, i) => {
       const col = i % level.width;
       const row = Math.floor(i / level.width);
-      if (cell.floor === 'abyss') g.drawImage(img.fl_abyss, col * T, row * T);
-      else {
-        const v = Math.floor(hash(col, row) * variants);
-        g.drawImage(img.fl_gray, 0, v * T, T, T, col * T, row * T, T, T);
-      }
+      // Floors with several images (stacked vertically) get a stable random variant.
+      const im = img[cell.floor] ?? img.fl_gray;
+      const variants = Math.max(1, Math.floor(im.height / T));
+      const v = Math.floor(hash(col, row) * variants);
+      g.drawImage(im, 0, v * T, T, T, col * T, row * T, T, T);
     });
     // Shadows fall onto the floor before the stones are drawn.
+    for (const s of level.signals) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
     level.cells.forEach((cell, i) => {
-      const col = i % level.width;
-      const row = Math.floor(i / level.width);
-      if (cell.stone === 'wall') g.drawImage(img.sh_solid, col * T, row * T);
-      else if (cell.stone === 'signal') g.drawImage(img.sh_round, col * T, row * T);
+      if (!cell.stone || cell.stone === 'st_oxyd') return;
+      g.drawImage(img.sh_solid, (i % level.width) * T, Math.floor(i / level.width) * T);
     });
     level.cells.forEach((cell, i) => {
-      if (cell.stone !== 'wall') return;
-      const col = i % level.width;
-      const row = Math.floor(i / level.width);
-      g.drawImage(img.st_greenbrown, 0, 0, T, T, col * T, row * T, T, T);
+      if (!cell.stone || cell.stone === 'st_oxyd') return;
+      const im = img[cell.stone] ?? img.st_greenbrown;
+      g.drawImage(im, 0, 0, T, T, (i % level.width) * T, Math.floor(i / level.width) * T, T, T);
     });
     return c;
   }
 
-  private drawOxyd(px: number, py: number, symbol: string, s: StoneAnim): void {
+
+  private drawOxyd(px: number, py: number, symbol: string, flavor: string, s: StoneAnim): void {
     const { ctx } = this;
     const img = this.img!;
     const t = this.now - s.since;
     const color = (symbol.charCodeAt(0) - 65) % 12;
+    const anim = OXYD_ANIM[flavor] ?? OXYD_ANIM.a;
+    const closedImg = img[`st_oxyd${flavor}`] ?? img.st_oxyda;
+    const openImg = img[`st_oxyd${flavor}_open`] ?? img.st_oxyda_open;
+    const openingImg = img[`st_oxyd${flavor}_opening`] ?? img.st_oxyda_opening;
     const base = () => {
-      ctx.drawImage(img.st_oxyda_open, px, py);
+      if (openImg) ctx.drawImage(openImg, px, py);
       ctx.drawImage(img.st_oxyd_colordots, (color % 4) * T, Math.floor(color / 4) * T, T, T, px, py, T, T);
     };
-    const opening = OPEN_FRAME_MS * OPEN_FRAMES;
+    const opening = anim.ms * anim.frames;
+    const frame = (f: number) => openingImg && ctx.drawImage(openingImg, 0, f * T, T, T, px, py, T, T);
 
     if (s.state === 'closed') {
       if (s.prev !== 'closed' && t < opening) {
         // Closing: opening frames in reverse (open → closed) over the open stone.
         base();
-        const f = OPEN_FRAMES - 1 - Math.min(OPEN_FRAMES - 1, Math.floor(t / OPEN_FRAME_MS));
-        ctx.drawImage(img.st_oxyda_opening, 0, f * T, T, T, px, py, T, T);
-      } else ctx.drawImage(img.st_oxyda, px, py);
+        frame(anim.frames - 1 - Math.min(anim.frames - 1, Math.floor(t / anim.ms)));
+      } else if (closedImg) ctx.drawImage(closedImg, px, py);
       return;
     }
 
     base();
     if (t < opening && s.prev === 'closed') {
-      // Opening: frame 0 = closed lid … frame 9 = almost open.
-      const f = Math.min(OPEN_FRAMES - 1, Math.floor(t / OPEN_FRAME_MS));
-      ctx.drawImage(img.st_oxyda_opening, 0, f * T, T, T, px, py, T, T);
+      // Opening: frame 0 = closed lid … last frame = almost open.
+      frame(Math.min(anim.frames - 1, Math.floor(t / anim.ms)));
       return;
     }
     if (s.state === 'open') {
@@ -234,10 +258,10 @@ export class ClassicView {
     } else {
       // Pair open: blinking ovals, ping-pong over 5 frames à 100 ms.
       const seq = [0, 1, 2, 3, 4, 3, 2, 1];
-      const f = seq[Math.floor(t / 100) % seq.length];
-      ctx.drawImage(img.st_oxyd_blink, 0, f * T, T, T, px, py, T, T);
+      ctx.drawImage(img.st_oxyd_blink, 0, seq[Math.floor(t / 100) % seq.length] * T, T, T, px, py, T, T);
     }
   }
+
 
   private drawMarble(ox: number, oy: number): void {
     const { ctx } = this;

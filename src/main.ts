@@ -1,10 +1,12 @@
 import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
-import { cellAt, parseLevel, type Level } from './game/level';
+import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, type Contact } from './game/physics';
+import type { LevelFile } from './game/level';
 import { LEVELS } from './levels';
+import { listPacks, packLevels, packTitle } from './packs';
 import { CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
@@ -63,7 +65,10 @@ const solved = new Set<string>(store.get<string[]>('solved', []));
 
 type Mode = 'menu' | 'play' | 'won';
 let mode: Mode = 'menu';
-let levelIndex = Math.min(store.get('level', 0), LEVELS.length - 1);
+let packId = store.get('pack', 'murmel');
+let levelIndex = Math.max(0, store.get('level', 0));
+let packList: LevelFile[] = LEVELS;
+let packName = 'Murmel';
 let level: Level;
 let board: PairBoard;
 let physics: PhysicsWorld | null = null;
@@ -88,10 +93,21 @@ function buildRenderer(): void {
   } else view.build(level, style as ThemeId, board.states);
 }
 
-function loadLevel(i: number): void {
+async function loadLevel(pack: string, i: number): Promise<void> {
+  try {
+    packList = await packLevels(pack);
+    packName = await packTitle(pack);
+  } catch {
+    pack = 'murmel';
+    packList = LEVELS;
+    packName = 'Murmel';
+  }
+  i = Math.min(Math.max(0, i), packList.length - 1);
+  packId = pack;
   levelIndex = i;
+  store.set('pack', pack);
   store.set('level', i);
-  level = parseLevel(LEVELS[i]);
+  level = parseLevel(packList[i]);
   board = new PairBoard(level.signals.map((s) => s.symbol));
   physics?.dispose();
   physics = new PhysicsWorld(level);
@@ -188,7 +204,8 @@ function controlsHelp(): string {
 
 function showStart(): void {
   mode = 'menu';
-  showOverlay(`${levelIndex + 1}. ${level.title}`, controlsHelp(), [
+  const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
+  showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
     [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
   ]);
@@ -203,28 +220,71 @@ function showPause(): void {
   ]);
 }
 
-function showLevels(): void {
+function escapeHtml(t: string): string {
+  return t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+function listButton(html: string, current: boolean, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'level' + (current ? ' current' : '');
+  b.innerHTML = html;
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sfx.menu();
+    onClick();
+  });
+  return b;
+}
+
+/** First level: the packs (own levels + imported Enigma packs). */
+async function showLevels(): Promise<void> {
   mode = 'menu';
   input.releaseLock();
-  showOverlay('Levels', '', [['Zurück', showStart]]);
+  showOverlay('Levelpakete', '', [['Zurück', showStart]]);
+  const packs = await listPacks();
   levelList.replaceChildren(
-    ...LEVELS.map((l, i) => {
-      const b = document.createElement('button');
-      b.className = 'level' + (i === levelIndex ? ' current' : '');
-      b.innerHTML = `<span>${i + 1}</span>${l.title}${solved.has(l.id) ? ' <em>✓</em>' : ''}`;
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        loadLevel(i);
-        showStart();
-      });
-      return b;
+    ...packs.map((p) => {
+      const done = solvedCount(p.id);
+      const info = p.source === 'enigma' ? `aus Enigma · ${p.count}${p.of && p.of > p.count ? ` von ${p.of}` : ''} Levels` : `${p.count} Levels`;
+      return listButton(
+        `<span>${done ? '✓' : '›'}</span><b>${escapeHtml(p.title)}</b><small>${info}${done ? ` · ${done} gelöst` : ''}</small>`,
+        p.id === packId,
+        () => void showPack(p.id),
+      );
     }),
   );
   levelList.hidden = false;
+  (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
 }
 
-function restart(): void {
-  loadLevel(levelIndex);
+const solvedInPack = new Map<string, Set<string>>();
+function solvedCount(pack: string): number {
+  return solvedInPack.get(pack)?.size ?? 0;
+}
+
+/** Second level: the levels of one pack. */
+async function showPack(id: string): Promise<void> {
+  const levels = await packLevels(id).catch(() => null);
+  if (!levels) return;
+  showOverlay(await packTitle(id), '', [['Zurück', () => void showLevels()]]);
+  levelList.replaceChildren(
+    ...levels.map((l, i) =>
+      listButton(
+        `<span>${i + 1}</span>${escapeHtml(l.title)}${solved.has(l.id) ? ' <em>✓</em>' : ''}`,
+        id === packId && i === levelIndex,
+        async () => {
+          await loadLevel(id, i);
+          showStart();
+        },
+      ),
+    ),
+  );
+  levelList.hidden = false;
+  (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
+}
+
+async function restart(): Promise<void> {
+  await loadLevel(packId, levelIndex);
   startPlaying();
 }
 
@@ -237,17 +297,18 @@ function onWin(): void {
   mode = 'won';
   solved.add(level.id);
   store.set('solved', [...solved]);
+  noteSolved(packId, level.id);
   sfx.win();
   input.releaseLock();
-  const last = levelIndex === LEVELS.length - 1;
+  const last = levelIndex === packList.length - 1;
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatTime(playSeconds)} · Abstürze ${falls}${last ? '<br>Das war das letzte Level – weitere folgen.' : ''}`,
+      `Zeit ${formatTime(playSeconds)} · Abstürze ${falls}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart]]
         : [
-            ['Nächstes Level', () => { loadLevel(levelIndex + 1); startPlaying(); }],
+            ['Nächstes Level', async () => { await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
           ],
     );
@@ -316,7 +377,8 @@ function frame(now: number): void {
       const p = physics.position;
       cur.x = p.x;
       cur.y = p.y;
-      if (falling < 0 && cellAt(level, Math.floor(p.x), Math.floor(p.y))?.floor === 'abyss') {
+      const under = cellAt(level, Math.floor(p.x), Math.floor(p.y));
+      if (falling < 0 && under && isDeadly(under.floor)) {
         falling = 0;
         physics.setActive(false);
         falls++;
@@ -336,9 +398,9 @@ function frame(now: number): void {
     if (falling >= FALL_SECONDS + 0.25) {
       falling = -1;
       fall = -1;
-      physics.respawn(level.start.col, level.start.row);
-      prev.x = cur.x = level.start.col + 0.5;
-      prev.y = cur.y = level.start.row + 0.5;
+      physics.respawn(level.start.x, level.start.y);
+      prev.x = cur.x = level.start.x;
+      prev.y = cur.y = level.start.y;
     }
   }
 
@@ -403,7 +465,17 @@ window.addEventListener('resize', () => {
   classic.resize();
 });
 
-loadLevel(levelIndex);
+// Solved levels per pack (for the pack list); level ids of imported packs start with "enigma:".
+function noteSolved(pack: string, id: string): void {
+  const set = solvedInPack.get(pack) ?? new Set<string>();
+  set.add(id);
+  solvedInPack.set(pack, set);
+  store.set('solvedPacks', Object.fromEntries([...solvedInPack].map(([k, v]) => [k, [...v]])));
+}
+for (const [k, v] of Object.entries(store.get<Record<string, string[]>>('solvedPacks', {}))) solvedInPack.set(k, new Set(v));
+for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
+
+await loadLevel(packId, levelIndex);
 showStart();
 $('loading').remove();
 requestAnimationFrame((t) => {

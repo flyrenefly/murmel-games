@@ -298,3 +298,20 @@ body[data-mode='play'] #game,
 body[data-mode='play'] #classic {
   cursor: none;
 }
+
+/* Pack list: title plus a small info line. */
+button.level b {
+  font-weight: 600;
+}
+
+button.level small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.credit {
+  font-size: 13px;
+  opacity: 0.85;
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseLevel } from './level';
-import { DEFAULT_MOUSE_SPEED, FLOOR_PROPS, MARBLE_RADIUS, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
+import { DEFAULT_MOUSE_SPEED, floorProps, MARBLE_RADIUS, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
 
 const level = parseLevel({
   id: 't',
@@ -26,7 +26,7 @@ describe('PhysicsWorld (Enigma model)', () => {
     const w = new PhysicsWorld(level);
     w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0); // 10 px to the right
     run(w, 0.01);
-    const expected = DEFAULT_MOUSE_SPEED * 10 * FLOOR_PROPS.stone.adhesion * 0.01;
+    const expected = DEFAULT_MOUSE_SPEED * 10 * floorProps('fl_gray').adhesion * 0.01;
     // minus a little friction during the tick
     expect(w.velocity.x).toBeGreaterThan(expected * 0.9);
     expect(w.velocity.x).toBeLessThanOrEqual(expected);
@@ -61,7 +61,7 @@ describe('PhysicsWorld (Enigma model)', () => {
 
     // Gentle push: terminal speed (F / friction)^(1/0.8) ≈ 0.17 tiles/s, below the hit speed.
     const slow = new PhysicsWorld(level);
-    slow.respawn(6, 1);
+    slow.respawn(6.5, 1.5);
     slow.setAxisForce(0.4, 0);
     const slowContacts = run(slow, 4);
     expect(slow.position.x).toBeCloseTo(7 - MARBLE_RADIUS, 2); // it did reach the stone

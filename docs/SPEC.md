@@ -68,6 +68,24 @@ nur eine Sammlung aus Materialien, Licht, Hintergrund und Nachbearbeitung.
 
 Weitere Stile lassen sich später ohne Änderung der Spiellogik ergänzen.
 
+## Enigma-Levels übernehmen – Umsetzung (ab 11.11.2026)
+
+Statt Enigmas Lua-/C++-Levelschnittstelle nachzubauen, lädt **Enigma selbst** jedes
+Level und exportiert den fertigen Weltzustand:
+
+1. Fork `flyrenefly/enigma-web`, Branch `level-export`: `--makepreview` mit
+   `ENIGMA_EXPORT_JSON=<dir>` schreibt je Level Böden, Steine, Gegenstände (Art und
+   Attribute) und Akteure als JSON. GitHub Actions baut Enigma unter Linux und lädt
+   den Export als Artefakt `enigma-levels-json` hoch.
+2. `tools/import-enigma.mjs <export> <enigma>/data` übersetzt in Murmel-Levelpakete
+   (`public/levels/enigma/`), kopiert die benötigten Grafiken und schreibt
+   `tools/import-report.md` mit den Gründen für nicht übernommene Levels.
+3. Ein Level wird übernommen, wenn Lizenz passt (GPL, gespendet, gemeinfrei), genau
+   eine schwarze Murmel, keine Gegenstände und nur bereits unterstützte Böden/Steine
+   vorkommen. Mit jedem neuen Objekt in Murmel steigt die Zahl automatisch.
+4. Oxyd-Farben ohne feste Vorgabe werden wie in Enigma bei jedem Levelstart neu
+   gemischt (`?` im Levelformat).
+
 ## Enigma-Levels übernehmen (Phase 2)
 
 Analyse am 11.11.2026 über die Leveldateien von Enigma (Stand Repo master):

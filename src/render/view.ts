@@ -3,7 +3,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import type { Level } from '../game/level';
+import { isDeadly, type Level } from '../game/level';
 import type { StoneState } from '../game/pairs';
 import { MARBLE_RADIUS } from '../game/physics';
 import { blobShadow } from './textures';
@@ -69,8 +69,8 @@ export class View {
     level.cells.forEach((c, i) => {
       const col = i % W;
       const row = Math.floor(i / W);
-      if (c.stone === 'wall') wallCells.push([col, row]);
-      else if (c.floor !== 'abyss') floorCells.push([col, row]);
+      if (c.stone !== null && c.stone !== 'st_oxyd') wallCells.push([col, row]);
+      else if (!isDeadly(c.floor)) floorCells.push([col, row]);
     });
 
     // Floor: one instanced mesh = one draw call.
@@ -287,7 +287,8 @@ export class View {
 
 function isWall(level: Level, c: number, r: number): boolean {
   if (c < 0 || r < 0 || c >= level.width || r >= level.height) return false;
-  return level.cells[r * level.width + c].stone === 'wall';
+  const s = level.cells[r * level.width + c].stone;
+  return s !== null && s !== 'st_oxyd';
 }
 
 function hash(c: number, r: number): number {

@@ -1,4 +1,5 @@
-import type { FloorKind, Level } from './level';
+import type { Level } from './level';
+import FLOORS from './floors.generated.json';
 
 // Rolling physics modelled on Enigma (GPL-2.0-or-later, src/world.cc), which
 // reproduces the Oxyd feel:
@@ -22,18 +23,32 @@ const CONTACT_ZONE = 0.02; // distance in which a stone counts as touched (no ov
 const REST_SPEED = 2.0;
 export const DEFAULT_MOUSE_SPEED = 4; // Enigma default option "MouseSpeed" (1–15)
 
-/** Floor properties from Enigma's objects.xml. */
-export const FLOOR_PROPS: Record<FloorKind, { friction: number; adhesion: number }> = {
-  stone: { friction: 5.0, adhesion: 3.0 }, // fl_gray
-  abyss: { friction: 2.0, adhesion: 1.0 },
-};
+const FLOOR_TABLE = FLOORS as unknown as Record<string, [number, number]>;
+const DEFAULT_FLOOR = { friction: 5.0, adhesion: 3.0 }; // fl_gray
+const floorCache = new Map<string, { friction: number; adhesion: number }>();
+
+/**
+ * Friction and adhesion of an Enigma floor kind (from objects.xml). Variants
+ * such as fl_lawn_a or fl_gray_framed fall back to their base kind.
+ */
+export function floorProps(kind: string): { friction: number; adhesion: number } {
+  let p = floorCache.get(kind);
+  if (!p) {
+    let k = kind;
+    while (!(k in FLOOR_TABLE) && k.lastIndexOf('_') > 2) k = k.slice(0, k.lastIndexOf('_'));
+    const v = FLOOR_TABLE[k];
+    p = v ? { friction: v[0], adhesion: v[1] } : DEFAULT_FLOOR;
+    floorCache.set(kind, p);
+  }
+  return p;
+}
 
 export type Contact = { kind: 'signal'; index: number; speed: number } | { kind: 'wall'; speed: number };
 
 export class PhysicsWorld {
   /** Solid cells: -1 = free, -2 = wall, >= 0 = index of the signal stone. */
   private readonly solid: Int32Array;
-  private readonly floors: FloorKind[];
+  private readonly floors: string[];
   private readonly width: number;
   private readonly height: number;
   private readonly pos = { x: 0, y: 0 };
@@ -53,10 +68,10 @@ export class PhysicsWorld {
     this.solid = new Int32Array(level.width * level.height).fill(-1);
     this.floors = level.cells.map((c) => c.floor);
     level.cells.forEach((c, i) => {
-      if (c.stone === 'wall') this.solid[i] = -2;
+      if (c.stone !== null && c.stone !== 'st_oxyd') this.solid[i] = -2;
     });
     for (const s of level.signals) this.solid[s.row * level.width + s.col] = s.index;
-    this.respawn(level.start.col, level.start.row);
+    this.respawn(level.start.x, level.start.y);
   }
 
   private solidAt(c: number, r: number): number {
@@ -67,8 +82,8 @@ export class PhysicsWorld {
   private floorProps(): { friction: number; adhesion: number } {
     const c = Math.floor(this.pos.x);
     const r = Math.floor(this.pos.y);
-    const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.floors[r * this.width + c] : 'stone';
-    return FLOOR_PROPS[kind];
+    const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.floors[r * this.width + c] : 'fl_gray';
+    return floorProps(kind);
   }
 
   /** Mouse movement in pixels, already multiplied by the mouse speed option. */
@@ -204,9 +219,10 @@ export class PhysicsWorld {
     this.active = active;
   }
 
-  respawn(col: number, row: number): void {
-    this.pos.x = col + 0.5;
-    this.pos.y = row + 0.5;
+  /** Put the marble at x/y (tile units, marble centre) and stop it. */
+  respawn(x: number, y: number): void {
+    this.pos.x = x;
+    this.pos.y = y;
     this.vel.x = this.vel.y = 0;
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
