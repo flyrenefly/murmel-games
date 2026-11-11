@@ -1,8 +1,8 @@
 name: Deploy murmel.games
 
 # Builds the site and mirrors dist/ to the IONOS webspace folder /murmel-games
-# (the SFTP user is confined to that folder). Needs the repository variable
-# IONOS_SFTP_USER and the secret IONOS_SFTP_PASSWORD.
+# (the SFTP user is confined to that folder). Needs the secrets IONOS_SFTP_USER
+# and IONOS_SFTP_PASSWORD (both secrets, so the logs mask them).
 
 on:
   push:
@@ -19,7 +19,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: vars.IONOS_SFTP_USER != ''
     env:
       SFTP_HOST: home19679418.1and1-data.host
     steps:
@@ -33,16 +32,16 @@ jobs:
       - run: npm run build
       - name: Check credentials
         env:
-          SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
+          SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
           LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
         run: |
           if [ -z "$SFTP_USER" ] || [ -z "$LFTP_PASSWORD" ]; then
-            echo "::error::IONOS_SFTP_USER (variable) or IONOS_SFTP_PASSWORD (secret) missing"
+            echo "::error::IONOS_SFTP_USER or IONOS_SFTP_PASSWORD secret missing"
             exit 1
           fi
       - name: Upload via SFTP
         env:
-          SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
+          SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
           SFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
         # Node SFTP client with pinned host key (no apt packages needed).
         run: node tools/deploy-sftp.mjs dist
