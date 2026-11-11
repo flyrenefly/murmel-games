@@ -2,13 +2,13 @@
  {
   "pack": "tutorial_basic",
   "title": "Basic Tutorial",
-  "count": 9,
+  "count": 12,
   "of": 65
  },
  {
   "pack": "enigma_i",
   "title": "Enigma I",
-  "count": 5,
+  "count": 8,
   "of": 100
  },
  {
@@ -20,13 +20,13 @@
  {
   "pack": "enigma_iii",
   "title": "Enigma III",
-  "count": 5,
+  "count": 7,
   "of": 100
  },
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 4,
+  "count": 6,
   "of": 100
  },
  {
@@ -38,7 +38,7 @@
  {
   "pack": "enigma_vi",
   "title": "Enigma VI",
-  "count": 1,
+  "count": 2,
   "of": 100
  },
  {
@@ -50,13 +50,13 @@
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 1,
+  "count": 2,
   "of": 100
  },
  {
   "pack": "enigma_x",
   "title": "Enigma X",
-  "count": 1,
+  "count": 2,
   "of": 100
  },
  {

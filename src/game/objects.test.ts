@@ -178,6 +178,28 @@ describe('ObjectWorld', () => {
     expect(w.events.filter((e) => e.type === "quake")).toHaveLength(2);
   });
 
+  it("a death stone shatters the marble on any touch and pulses", () => {
+    const w = world([{ x: 3, y: 0, k: "st_death" }]);
+    expect(w.blockAt(3, 0)).toBe(ALL_FACES);
+    w.touch(3, 0);
+    expect(w.events).toContainEqual({ type: "shatter" });
+    expect(w.objects[0].moving).not.toBeNull();
+    w.update(500);
+    expect(w.objects[0].moving).toBeNull();
+  });
+
+  it("a one-way stone blocks only the arrow side, flips on signal; white blocks the black marble", () => {
+    const w = world([
+      { x: 3, y: 0, k: "st_oneway_e", a: { name: "ow" } },
+      { x: 4, y: 0, k: "st_oneway_white_n", a: { color: "1" } },
+      { x: 1, y: 0, k: "it_trigger", a: { target: "ow", action: "flip" } },
+    ]);
+    expect(w.blockAt(3, 0)).toBe(4); // EAST face
+    expect(w.blockAt(4, 0)).toBe(ALL_FACES);
+    w.marbleAt(1, 0);
+    expect(w.blockAt(3, 0)).toBe(1); // now WEST
+  });
+
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 

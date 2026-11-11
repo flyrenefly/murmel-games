@@ -35,7 +35,7 @@ const STONES = new Set([
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
 const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
 const OXYD = /^st_oxyd(_([abcd]))?$/;
-const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|inverse|fake|adhesionless|ice_heating|hay|space)/;
+const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|inverse|fake|adhesionless|ice_heating|hay)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -47,12 +47,14 @@ const OBJECTS = [
   [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
   [/^st_timer$/, ['st_timer', 'sh_round']],
   [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
+  [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
+  [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -209,6 +211,8 @@ function convertLevel(pack, meta, xml, exp) {
         continue;
       }
       if (SPECIAL_FLOORS.test(fl.k)) reject(`Boden ${fl.k.replace(/_[nesw]+$/, '')}`);
+      // Floor forces (force_x/force_y) are not modelled yet.
+      if ((Number(fl.force_x) || 0) !== 0 || (Number(fl.force_y) || 0) !== 0) reject(`Boden mit Kraft (${fl.k})`);
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
       if (!flImg) {
         reject(`Boden ohne Bild ${fl.k}`);

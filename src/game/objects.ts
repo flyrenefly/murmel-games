@@ -2,7 +2,8 @@
 // StateObject.cc, items/Trigger.cc, stones/Switch.cc, stones/Door.cc, SimpleStones.cc):
 // switches, triggers and doors that talk to each other by messages, grates,
 // documents, pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone) and
-// timers (stones/TimerStone.cc) and quake stones (stones/QuakeStone.cc).
+// timers (stones/TimerStone.cc), quake stones (stones/QuakeStone.cc), death stones
+// (stones/DeathStone.cc) and one-way stones (stones/OneWayStone.cc).
 // Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
@@ -13,7 +14,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -28,6 +29,11 @@ const DOOR_FRAMES: Record<string, number> = { a: 2, b: 8, c: 2, d: 7 };
 const SWITCH_FRAMES = 3;
 /** st_quaking: 4 frames ping-pong, twice, 50 ms each. */
 export const QUAKE_MS = 16 * 50;
+/** st_death-anim: 3 frames à 140 ms. */
+export const DEATH_MS = 3 * 140;
+/** Enigma Direction numbers (WEST 0, SOUTH 1, EAST 2, NORTH 3) as face bits. */
+const DIR_FACE = [1, 2, 4, 8];
+const DIR_SUFFIX: Record<string, number> = { w: 0, s: 1, e: 2, n: 3 };
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
 export const PUSH_SPEED = 4;
 /** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
@@ -87,6 +93,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
   if (kind === 'st_timer') return 'timer';
   if (kind === 'st_quake') return 'quake';
+  if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
+  if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   return null;
 }
 
@@ -180,7 +188,8 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'oneway') return onewayFaces(o);
     }
     return 0;
   }
@@ -205,6 +214,16 @@ export class ObjectWorld {
       const c = o.attrs.color;
       const ic = c === undefined || c === '' ? 0 : Number(c) + 1;
       if (ic === 0 || ic === color + 1) this.setState(o, target(o) === 1 ? 0 : 1);
+    }
+  }
+
+  /** Any contact with the stone in this cell, also a soft one (Stone::actor_touch). */
+  touch(col: number, row: number): void {
+    for (const o of this.at(col, row)) {
+      if (o.cls !== 'death') continue;
+      // DeathStone::actor_touch: the marble shatters, the stone pulses.
+      this.events.push({ type: 'shatter' });
+      if (!o.moving) o.moving = { to: 0, since: this.now, dur: DEATH_MS };
     }
   }
 
@@ -358,6 +377,11 @@ export class ObjectWorld {
       if (msg === 'toggle' || (msg === 'signal' && value)) this.quake(o);
       return;
     }
+    if (o.cls === 'oneway') {
+      // OneWayStone::message: signal and flip reverse the direction.
+      if (msg === 'signal' || msg === 'flip' || msg === 'toggle') o.state = (o.state + 2) % 4;
+      return;
+    }
     switch (msg) {
       case 'toggle':
         this.setState(o, target(o) === 1 ? 0 : 1);
@@ -405,7 +429,23 @@ function target(o: GameObject): number {
   return o.moving ? o.moving.to : o.state;
 }
 
+/** Direction of a one-way stone: attribute, exported state or kind suffix (default north). */
+function onewayDir(kind: string, a: Record<string, string>): number {
+  for (const v of [a.orientation, a.$state, a.state]) if (v !== undefined && v !== '' && Number.isInteger(Number(v))) return Number(v) & 3;
+  const m = /_([nesw])$/.exec(kind);
+  return m ? DIR_SUFFIX[m[1]] : 3;
+}
+
+/**
+ * OneWayStone::collision_response: the black marble passes a plain or black stone
+ * against the arrow only from outside the arrow side; a white one-way stone blocks it.
+ */
+function onewayFaces(o: GameObject): number {
+  return o.attrs.color === '1' || o.kind.includes('_white') ? ALL_FACES : DIR_FACE[o.state & 3];
+}
+
 function initialState(kind: string, a: Record<string, string>): number {
+  if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
   return kind.endsWith('_open') || kind === 'st_timer' ? 1 : 0;

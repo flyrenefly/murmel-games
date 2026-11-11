@@ -361,6 +361,8 @@ function handlePairEvents(events: PairEvent[]): void {
 
 function onContact(c: Contact): void {
   if (c.kind === 'object') {
+    objects.touch(c.col, c.row);
+    if (!c.hit) return;
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
     else sfx.stone(c.speed);

@@ -105,6 +105,8 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_grate')) return ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed'];
   if (kind === 'st_timer') return ['st_timer', 'sh_round'];
   if (kind === 'st_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
+  if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
+  if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
@@ -341,6 +343,21 @@ export class ClassicView {
     };
     const p = world.progress(o);
     const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'death') {
+      if (o.kind === 'st_death_invisible' || o.attrs.invisible === 'true') return;
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_death', o.moving ? Math.min(2, Math.floor(p * 3)) : 0, px, py);
+      return;
+    }
+    if (o.cls === 'oneway') {
+      // st_oneway.png: columns plain/black/white, rows e n s w (models-2d.lua); floating, no shadow.
+      if (pass === 'shadow') return;
+      const col = o.attrs.color === '0' || o.kind.includes('_black') ? 1 : o.attrs.color === '1' || o.kind.includes('_white') ? 2 : 0;
+      const row = [3, 2, 0, 1][o.state & 3]; // Enigma dir W S E N → row of e n s w
+      const im = this.img!.st_oneway;
+      if (im) this.ctx.drawImage(im, col * 32, row * 32, 32, 32, px, py, 32, 32);
+      return;
+    }
     if (o.cls === 'quake') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else if (o.moving) {

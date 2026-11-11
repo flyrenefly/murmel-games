@@ -121,6 +121,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_quake** (`QuakeStone.cc`): sieht aus wie ein geschlossener Oxyd-Stein; Treffer,
   `toggle` oder `signal` mit true lassen ihn beben (800 ms) und schließen **alle**
   Oxyd-Steine, auch gelöste Paare.
+- **st_death** (`DeathStone.cc`): jede Berührung, auch eine sanfte, zerschmettert die
+  Murmel; Pulsanimation 3 × 140 ms; `st_death_invisible` unsichtbar. Noch nicht: beweglich.
+- **st_oneway** (`OneWayStone.cc`): Durchgang nur in Pfeilrichtung (sperrt die Pfeilseite
+  von außen); `signal`/`flip` drehen um; weiße sperren die schwarze Murmel ganz.
+- **fl_space**: Reibung und Haftung 0 (Murmel lässt sich nicht beschleunigen). Böden mit
+  `force_x/force_y` bleiben vorerst draußen.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
   umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
 

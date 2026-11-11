@@ -48,7 +48,7 @@ export type Contact =
   | { kind: 'signal'; index: number; speed: number }
   | { kind: 'wall'; speed: number }
   /** nx/ny: contact normal (stone → marble), vn: speed along it before the bounce (< 0). */
-  | { kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number };
+  | { kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean };
 
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
@@ -238,12 +238,15 @@ export class PhysicsWorld {
       const e = pushing && -vn < REST_SPEED ? 0 : RESTITUTION;
       this.vel.x -= (1 + e) * vn * nx;
       this.vel.y -= (1 + e) * vn * ny;
-      if (isNew && speed >= HIT_SPEED) {
+      if (isNew && kind === -3) {
+        // Objects also feel soft touches (death stones); hit = above the hit threshold.
+        onContact({ kind: 'object', col, row, speed, nx, ny, vn, hit: speed >= HIT_SPEED });
+      } else if (isNew && speed >= HIT_SPEED) {
         onContact(
           kind >= 0
             ? { kind: 'signal', index: kind, speed }
             : kind === -3
-              ? { kind: 'object', col, row, speed, nx, ny, vn }
+              ? { kind: 'object', col, row, speed, nx, ny, vn, hit: true }
               : { kind: 'wall', speed },
         );
       }
