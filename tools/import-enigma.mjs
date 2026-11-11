@@ -28,8 +28,12 @@ const STONES = new Set([
   'st_granite', 'st_darkgray', 'st_purplemarble', 'st_tigris', 'st_purplegray', 'st_greengray',
   'st_concrete', 'st_ancient', 'st_brownmarble', 'st_redmarble', 'st_bluegray', 'st_pinkbumps',
   'st_camouflage', 'st_redbrown', 'st_metal', 'st_redrock', 'st_woven', 'st_yellow',
-  'st_greenbrown', 'st_brownpyramid',
+  'st_greenbrown', 'st_brownpyramid', 'st_bluesand', 'st_brick', 'st_rawglass', 'st_panel',
+  'st_plaster', 'st_flat', 'st_beads',
 ]);
+// Variants that only differ in edges/decoration: drawn with the base image.
+const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
+const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
 const OXYD = /^st_oxyd(_([abcd]))?$/;
 const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|inverse|fake|adhesionless|ice_heating|hay|space)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
@@ -75,11 +79,27 @@ for (const f of readdirSync(exportDir)) {
   }
 }
 
-const reasons = new Map();
+const reasons = new Map(); // blocker -> levels it blocks (among others)
+const only = new Map(); // blocker -> levels it alone blocks
+let blockers = null; // Set while converting one level
 const reject = (why) => {
+  if (blockers) {
+    blockers.add(why);
+    return undefined;
+  }
   reasons.set(why, (reasons.get(why) ?? 0) + 1);
+  only.set(why, (only.get(why) ?? 0) + 1);
   return null;
 };
+function finish(level) {
+  if (!blockers) return level;
+  const b = [...blockers];
+  blockers = null;
+  if (b.length === 0) return level;
+  for (const why of b) reasons.set(why, (reasons.get(why) ?? 0) + 1);
+  if (b.length === 1) only.set(b[0], (only.get(b[0]) ?? 0) + 1);
+  return null;
+}
 
 const usedImages = new Set(['st_oxyd_colordots', 'st_oxyd_questmark', 'st_oxyd_blink']);
 
@@ -95,12 +115,24 @@ function imageFor(kind) {
 }
 
 function convert(pack, meta, xml, exp) {
+  blockers = new Set();
+  return finish(convertLevel(pack, meta, xml, exp));
+}
+
+function convertLevel(pack, meta, xml, exp) {
+  const imgs = new Set();
   const licence = attr(xml, /<el:license el:type="([^"]*)"/);
-  if (!licenceOk(licence)) return reject(`Lizenz: ${licence || 'keine Angabe'}`);
-  if (/el:single="false"/.test(xml)) return reject('nur Netzwerkspiel');
+  if (!licenceOk(licence)) {
+    blockers = null;
+    return reject(`Lizenz: ${licence || 'keine Angabe'}`);
+  }
+  if (/el:single="false"/.test(xml)) {
+    blockers = null;
+    return reject('nur Netzwerkspiel');
+  }
   const w = exp.world;
   const actors = w.actors.map((a) => a.o.k);
-  if (actors.length !== 1 || actors[0] !== 'ac_marble_black') return reject(`Akteure: ${[...new Set(actors)].sort().join('+') || 'keine'}`);
+  if (actors.length !== 1 || actors[0] !== 'ac_marble_black') reject(`Akteure: ${[...new Set(actors)].sort().join('+') || 'keine'}`);
 
   const legend = {};
   const keyOf = new Map();
@@ -111,12 +143,18 @@ function convert(pack, meta, xml, exp) {
     let row = '';
     for (let x = 0; x < w.w; x++) {
       const [fl, st, it] = w.cells[y * w.w + x];
-      if (it) return reject(`Gegenstand ${it.k}`);
-      if (!fl) return reject('Feld ohne Boden');
-      if (SPECIAL_FLOORS.test(fl.k)) return reject(`Boden ${fl.k}`);
+      if (it) reject(`Gegenstand ${it.k}`);
+      if (!fl) {
+        reject('Feld ohne Boden');
+        continue;
+      }
+      if (SPECIAL_FLOORS.test(fl.k)) reject(`Boden ${fl.k.replace(/_[nesw]+$/, '')}`);
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
-      if (!flImg) return reject(`Boden ohne Bild ${fl.k}`);
-      usedImages.add(flImg);
+      if (!flImg) {
+        reject(`Boden ohne Bild ${fl.k}`);
+        continue;
+      }
+      imgs.add(flImg);
       const def = { floor: DEADLY.has(fl.k) ? fl.k : flImg };
       if (st) {
         const ox = OXYD.exec(st.k);
@@ -127,17 +165,23 @@ function convert(pack, meta, xml, exp) {
           def.flavor = flavor;
           def.symbol = Number.isInteger(color) && color >= 0 && color < 26 ? String.fromCharCode(65 + color) : '?';
           oxyds++;
-          for (const s of ['', '_open', '_opening']) usedImages.add(`st_oxyd${flavor}${s}`);
-        } else if (STONES.has(st.k)) {
-          def.stone = st.k;
-          usedImages.add(st.k);
-        } else return reject(`Stein ${st.k}`);
+          for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
+        } else if (FAKE_OXYD.test(st.k)) {
+          def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1]}`;
+          imgs.add(def.stone);
+        } else if (STONES.has(st.k) || STONE_BASE.test(st.k)) {
+          def.stone = STONE_BASE.exec(st.k)?.[1] ?? st.k;
+          imgs.add(def.stone);
+        } else reject(`Stein ${st.k.replace(/_[nesw]+$/, '')}`);
       }
       const key = JSON.stringify(def);
       let ch = keyOf.get(key);
       if (!ch) {
         ch = pool[keyOf.size];
-        if (!ch) return reject('zu viele Feldarten');
+        if (!ch) {
+          reject('zu viele Feldarten');
+          continue;
+        }
         keyOf.set(key, ch);
         legend[ch] = def;
       }
@@ -145,8 +189,10 @@ function convert(pack, meta, xml, exp) {
     }
     rows.push(row);
   }
-  if (oxyds === 0) return reject('keine Oxyd-Steine');
-  if (oxyds % 2) return reject('ungerade Zahl Oxyd-Steine');
+  if (oxyds === 0) reject('keine Oxyd-Steine');
+  else if (oxyds % 2) reject('ungerade Zahl Oxyd-Steine');
+  if (blockers.size) return null;
+  for (const i of imgs) usedImages.add(i);
   const a = w.actors[0];
   return {
     id: `enigma:${exp.id}`,
@@ -205,9 +251,9 @@ const report = [
   '',
   `${ok} von ${total} Levels übernommen (${index.length} Pakete).`,
   '',
-  '| Grund für Nichtübernahme | Levels |',
-  '|---|---|',
-  ...top.map(([r, n]) => `| ${r} | ${n} |`),
+  '| Fehlt | blockiert Levels | davon nur daran |',
+  '|---|---|---|',
+  ...top.map(([r, n]) => `| ${r} | ${n} | ${only.get(r) ?? 0} |`),
   '',
 ];
 writeFileSync('tools/import-report.md', report.join('\n'));

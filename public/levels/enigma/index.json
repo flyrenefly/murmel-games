@@ -1,0 +1,32 @@
+[
+ {
+  "pack": "enigma_i",
+  "title": "Enigma I",
+  "count": 2,
+  "of": 100
+ },
+ {
+  "pack": "enigma_ii",
+  "title": "Enigma II",
+  "count": 1,
+  "of": 100
+ },
+ {
+  "pack": "enigma_iv",
+  "title": "Enigma IV",
+  "count": 2,
+  "of": 100
+ },
+ {
+  "pack": "enigma_v",
+  "title": "Enigma V",
+  "count": 1,
+  "of": 100
+ },
+ {
+  "pack": "enigma_vii",
+  "title": "Enigma VII",
+  "count": 1,
+  "of": 100
+ }
+]
