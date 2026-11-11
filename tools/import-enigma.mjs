@@ -49,6 +49,7 @@ const OBJECTS = [
   [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
   [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
+  [/^st_stoneimpulse(_hollow)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
@@ -242,12 +243,14 @@ function convertLevel(pack, meta, xml, exp) {
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
         } else if (objectImages(st.k)) {
           // Boxes moved together by wires, or breaking into items, are not built yet.
-          if (/^st_box/.test(st.k) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
+          if (/^st_(box|stoneimpulse)/.test(st.k) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {
           def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1]}`;
           imgs.add(def.stone);
+        } else if (st.k === 'st_invisible') {
+          def.stone = 'st_invisible'; // solid, not drawn
         } else if (STONES.has(st.k) || STONE_BASE.test(st.k)) {
           def.stone = STONE_BASE.exec(st.k)?.[1] ?? st.k;
           imgs.add(def.stone);

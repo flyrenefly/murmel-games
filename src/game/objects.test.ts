@@ -275,6 +275,37 @@ describe('ObjectWorld', () => {
     expect(w.warpTarget(5.5, 0.5)).toEqual({ x: 1.5, y: 1.5 });
   });
 
+  describe("impulse stones", () => {
+    const env: ObjectEnv = { stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5, floorAt: () => "fl_gray", setFloor: () => {} };
+    it("a hit starts a chain: neighbours pulse in turn, boxes next to it are pushed away", () => {
+      const w = new ObjectWorld(
+        [
+          { x: 3, y: 2, k: "st_stoneimpulse" },
+          { x: 4, y: 2, k: "st_stoneimpulse" },
+          { x: 3, y: 1, k: "st_box_rock" },
+        ],
+        W, {}, env,
+      );
+      w.marbleAt(0, 4);
+      w.hit(3, 2, 0, -1, 0, -1);
+      expect(w.objects[0].impulse?.phase).toBe("expanding");
+      w.update(230); // expanding done → impulses out
+      expect(w.objects[1].impulse?.phase).toBe("expanding");
+      expect([w.objects[2].col, w.objects[2].row]).toEqual([3, 0]); // box pushed north
+      w.update(230); // second stone sends back, first one is still shrinking: no ping-pong
+      w.update(400);
+      expect(w.objects[0].impulse).toBeUndefined();
+      expect(w.objects[1].impulse).toBeUndefined();
+    });
+
+    it("a hollow impulse stone lets the marble pass until it is active", () => {
+      const w = world([{ x: 3, y: 0, k: "st_stoneimpulse_hollow", a: { name: "h" } }, { x: 1, y: 0, k: "it_trigger", a: { target: "h", action: "signal" } }]);
+      expect(w.blockAt(3, 0)).toBe(0);
+      w.marbleAt(1, 0);
+      expect(w.blockAt(3, 0)).toBe(ALL_FACES);
+    });
+  });
+
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 

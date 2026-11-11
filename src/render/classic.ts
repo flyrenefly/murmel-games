@@ -108,6 +108,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
+  if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
@@ -241,11 +242,12 @@ export class ClassicView {
     // Shadows fall onto the floor before the stones are drawn.
     for (const s of level.signals) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
     level.cells.forEach((cell, i) => {
-      if (!cell.stone || cell.stone === 'st_oxyd') return;
+      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible') return;
       g.drawImage(img.sh_solid, (i % level.width) * T, Math.floor(i / level.width) * T);
     });
     level.cells.forEach((cell, i) => {
-      if (!cell.stone || cell.stone === 'st_oxyd') return;
+      // st_invisible: a wall that is not drawn.
+      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible') return;
       const im = img[cell.stone] ?? img.st_greenbrown;
       g.drawImage(im, 0, 0, T, T, (i % level.width) * T, Math.floor(i / level.width) * T, T, T);
     });
@@ -347,6 +349,22 @@ export class ClassicView {
     };
     const p = world.progress(o);
     const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'impulse') {
+      // Frames 0..3: expanding forwards (55 ms each), shrinking backwards over 5 frames.
+      let f = 0;
+      if (o.impulse && o.moving) {
+        const t = this.now - o.moving.since;
+        f = o.impulse.phase === 'expanding' ? Math.min(3, Math.floor(t / 55)) : Math.max(0, 3 - Math.max(0, Math.floor(t / 55) - 1));
+      }
+      const hollow = o.kind === 'st_stoneimpulse_hollow';
+      if (pass === 'shadow') {
+        if (hollow) {
+          const im = this.img!.sh_stoneimpulse_hollow;
+          if (im) this.ctx.drawImage(im, 0, f * 41, 41, 41, px, py, 41, 41);
+        } else this.image('sh_round', px, py);
+      } else this.frame(hollow ? 'st_stoneimpulse_hollow' : 'st_stoneimpulse', f, px, py);
+      return;
+    }
     if (o.cls === 'puzzle') {
       if (o.gone) return;
       if (o.puzzle === 'exploding') {

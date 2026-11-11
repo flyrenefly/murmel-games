@@ -4,7 +4,8 @@
 // documents, pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone) and
 // timers (stones/TimerStone.cc), quake stones (stones/QuakeStone.cc), death stones
 // (stones/DeathStone.cc), one-way stones (stones/OneWayStone.cc) and puzzle stones
-// (stones/PuzzleStone.cc) and wormholes (items/WormHole.cc).
+// (stones/PuzzleStone.cc), wormholes (items/WormHole.cc) and impulse stones
+// (stones/StoneImpulse.cc).
 // Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
@@ -15,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -40,6 +41,9 @@ const PUZZLE_YELLOW = '3';
 /** PuzzleStone::explodeStone: neighbours ignite after 0.2 s; it_explosion lasts 50 ms. */
 const PUZZLE_FUSE_MS = 200;
 export const PUZZLE_EXPLODE_MS = 50;
+/** st_stoneimpulse: expanding 4 × 55 ms, shrinking 5 × 55 ms (longer on purpose, models-2d.lua). */
+export const IMPULSE_EXPAND_MS = 4 * 55;
+export const IMPULSE_SHRINK_MS = 5 * 55;
 /** Bridge floor of a fallen puzzle (server::FallenPuzzle default). */
 const FALLEN_PUZZLE = 'fl_gray';
 /** Steps in face-bit order with their bit: W, S, E, N. */
@@ -95,6 +99,8 @@ export interface GameObject {
   fuse?: number;
   /** Wormhole: teleport disabled until this time (attribute interval). */
   engagedUntil?: number;
+  /** Impulse stone: phase and the Enigma direction the impulse came from (-1 = none). */
+  impulse?: { phase: 'expanding' | 'shrinking'; incoming: number };
 }
 
 export type ObjectEvent =
@@ -117,6 +123,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
   if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
+  if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow') return 'impulse';
   return null;
 }
 
@@ -214,6 +221,8 @@ export class ObjectWorld {
       if (o.cls === 'oneway') return onewayFaces(o);
       // PuzzleStone::collision_response: exploding stones let the marble pass.
       if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding') return ALL_FACES;
+      // StoneImpulse::collision_response: a hollow one only blocks while it is active.
+      if (o.cls === 'impulse' && (o.kind !== 'st_stoneimpulse_hollow' || o.impulse)) return ALL_FACES;
     }
     return 0;
   }
@@ -232,6 +241,11 @@ export class ObjectWorld {
       }
       if (o.cls === 'quake') {
         this.quake(o);
+        continue;
+      }
+      if (o.cls === 'impulse') {
+        // StoneImpulse::actor_hit: the slightest hit starts it (hollow ones are passed through).
+        if (o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
         continue;
       }
       if (o.cls === 'puzzle') {
@@ -439,6 +453,28 @@ export class ObjectWorld {
     for (const p of list) this.updateTriggers(p.col, p.row);
   }
 
+  // ---------- impulse stones (StoneImpulse.cc) ----------
+
+  /** setIState(EXPANDING): only an idle stone starts. incoming: Enigma direction or -1. */
+  private startImpulse(o: GameObject, incoming: number): void {
+    if (o.impulse || o.gone) return;
+    o.impulse = { phase: 'expanding', incoming };
+    o.moving = { to: 0, since: this.now, dur: IMPULSE_EXPAND_MS };
+    // A marble inside an active hollow impulse stone shatters (actor_inside).
+    if (o.kind === 'st_stoneimpulse_hollow' && o.col === this.marble.col && o.row === this.marble.row) this.events.push({ type: 'shatter' });
+  }
+
+  /** Stone::send_impulse: a stone receives an impulse in Enigma direction d. */
+  private sendImpulse(col: number, row: number, d: number): void {
+    const [dx, dy] = STEPS[d];
+    for (const o of [...this.at(col, row)]) {
+      if (o.gone) continue;
+      if (o.cls === 'impulse') this.startImpulse(o, d);
+      else if (o.cls === 'box') this.push(o, dx, dy);
+      else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
+    }
+  }
+
   // ---------- wormholes (WormHole.cc) ----------
 
   /** Sum of the wormhole pulls on the marble at x/y (WormHole::globalForce, not scaled by the floor). */
@@ -530,6 +566,20 @@ export class ObjectWorld {
   update(ms: number): void {
     this.now += ms;
     for (const o of this.objects) {
+      const imp = o.impulse;
+      if (imp && o.moving && this.now - o.moving.since >= o.moving.dur) {
+        if (imp.phase === 'expanding') {
+          // SHRINKING: impulse to all four neighbours (StoneImpulse::setIState).
+          imp.phase = 'shrinking';
+          o.moving = { to: 0, since: this.now, dur: IMPULSE_SHRINK_MS };
+          for (let d = 0; d < 4; d++) this.sendImpulse(o.col + STEPS[d][0], o.row + STEPS[d][1], d);
+        } else {
+          o.impulse = undefined;
+          o.moving = null;
+        }
+      }
+    }
+    for (const o of this.objects) {
       if (o.puzzle === 'ignited' && o.fuse !== undefined && this.now >= o.fuse) this.explodeStone(o);
       if (o.puzzle === 'exploding' && o.moving && this.now - o.moving.since >= o.moving.dur) {
         // PuzzleStone::animcb: the stone is gone.
@@ -551,7 +601,7 @@ export class ObjectWorld {
     }
     for (const o of this.objects) {
       const m = o.moving;
-      if (!m || this.now - m.since < m.dur) continue;
+      if (!m || this.now - m.since < m.dur || o.impulse) continue;
       o.moving = null;
       o.state = m.to;
       if (o.cls === 'door' && o.state === 0) this.shatterIfInside(o);
@@ -606,6 +656,10 @@ export class ObjectWorld {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
     if (o.cls === 'quake') {
       if (msg === 'toggle' || (msg === 'signal' && value)) this.quake(o);
+      return;
+    }
+    if (o.cls === 'impulse') {
+      if (msg === 'signal' && value) this.startImpulse(o, -1);
       return;
     }
     if (o.cls === 'oneway') {

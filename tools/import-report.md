@@ -1,17 +1,17 @@
 # Enigma-Import
 
-65 von 1322 Levels übernommen (13 Pakete).
+73 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 362 | 20 |
+| Lua-Rückruf | 361 | 21 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: ac_marble_black+ac_marble_white | 171 | 3 |
 | Stein st_passage_black | 152 | 0 |
 | Gegenstand it_meditation_hollow | 143 | 2 |
 | Gegenstand it_sensor | 139 | 1 |
-| Stein st_boulder | 135 | 1 |
+| Stein st_boulder | 135 | 2 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 1 |
 | Boden fl_slope_ps | 119 | 0 |
@@ -26,14 +26,13 @@
 | Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 1 |
-| Stein st_stoneimpulse | 96 | 3 |
 | Gegenstand it_seed_wood | 96 | 2 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
 | Boden fl_swamp | 84 | 2 |
-| Boden fl_hay | 82 | 2 |
+| Boden fl_hay | 82 | 3 |
 | Stein st_brownie | 77 | 2 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -67,11 +66,9 @@
 | Stein st_pull | 48 | 1 |
 | Wurmloch ohne Ziel | 46 | 2 |
 | Stein st_rawglass_movable | 46 | 0 |
-| Stein st_invisible | 43 | 3 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_stoneimpulse_hollow | 41 | 0 |
 | Stein st_thief | 41 | 0 |
 | Gegenstand it_yinyang | 40 | 0 |
 | Stein st_shogun | 39 | 0 |
@@ -94,7 +91,7 @@
 | Stein st_chess_white | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
 | Akteure: ac_pearl_black+ac_pearl_white | 31 | 0 |
-| Stein st_granite_hollow | 29 | 1 |
+| Stein st_granite_hollow | 29 | 2 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
@@ -123,7 +120,7 @@
 | Akteure: ac_marble_black+ac_rotor | 23 | 3 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
-| Puzzle hohl | 23 | 1 |
+| Puzzle hohl | 23 | 2 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_fake_quake | 22 | 2 |

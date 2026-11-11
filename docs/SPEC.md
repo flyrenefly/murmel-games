@@ -139,6 +139,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   näher als 0,125 an der Lochmitte ist, ans Ziel (Tempo 0); `interval` sperrt danach.
   Das Ziel (Objektname, `#id` oder Position) löst der Konverter in Koordinaten auf.
   `on`/`off` schalten nur den Sog.
+- **st_stoneimpulse** (`StoneImpulse.cc`): schon ein leichter Treffer oder `signal` true startet
+  ihn: 220 ms Ausdehnen, dann Impuls an alle vier Nachbarn (Impulssteine pulsieren weiter,
+  Kisten werden geschoben, blaue/gelbe Puzzle-Fragmente verschoben), 275 ms Zusammenziehen
+  (länger, damit kein Hin und Her entsteht). Hohl: durchlässig, nur aktiv massiv, Murmel
+  darin zerspringt. Noch nicht: beweglich, laserempfindlich (steady), verbunden.
+- **st_invisible**: massiver, nicht gezeichneter Stein.
 - **fl_inverse** (weiß/grau): Haftung −2 – Mausbewegung wirkt umgekehrt.
 - **fl_space**: Reibung und Haftung 0 (Murmel lässt sich nicht beschleunigen). Böden mit
   `force_x/force_y` bleiben vorerst draußen.
