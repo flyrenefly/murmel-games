@@ -43,18 +43,9 @@ jobs:
       - name: Upload via SFTP
         env:
           SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
-          LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq lftp > /dev/null
-          mkdir -p ~/.ssh
-          cp deploy/ionos_known_hosts ~/.ssh/known_hosts
-          lftp --env-password -u "$SFTP_USER" "sftp://$SFTP_HOST" <<'EOF'
-          set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes"
-          set net:max-retries 3
-          set net:timeout 30
-          mirror --reverse --delete --verbose=1 --parallel=4 dist/ ./
-          bye
-          EOF
+          SFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
+        # Node SFTP client with pinned host key (no apt packages needed).
+        run: node tools/deploy-sftp.mjs dist
       - name: Check site
         run: |
           sleep 5
