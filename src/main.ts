@@ -213,7 +213,7 @@ async function startTouch(): Promise<void> {
 function controlsHelp(): string {
   return isTouch
     ? 'Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.'
-    : 'Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.<br><span class="keys">Esc Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>';
+    : 'Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>';
 }
 
 function showStart(): void {
@@ -499,6 +499,16 @@ window.addEventListener('click', () => {
   if (mode === 'play' && !input.locked && !isTouch) input.requestLock();
 });
 window.addEventListener('keydown', (e) => {
+  // Esc/P pause even when the browser gave no pointer lock (then Esc does not
+  // unlock anything). P also resumes; Esc does not, because a locked browser
+  // may deliver the same Esc that already opened the pause via pointerlockchange.
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (mode === 'play') {
+      input.releaseLock();
+      if (!input.locked) showPause();
+    } else if (mode === 'menu' && overlay.hidden === false && ovTitle.textContent === 'Pause' && e.code === 'KeyP') startPlaying();
+    return;
+  }
   if (e.code === 'KeyT') cycleStyle();
   else if (e.code === 'KeyR' && mode !== 'menu') restart();
   else if (e.key === '+' || e.code === 'NumpadAdd') changeMouseSpeed(1);
