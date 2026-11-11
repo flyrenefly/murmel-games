@@ -105,7 +105,8 @@ export interface GameObject {
 
 export type ObjectEvent =
   | { type: 'text'; text: string }
-  | { type: 'shatter' }
+  /** marble: index of the marble that shatters. */
+  | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
   | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' };
@@ -141,8 +142,8 @@ export class ObjectWorld {
   readonly events: ObjectEvent[] = [];
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
-  private marble = { col: -1, row: -1 };
-  private initialized = false;
+  /** Cell of each marble's centre (-1 = gone); init = false until its first marbleAt. */
+  private marbles: { col: number; row: number; init: boolean }[] = [];
 
   constructor(
     defs: readonly ObjectDef[],
@@ -259,14 +260,14 @@ export class ObjectWorld {
     }
   }
 
-  /** Any contact with the stone in this cell, also a soft one (Stone::actor_touch). */
-  touch(col: number, row: number): void {
+  /** Any contact of marble `marble` with the stone in this cell, also a soft one (Stone::actor_touch). */
+  touch(col: number, row: number, marble = 0): void {
     for (const o of this.at(col, row)) {
       // PuzzleStone::actor_contact: ignited or exploding puzzle stones shatter the marble.
-      if (o.cls === 'puzzle' && (o.puzzle === 'ignited' || o.puzzle === 'exploding')) this.events.push({ type: 'shatter' });
+      if (o.cls === 'puzzle' && (o.puzzle === 'ignited' || o.puzzle === 'exploding')) this.events.push({ type: 'shatter', marble });
       if (o.cls !== 'death') continue;
       // DeathStone::actor_touch: the marble shatters, the stone pulses.
-      this.events.push({ type: 'shatter' });
+      this.events.push({ type: 'shatter', marble });
       if (!o.moving) o.moving = { to: 0, since: this.now, dur: DEATH_MS };
     }
   }
@@ -291,7 +292,7 @@ export class ObjectWorld {
     this.place(o);
     this.events.push({ type: 'sound', name: 'move' });
     // Stone::on_move: a stone moving onto the marble shatters it.
-    if (col === this.marble.col && row === this.marble.row) this.events.push({ type: 'shatter' });
+    this.shatterAt(col, row);
     if (SINK_FLOORS.has(this.env.floorAt(col, row))) {
       o.gone = true;
       this.unplace(o);
@@ -438,7 +439,7 @@ export class ObjectWorld {
       p.col += dx;
       p.row += dy;
       this.place(p);
-      if (p.col === this.marble.col && p.row === this.marble.row) this.events.push({ type: 'shatter' });
+      this.shatterAt(p.col, p.row);
     }
     this.events.push({ type: 'sound', name: 'move' });
     if (bridge) {
@@ -461,7 +462,7 @@ export class ObjectWorld {
     o.impulse = { phase: 'expanding', incoming };
     o.moving = { to: 0, since: this.now, dur: IMPULSE_EXPAND_MS };
     // A marble inside an active hollow impulse stone shatters (actor_inside).
-    if (o.kind === 'st_stoneimpulse_hollow' && o.col === this.marble.col && o.row === this.marble.row) this.events.push({ type: 'shatter' });
+    if (o.kind === 'st_stoneimpulse_hollow') this.shatterAt(o.col, o.row);
   }
 
   /** Stone::send_impulse: a stone receives an impulse in Enigma direction d. */
@@ -515,7 +516,7 @@ export class ObjectWorld {
   /** Trigger::updateIState: pressed by the marble or a stone on it. */
   private updateTriggers(col: number, row: number): void {
     const pressed =
-      (col === this.marble.col && row === this.marble.row) || this.at(col, row).some((x) => (x.cls === 'box' || x.cls === 'puzzle') && !x.gone);
+      this.marbles.some((m) => m.col === col && m.row === row) || this.at(col, row).some((x) => (x.cls === 'box' || x.cls === 'puzzle') && !x.gone);
     for (const o of this.at(col, row)) {
       if (o.cls !== 'trigger' || o.state === (pressed ? 1 : 0)) continue;
       o.state = pressed ? 1 : 0;
@@ -524,32 +525,48 @@ export class ObjectWorld {
     }
   }
 
-  /** Cell of the marble centre; call after every physics step. */
-  marbleAt(col: number, row: number): void {
-    if (!this.initialized) {
-      this.initialized = true;
-      this.marble = { col, row };
+  /** Every marble whose centre is in this cell shatters (a stone moved onto it). */
+  private shatterAt(col: number, row: number): void {
+    this.marbles.forEach((m, i) => {
+      if (m.col === col && m.row === row) this.events.push({ type: 'shatter', marble: i });
+    });
+  }
+
+  private slot(i: number): { col: number; row: number; init: boolean } {
+    while (this.marbles.length <= i) this.marbles.push({ col: -1, row: -1, init: false });
+    return this.marbles[i];
+  }
+
+  /** Cell of marble i's centre; call after every physics step. */
+  marbleAt(col: number, row: number, i = 0): void {
+    const m = this.slot(i);
+    if (!m.init) {
+      m.init = true;
+      m.col = col;
+      m.row = row;
       for (const o of this.at(col, row)) if (o.cls === 'trigger') o.state = 1; // no action at start
       this.pickUp(col, row);
       return;
     }
-    if (col === this.marble.col && row === this.marble.row) return;
-    const old = this.marble;
-    this.marble = { col, row };
-    this.updateTriggers(old.col, old.row);
+    if (col === m.col && row === m.row) return;
+    const oldCol = m.col;
+    const oldRow = m.row;
+    m.col = col;
+    m.row = row;
+    this.updateTriggers(oldCol, oldRow);
     this.updateTriggers(col, row);
     this.pickUp(col, row);
   }
 
-  /** The marble is gone (fell, shattered): triggers under it are released. */
-  marbleGone(): void {
-    if (!this.initialized) return;
-    this.marbleAt(-1, -1);
+  /** Marble i is gone (fell, shattered): triggers under it are released. */
+  marbleGone(i = 0): void {
+    if (!this.slot(i).init) return;
+    this.marbleAt(-1, -1, i);
   }
 
   /** Start over at the next marbleAt (respawn: no trigger action, like a new level). */
-  resetMarble(): void {
-    this.initialized = false;
+  resetMarble(i = 0): void {
+    this.slot(i).init = false;
   }
 
   private pickUp(col: number, row: number): void {
@@ -615,7 +632,7 @@ export class ObjectWorld {
   }
 
   private shatterIfInside(o: GameObject): void {
-    if (o.col === this.marble.col && o.row === this.marble.row) this.events.push({ type: 'shatter' });
+    this.shatterAt(o.col, o.row);
   }
 
   private setState(o: GameObject, s: number): void {

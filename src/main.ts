@@ -8,7 +8,7 @@ import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, type Contact } from './g
 import type { LevelFile } from './game/level';
 import { LEVELS } from './levels';
 import { listPacks, packLevels, packTitle } from './packs';
-import { CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
+import { type ActorSprite, CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
@@ -45,6 +45,7 @@ const hudFalls = $('hud-falls');
 const btnTheme = $<HTMLButtonElement>('btn-theme');
 const btnRestart = $<HTMLButtonElement>('btn-restart');
 const btnLevels = $<HTMLButtonElement>('btn-levels');
+const btnSwap = $<HTMLButtonElement>('btn-swap');
 const overlay = $('overlay');
 const ovTitle = $('ov-title');
 const ovText = $('ov-text');
@@ -76,11 +77,12 @@ let physics: PhysicsWorld | null = null;
 let objects: ObjectWorld = new ObjectWorld([], 1);
 let acc = 0;
 let falls = 0;
-let falling = -1; // seconds into the fall animation, -1 = not falling
+/** Per marble: seconds into the fall animation, -1 = not falling. */
+let falling: number[] = [-1];
+/** Per marble: where it respawns. */
+let startPos: { x: number; y: number }[] = [];
 let startTime = 0;
 let playSeconds = 0;
-const prev = { x: 0, y: 0 };
-const cur = { x: 0, y: 0 };
 
 const isClassic = () => classicSet(style) !== null;
 
@@ -128,12 +130,11 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   physics.setForceField((x, y) => objects.fieldForce(x, y));
   acc = 0;
   falls = 0;
-  falling = -1;
+  falling = physics.marbles.map(() => -1);
+  startPos = physics.marbles.map((m) => ({ ...m.pos }));
+  btnSwap.hidden = physics.marbles.length < 2;
   startTime = 0;
   playSeconds = 0;
-  const p = physics.position;
-  prev.x = cur.x = p.x;
-  prev.y = cur.y = p.y;
   buildRenderer();
   updateHud();
 }
@@ -211,10 +212,12 @@ async function startTouch(): Promise<void> {
   startPlaying();
 }
 
+const twoMarbles = () => (physics?.marbles.length ?? 1) > 1;
+
 function controlsHelp(): string {
   return isTouch
-    ? 'Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.'
-    : 'Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>';
+    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}`
+    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
 function showStart(): void {
@@ -363,28 +366,28 @@ function handlePairEvents(events: PairEvent[]): void {
 function onContact(c: Contact): void {
   if (c.kind === 'actor') {
     // Rotor::on_collision, Top::on_collision, Killer::on_collision: the marble shatters.
-    marbleDies(true);
+    marbleDies(c.marble, true);
     return;
   }
   if (c.kind === 'object') {
-    objects.touch(c.col, c.row);
+    if (c.by >= 0) objects.touch(c.col, c.row, c.by); // other actors only hit
     if (!c.hit) return;
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
     else sfx.stone(c.speed);
-    objects.hit(c.col, c.row, 0, c.nx, c.ny, c.vn);
+    objects.hit(c.col, c.row, c.color, c.nx, c.ny, c.vn);
     return;
   }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
   if (c.kind === 'signal') handlePairEvents(board.hit(c.index));
 }
 
-/** The marble dies: fall animation, then respawn at the start. */
-function marbleDies(shatter: boolean): void {
-  if (falling >= 0 || !physics) return;
-  falling = 0;
-  physics.setActive(false);
-  objects.marbleGone();
+/** Marble i dies: fall animation, then respawn at its start. */
+function marbleDies(i: number, shatter: boolean): void {
+  if (!physics || !(falling[i] < 0)) return;
+  falling[i] = 0;
+  physics.setActive(false, i);
+  objects.marbleGone(i);
   falls++;
   if (shatter) sfx.shatter();
   else sfx.fall(FALL_SECONDS);
@@ -393,7 +396,7 @@ function marbleDies(shatter: boolean): void {
 
 function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
-    if (e.type === 'shatter') marbleDies(true);
+    if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
     else if (e.type === 'quake') {
@@ -423,66 +426,67 @@ function frame(now: number): void {
   if (physics && mode !== 'menu') {
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];
     if (mode === 'play') playSeconds += dt;
-    if (falling < 0 && mode === 'play') {
+    if (falling[physics.current] < 0 && mode === 'play') {
       physics.addMouseForce(mdx * mouseSpeed, mdy * mouseSpeed);
       const [ax, ay] = input.axis();
       physics.setAxisForce(ax * AXIS_FORCE, ay * AXIS_FORCE);
     } else physics.setAxisForce(0, 0);
     acc += dt;
+    const ph = physics;
     while (acc >= PHYSICS_DT) {
-      prev.x = cur.x;
-      prev.y = cur.y;
-      physics.step(onContact);
-      const p = physics.position;
-      cur.x = p.x;
-      cur.y = p.y;
-      if (falling < 0) {
-        const to = objects.warpTarget(p.x, p.y);
-        if (to) {
-          // WarpActor without keeping the velocity.
-          physics.respawn(to.x, to.y);
-          prev.x = cur.x = to.x;
-          prev.y = cur.y = to.y;
-        }
-        objects.marbleAt(Math.floor(physics.position.x), Math.floor(physics.position.y));
-      }
+      ph.step(onContact);
+      ph.marbles.forEach((m, i) => {
+        if (falling[i] >= 0) return;
+        const to = objects.warpTarget(m.pos.x, m.pos.y);
+        // WarpActor without keeping the velocity.
+        if (to) ph.respawn(to.x, to.y, i);
+        objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
+      });
       objects.update(PHYSICS_DT * 1000);
       handleObjectEvents(objects.events);
-      const under = cellAt(level, Math.floor(p.x), Math.floor(p.y));
-      if (falling < 0 && under && isDeadly(under.floor)) marbleDies(false);
+      ph.marbles.forEach((m, i) => {
+        const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
+        if (falling[i] < 0 && under && isDeadly(under.floor)) marbleDies(i, false);
+      });
       acc -= PHYSICS_DT;
     }
   } else {
     input.takeMouse();
   }
 
-  let fall = -1;
-  if (falling >= 0 && physics) {
-    falling += dt;
-    fall = Math.min(falling / FALL_SECONDS, 1);
-    if (falling >= FALL_SECONDS + 0.25) {
-      falling = -1;
-      fall = -1;
-      physics.respawn(level.start.x, level.start.y);
-      prev.x = cur.x = level.start.x;
-      prev.y = cur.y = level.start.y;
-    }
-  }
+  const fallen = falling.map((f, i) => {
+    if (f < 0 || !physics) return -1;
+    falling[i] = f + dt;
+    if (falling[i] < FALL_SECONDS + 0.25) return Math.min(falling[i] / FALL_SECONDS, 1);
+    falling[i] = -1;
+    physics.respawn(startPos[i].x, startPos[i].y, i);
+    return -1;
+  });
 
   // Interpolate between the last two physics states: smooth on any refresh rate.
   const a = acc / PHYSICS_DT;
-  const x = prev.x + (cur.x - prev.x) * a;
-  const y = prev.y + (cur.y - prev.y) * a;
-  const actors = (physics?.enemies ?? []).map((e) => ({
+  const ci = physics?.current ?? 0;
+  const marbles = (physics?.marbles ?? []).map((m, i) => ({
+    kind: 'marble' as const,
+    color: m.color,
+    fall: fallen[i] ?? -1,
+    x: m.prev.x + (m.pos.x - m.prev.x) * a,
+    y: m.prev.y + (m.pos.y - m.prev.y) * a,
+  }));
+  const me = marbles[ci] ?? { kind: 'marble' as const, color: 0, fall: -1, x: 0, y: 0 };
+  const { x, y } = me;
+  const fall = me.fall;
+  const actors: ActorSprite[] = (physics?.enemies ?? []).map((e) => ({
     kind: e.kind,
     color: e.color,
     x: e.prev.x + (e.pos.x - e.prev.x) * a,
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
+  actors.push(...marbles.filter((_, i) => i !== ci));
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
-    classic.updateMarble(x, y, fall);
+    classic.updateMarble(x, y, fall, me.color);
     classic.updateActors(actors);
     classic.render(dt);
   } else {
@@ -517,6 +521,20 @@ btnRestart.addEventListener('click', (e) => {
   e.stopPropagation();
   restart();
 });
+/** Yin-yang (it_yinyang): steer the other marble. */
+function swapMarble(): void {
+  if (mode !== 'play' || !physics?.swap()) return;
+  sfx.menu();
+  showToast(physics.marbles[physics.current].color === 1 ? 'Weiße Murmel' : 'Schwarze Murmel', 900);
+}
+btnSwap.addEventListener('click', (e) => {
+  e.stopPropagation();
+  swapMarble();
+});
+window.addEventListener('mousedown', (e) => {
+  // Enigma: a left click uses the first inventory item, here the yin-yang.
+  if (e.button === 0 && mode === 'play' && input.locked && twoMarbles()) swapMarble();
+});
 btnLevels.addEventListener('click', (e) => {
   e.stopPropagation();
   showLevels();
@@ -533,6 +551,11 @@ window.addEventListener('keydown', (e) => {
       input.releaseLock();
       if (!input.locked) showPause();
     } else if (mode === 'menu' && overlay.hidden === false && ovTitle.textContent === 'Pause' && e.code === 'KeyP') startPlaying();
+    return;
+  }
+  if (e.code === 'Space' && mode === 'play') {
+    e.preventDefault();
+    swapMarble();
     return;
   }
   if (e.code === 'KeyT') cycleStyle();
@@ -568,7 +591,8 @@ requestAnimationFrame((t) => {
 
 // Expose a tiny hook for automated browser tests.
 (window as unknown as { murmel: unknown }).murmel = {
-  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...cur }, style }),
+  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m) => ({ ...m.pos, active: m.active })) }),
+  swap: swapMarble,
   push: (x: number, y: number) => {
     if (!physics) return;
     const v = physics.velocity;
@@ -578,9 +602,5 @@ requestAnimationFrame((t) => {
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone })),
   /** Test helper: put the marble at x/y (tile units). */
-  teleport: (x: number, y: number) => {
-    physics?.respawn(x, y);
-    prev.x = cur.x = x;
-    prev.y = cur.y = y;
-  },
+  teleport: (x: number, y: number) => physics?.respawn(x, y),
 };

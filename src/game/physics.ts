@@ -47,12 +47,42 @@ export function floorProps(kind: string): { friction: number; adhesion: number }
 }
 
 export type Contact =
-  | { kind: 'signal'; index: number; speed: number }
-  | { kind: 'wall'; speed: number }
-  /** nx/ny: contact normal (stone → marble), vn: speed along it before the bounce (< 0). */
-  | { kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean }
-  /** The marble collided with another actor (rotor, top, killer). */
-  | { kind: 'actor'; actor: EnemyKind; speed: number };
+  | ({ kind: 'signal'; index: number; speed: number } & Toucher)
+  | ({ kind: 'wall'; speed: number } & Toucher)
+  /** nx/ny: contact normal (stone → actor), vn: speed along it before the bounce (< 0). */
+  | ({ kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean } & Toucher)
+  /** A marble collided with another actor (rotor, top, killer). */
+  | { kind: 'actor'; actor: EnemyKind; marble: number; speed: number };
+
+/** Who touched a stone: marble index (-1 = another actor) and its colour (0 black, 1 white, 2 none). */
+export interface Toucher {
+  by: number;
+  color: number;
+}
+
+/** A marble: black (the player's) or white (second marble, swapped with the yin-yang). */
+export interface Marble extends Body {
+  readonly color: number;
+  /** Position before the last physics step (for interpolation). */
+  readonly prev: { x: number; y: number };
+  /** false while falling/shattered. */
+  active: boolean;
+}
+
+function makeMarble(color: number, x: number, y: number): Marble {
+  return {
+    pos: { x, y },
+    vel: { x: 0, y: 0 },
+    prev: { x, y },
+    radius: MARBLE_RADIUS,
+    mass: 1,
+    color,
+    active: true,
+    normals: [],
+    touching: new Set(),
+    nowTouching: new Set(),
+  };
+}
 
 /** A rolling body: the marble or another actor. */
 interface Body {
@@ -76,15 +106,10 @@ export class PhysicsWorld {
   private readonly cells: Level['cells'];
   private readonly width: number;
   private readonly height: number;
-  private readonly marble: Body = {
-    pos: { x: 0, y: 0 },
-    vel: { x: 0, y: 0 },
-    radius: MARBLE_RADIUS,
-    mass: 1,
-    normals: [],
-    touching: new Set(),
-    nowTouching: new Set(),
-  };
+  /** Marble 0 is black; a white marble (ac_marble_white) follows. */
+  readonly marbles: Marble[];
+  /** Index of the marble the player steers. */
+  private cur = 0;
   /** Rotors, tops and killers. */
   readonly enemies: Enemy[];
   private readonly mouse = { x: 0, y: 0 };
@@ -92,7 +117,6 @@ export class PhysicsWorld {
   private readonly axisForce = { x: 0, y: 0 };
   /** Global forces (wormholes): added unscaled, like Enigma's force fields. */
   private field: ((x: number, y: number) => [number, number]) | null = null;
-  private active = true;
   readonly mass = 1;
 
   constructor(
@@ -108,7 +132,9 @@ export class PhysicsWorld {
     });
     for (const s of level.signals) this.solid[s.row * level.width + s.col] = s.index;
     this.enemies = createEnemies(level.actors ?? []);
-    this.respawn(level.start.x, level.start.y);
+    this.marbles = [makeMarble(0, level.start.x, level.start.y)];
+    const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
+    if (white) this.marbles.push(makeMarble(1, white.x, white.y));
   }
 
   private solidAt(c: number, r: number): number {
@@ -125,7 +151,7 @@ export class PhysicsWorld {
 
   /** Mouse movement in pixels, already multiplied by the mouse speed option. */
   addMouseForce(fx: number, fy: number): void {
-    if (!this.active) return;
+    if (!this.marbles[this.cur].active) return;
     this.mouse.x += fx;
     this.mouse.y += fy;
     this.mouseTime = WORLD_TICK;
@@ -155,19 +181,21 @@ export class PhysicsWorld {
         this.mouseTime = 0;
       }
     }
-    for (const e of this.enemies) {
-      e.prev.x = e.pos.x;
-      e.prev.y = e.pos.y;
+    for (const b of [...this.enemies, ...this.marbles]) {
+      b.prev.x = b.pos.x;
+      b.prev.y = b.pos.y;
     }
     this.actorContacts(onContact);
 
-    if (this.active) {
-      const m = this.marble;
+    this.marbles.forEach((m, i) => {
+      if (!m.active) return;
       const { friction, adhesion } = this.floorProps(m.pos);
-      this.advance(m, (this.axisForce.x + mx) * adhesion, (this.axisForce.y + my) * adhesion, friction);
-      this.collide(m, onContact);
-    }
-    const target = this.active ? this.marble.pos : null;
+      // Only the marble of the current player feels the mouse (Floor::process_mouseforce).
+      const k = i === this.cur ? adhesion : 0;
+      this.advance(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
+      this.collide(m, onContact, { by: i, color: m.color });
+    });
+    const targets = this.marbles.filter((m) => m.active).map((m) => m.pos);
     for (const e of this.enemies) {
       const { friction, adhesion } = this.floorProps(e.pos);
       let fx: number;
@@ -176,9 +204,10 @@ export class PhysicsWorld {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
         fx = (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR;
         fy = (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR;
-      } else [fx, fy] = e.chaseForce(target);
+      } else [fx, fy] = e.chaseForce(targets);
       this.advance(e, fx, fy, friction);
-      this.collide(e, null);
+      // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
+      this.collide(e, onContact, { by: -1, color: e.kind === 'killer' ? e.color : 2 });
     }
   }
 
@@ -224,7 +253,8 @@ export class PhysicsWorld {
    * elastically (restitution 1, reduced mass); the marble shatters on another actor.
    */
   private actorContacts(onContact: (c: Contact) => void): void {
-    const bodies: Body[] = this.active ? [this.marble, ...this.enemies] : this.enemies;
+    const marbles = this.marbles.filter((m) => m.active);
+    const bodies: Body[] = [...marbles, ...this.enemies];
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
         const a1 = bodies[i];
@@ -237,7 +267,9 @@ export class PhysicsWorld {
         ny /= dist;
         const relspeed = (a2.vel.x - a1.vel.x) * nx + (a2.vel.y - a1.vel.y) * ny;
         if (relspeed < 0) continue; // moving apart
-        if (a1 === this.marble) onContact({ kind: 'actor', actor: (a2 as Enemy).kind, speed: relspeed });
+        // Marbles come first: a1 is a marble whenever one of the two is.
+        const mi = this.marbles.indexOf(a1 as Marble);
+        if (mi >= 0 && j >= marbles.length) onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
         const dmu = a1.mass === a2.mass ? a1.mass : (2 * a1.mass * a2.mass) / (a1.mass + a2.mass);
         const j1 = (dmu * relspeed) / a1.mass;
         const j2 = (dmu * relspeed) / a2.mass;
@@ -249,7 +281,7 @@ export class PhysicsWorld {
     }
   }
 
-  private collide(b: Body, onContact: ((c: Contact) => void) | null): void {
+  private collide(b: Body, onContact: (c: Contact) => void, who: Toucher): void {
     b.nowTouching.clear();
     b.normals = [];
     const r = b.radius;
@@ -261,21 +293,21 @@ export class PhysicsWorld {
       for (let col = c0; col <= c1; col++) {
         const kind = this.solidAt(col, row);
         if (kind !== -1) {
-          this.contactBox(b, col, row, kind, onContact);
+          this.contactBox(b, col, row, kind, onContact, who);
           continue;
         }
         const faces = this.blockers?.blockAt(col, row) ?? 0;
         if (faces === 0) continue;
         if (faces === ALL_FACES) {
-          this.contactBox(b, col, row, -3, onContact);
+          this.contactBox(b, col, row, -3, onContact, who);
           continue;
         }
         // Door d: only the closed faces block, and only from outside (Door::collision_response).
         const { x, y } = b.pos;
-        if (faces & NORTH && y < row) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row, col, row, -3, onContact);
-        if (faces & SOUTH && y > row + 1) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row + 1, col, row, -3, onContact);
-        if (faces & WEST && x < col) this.contactAt(b, col, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact);
-        if (faces & EAST && x > col + 1) this.contactAt(b, col + 1, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact);
+        if (faces & NORTH && y < row) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row, col, row, -3, onContact, who);
+        if (faces & SOUTH && y > row + 1) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row + 1, col, row, -3, onContact, who);
+        if (faces & WEST && x < col) this.contactAt(b, col, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact, who);
+        if (faces & EAST && x > col + 1) this.contactAt(b, col + 1, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact, who);
       }
     }
     const t = b.touching;
@@ -284,17 +316,17 @@ export class PhysicsWorld {
   }
 
   /** Contact with a solid cell. kind: -2 wall, -3 object, >= 0 signal stone index. */
-  private contactBox(b: Body, col: number, row: number, kind: number, onContact: ((c: Contact) => void) | null): void {
+  private contactBox(b: Body, col: number, row: number, kind: number, onContact: (c: Contact) => void, who: Toucher): void {
     const qx = Math.max(col, Math.min(b.pos.x, col + 1));
     const qy = Math.max(row, Math.min(b.pos.y, row + 1));
-    this.contactAt(b, qx, qy, col, row, kind, onContact);
+    this.contactAt(b, qx, qy, col, row, kind, onContact, who);
   }
 
   /**
    * Contact with the closest point (qx, qy) of a blocking shape in cell (col, row).
-   * onContact = null: the body bounces without telling the stone (other actors).
+   * Other actors (who.by < 0) hit stones but do not touch them (no death stones).
    */
-  private contactAt(b: Body, qx: number, qy: number, col: number, row: number, kind: number, onContact: ((c: Contact) => void) | null): void {
+  private contactAt(b: Body, qx: number, qy: number, col: number, row: number, kind: number, onContact: (c: Contact) => void, who: Toucher): void {
     const r = b.radius;
     const pos = b.pos;
     const vel = b.vel;
@@ -327,43 +359,51 @@ export class PhysicsWorld {
     const isNew = !b.touching.has(key) && !b.nowTouching.has(key);
     if (vn < 0) {
       const speed = Math.hypot(vel.x, vel.y);
-      const pushing = b === this.marble && this.axisForce.x * nx + this.axisForce.y * ny < 0;
+      const pushing = b === this.marbles[this.cur] && this.axisForce.x * nx + this.axisForce.y * ny < 0;
       const e = pushing && -vn < REST_SPEED ? 0 : RESTITUTION;
       vel.x -= (1 + e) * vn * nx;
       vel.y -= (1 + e) * vn * ny;
-      if (!onContact) {
-        /* other actors do not trigger stones */
-      } else if (isNew && kind === -3) {
-        // Objects also feel soft touches (death stones); hit = above the hit threshold.
-        onContact({ kind: 'object', col, row, speed, nx, ny, vn, hit: speed >= HIT_SPEED });
-      } else if (isNew && speed >= HIT_SPEED) {
-        onContact(
-          kind >= 0
-            ? { kind: 'signal', index: kind, speed }
-            : kind === -3
-              ? { kind: 'object', col, row, speed, nx, ny, vn, hit: true }
-              : { kind: 'wall', speed },
-        );
+      const { by, color } = who;
+      if (isNew && kind === -3 && (by >= 0 || speed >= HIT_SPEED)) {
+        // Marbles also feel soft touches (death stones); hit = above the hit threshold.
+        onContact({ kind: 'object', col, row, speed, nx, ny, vn, hit: speed >= HIT_SPEED, by, color });
+      } else if (isNew && kind !== -3 && speed >= HIT_SPEED) {
+        onContact(kind >= 0 ? { kind: 'signal', index: kind, speed, by, color } : { kind: 'wall', speed, by, color });
       }
     }
     b.nowTouching.add(key);
   }
 
+  /** Position of the steered marble. */
   get position(): { x: number; y: number } {
-    return this.marble.pos;
+    return this.marbles[this.cur].pos;
   }
 
   get velocity(): { x: number; y: number } {
-    return this.marble.vel;
+    return this.marbles[this.cur].vel;
   }
 
-  setActive(active: boolean): void {
-    this.active = active;
+  /** Index of the steered marble. */
+  get current(): number {
+    return this.cur;
+  }
+
+  /** Yin-yang: steer the other marble (player::SwapPlayers). */
+  swap(): boolean {
+    if (this.marbles.length < 2) return false;
+    this.cur = (this.cur + 1) % this.marbles.length;
+    this.mouse.x = this.mouse.y = 0;
+    this.mouseTime = 0;
+    return true;
+  }
+
+  setActive(active: boolean, i = this.cur): void {
+    this.marbles[i].active = active;
   }
 
   /** Put the marble at x/y (tile units, marble centre) and stop it. */
-  respawn(x: number, y: number): void {
-    const m = this.marble;
+  respawn(x: number, y: number, i = this.cur): void {
+    const m = this.marbles[i];
     m.pos.x = x;
     m.pos.y = y;
     m.vel.x = m.vel.y = 0;
@@ -371,13 +411,15 @@ export class PhysicsWorld {
     this.mouseTime = 0;
     m.touching.clear();
     m.normals = [];
-    this.active = true;
+    m.prev.x = x;
+    m.prev.y = y;
+    m.active = true;
   }
 
   /** Test helper: set the velocity directly. */
   setVelocity(x: number, y: number): void {
-    this.marble.vel.x = x;
-    this.marble.vel.y = y;
+    this.marbles[this.cur].vel.x = x;
+    this.marbles[this.cur].vel.y = y;
   }
 
   dispose(): void {

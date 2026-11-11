@@ -182,7 +182,7 @@ describe('ObjectWorld', () => {
     const w = world([{ x: 3, y: 0, k: "st_death" }]);
     expect(w.blockAt(3, 0)).toBe(ALL_FACES);
     w.touch(3, 0);
-    expect(w.events).toContainEqual({ type: "shatter" });
+    expect(w.events).toContainEqual({ type: "shatter", marble: 0 });
     expect(w.objects[0].moving).not.toBeNull();
     w.update(500);
     expect(w.objects[0].moving).toBeNull();

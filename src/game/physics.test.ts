@@ -153,3 +153,50 @@ describe('other actors (rotor, top, killer)', () => {
     expect(contacts.filter((c) => c.kind !== 'actor')).toEqual([]);
   });
 });
+
+describe('two marbles (black and white, yin-yang)', () => {
+  const two = () =>
+    new PhysicsWorld(
+      parseLevel({
+        id: 'b',
+        title: 'B',
+        author: 'x',
+        license: 'GPL',
+        map: ['##########', '#@.......#', '#........#', '#.......A#', '#A.......#', '##########'],
+        actors: [{ k: 'ac_marble_white', x: 5.5, y: 3.5 }],
+      }),
+    );
+
+  it('only the steered marble feels the mouse; swap hands it to the other one', () => {
+    const w = two();
+    expect(w.marbles.map((m) => m.color)).toEqual([0, 1]);
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    expect(w.marbles[0].vel.x).toBeGreaterThan(0);
+    expect(w.marbles[1].vel.x).toBe(0);
+    expect(w.swap()).toBe(true);
+    expect(w.current).toBe(1);
+    expect(w.position).toBe(w.marbles[1].pos);
+    w.addMouseForce(0, DEFAULT_MOUSE_SPEED * 10);
+    run(w, 0.01);
+    expect(w.marbles[1].vel.y).toBeGreaterThan(0);
+  });
+
+  it('the white marble opens Oxyd stones too and reports itself', () => {
+    const w = two();
+    w.swap();
+    w.setVelocity(15, 0); // white marble at row 3 rolls into the Oxyd stone at (8, 3)
+    const hits = run(w, 1).filter((c) => c.kind === 'signal');
+    expect(hits[0]).toMatchObject({ kind: 'signal', by: 1, color: 1 });
+  });
+
+  it('a falling marble is left alone: the other still rolls', () => {
+    const w = two();
+    w.setActive(false, 0);
+    w.marbles[1].vel.x = 2;
+    run(w, 0.1);
+    expect(w.marbles[1].pos.x).toBeGreaterThan(5.5);
+    w.respawn(1.5, 1.5, 0);
+    expect(w.marbles[0].active).toBe(true);
+  });
+});

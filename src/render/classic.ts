@@ -5,10 +5,12 @@ import type { EnemyKind } from '../game/actors';
 
 /** Another actor to draw (interpolated position in tile units). */
 export interface ActorSprite {
-  kind: EnemyKind;
+  kind: EnemyKind | 'marble';
   color: number;
   x: number;
   y: number;
+  /** Marbles: fall progress 0..1, -1 = not falling. */
+  fall?: number;
 }
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -113,6 +115,7 @@ export function actorImages(kind: string, color?: string): string[] {
   if (kind === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
   if (kind === 'ac_top') return ['ac_top', 'sh_top'];
   if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
+  if (kind === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
   return [];
 }
 
@@ -145,7 +148,7 @@ export class ClassicView {
   private objects: ObjectWorld | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
-  private marble = { x: 0, y: 0, fall: -1 };
+  private marble = { x: 0, y: 0, fall: -1, color: 0 };
   private actors: ActorSprite[] = [];
   private now = 0;
   private screen = { x: 0, y: 0 };
@@ -193,10 +196,11 @@ export class ClassicView {
   }
 
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
-  updateMarble(x: number, y: number, fall: number): void {
+  updateMarble(x: number, y: number, fall: number, color = 0): void {
     this.marble.x = x;
     this.marble.y = y;
     this.marble.fall = fall;
+    this.marble.color = color;
   }
 
   updateActors(actors: ActorSprite[]): void {
@@ -230,7 +234,7 @@ export class ClassicView {
     }
 
     this.drawActors(ox, oy);
-    this.drawMarble(ox, oy);
+    this.drawMarble(ox, oy, this.marble);
     ctx.restore();
     this.drawStatusBar();
   }
@@ -495,6 +499,10 @@ export class ClassicView {
       const cy = Math.round(oy + a.y * T);
       if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
       const s = 0.4 * SPRITE;
+      if (a.kind === 'marble') {
+        this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color });
+        continue;
+      }
       if (a.kind === 'killer') {
         if (img.sh_pearl) ctx.drawImage(img.sh_pearl, cx - s, cy - s);
         const im = img[a.color === 0 ? 'ac_pearl_black' : 'ac_pearl_white'];
@@ -509,21 +517,22 @@ export class ClassicView {
     }
   }
 
-  private drawMarble(ox: number, oy: number): void {
+  private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number }): void {
     const { ctx } = this;
     const img = this.img!;
-    const cx = Math.round(ox + this.marble.x * T);
-    const cy = Math.round(oy + this.marble.y * T);
-    if (this.marble.fall >= 0) {
-      const ms = this.marble.fall * CLASSIC_FALL_SECONDS * 1000;
+    const name = m.color === 1 && img.ac_marble_white ? 'ac_marble_white' : 'ac_marble_black';
+    const cx = Math.round(ox + m.x * T);
+    const cy = Math.round(oy + m.y * T);
+    if (m.fall >= 0) {
+      const ms = m.fall * CLASSIC_FALL_SECONDS * 1000;
       let f = 0;
       for (let acc = FALL_MS[0]; f < FALL_MS.length - 1 && ms >= acc; ) acc += FALL_MS[++f];
       ctx.drawImage(img.sh_marble_fall, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE * 0.4, cy - SPRITE * 0.4, SPRITE, SPRITE);
-      ctx.drawImage(img.ac_marble_black_fall, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+      ctx.drawImage(img[`${name}_fall`] ?? img.ac_marble_black_fall, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
       return;
     }
     ctx.drawImage(img.sh_marble, cx - SPRITE * 0.4, cy - SPRITE * 0.4);
-    ctx.drawImage(img.ac_marble_black, 0, 0, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+    ctx.drawImage(img[name], 0, 0, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
   }
 
   private drawStatusBar(): void {

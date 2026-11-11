@@ -69,6 +69,9 @@ body {
 #hud-esc {
   display: none;
 }
+#btn-swap[hidden] {
+  display: none;
+}
 body[data-mode='play'] #hud-esc {
   display: inline;
 }

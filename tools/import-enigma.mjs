@@ -129,12 +129,13 @@ for (const f of readdirSync(exportDir)) {
 }
 
 /** Actors Murmel can play. */
-const ACTORS = new Set(['ac_marble_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black']);
+const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black']);
 /** Images of the other actors (models-2d.lua: killers look like pearls). */
 function actorImages(k, color) {
   if (k === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
   if (k === 'ac_top') return ['ac_top', 'sh_top'];
   if (k.startsWith('ac_killer')) return [color === '0' || (color === undefined && k === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
+  if (k === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
   return [];
 }
 const ACTOR_ATTR = /^(range|strength|gohome|color)$/;
@@ -211,6 +212,11 @@ function convertLevel(pack, meta, xml, exp) {
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
   if (actors.filter((k) => k === 'ac_marble_black').length !== 1) reject('Akteure: nicht genau eine schwarze Murmel');
+  // A white marble is steered with the yin-yang, which Enigma hands out in single play only
+  // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
+  const whites = actors.filter((k) => k === 'ac_marble_white').length;
+  if (whites > 1) reject('mehrere weiße Murmeln');
+  else if (whites === 1 && !/el:network="true"/.test(xml)) reject('weiße Murmel ohne Yin-Yang');
   // Rubber bands (between actors, or to stones) are not built yet.
   if (w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers))) reject('Gummiband');
 

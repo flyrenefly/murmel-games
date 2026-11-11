@@ -1,12 +1,11 @@
 # Enigma-Import
 
-75 von 1322 Levels übernommen (13 Pakete).
+77 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 361 | 23 |
+| Lua-Rückruf | 361 | 25 |
 | keine Oxyd-Steine | 294 | 0 |
-| Akteur ac_marble_white | 228 | 3 |
 | Stein st_laser | 225 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
 | Akteur ac_pearl_white | 179 | 1 |
@@ -21,6 +20,7 @@
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
 | Stein st_mirror_slab | 112 | 0 |
+| weiße Murmel ohne Yin-Yang | 111 | 1 |
 | Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
@@ -46,7 +46,7 @@
 | Stein st_actorimpulse | 64 | 1 |
 | Akteur ac_pearl_black | 64 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
-| Gegenstand it_vortex_open | 61 | 0 |
+| Gegenstand it_vortex_open | 61 | 1 |
 | Stein st_swap | 61 | 1 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
@@ -105,7 +105,7 @@
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
-| FallenPuzzle | 27 | 1 |
+| FallenPuzzle | 27 | 2 |
 | Gegenstand it_cross | 26 | 0 |
 | Stein fl_bridge_gc | 26 | 0 |
 | Stein st_granite_movable | 26 | 0 |
@@ -151,6 +151,7 @@
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Gegenstand it_seed_volcano | 16 | 0 |
+| mehrere weiße Murmeln | 16 | 0 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 0 |
 | Stein st_break_boulder | 15 | 1 |

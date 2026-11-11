@@ -208,10 +208,12 @@ export class View {
       const a = actors[i];
       m.visible = !!a;
       if (!a) return;
-      const r = a.kind === 'rotor' ? 22 / 64 : a.kind === 'top' ? 16 / 64 : 13 / 64;
-      m.scale.setScalar(r);
-      m.position.set(a.x, r, a.y);
-      (m.material as THREE.MeshStandardMaterial).color.set(a.kind === 'killer' ? (a.color === 0 ? 0x202020 : 0xf0f0f0) : a.kind === 'rotor' ? 0x8a1c1c : 0xb06a10);
+      const r = a.kind === 'marble' ? MARBLE_RADIUS : a.kind === 'rotor' ? 22 / 64 : a.kind === 'top' ? 16 / 64 : 13 / 64;
+      const fall = a.fall ?? -1;
+      m.scale.setScalar(fall >= 0 ? r * (1 - fall * 0.6) : r);
+      m.position.set(a.x, r - (fall >= 0 ? fall * fall * 1.6 : 0), a.y);
+      const white = a.kind === 'marble' || a.kind === 'killer' ? a.color !== 0 : false;
+      (m.material as THREE.MeshStandardMaterial).color.set(white ? 0xf0f0f0 : a.kind === 'rotor' ? 0x8a1c1c : a.kind === 'top' ? 0xb06a10 : 0x202020);
     });
   }
 

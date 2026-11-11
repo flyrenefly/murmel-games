@@ -75,20 +75,20 @@ export class Enemy {
   }
 
   /**
-   * RotorBase::think: force towards the marble while it is within range,
-   * otherwise towards home. marble = null: no marble to attack (dead/falling).
+   * RotorBase::think: force towards the living marbles within range (sum of the
+   * directions), otherwise towards home.
    */
-  chaseForce(marble: { x: number; y: number } | null): [number, number] {
+  chaseForce(marbles: readonly { x: number; y: number }[]): [number, number] {
     let tx = 0;
     let ty = 0;
     let target = false;
-    if (marble) {
-      const dx = marble.x - this.pos.x;
-      const dy = marble.y - this.pos.y;
+    for (const m of marbles) {
+      const dx = m.x - this.pos.x;
+      const dy = m.y - this.pos.y;
       const d = Math.hypot(dx, dy);
       if (d < this.range && d > 0) {
-        tx = dx / d;
-        ty = dy / d;
+        tx += dx / d;
+        ty += dy / d;
         target = true;
       }
     }

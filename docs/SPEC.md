@@ -161,6 +161,14 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   folgt der Maus wie die Murmel, mit doppelter Mauskraft (Attribut adhesion 2).
 - Berührt einer davon die Murmel, zerspringt sie. Akteure prallen elastisch voneinander ab
   (`World::handle_actor_contact`, reduzierte Masse, Rückprall 1).
+- Gegner lösen Steine aus wie die Murmel (Oxyd-Steine öffnen sich für jeden Akteur,
+  `OxydStone::actor_hit`), berühren sie aber nicht (keine Todessteine). Farbige Schalter
+  reagieren nur auf den Killer der passenden Farbe.
+- **ac_marble_white** (zweite Murmel): nur in Levels mit Netzwerkmodus, denn nur dort gibt
+  Enigma im Einzelspiel das Yin-Yang aus (`player::LevelLoaded`). Klick, Leertaste oder der
+  Knopf „Murmel wechseln“ steuert die andere Murmel (`SwapPlayers`); nur die gesteuerte
+  spürt die Maus. Beide öffnen Oxyd-Steine, drücken Auslöser, fallen und starten an ihrem
+  eigenen Startpunkt neu. `essential` und `AutoRespawn` werden nicht nachgebildet.
 - **Gummibänder** (`rubbers`) sind noch nicht gebaut: Levels damit bleiben draußen (auch
   „Pools“ und „Pain“, die sie vorher stillschweigend ignorierten).
 
