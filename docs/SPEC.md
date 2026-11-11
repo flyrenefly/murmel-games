@@ -86,8 +86,24 @@ Analyse am 11.11.2026 über die Leveldateien von Enigma (Stand Repo master):
   Boden, Stein, Gegenstand (wie Enigma), plus Akteure.
 - GPL-Levels bleiben GPL; Quellenangabe und Autoren je Level werden angezeigt.
 
+## Original-Gefühl: Grafik und Steuerung nach Enigma (umgesetzt 11.11.2026)
+
+Nutzerwunsch: Grafik und Steuerung sollen dem Original entsprechen. Umsetzung mit
+Enigma (GPL) als Vorlage, nicht mit den Dongleware-Originalgrafiken (Rechte ungeklärt):
+
+- Stil **Klassisch** (Standard) und **Klassisch (Retro)**: 2D-Canvas, Enigma-Grafiken
+  32 px (`public/enigma/`), 640×416 Spielfeld + Statusleiste, ganzzahlig skaliert,
+  Bildsprung zwischen 20×13-Ausschnitten (Raster 19×12 wie Enigma), Schatten,
+  Öffnungs-/Blink-/Paar-Animationen der Oxyd-Steine, Fallanimation der Murmel.
+- Physik nach `src/world.cc`: Maus = Kraft (MouseSpeed × Pixel × Haftung) für einen
+  10-ms-Takt, Reibung ∝ v^0,8 je Boden (fl_gray 5,0/3,0), Höchstgeschwindigkeit 70,
+  vollelastischer Steinkontakt, Schritt 2,5 ms, Treffer erst ab 0,3 Kacheln/s.
+  Abweichung: Bei Dauerkraft (Tasten/Neigen) prallen langsame Stöße nicht ab.
+- Paarregel nach `OxydStone.cc` (Enigma-Modus).
+
 ## Entscheidungen
 
 - Arbeitstitel „Murmel“, Domain murmel.games.
+- Weg B (Nutzer 11.11.2026): eigene Engine mit Enigma-Grafik und -Physik statt Enigma-Port.
 - Beide Grafikstile umschaltbar (Nutzerwunsch 11.11.2026).
 - Repo: privates Repo `flyrenefly/murmel-games` (kein GitHub Pages nötig).

@@ -10,11 +10,11 @@ export class Input {
   locked = false;
 
   constructor(
-    private readonly canvas: HTMLCanvasElement,
+    private readonly target: HTMLElement,
     onLockChange: (locked: boolean) => void,
   ) {
     document.addEventListener('pointerlockchange', () => {
-      this.locked = document.pointerLockElement === canvas;
+      this.locked = document.pointerLockElement === this.target;
       onLockChange(this.locked);
     });
     document.addEventListener('mousemove', (e) => {
@@ -30,7 +30,7 @@ export class Input {
   requestLock(): void {
     if (this.tiltEnabled || matchMedia('(pointer: coarse)').matches) return;
     // Can be refused (e.g. embedded previews); the keyboard still works then.
-    Promise.resolve(this.canvas.requestPointerLock?.()).catch(() => undefined);
+    Promise.resolve(this.target.requestPointerLock?.()).catch(() => undefined);
   }
 
   releaseLock(): void {

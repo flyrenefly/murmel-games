@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#05050c" />
-    <meta name="description" content="Murmel – ein freies Murmel-Rätselspiel im Browser. Rolle die Murmel und decke die Signalsteine paarweise auf." />
+    <meta name="description" content="Murmel – ein freies Murmel-Rätselspiel im Browser. Rolle die Murmel und öffne die Oxyd-Steine paarweise." />
     <title>Murmel</title>
   </head>
   <body>
     <canvas id="game"></canvas>
+    <canvas id="classic" hidden></canvas>
     <div id="crt" aria-hidden="true"></div>
 
     <header id="hud">
@@ -33,12 +34,14 @@
       </div>
     </div>
 
+    <div id="toast" hidden></div>
+
     <div id="loading">Murmel wird geladen …</div>
 
     <footer id="credits">
       Freie Software (GPL-3.0-or-later) ·
       <a href="https://github.com/flyrenefly/murmel-games" target="_blank" rel="noopener">Quellcode</a> ·
-      inspiriert von den Murmel-Klassikern der 90er
+      Grafik „Klassisch“ und Rollphysik nach <a href="https://github.com/Enigma-Game/Enigma" target="_blank" rel="noopener">Enigma</a> (GPL)
     </footer>
 
     <script type="module" src="/src/main.ts"></script>

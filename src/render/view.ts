@@ -170,8 +170,10 @@ export class View {
     if (animate) this.pulses.push({ obj: this.stoneMeshes[index], t: 0 });
   }
 
-  /** x/y in tile units (physics coordinates), lift = height offset (negative while falling). */
-  updateMarble(x: number, y: number, vx: number, vy: number, dt: number, lift: number, scale: number): void {
+  /** x/y in tile units (physics coordinates); fall = progress 0..1 of falling, -1 = not falling. */
+  updateMarble(x: number, y: number, vx: number, vy: number, dt: number, fall: number): void {
+    const lift = fall >= 0 ? -fall * fall * 1.6 : 0;
+    const scale = fall >= 0 ? 1 - fall * 0.6 : 1;
     const px = this.kit?.pixelTile;
     if (px) {
       // Snap to the pixel grid for crisp pixel art.

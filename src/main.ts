@@ -3,14 +3,15 @@ import { Sfx } from './audio';
 import { Input } from './input';
 import { cellAt, parseLevel, type Level } from './game/level';
 import { PairBoard, type PairEvent } from './game/pairs';
-import { PHYSICS_DT, PhysicsWorld, type Contact } from './game/physics';
+import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, type Contact } from './game/physics';
 import { LEVELS } from './levels';
-import { THEME_ORDER, type ThemeId } from './render/themes';
+import { CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
+import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
+import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 
-const MOUSE_DV = 0.022; // tiles/s of speed per pixel of mouse movement
-const AXIS_ACCEL = 11; // tiles/s² at full key press / tilt
-const FALL_SECONDS = 0.6;
+const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
+const FALL_SECONDS = CLASSIC_FALL_SECONDS;
 
 // ---------- persistence (tolerant: private mode may block storage) ----------
 const store = {
@@ -33,7 +34,8 @@ const store = {
 
 // ---------- DOM ----------
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const canvas = $<HTMLCanvasElement>('game');
+const canvas3d = $<HTMLCanvasElement>('game');
+const canvas2d = $<HTMLCanvasElement>('classic');
 const hudTitle = $('hud-title');
 const hudPairs = $('hud-pairs');
 const hudFalls = $('hud-falls');
@@ -45,15 +47,18 @@ const ovTitle = $('ov-title');
 const ovText = $('ov-text');
 const ovButtons = $('ov-buttons');
 const levelList = $('level-list');
+const toast = $('toast');
 
 const sfx = new Sfx();
-const view = new View(canvas);
-const input = new Input(canvas, (locked) => {
+const view = new View(canvas3d);
+const classic = new ClassicView(canvas2d);
+const input = new Input(document.body, (locked) => {
   if (!locked && mode === 'play' && !input.tiltEnabled) showPause();
 });
 
-let theme: ThemeId = store.get<ThemeId>('theme', 'glas');
-if (!THEME_ORDER.includes(theme)) theme = 'glas';
+let style: StyleId = store.get<StyleId>('style', 'klassisch');
+if (!STYLE_ORDER.includes(style)) style = 'klassisch';
+let mouseSpeed = Math.min(15, Math.max(1, store.get('mouseSpeed', DEFAULT_MOUSE_SPEED)));
 const solved = new Set<string>(store.get<string[]>('solved', []));
 
 type Mode = 'menu' | 'play' | 'won';
@@ -62,13 +67,26 @@ let levelIndex = Math.min(store.get('level', 0), LEVELS.length - 1);
 let level: Level;
 let board: PairBoard;
 let physics: PhysicsWorld | null = null;
-let simTime = 0;
 let acc = 0;
 let falls = 0;
 let falling = -1; // seconds into the fall animation, -1 = not falling
 let startTime = 0;
+let playSeconds = 0;
 const prev = { x: 0, y: 0 };
 const cur = { x: 0, y: 0 };
+
+const isClassic = () => classicSet(style) !== null;
+
+function buildRenderer(): void {
+  const set = classicSet(style);
+  canvas2d.hidden = set === null;
+  canvas3d.hidden = set !== null;
+  document.body.dataset.style = style;
+  if (set) {
+    document.body.dataset.theme = 'klassisch';
+    void classic.build(level, set, board.states);
+  } else view.build(level, style as ThemeId, board.states);
+}
 
 function loadLevel(i: number): void {
   levelIndex = i;
@@ -77,34 +95,48 @@ function loadLevel(i: number): void {
   board = new PairBoard(level.signals.map((s) => s.symbol));
   physics?.dispose();
   physics = new PhysicsWorld(level);
-  simTime = 0;
   acc = 0;
   falls = 0;
   falling = -1;
   startTime = 0;
+  playSeconds = 0;
   const p = physics.position;
   prev.x = cur.x = p.x;
   prev.y = cur.y = p.y;
-  view.build(level, theme, board.states);
+  buildRenderer();
   updateHud();
+}
+
+function styleLabel(): string {
+  return isClassic() ? classic.label : view.themeLabel;
 }
 
 function updateHud(): void {
   hudTitle.textContent = `${levelIndex + 1}. ${level.title}`;
   hudPairs.textContent = `Paare ${board.solvedPairs}/${board.totalPairs}`;
   hudFalls.textContent = falls ? `Abstürze ${falls}` : '';
-  btnTheme.textContent = `Stil: ${view.themeLabel}`;
+  btnTheme.textContent = `Stil: ${styleLabel()}`;
 }
 
-function setTheme(next: ThemeId): void {
-  theme = next;
-  store.set('theme', theme);
-  view.build(level, theme, board.states);
+function cycleStyle(): void {
+  style = STYLE_ORDER[(STYLE_ORDER.indexOf(style) + 1) % STYLE_ORDER.length];
+  store.set('style', style);
+  buildRenderer();
   updateHud();
 }
 
-function cycleTheme(): void {
-  setTheme(THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]);
+let toastTimer = 0;
+function showToast(text: string): void {
+  toast.textContent = text;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (toast.hidden = true), 1400);
+}
+
+function changeMouseSpeed(delta: number): void {
+  mouseSpeed = Math.min(15, Math.max(1, mouseSpeed + delta));
+  store.set('mouseSpeed', mouseSpeed);
+  showToast(`Mausgeschwindigkeit ${mouseSpeed}`);
 }
 
 // ---------- overlay ----------
@@ -148,8 +180,8 @@ async function startTouch(): Promise<void> {
 
 function controlsHelp(): string {
   return isTouch
-    ? 'Neige dein Gerät, um die Murmel zu rollen.<br>Decke die Signalsteine paarweise auf.'
-    : 'Bewege die Maus, um die Murmel anzustoßen (oder Pfeiltasten).<br>Decke die Signalsteine paarweise auf.<br><span class="keys">Esc Pause · T Stil · R Neustart</span>';
+    ? 'Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.'
+    : 'Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.<br><span class="keys">Esc Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>';
 }
 
 function showStart(): void {
@@ -194,19 +226,22 @@ function restart(): void {
   startPlaying();
 }
 
+function formatTime(secs: number): string {
+  const s = Math.floor(secs);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 function onWin(): void {
   mode = 'won';
   solved.add(level.id);
   store.set('solved', [...solved]);
   sfx.win();
   input.releaseLock();
-  const secs = Math.round((performance.now() - startTime) / 1000);
-  const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   const last = levelIndex === LEVELS.length - 1;
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${time} · Abstürze ${falls}${last ? '<br>Das war das letzte Level – weitere folgen.' : ''}`,
+      `Zeit ${formatTime(playSeconds)} · Abstürze ${falls}${last ? '<br>Das war das letzte Level – weitere folgen.' : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart]]
         : [
@@ -214,27 +249,29 @@ function onWin(): void {
             ['Nochmal', restart],
           ],
     );
-  }, 700);
+  }, 900);
 }
 
 // ---------- game events ----------
+function setStone(index: number): void {
+  view.setStoneState(index, board.states[index]);
+  classic.setStoneState(index, board.states[index]);
+}
+
 function handlePairEvents(events: PairEvent[]): void {
   for (const ev of events) {
     switch (ev.type) {
       case 'opened':
-        view.setStoneState(ev.index, board.states[ev.index]);
+        setStone(ev.index);
         sfx.open(level.signals[ev.index].symbol);
         break;
       case 'solved':
-        view.setStoneState(ev.a, 'solved');
-        view.setStoneState(ev.b, 'solved');
+        setStone(ev.a);
+        setStone(ev.b);
         sfx.solved();
         break;
-      case 'mismatch':
-        sfx.mismatch();
-        break;
       case 'closed':
-        for (const i of ev.indices) view.setStoneState(i, 'closed', false);
+        for (const i of ev.indices) setStone(i);
         sfx.close();
         break;
       case 'complete':
@@ -246,7 +283,7 @@ function handlePairEvents(events: PairEvent[]): void {
 }
 
 function onContact(c: Contact): void {
-  if (c.kind === 'signal') handlePairEvents(board.hit(c.index, simTime));
+  if (c.kind === 'signal') handlePairEvents(board.hit(c.index));
   else sfx.wall(c.speed);
 }
 
@@ -261,18 +298,17 @@ function frame(now: number): void {
 
   if (physics && mode !== 'menu') {
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];
-    if (falling < 0) physics.applyImpulse(mdx * MOUSE_DV * physics.mass, mdy * MOUSE_DV * physics.mass);
+    if (mode === 'play') playSeconds += dt;
+    if (falling < 0 && mode === 'play') {
+      physics.addMouseForce(mdx * mouseSpeed, mdy * mouseSpeed);
+      const [ax, ay] = input.axis();
+      physics.setAxisForce(ax * AXIS_FORCE, ay * AXIS_FORCE);
+    } else physics.setAxisForce(0, 0);
     acc += dt;
     while (acc >= PHYSICS_DT) {
       prev.x = cur.x;
       prev.y = cur.y;
-      if (falling < 0 && mode === 'play') {
-        const [ax, ay] = input.axis();
-        const k = AXIS_ACCEL * PHYSICS_DT * physics.mass;
-        physics.applyImpulse(ax * k, ay * k);
-      }
       physics.step(onContact);
-      simTime += PHYSICS_DT;
       const p = physics.position;
       cur.x = p.x;
       cur.y = p.y;
@@ -285,20 +321,17 @@ function frame(now: number): void {
       }
       acc -= PHYSICS_DT;
     }
-    handlePairEvents(board.update(simTime));
   } else {
     input.takeMouse();
   }
 
-  let lift = 0;
-  let scale = 1;
+  let fall = -1;
   if (falling >= 0 && physics) {
     falling += dt;
-    const k = Math.min(falling / FALL_SECONDS, 1);
-    lift = -k * k * 1.6;
-    scale = 1 - k * 0.6;
-    if (k >= 1) {
+    fall = Math.min(falling / FALL_SECONDS, 1);
+    if (falling >= FALL_SECONDS + 0.25) {
       falling = -1;
+      fall = -1;
       physics.respawn(level.start.col, level.start.row);
       prev.x = cur.x = level.start.col + 0.5;
       prev.y = cur.y = level.start.row + 0.5;
@@ -307,22 +340,30 @@ function frame(now: number): void {
 
   // Interpolate between the last two physics states: smooth on any refresh rate.
   const a = acc / PHYSICS_DT;
-  const v = physics?.velocity ?? { x: 0, y: 0 };
-  view.updateMarble(prev.x + (cur.x - prev.x) * a, prev.y + (cur.y - prev.y) * a, falling >= 0 ? 0 : v.x, falling >= 0 ? 0 : v.y, dt, lift, scale);
-  view.render(dt);
-
-  // Adaptive resolution: drop pixel ratio when frames are slow, raise it again when fast.
-  if (dt > 1 / 45) slowFrames++;
-  else slowFrames = Math.max(0, slowFrames - 1);
-  if (dt < 1 / 70) fastFrames++;
-  else fastFrames = 0;
-  const pr = view.currentPixelRatio;
-  if (slowFrames > 90 && pr > 0.75) {
-    view.setPixelRatio(Math.max(0.75, pr - 0.25));
-    slowFrames = 0;
-  } else if (fastFrames > 600 && pr < Math.min(window.devicePixelRatio || 1, 2)) {
-    view.setPixelRatio(pr + 0.25);
-    fastFrames = 0;
+  const x = prev.x + (cur.x - prev.x) * a;
+  const y = prev.y + (cur.y - prev.y) * a;
+  if (isClassic()) {
+    classic.status.left = formatTime(playSeconds);
+    classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
+    classic.updateMarble(x, y, fall);
+    classic.render(dt);
+  } else {
+    const v = physics?.velocity ?? { x: 0, y: 0 };
+    view.updateMarble(x, y, fall >= 0 ? 0 : v.x, fall >= 0 ? 0 : v.y, dt, fall);
+    view.render(dt);
+    // Adaptive resolution: drop pixel ratio when frames are slow, raise it again when fast.
+    if (dt > 1 / 45) slowFrames++;
+    else slowFrames = Math.max(0, slowFrames - 1);
+    if (dt < 1 / 70) fastFrames++;
+    else fastFrames = 0;
+    const pr = view.currentPixelRatio;
+    if (slowFrames > 90 && pr > 0.75) {
+      view.setPixelRatio(Math.max(0.75, pr - 0.25));
+      slowFrames = 0;
+    } else if (fastFrames > 600 && pr < Math.min(window.devicePixelRatio || 1, 2)) {
+      view.setPixelRatio(pr + 0.25);
+      fastFrames = 0;
+    }
   }
 
   requestAnimationFrame(frame);
@@ -331,7 +372,7 @@ function frame(now: number): void {
 // ---------- wiring ----------
 btnTheme.addEventListener('click', (e) => {
   e.stopPropagation();
-  cycleTheme();
+  cycleStyle();
 });
 btnRestart.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -341,17 +382,22 @@ btnLevels.addEventListener('click', (e) => {
   e.stopPropagation();
   showLevels();
 });
-canvas.addEventListener('click', () => {
+window.addEventListener('click', () => {
   if (mode === 'play' && !input.locked && !isTouch) input.requestLock();
 });
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyT') cycleTheme();
+  if (e.code === 'KeyT') cycleStyle();
   else if (e.code === 'KeyR' && mode !== 'menu') restart();
+  else if (e.key === '+' || e.code === 'NumpadAdd') changeMouseSpeed(1);
+  else if (e.key === '-' || e.code === 'NumpadSubtract') changeMouseSpeed(-1);
   else if (mode === 'menu' && overlay.hidden === false && levelList.hidden && ['Enter', 'Space'].includes(e.code)) {
     (ovButtons.querySelector('button.primary') as HTMLButtonElement | null)?.click();
   }
 });
-window.addEventListener('resize', () => view.resize());
+window.addEventListener('resize', () => {
+  view.resize();
+  classic.resize();
+});
 
 loadLevel(levelIndex);
 showStart();
@@ -363,6 +409,11 @@ requestAnimationFrame((t) => {
 
 // Expose a tiny hook for automated browser tests.
 (window as unknown as { murmel: unknown }).murmel = {
-  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, falls, pos: { ...cur }, theme }),
-  push: (x: number, y: number) => physics?.applyImpulse(x * physics.mass, y * physics.mass),
+  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...cur }, style }),
+  push: (x: number, y: number) => {
+    if (!physics) return;
+    const v = physics.velocity;
+    physics.setVelocity(v.x + x, v.y + y);
+  },
+  mouse: (dx: number, dy: number) => physics?.addMouseForce(dx * mouseSpeed, dy * mouseSpeed),
 };
