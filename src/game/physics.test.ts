@@ -101,3 +101,55 @@ describe('PhysicsWorld (Enigma model)', () => {
     expect(contacts.some((c) => c.kind === "object" && c.col === 4 && c.row === 2)).toBe(true);
   });
 });
+
+describe('other actors (rotor, top, killer)', () => {
+  const arena = (actors: { k: string; x: number; y: number; a?: Record<string, string> }[]) =>
+    parseLevel({
+      id: 'a',
+      title: 'A',
+      author: 'x',
+      license: 'GPL',
+      map: ['############', '#@........A#', '#..........#', '#..........#', '#A.........#', '############'],
+      actors,
+    });
+
+  it('a rotor within range chases the marble and shatters it on contact', () => {
+    const w = new PhysicsWorld(arena([{ k: 'ac_rotor', x: 6.5, y: 1.5, a: { range: '8', strength: '20' } }]));
+    const contacts = run(w, 3);
+    expect(contacts.some((c) => c.kind === 'actor' && c.actor === 'rotor')).toBe(true);
+  });
+
+  it('a rotor out of range goes home and stays there', () => {
+    const w = new PhysicsWorld(arena([{ k: 'ac_rotor', x: 9.5, y: 3.5, a: { range: '2', strength: '20' } }]));
+    const r = w.enemies[0];
+    r.vel.x = -3;
+    const contacts = run(w, 4);
+    expect(contacts.some((c) => c.kind === 'actor')).toBe(false);
+    expect(Math.hypot(r.pos.x - 9.5, r.pos.y - 3.5)).toBeLessThan(0.3);
+  });
+
+  it('the killer follows the mouse faster than the marble (twice the force, less mass)', () => {
+    const w = new PhysicsWorld(arena([{ k: 'ac_killer_white', x: 1.5, y: 3.5 }]));
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    const k = w.enemies[0];
+    expect(k.vel.x).toBeGreaterThan(w.velocity.x * 2.5);
+    expect(k.radius).toBeCloseTo(13 / 64);
+  });
+
+  it('actors bounce off stones and off each other without hitting the stones', () => {
+    const w = new PhysicsWorld(arena([
+      { k: 'ac_top', x: 5.2, y: 3.5, a: { gohome: 'false', range: '0' } },
+      { k: 'ac_top', x: 5.9, y: 3.5, a: { gohome: 'false', range: '0' } },
+    ]));
+    const [a, b] = w.enemies;
+    a.vel.x = 4;
+    b.vel.x = -4;
+    const contacts: Contact[] = [];
+    for (let i = 0; i < 400 && a.vel.x > 0; i++) run(w, PHYSICS_DT, contacts);
+    expect(a.vel.x).toBeLessThan(0); // exchanged velocities
+    expect(b.vel.x).toBeGreaterThan(0);
+    expect(b.pos.x - a.pos.x).toBeGreaterThan(0.45);
+    expect(contacts.filter((c) => c.kind !== 'actor')).toEqual([]);
+  });
+});

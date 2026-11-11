@@ -6,6 +6,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { isDeadly, type Level } from '../game/level';
 import type { StoneState } from '../game/pairs';
 import { MARBLE_RADIUS } from '../game/physics';
+import type { ActorSprite } from './classic';
 import { blobShadow } from './textures';
 import { createTheme, type ThemeId, type ThemeKit } from './themes';
 
@@ -36,6 +37,8 @@ export class View {
   private readonly tmpAxis = new THREE.Vector3();
   private pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
   private pulses: { obj: THREE.Object3D; t: number }[] = [];
+  /** Rotors, tops and killers: simple spheres. */
+  private actorMeshes: THREE.Mesh[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -194,6 +197,24 @@ export class View {
     if (this.followLight) this.followLight.position.set(x, 1.2 + lift, y);
   }
 
+  /** Other actors as spheres: rotors and tops dark red, killers like pearls. */
+  updateActors(actors: ActorSprite[]): void {
+    while (this.actorMeshes.length < actors.length) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.3 }));
+      this.scene.add(m);
+      this.actorMeshes.push(m);
+    }
+    this.actorMeshes.forEach((m, i) => {
+      const a = actors[i];
+      m.visible = !!a;
+      if (!a) return;
+      const r = a.kind === 'rotor' ? 22 / 64 : a.kind === 'top' ? 16 / 64 : 13 / 64;
+      m.scale.setScalar(r);
+      m.position.set(a.x, r, a.y);
+      (m.material as THREE.MeshStandardMaterial).color.set(a.kind === 'killer' ? (a.color === 0 ? 0x202020 : 0xf0f0f0) : a.kind === 'rotor' ? 0x8a1c1c : 0xb06a10);
+    });
+  }
+
   render(dt: number): void {
     for (let i = this.pulses.length - 1; i >= 0; i--) {
       const p = this.pulses[i];
@@ -282,6 +303,8 @@ export class View {
     this.kit?.dispose();
     this.kit = null;
     this.pulses = [];
+    for (const m of this.actorMeshes) (m.material as THREE.Material).dispose();
+    this.actorMeshes = []; // geometries were disposed above, meshes are rebuilt on demand
   }
 }
 

@@ -361,6 +361,11 @@ function handlePairEvents(events: PairEvent[]): void {
 }
 
 function onContact(c: Contact): void {
+  if (c.kind === 'actor') {
+    // Rotor::on_collision, Top::on_collision, Killer::on_collision: the marble shatters.
+    marbleDies(true);
+    return;
+  }
   if (c.kind === 'object') {
     objects.touch(c.col, c.row);
     if (!c.hit) return;
@@ -468,14 +473,22 @@ function frame(now: number): void {
   const a = acc / PHYSICS_DT;
   const x = prev.x + (cur.x - prev.x) * a;
   const y = prev.y + (cur.y - prev.y) * a;
+  const actors = (physics?.enemies ?? []).map((e) => ({
+    kind: e.kind,
+    color: e.color,
+    x: e.prev.x + (e.pos.x - e.prev.x) * a,
+    y: e.prev.y + (e.pos.y - e.prev.y) * a,
+  }));
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
     classic.updateMarble(x, y, fall);
+    classic.updateActors(actors);
     classic.render(dt);
   } else {
     const v = physics?.velocity ?? { x: 0, y: 0 };
     view.updateMarble(x, y, fall >= 0 ? 0 : v.x, fall >= 0 ? 0 : v.y, dt, fall);
+    view.updateActors(actors);
     view.render(dt);
     // Adaptive resolution: drop pixel ratio when frames are slow, raise it again when fast.
     if (dt > 1 / 45) slowFrames++;
@@ -562,6 +575,7 @@ requestAnimationFrame((t) => {
     physics.setVelocity(v.x + x, v.y + y);
   },
   mouse: (dx: number, dy: number) => physics?.addMouseForce(dx * mouseSpeed, dy * mouseSpeed),
+  enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone })),
   /** Test helper: put the marble at x/y (tile units). */
   teleport: (x: number, y: number) => {

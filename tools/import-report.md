@@ -1,14 +1,16 @@
 # Enigma-Import
 
-73 von 1322 Levels übernommen (13 Pakete).
+75 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 361 | 21 |
+| Lua-Rückruf | 361 | 23 |
 | keine Oxyd-Steine | 294 | 0 |
+| Akteur ac_marble_white | 228 | 3 |
 | Stein st_laser | 225 | 0 |
-| Akteure: ac_marble_black+ac_marble_white | 171 | 3 |
-| Stein st_passage_black | 152 | 0 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
+| Akteur ac_pearl_white | 179 | 1 |
+| Stein st_passage_black | 152 | 1 |
 | Gegenstand it_meditation_hollow | 143 | 2 |
 | Gegenstand it_sensor | 139 | 1 |
 | Stein st_boulder | 135 | 2 |
@@ -23,7 +25,6 @@
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Boden fl_slope_pw | 107 | 0 |
-| Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 1 |
 | Gegenstand it_seed_wood | 96 | 2 |
@@ -31,7 +32,7 @@
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
-| Boden fl_swamp | 84 | 2 |
+| Boden fl_swamp | 84 | 3 |
 | Boden fl_hay | 82 | 3 |
 | Stein st_brownie | 77 | 2 |
 | Boden fl_slope_inw | 76 | 0 |
@@ -41,7 +42,9 @@
 | Boden fl_bridge_gc | 69 | 0 |
 | Boden fl_slope_ine | 69 | 0 |
 | Stein st_oxyd | 68 | 0 |
+| Gummiband | 65 | 6 |
 | Stein st_actorimpulse | 64 | 1 |
+| Akteur ac_pearl_black | 64 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Gegenstand it_vortex_open | 61 | 0 |
 | Stein st_swap | 61 | 1 |
@@ -90,16 +93,14 @@
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_chess_white | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
-| Akteure: ac_pearl_black+ac_pearl_white | 31 | 0 |
 | Stein st_granite_hollow | 29 | 2 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
 | Stein st_scissors | 28 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Akteure: ac_pearl_black | 28 | 1 |
 | Stein st_actorimpulse_invisible | 27 | 0 |
-| Akteure: ac_marble_black+ac_top | 27 | 2 |
+| Akteur ac_horse | 27 | 0 |
 | Stein st_blur_cross | 27 | 0 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
@@ -117,7 +118,6 @@
 | Gegenstand it_crack_m | 24 | 0 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
-| Akteure: ac_marble_black+ac_rotor | 23 | 3 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
 | Puzzle hohl | 23 | 2 |
@@ -144,8 +144,9 @@
 | Gegenstand it_spoon | 18 | 1 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 0 |
+| Akteur ac_bug | 18 | 0 |
 | Gegenstand it_spade | 17 | 0 |
-| Gegenstand it_ring | 17 | 0 |
+| Gegenstand it_ring | 17 | 1 |
 | Gegenstand it_burnable_ignited | 17 | 0 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
@@ -154,7 +155,6 @@
 | Boden fl_scales_bridgewood | 16 | 0 |
 | Stein st_break_boulder | 15 | 1 |
 | Stein st_portal_horse | 15 | 0 |
-| Akteure: ac_marble_black+ac_pearl_white | 15 | 1 |
 | Gegenstand it_magnet_on | 15 | 0 |
 | Stein st_break_black | 15 | 0 |
 | Gegenstand it_flag_white | 15 | 0 |
@@ -185,18 +185,16 @@
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Akteure: ac_killer_white+ac_marble_black | 12 | 3 |
 | ungerade Zahl Oxyd-Steine | 11 | 1 |
 | Boden fl_slope | 11 | 0 |
 | Gegenstand it_crack_s | 11 | 0 |
-| Akteure: ac_marble_black+ac_marble_white+ac_rotor | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 1 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Stein it_magnet_off | 10 | 0 |
-| Stein st_box_wood (verbunden) | 10 | 2 |
+| Stein st_box_wood (verbunden) | 10 | 1 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 0 |
@@ -210,26 +208,21 @@
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
-| Akteure: ac_horse+ac_marble_black | 8 | 0 |
 | Boden fl_scales_darkgray | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Stein st_redbrown_movable | 8 | 0 |
 | Stein st_monoflop | 8 | 0 |
-| Akteure: ac_marble_black+ac_rotor+ac_top | 8 | 0 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein it_vortex_closed | 8 | 0 |
 | Stein st_camouflage_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 0 |
 | Stein st_dispenser_extralife | 8 | 0 |
-| Akteure: ac_marble_black+ac_marble_white+ac_pearl_white | 7 | 1 |
 | Gegenstand it_surprise | 7 | 0 |
 | Stein fl_bridge_bw | 7 | 0 |
 | Stein st_blur_magic | 7 | 0 |
 | Stein st_blur_straight | 7 | 0 |
 | Stein st_camouflage_hollow | 7 | 0 |
 | Stein st_lightglass_movable | 6 | 0 |
-| Akteure: ac_marble_black+ac_marble_white+ac_top | 6 | 0 |
-| Akteure: ac_bug+ac_marble_black | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
@@ -237,8 +230,6 @@
 | Stein st_disco_dark | 6 | 0 |
 | Stein st_flat_hollow | 6 | 0 |
 | Gegenstand it_sensor_exit | 5 | 0 |
-| Akteure: ac_marble_black | 5 | 0 |
-| Akteure: ac_horse+ac_marble_black+ac_marble_white | 5 | 0 |
 | Stein st_plaster_hollow | 5 | 0 |
 | Stein st_jamb_black | 5 | 0 |
 | Gegenstand it_strip_sw | 5 | 0 |
@@ -261,76 +252,56 @@
 | Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
-| Stein st_oxyd_b | 3 | 1 |
+| Stein st_oxyd_b | 3 | 2 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
-| Akteure: ac_marble_white+ac_pearl_white | 3 | 0 |
-| Akteure: ac_marble_white | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
-| Akteure: ac_killer_white+ac_marble_black+ac_marble_white | 3 | 0 |
 | Stein st_metal_hollow | 3 | 0 |
 | Stein fl_bridge_bn | 3 | 0 |
-| Akteure: ac_marble_black+ac_marble_white+ac_rotor+ac_top | 3 | 0 |
 | Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Boden fl_hay_framed | 3 | 0 |
-| Akteure: ac_pearl_white+ac_top | 3 | 0 |
 | Boden mit Kraft (fl_space) | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
-| Akteure: ac_bug+ac_horse+ac_marble_black+ac_marble_white+ac_rotor+ac_top | 3 | 0 |
+| Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
-| Akteure: ac_marble_black+ac_pearl_white+ac_rotor+ac_top | 2 | 0 |
 | Stein st_shogun_sl | 2 | 0 |
 | Stein st_shogun_ml | 2 | 0 |
 | Stein st_shogun_sm | 2 | 0 |
 | Stein st_invisible_movable | 2 | 0 |
 | Gegenstand it_crack_i | 2 | 0 |
-| Akteure: ac_killer_white+ac_marble_black+ac_marble_white+ac_rotor | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 0 |
 | Stein st_volcano_active | 2 | 1 |
 | Stein st_magic_oxyda | 2 | 0 |
 | Stein st_invisible_hollow | 2 | 0 |
 | Stein st_portal_pearl | 2 | 0 |
-| Akteure: ac_bug+ac_marble_black+ac_marble_white+ac_rotor+ac_top | 2 | 0 |
 | Stein st_darkglass_hollow | 2 | 0 |
 | Boden mit Kraft (fl_fake_abyss) | 2 | 0 |
 | Gegenstand it_extinguisher_empty | 2 | 0 |
-| Akteure: ac_horse+ac_pearl_white | 2 | 0 |
 | Boden fl_slope_tsl | 2 | 0 |
 | Boden fl_slope_twl | 2 | 0 |
 | Boden fl_slope_tnl | 2 | 0 |
 | Boden mit Kraft (fl_wood) | 2 | 0 |
 | Boden mit Kraft (fl_darkgray) | 2 | 0 |
-| Akteure: ac_horse+ac_marble_black+ac_rotor | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Akteure: ac_bug+ac_marble_black+ac_marble_white | 2 | 0 |
 | Boden fl_slope_tsr | 2 | 0 |
 | Boden fl_slope_twr | 2 | 0 |
-| Akteure: ac_horse+ac_marble_black+ac_rotor+ac_top | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
 | Gegenstand it_strip_n | 2 | 0 |
-| Akteure: ac_pearl_white+ac_rotor+ac_top | 2 | 0 |
 | Gegenstand it_strip | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
-| Akteure: ac_marble_black+ac_pearl_black | 2 | 0 |
 | Stein fl_bridge_be | 2 | 0 |
-| Akteure: ac_marble_glass | 2 | 0 |
-| Akteure: ac_marble_black+ac_pearl_white+ac_top | 1 | 0 |
-| Akteure: ac_marble_black+ac_pearl_white+ac_rotor | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
-| Akteure: ac_killer_white+ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
 | Aktion trigger | 1 | 0 |
 | Stein it_meditation_hill | 1 | 0 |
 | Aktion kill | 1 | 0 |
-| Akteure: ac_pearl_black+ac_top | 1 | 0 |
 | Stein st_oxyd_c | 1 | 0 |
 | Boden mit Kraft (fl_himalaya) | 1 | 0 |
-| Akteure: ac_horse+ac_marble_black+ac_marble_white+ac_rotor | 1 | 0 |
 | Boden mit Kraft (fl_dark) | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |
@@ -342,22 +313,13 @@
 | Boden mit Kraft (fl_lawn) | 1 | 0 |
 | Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
-| Akteure: ac_bug+ac_horse+ac_marble_black+ac_rotor+ac_top | 1 | 0 |
 | Stein st_darkglass_movable | 1 | 0 |
 | Stein it_meditation_bump | 1 | 0 |
-| Akteure: ac_horse+ac_marble_black+ac_marble_white+ac_rotor+ac_top | 1 | 0 |
 | Boden mit Kraft (fl_rock) | 1 | 0 |
-| Akteure: ac_killer_white+ac_pearl_black | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
-| Akteure: ac_killer_white+ac_pearl_white | 1 | 0 |
-| Akteure: ac_bug+ac_horse+ac_marble_black+ac_top | 1 | 0 |
-| Akteure: ac_bug+ac_marble_black+ac_top | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |
-| Akteure: ac_killer_white+ac_marble_black+ac_pearl_white | 1 | 0 |
-| Akteure: ac_bug+ac_killer_white+ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
 | Boden mit Kraft (fl_sand) | 1 | 0 |
-| Akteure: ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
 | Boden fl_scales_gray | 1 | 0 |
 | Stein fl_bridge_bs | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
@@ -369,10 +331,6 @@
 | Gegenstand it_pipe_s | 1 | 0 |
 | Stein it_meditation_hollow | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
-| Akteure: ac_horse+ac_killer_black+ac_pearl_white | 1 | 0 |
-| Akteure: ac_marble_white+ac_pearl_black | 1 | 0 |
-| Akteure: ac_bug+ac_marble_black+ac_rotor | 1 | 0 |
 | Boden fl_forward_darkgray | 1 | 0 |
-| Akteure: ac_marble_glass+ac_marble_white | 1 | 0 |
 | Stein st_dispenser_bombwhite | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |

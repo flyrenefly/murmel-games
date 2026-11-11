@@ -3,6 +3,7 @@
 // so own levels and levels imported from Enigma use the same model.
 // Interactive stones and items (doors, switches, triggers …) are listed in `objects`.
 
+import type { ActorDef } from './actors';
 import type { ObjectDef } from './objects';
 
 /** Floors that kill the marble (it falls or drowns). */
@@ -38,6 +39,8 @@ export interface LevelFile {
   texts?: Record<string, string>;
   /** Enigma compatibility version of an imported level (message names of API 1 below 1.10). */
   compat?: number;
+  /** Other actors (rotors, tops, killers), positions in tile units. */
+  actors?: ActorDef[];
 }
 
 export interface Cell {
@@ -67,6 +70,7 @@ export interface Level {
   objects: ObjectDef[];
   texts: Record<string, string>;
   compat: number;
+  actors: ActorDef[];
 }
 
 export const DEFAULT_LEGEND: Record<string, CellDef> = {
@@ -151,6 +155,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     objects,
     texts: file.texts ?? {},
     compat: file.compat ?? 1.1,
+    actors: file.actors ?? [],
   };
 }
 

@@ -151,6 +151,19 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
   umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
 
+### Weitere Akteure (`src/game/actors.ts`)
+
+- **ac_rotor / ac_top** (`Rotors.cc`): Radius 22/64 bzw. 16/64, Masse 0,8. Liegt die Murmel
+  näher als `range` (Vorgabe 5), zieht die Kraft `strength` (Vorgabe 10) zu ihr, sonst mit
+  `gohome` zurück zur Startposition. Rollen mit Bodenreibung, prallen an Steinen ab, lösen
+  aber keine Steine aus.
+- **ac_killer** (`KillerActor.cc`): sieht aus wie eine Perle (Radius 13/64, Masse 0,7) und
+  folgt der Maus wie die Murmel, mit doppelter Mauskraft (Attribut adhesion 2).
+- Berührt einer davon die Murmel, zerspringt sie. Akteure prallen elastisch voneinander ab
+  (`World::handle_actor_contact`, reduzierte Masse, Rückprall 1).
+- **Gummibänder** (`rubbers`) sind noch nicht gebaut: Levels damit bleiben draußen (auch
+  „Pools“ und „Pain“, die sie vorher stillschweigend ignorierten).
+
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 
 Nutzerwunsch: bei der Suche nach „Enigma“ oder „Oxyd“ gefunden werden.

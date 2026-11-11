@@ -1,6 +1,15 @@
 import type { Level } from '../game/level';
 import { doorFlavor, EAST, type GameObject, type ObjectWorld, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
+import type { EnemyKind } from '../game/actors';
+
+/** Another actor to draw (interpolated position in tile units). */
+export interface ActorSprite {
+  kind: EnemyKind;
+  color: number;
+  x: number;
+  y: number;
+}
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
 // composed the way Enigma's models-2d.lua does it:
@@ -95,7 +104,16 @@ function levelImages(level: Level): string[] {
   }
   for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
   for (const o of level.objects) names.push(...objectImages(o.k));
+  for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
   return names;
+}
+
+/** Images of another actor (models-2d.lua: the killer looks like a pearl). */
+export function actorImages(kind: string, color?: string): string[] {
+  if (kind === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
+  if (kind === 'ac_top') return ['ac_top', 'sh_top'];
+  if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
+  return [];
 }
 
 /** Images an interactive object needs (models-2d.lua). */
@@ -128,6 +146,7 @@ export class ClassicView {
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
   private marble = { x: 0, y: 0, fall: -1 };
+  private actors: ActorSprite[] = [];
   private now = 0;
   private screen = { x: 0, y: 0 };
   private offset = { x: 0, y: 0 };
@@ -180,6 +199,10 @@ export class ClassicView {
     this.marble.fall = fall;
   }
 
+  updateActors(actors: ActorSprite[]): void {
+    this.actors = actors;
+  }
+
   render(dt: number): void {
     this.now += dt * 1000;
     const { ctx, img, level, staticLayer } = this;
@@ -206,6 +229,7 @@ export class ClassicView {
       this.drawOxyd(px, py, s.symbol, s.flavor, this.stones[s.index]);
     }
 
+    this.drawActors(ox, oy);
     this.drawMarble(ox, oy);
     ctx.restore();
     this.drawStatusBar();
@@ -460,6 +484,29 @@ export class ClassicView {
     if (pass === 'shadow') this.image(isOpen ? `sh_grate_${grate}` : flavor === 'a' ? 'sh_round' : 'sh_solid', px, py);
     else if (isOpen) this.image(`st_grate_${grate}`, px, py);
     else this.frame(flavor === 'a' ? 'st_oxyda' : 'st_flat', 0, px, py);
+  }
+
+  /** Rotors (9 frames à 30 ms), tops (9 à 25 ms) and killers (pearl image). */
+  private drawActors(ox: number, oy: number): void {
+    const { ctx } = this;
+    const img = this.img!;
+    for (const a of this.actors) {
+      const cx = Math.round(ox + a.x * T);
+      const cy = Math.round(oy + a.y * T);
+      if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
+      const s = 0.4 * SPRITE;
+      if (a.kind === 'killer') {
+        if (img.sh_pearl) ctx.drawImage(img.sh_pearl, cx - s, cy - s);
+        const im = img[a.color === 0 ? 'ac_pearl_black' : 'ac_pearl_white'];
+        if (im) ctx.drawImage(im, 0, 0, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+        continue;
+      }
+      const f = Math.floor(this.now / (a.kind === 'rotor' ? 30 : 25)) % 9;
+      const sh = img[a.kind === 'rotor' ? 'sh_rotor' : 'sh_top'];
+      if (sh) ctx.drawImage(sh, 0, a.kind === 'rotor' ? f * SPRITE : 0, SPRITE, SPRITE, cx - s, cy - s, SPRITE, SPRITE);
+      const im = img[a.kind === 'rotor' ? 'ac_rotor' : 'ac_top'];
+      if (im) ctx.drawImage(im, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+    }
   }
 
   private drawMarble(ox: number, oy: number): void {

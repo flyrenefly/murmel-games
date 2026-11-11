@@ -128,9 +128,21 @@ for (const f of readdirSync(exportDir)) {
   }
 }
 
+/** Actors Murmel can play. */
+const ACTORS = new Set(['ac_marble_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black']);
+/** Images of the other actors (models-2d.lua: killers look like pearls). */
+function actorImages(k, color) {
+  if (k === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
+  if (k === 'ac_top') return ['ac_top', 'sh_top'];
+  if (k.startsWith('ac_killer')) return [color === '0' || (color === undefined && k === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
+  return [];
+}
+const ACTOR_ATTR = /^(range|strength|gohome|color)$/;
+
 const reasons = new Map(); // blocker -> levels it blocks (among others)
 const only = new Map(); // blocker -> levels it alone blocks
 let blockers = null; // Set while converting one level
+let current = ''; // pack/level being converted (ONLY=<reason> lists levels blocked by it alone)
 const reject = (why) => {
   if (blockers) {
     blockers.add(why);
@@ -147,6 +159,7 @@ function finish(level) {
   if (b.length === 0) return level;
   for (const why of b) reasons.set(why, (reasons.get(why) ?? 0) + 1);
   if (b.length === 1) only.set(b[0], (only.get(b[0]) ?? 0) + 1);
+  if (b.length === 1 && process.env.ONLY && b[0].includes(process.env.ONLY)) console.log(`nur ${b[0]}: ${current}`);
   return null;
 }
 
@@ -196,7 +209,10 @@ function convertLevel(pack, meta, xml, exp) {
   const w = exp.world;
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
-  if (actors.length !== 1 || actors[0] !== 'ac_marble_black') reject(`Akteure: ${[...new Set(actors)].sort().join('+') || 'keine'}`);
+  for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
+  if (actors.filter((k) => k === 'ac_marble_black').length !== 1) reject('Akteure: nicht genau eine schwarze Murmel');
+  // Rubber bands (between actors, or to stones) are not built yet.
+  if (w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers))) reject('Gummiband');
 
   const legend = {};
   const keyOf = new Map();
@@ -309,7 +325,12 @@ function convertLevel(pack, meta, xml, exp) {
   else if (oxyds % 2) reject('ungerade Zahl Oxyd-Steine');
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
-  const a = w.actors[0];
+  const a = w.actors.find((x) => x.o.k === 'ac_marble_black');
+  const others = w.actors.filter((x) => x !== a).map((x) => {
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== ''));
+    actorImages(x.o.k, attrs.color).forEach((i) => usedImages.add(i));
+    return { k: x.o.k, x: Math.round(x.x * 1000) / 1000, y: Math.round(x.y * 1000) / 1000, ...(Object.keys(attrs).length ? { a: attrs } : {}) };
+  });
   return {
     id: `enigma:${exp.id}`,
     title: meta.title,
@@ -320,6 +341,7 @@ function convertLevel(pack, meta, xml, exp) {
     start: { x: Math.round(a.x * 1000) / 1000, y: Math.round(a.y * 1000) / 1000 },
     source: { pack, file: `${meta.xpath.replace(/^\.\//, '')}.xml` },
     ...(objs.length ? { objects: objs } : {}),
+    ...(others.length ? { actors: others } : {}),
     ...(compat < 1.1 ? { compat } : {}),
     ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };
@@ -344,6 +366,7 @@ for (const pack of readPacks()) {
       reject('nicht exportiert');
       continue;
     }
+    current = `${pack.name}/${meta.xpath.replace(/^\.\//, '')} (${meta.title})`;
     const lvl = convert(pack.name, meta, xml, exp);
     if (lvl) levels.push(lvl);
   }
