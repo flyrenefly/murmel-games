@@ -1,15 +1,15 @@
 # Enigma-Import
 
-77 von 1322 Levels übernommen (13 Pakete).
+83 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 361 | 25 |
+| Lua-Rückruf | 361 | 26 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
 | Akteur ac_pearl_white | 179 | 1 |
-| Stein st_passage_black | 152 | 1 |
+| Stein st_passage_black | 152 | 2 |
 | Gegenstand it_meditation_hollow | 143 | 2 |
 | Gegenstand it_sensor | 139 | 1 |
 | Stein st_boulder | 135 | 2 |
@@ -20,7 +20,7 @@
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
 | Stein st_mirror_slab | 112 | 0 |
-| weiße Murmel ohne Yin-Yang | 111 | 1 |
+| weiße Murmel ohne Yin-Yang | 111 | 2 |
 | Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
@@ -42,7 +42,6 @@
 | Boden fl_bridge_gc | 69 | 0 |
 | Boden fl_slope_ine | 69 | 0 |
 | Stein st_oxyd | 68 | 0 |
-| Gummiband | 65 | 6 |
 | Stein st_actorimpulse | 64 | 1 |
 | Akteur ac_pearl_black | 64 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
@@ -123,14 +122,14 @@
 | Puzzle hohl | 23 | 2 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_fake_quake | 22 | 2 |
+| Stein st_fake_quake | 22 | 3 |
 | Gegenstand it_spring_drop | 22 | 0 |
 | Stein st_chameleon | 22 | 0 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
-| Boden fl_slope_tn | 21 | 0 |
 | Boden fl_slope_ts | 21 | 0 |
+| Boden fl_slope_tn | 21 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Gegenstand it_meditation_bump | 20 | 0 |
 | Stein st_stoneimpulse_movable | 20 | 0 |
@@ -195,7 +194,7 @@
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Stein it_magnet_off | 10 | 0 |
-| Stein st_box_wood (verbunden) | 10 | 1 |
+| Stein st_box_wood (verbunden) | 10 | 2 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 0 |
@@ -257,16 +256,15 @@
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
-| Stein st_metal_hollow | 3 | 0 |
 | Stein fl_bridge_bn | 3 | 0 |
 | Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Boden fl_hay_framed | 3 | 0 |
 | Boden mit Kraft (fl_space) | 3 | 0 |
+| Gegenstand it_strip_s | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
-| Gegenstand it_strip_s | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Stein st_shogun_sl | 2 | 0 |
@@ -275,6 +273,7 @@
 | Stein st_invisible_movable | 2 | 0 |
 | Gegenstand it_crack_i | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 0 |
+| Stein st_metal_hollow | 2 | 0 |
 | Stein st_volcano_active | 2 | 1 |
 | Stein st_magic_oxyda | 2 | 0 |
 | Stein st_invisible_hollow | 2 | 0 |
@@ -285,8 +284,8 @@
 | Boden fl_slope_tsl | 2 | 0 |
 | Boden fl_slope_twl | 2 | 0 |
 | Boden fl_slope_tnl | 2 | 0 |
-| Boden mit Kraft (fl_wood) | 2 | 0 |
 | Boden mit Kraft (fl_darkgray) | 2 | 0 |
+| Boden mit Kraft (fl_wood) | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Boden fl_slope_tsr | 2 | 0 |
@@ -307,6 +306,7 @@
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |
 | Boden mit Kraft (fl_water) | 1 | 0 |
+| Stein st_darkgray_hollow | 1 | 0 |
 | Boden fl_slope_ter | 1 | 0 |
 | Boden fl_slope_tnr | 1 | 0 |
 | Lizenz: special | 1 | 1 |

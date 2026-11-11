@@ -200,3 +200,44 @@ describe('two marbles (black and white, yin-yang)', () => {
     expect(w.marbles[0].active).toBe(true);
   });
 });
+
+describe('rubber bands (ot_rubberband)', () => {
+  const banded = (rubbers: unknown[], actors: unknown[] = []) =>
+    new PhysicsWorld(
+      parseLevel({
+        id: 'r',
+        title: 'R',
+        author: 'x',
+        license: 'GPL',
+        map: ['############', '#@.........#', '#..........#', '#..........#', '#A........A#', '############'],
+        actors,
+        rubbers,
+      } as never),
+    );
+
+  it('a band to a stone pulls the marble back when it is longer than its length', () => {
+    const w = banded([{ a: 0, b: [1.5, 1.5], strength: 20, length: 0.5 }]);
+    w.respawn(6.5, 1.5);
+    run(w, 0.05);
+    expect(w.velocity.x).toBeLessThan(0);
+  });
+
+  it('max turns it into a rope: the marble cannot get further away', () => {
+    const w = banded([{ a: 0, b: [1.5, 2.5], strength: 0, length: 10, max: 2 }]);
+    w.setVelocity(15, 0);
+    let far = 0;
+    for (let i = 0; i < 400; i++) {
+      run(w, PHYSICS_DT);
+      far = Math.max(far, Math.hypot(w.position.x - 1.5, w.position.y - 2.5));
+    }
+    expect(far).toBeLessThan(2.1);
+  });
+
+  it('a band between two actors pulls both towards each other', () => {
+    const w = banded([{ a: 0, b: 1, strength: 20, length: 1 }], [{ k: 'ac_top', x: 8.5, y: 1.5, a: { range: '0', gohome: 'false' } }]);
+    run(w, 0.05);
+    expect(w.velocity.x).toBeGreaterThan(0);
+    expect(w.enemies[0].vel.x).toBeLessThan(0);
+    expect(w.rubbers[0].end).toBe(w.enemies[0].pos);
+  });
+});

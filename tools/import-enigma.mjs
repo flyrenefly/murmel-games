@@ -217,8 +217,9 @@ function convertLevel(pack, meta, xml, exp) {
   const whites = actors.filter((k) => k === 'ac_marble_white').length;
   if (whites > 1) reject('mehrere weiße Murmeln');
   else if (whites === 1 && !/el:network="true"/.test(xml)) reject('weiße Murmel ohne Yin-Yang');
-  // Rubber bands (between actors, or to stones) are not built yet.
-  if (w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers))) reject('Gummiband');
+  // Rubber bands need the export with their values (enigma-web level-export since 11.11. evening).
+  const banded = w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers));
+  if (banded && !Array.isArray(w.rubberbands)) reject('Gummiband (alter Export)');
 
   const legend = {};
   const keyOf = new Map();
@@ -337,6 +338,33 @@ function convertLevel(pack, meta, xml, exp) {
     actorImages(x.o.k, attrs.color).forEach((i) => usedImages.add(i));
     return { k: x.o.k, x: Math.round(x.x * 1000) / 1000, y: Math.round(x.y * 1000) / 1000, ...(Object.keys(attrs).length ? { a: attrs } : {}) };
   });
+  // Rubber bands: anchors as actor index (0 = black marble, n = actors[n - 1]) or stone centre.
+  const actorIndex = new Map();
+  [a, ...w.actors.filter((x) => x !== a)].forEach((x, i) => {
+    actorIndex.set('#' + x.o.$id, i);
+    if (x.o.name) actorIndex.set(x.o.name, i);
+  });
+  const rubbers = [];
+  for (const rb of w.rubberbands ?? []) {
+    const i1 = actorIndex.get(rb.anchor1);
+    let b = actorIndex.get(rb.anchor2);
+    if (b === undefined) {
+      const st = [...allCells(w)].find((c) => c.o.k.startsWith('st_') && ('#' + c.o.$id === rb.anchor2 || c.o.name === rb.anchor2));
+      // Bands to stones that move (boxes, puzzles …) would need the stone position each step.
+      if (st && !/^st_(box|puzzle|stoneimpulse|brownie|boulder|rotator|swap|pull|turnstile)/.test(st.o.k)) b = [st.x + 0.5, st.y + 0.5];
+    }
+    if (i1 === undefined || b === undefined) {
+      reject('Gummiband an bewegtem oder unbekanntem Anker');
+      continue;
+    }
+    const def = { a: i1, b };
+    for (const key of ['strength', 'length', 'threshold', 'min', 'max']) {
+      const v = Number(rb[key]);
+      if (rb[key] !== '' && Number.isFinite(v)) def[key] = Math.round(v * 10000) / 10000;
+    }
+    rubbers.push(def);
+  }
+  if (blockers.size) return null;
   return {
     id: `enigma:${exp.id}`,
     title: meta.title,
@@ -348,6 +376,7 @@ function convertLevel(pack, meta, xml, exp) {
     source: { pack, file: `${meta.xpath.replace(/^\.\//, '')}.xml` },
     ...(objs.length ? { objects: objs } : {}),
     ...(others.length ? { actors: others } : {}),
+    ...(rubbers.length ? { rubbers } : {}),
     ...(compat < 1.1 ? { compat } : {}),
     ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };

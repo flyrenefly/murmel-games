@@ -1,5 +1,6 @@
-import { createEnemies, type Enemy, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
+import { createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
 import type { Level } from './level';
+import { type BodyForce, Rubberband } from './rubber';
 import { ALL_FACES, EAST, NORTH, SOUTH, WEST } from './objects';
 import FLOORS from './floors.generated.json';
 
@@ -87,6 +88,8 @@ function makeMarble(color: number, x: number, y: number): Marble {
 /** A rolling body: the marble or another actor. */
 interface Body {
   readonly pos: { x: number; y: number };
+  /** Position before the last physics step (for interpolation). */
+  readonly prev: { x: number; y: number };
   readonly vel: { x: number; y: number };
   readonly radius: number;
   readonly mass: number;
@@ -110,6 +113,10 @@ export class PhysicsWorld {
   readonly marbles: Marble[];
   /** Index of the marble the player steers. */
   private cur = 0;
+  /** Rubber bands (ot_rubberband). */
+  readonly rubbers: Rubberband[] = [];
+  /** Number of bands per body (damping of multiple connections). */
+  private readonly bandCount = new Map<Body, number>();
   /** Rotors, tops and killers. */
   readonly enemies: Enemy[];
   private readonly mouse = { x: 0, y: 0 };
@@ -135,6 +142,22 @@ export class PhysicsWorld {
     this.marbles = [makeMarble(0, level.start.x, level.start.y)];
     const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
     if (white) this.marbles.push(makeMarble(1, white.x, white.y));
+    // Bodies by actor index: 0 = black marble, n = level.actors[n - 1].
+    const bodies: (Body | null)[] = [this.marbles[0]];
+    let ei = 0;
+    for (const a of level.actors ?? []) {
+      if (a.k === 'ac_marble_white') bodies.push(this.marbles[1]);
+      else if (ei < this.enemies.length && this.enemies[ei].kind === enemyKind(a.k)) bodies.push(this.enemies[ei++]);
+      else bodies.push(null);
+    }
+    for (const r of level.rubbers ?? []) {
+      const a1 = bodies[r.a];
+      const a2 = typeof r.b === 'number' ? bodies[r.b] : null;
+      if (!a1 || (typeof r.b === 'number' && !a2)) continue;
+      const fixed = typeof r.b === 'number' ? null : { x: r.b[0], y: r.b[1] };
+      this.rubbers.push(new Rubberband(r, a1, a2, fixed));
+      for (const b of [a1, a2]) if (b) this.bandCount.set(b, (this.bandCount.get(b) ?? 0) + 1);
+    }
   }
 
   private solidAt(c: number, r: number): number {
@@ -187,38 +210,57 @@ export class PhysicsWorld {
     }
     this.actorContacts(onContact);
 
+    // 1. Forces of every moving body (World::move_actors).
+    const forces = new Map<Body, BodyForce & { friction: number }>();
+    const add = (b: Body, fx: number, fy: number, friction: number) => {
+      if (this.field) {
+        const [gx, gy] = this.field(b.pos.x, b.pos.y);
+        fx += gx;
+        fy += gy;
+      }
+      forces.set(b, { fx, fy, cx: 0, cy: 0, friction });
+    };
     this.marbles.forEach((m, i) => {
       if (!m.active) return;
       const { friction, adhesion } = this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce).
       const k = i === this.cur ? adhesion : 0;
-      this.advance(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
-      this.collide(m, onContact, { by: i, color: m.color });
+      add(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
     });
     const targets = this.marbles.filter((m) => m.active).map((m) => m.pos);
     for (const e of this.enemies) {
       const { friction, adhesion } = this.floorProps(e.pos);
-      let fx: number;
-      let fy: number;
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
-        fx = (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR;
-        fy = (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR;
-      } else [fx, fy] = e.chaseForce(targets);
-      this.advance(e, fx, fy, friction);
+        add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR, friction);
+      } else add(e, ...e.chaseForce(targets), friction);
+    }
+    // 2. Rubber bands (bands of a falling marble rest).
+    for (const r of this.rubbers) {
+      const f1 = forces.get(r.a1 as Body);
+      const f2 = r.a2 ? forces.get(r.a2 as Body) : null;
+      if (!f1 || (r.a2 && !f2)) continue;
+      r.apply(f1, f2 ?? null, this.bandCount.get(r.a1 as Body) ?? 1, r.a2 ? (this.bandCount.get(r.a2 as Body) ?? 1) : 0, dt);
+    }
+    // 3. Move and collide.
+    this.marbles.forEach((m, i) => {
+      const f = forces.get(m);
+      if (!f) return;
+      this.advance(m, f);
+      this.collide(m, onContact, { by: i, color: m.color });
+    });
+    for (const e of this.enemies) {
+      this.advance(e, forces.get(e)!);
       // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
       this.collide(e, onContact, { by: -1, color: e.kind === 'killer' ? e.color : 2 });
     }
   }
 
   /** One integration step of a body (World::advanceActor). */
-  private advance(b: Body, fx: number, fy: number, friction: number): void {
+  private advance(b: Body, f: BodyForce & { friction: number }): void {
     const dt = PHYSICS_DT;
-    if (this.field) {
-      const [gx, gy] = this.field(b.pos.x, b.pos.y);
-      fx += gx;
-      fy += gy;
-    }
+    let { fx, fy } = f;
+    const friction = f.friction;
     // No pushing into stones the body already rests against.
     for (let i = 0; i < b.normals.length; i += 2) {
       const nx = b.normals[i];
@@ -229,6 +271,9 @@ export class PhysicsWorld {
         fy -= fn * ny;
       }
     }
+    // Collision forces (rubber band limits) are not cancelled by contacts.
+    fx += f.cx;
+    fy += f.cy;
     const vel = b.vel;
     vel.x += (dt * fx) / b.mass;
     vel.y += (dt * fy) / b.mass;

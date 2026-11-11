@@ -39,6 +39,8 @@ export class View {
   private pulses: { obj: THREE.Object3D; t: number }[] = [];
   /** Rotors, tops and killers: simple spheres. */
   private actorMeshes: THREE.Mesh[] = [];
+  /** Rubber bands as line segments. */
+  private bands: THREE.LineSegments | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -197,6 +199,28 @@ export class View {
     if (this.followLight) this.followLight.position.set(x, 1.2 + lift, y);
   }
 
+  /** Rubber bands (x1, y1, x2, y2 in tile units) as orange lines just above the floor. */
+  updateRubbers(lines: number[]): void {
+    if (!lines.length) {
+      if (this.bands) this.bands.visible = false;
+      return;
+    }
+    if (!this.bands || this.bands.geometry.getAttribute('position').count !== lines.length / 2) {
+      if (this.bands) {
+        this.scene.remove(this.bands);
+        this.bands.geometry.dispose();
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((lines.length / 2) * 3), 3));
+      this.bands = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xf08c14 }));
+      this.scene.add(this.bands);
+    }
+    const pos = this.bands.geometry.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < lines.length / 2; i++) pos.setXYZ(i, lines[i * 2], MARBLE_RADIUS, lines[i * 2 + 1]);
+    pos.needsUpdate = true;
+    this.bands.visible = true;
+  }
+
   /** Other actors as spheres: rotors and tops dark red, killers like pearls. */
   updateActors(actors: ActorSprite[]): void {
     while (this.actorMeshes.length < actors.length) {
@@ -307,6 +331,8 @@ export class View {
     this.pulses = [];
     for (const m of this.actorMeshes) (m.material as THREE.Material).dispose();
     this.actorMeshes = []; // geometries were disposed above, meshes are rebuilt on demand
+    if (this.bands) (this.bands.material as THREE.Material).dispose();
+    this.bands = null;
   }
 }
 

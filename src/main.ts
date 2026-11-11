@@ -483,16 +483,22 @@ function frame(now: number): void {
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
   actors.push(...marbles.filter((_, i) => i !== ci));
+  // Rubber bands: flat list x1, y1, x2, y2 (interpolated like the actors).
+  const lerp = (b: { pos: { x: number; y: number }; prev: { x: number; y: number } }) => [b.prev.x + (b.pos.x - b.prev.x) * a, b.prev.y + (b.pos.y - b.prev.y) * a];
+  const bands: number[] = [];
+  for (const r of physics?.rubbers ?? []) bands.push(...lerp(r.a1), ...(r.a2 ? lerp(r.a2) : [r.end.x, r.end.y]));
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
     classic.updateMarble(x, y, fall, me.color);
     classic.updateActors(actors);
+    classic.updateRubbers(bands);
     classic.render(dt);
   } else {
     const v = physics?.velocity ?? { x: 0, y: 0 };
     view.updateMarble(x, y, fall >= 0 ? 0 : v.x, fall >= 0 ? 0 : v.y, dt, fall);
     view.updateActors(actors);
+    view.updateRubbers(bands);
     view.render(dt);
     // Adaptive resolution: drop pixel ratio when frames are slow, raise it again when fast.
     if (dt > 1 / 45) slowFrames++;

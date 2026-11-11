@@ -169,8 +169,16 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Knopf „Murmel wechseln“ steuert die andere Murmel (`SwapPlayers`); nur die gesteuerte
   spürt die Maus. Beide öffnen Oxyd-Steine, drücken Auslöser, fallen und starten an ihrem
   eigenen Startpunkt neu. `essential` und `AutoRespawn` werden nicht nachgebildet.
-- **Gummibänder** (`rubbers`) sind noch nicht gebaut: Levels damit bleiben draußen (auch
-  „Pools“ und „Pain“, die sie vorher stillschweigend ignorierten).
+- **Gummibänder** (`ot_rubberband`, `src/game/rubber.ts`, nach `Rubberband::applyForces`):
+  Feder zwischen zwei Akteuren oder einem Akteur und einer Steinmitte. Länger als `length`
+  zieht sie mit `strength · (len − length)` (negativ: stößt ab), kürzer als `threshold`
+  drückt sie; `min`/`max` wirken als harte Grenze (Seil/Stange). Der Physikschritt sammelt
+  dafür erst alle Kräfte, wendet dann die Bänder an und bewegt danach (Reihenfolge wie
+  `World::move_actors`). Enigmas Code weist im Federzweig die zweite `ActorInfo` per
+  Referenz zu (kopiert sie also); nachgebaut ist die beabsichtigte Gegenkraft.
+  Der Export (enigma-web `level-export`) liefert die Bänder als `rubberbands`; Bänder an
+  beweglichen Steinen (Kisten, Puzzles …) bleiben vorerst draußen. Gezeichnet als 2 px
+  breite orange Linie (240, 140, 20).
 
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 

@@ -150,6 +150,7 @@ export class ClassicView {
   private stones: StoneAnim[] = [];
   private marble = { x: 0, y: 0, fall: -1, color: 0 };
   private actors: ActorSprite[] = [];
+  private rubbers: number[] = [];
   private now = 0;
   private screen = { x: 0, y: 0 };
   private offset = { x: 0, y: 0 };
@@ -207,6 +208,11 @@ export class ClassicView {
     this.actors = actors;
   }
 
+  /** Rubber bands as x1, y1, x2, y2 in tile units. */
+  updateRubbers(lines: number[]): void {
+    this.rubbers = lines;
+  }
+
   render(dt: number): void {
     this.now += dt * 1000;
     const { ctx, img, level, staticLayer } = this;
@@ -235,6 +241,17 @@ export class ClassicView {
 
     this.drawActors(ox, oy);
     this.drawMarble(ox, oy, this.marble);
+    // Rubber bands: thick orange lines (Rubberband::postAddition, DL_Lines).
+    if (this.rubbers.length) {
+      ctx.strokeStyle = 'rgb(240, 140, 20)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < this.rubbers.length; i += 4) {
+        ctx.moveTo(Math.round(ox + this.rubbers[i] * T), Math.round(oy + this.rubbers[i + 1] * T));
+        ctx.lineTo(Math.round(ox + this.rubbers[i + 2] * T), Math.round(oy + this.rubbers[i + 3] * T));
+      }
+      ctx.stroke();
+    }
     ctx.restore();
     this.drawStatusBar();
   }
