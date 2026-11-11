@@ -1,6 +1,9 @@
 // Level format: a character map plus a legend. Every cell has a floor and
 // optionally a stone, named with Enigma kinds (fl_gray, st_granite, st_oxyd …),
 // so own levels and levels imported from Enigma use the same model.
+// Interactive stones and items (doors, switches, triggers …) are listed in `objects`.
+
+import type { ObjectDef } from './objects';
 
 /** Floors that kill the marble (it falls or drowns). */
 export const DEADLY_FLOORS = new Set(['fl_abyss', 'fl_water']);
@@ -29,6 +32,10 @@ export interface LevelFile {
   start?: { x: number; y: number };
   /** Origin of an imported level. */
   source?: { pack: string; file: string };
+  /** Interactive objects (doors, switches, triggers, documents, grates). */
+  objects?: ObjectDef[];
+  /** Texts of documents by key. */
+  texts?: Record<string, string>;
 }
 
 export interface Cell {
@@ -55,6 +62,8 @@ export interface Level {
   /** Start position in tile units (marble centre). */
   start: { x: number; y: number };
   signals: SignalStone[];
+  objects: ObjectDef[];
+  texts: Record<string, string>;
 }
 
 export const DEFAULT_LEGEND: Record<string, CellDef> = {
@@ -125,7 +134,20 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     if (n % 2 !== 0) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
   }
 
-  return { id: file.id, title: file.title, author: file.author, license: file.license, width, height, cells, start, signals };
+  const objects = (file.objects ?? []).filter((o) => o.x >= 0 && o.y >= 0 && o.x < width && o.y < height);
+  return {
+    id: file.id,
+    title: file.title,
+    author: file.author,
+    license: file.license,
+    width,
+    height,
+    cells,
+    start,
+    signals,
+    objects,
+    texts: file.texts ?? {},
+  };
 }
 
 /** Gives '?' stones random colours in pairs, using colours not taken by fixed stones. */

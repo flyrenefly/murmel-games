@@ -1,4 +1,5 @@
 import type { Level } from '../game/level';
+import { doorFlavor, EAST, type GameObject, type ObjectWorld, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -93,7 +94,21 @@ function levelImages(level: Level): string[] {
     if (c.stone && c.stone !== 'st_oxyd') names.push(c.stone);
   }
   for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
+  for (const o of level.objects) names.push(...objectImages(o.k));
   return names;
+}
+
+/** Images an interactive object needs (models-2d.lua). */
+export function objectImages(kind: string): string[] {
+  if (kind === 'it_trigger') return ['it_trigger'];
+  if (kind === 'it_document') return ['it_document'];
+  if (kind.startsWith('st_grate')) return ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed'];
+  const sw = /^st_switch(_black|_white)?/.exec(kind);
+  if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
+  if (kind.startsWith('st_door')) {
+    return ['st_oxyda', 'st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed', 'st_flat', 'st_door_b', 'st_door_d_ns', 'st_door_d_ew', 'sh_doorh', 'sh_doorv'];
+  }
+  return [];
 }
 
 export class ClassicView {
@@ -101,6 +116,7 @@ export class ClassicView {
   private img: Images | null = null;
   private set: ClassicSet = 'gfx32';
   private level: Level | null = null;
+  private objects: ObjectWorld | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
   private marble = { x: 0, y: 0, fall: -1 };
@@ -120,8 +136,9 @@ export class ClassicView {
     return this.set === 'gfx32' ? 'Klassisch' : 'Klassisch (Retro)';
   }
 
-  async build(level: Level, set: ClassicSet, states: readonly StoneState[]): Promise<void> {
+  async build(level: Level, set: ClassicSet, states: readonly StoneState[], objects: ObjectWorld | null = null): Promise<void> {
     this.level = level;
+    this.objects = objects;
     this.set = set;
     this.stones = states.map((s) => ({ state: s, prev: s, since: -1e9 }));
     this.img = null;
@@ -166,6 +183,8 @@ export class ClassicView {
     ctx.rect(0, 0, VIEW_W, SCREEN_H * T);
     ctx.clip();
     ctx.drawImage(staticLayer, ox, oy);
+
+    if (this.objects) this.drawObjects(this.objects, ox, oy);
 
     for (const s of level.signals) {
       const px = ox + s.col * T;
@@ -262,6 +281,97 @@ export class ClassicView {
     }
   }
 
+
+  /** Items first, then shadows and stones of the interactive objects. */
+  private drawObjects(world: ObjectWorld, ox: number, oy: number): void {
+    const { ctx } = this;
+    const img = this.img!;
+    const visible = (o: GameObject) => {
+      const px = ox + o.col * T;
+      const py = oy + o.row * T;
+      return px > -2 * T && py > -2 * T && px < VIEW_W + T && py < SCREEN_H * T + T;
+    };
+    for (const o of world.objects) {
+      if (!visible(o)) continue;
+      const px = ox + o.col * T;
+      const py = oy + o.row * T;
+      if (o.cls === 'trigger' && o.attrs.invisible !== 'true') this.frame('it_trigger', o.state ? 1 : 0, px, py);
+      else if (o.cls === 'document' && !o.gone && img.it_document) ctx.drawImage(img.it_document, px, py);
+    }
+    for (const pass of ['shadow', 'stone'] as const) {
+      for (const o of world.objects) {
+        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document') continue;
+        this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
+      }
+    }
+  }
+
+  /** Frame f of an image sheet (frames stacked vertically, or side by side). */
+  private frame(name: string, f: number, px: number, py: number, vertical = true): void {
+    const im = this.img![name];
+    if (!im) return;
+    if (vertical) this.ctx.drawImage(im, 0, f * T, T, T, px, py, T, T);
+    else this.ctx.drawImage(im, f * T, 0, T, T, px, py, T, T);
+  }
+
+  private image(name: string, px: number, py: number): void {
+    const im = this.img![name];
+    if (im) this.ctx.drawImage(im, px, py);
+  }
+
+  private drawObjectStone(world: ObjectWorld, o: GameObject, px: number, py: number, pass: 'shadow' | 'stone'): void {
+    const { ctx } = this;
+    const img = this.img!;
+    // Door shadows are sheets of 41 px frames.
+    const shadowFrame = (name: string, f: number, vertical: boolean) => {
+      const im = img[name];
+      if (!im) return;
+      const S = 41;
+      if (vertical) ctx.drawImage(im, 0, f * S, im.width, S, px, py, im.width, S);
+      else ctx.drawImage(im, f * S, 0, S, im.height, px, py, S, im.height);
+    };
+    const p = world.progress(o);
+    const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'grate') {
+      const v = o.kind.includes('framed') || o.attrs.flavor === 'framed' ? 'framed' : 'cross';
+      this.image(pass === 'shadow' ? `sh_grate_${v}` : `st_grate_${v}`, px, py);
+      return;
+    }
+    if (o.cls === 'switch') {
+      const color = o.attrs.color === '0' ? '_black' : o.attrs.color === '1' ? '_white' : '';
+      // Frames 0 off … 2 on; turning on runs forwards, turning off backwards.
+      const step = Math.min(2, Math.floor(p * 3));
+      const f = o.moving ? (to === 1 ? step : 2 - step) : o.state ? 2 : 0;
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame(`st_switch${color}`, f, px, py);
+      return;
+    }
+    // Doors: open fraction 0 (closed) … 1 (open).
+    const open = o.moving ? (to === 1 ? p : 1 - p) : o.state;
+    const flavor = doorFlavor(o);
+    if (flavor === 'd') {
+      const conn = Number(o.attrs.$connections || (o.kind.includes('_ew') ? 10 : 5));
+      const ns = conn === (WEST | EAST);
+      const f = Math.round((1 - open) * 6); // 7 frames: 0 = open … 6 = closed
+      if (pass === 'shadow') shadowFrame(ns ? 'sh_doorh' : 'sh_doorv', f, ns);
+      else this.frame(ns ? 'st_door_d_ns' : 'st_door_d_ew', f, px, py, ns);
+      return;
+    }
+    if (flavor === 'b') {
+      if (open >= 1) return; // an open door b is invisible
+      if (o.moving) {
+        if (pass === 'stone') this.frame('st_door_b', Math.min(7, Math.floor(open * 8)), px, py);
+      } else if (pass === 'shadow') this.image('sh_solid', px, py);
+      else this.frame('st_flat', 0, px, py);
+      return;
+    }
+    // a: Oxyd-like lid ↔ cross grate, c: flat stone ↔ framed grate (2 frames).
+    const isOpen = open >= 0.5;
+    const grate = flavor === 'a' ? 'cross' : 'framed';
+    if (pass === 'shadow') this.image(isOpen ? `sh_grate_${grate}` : flavor === 'a' ? 'sh_round' : 'sh_solid', px, py);
+    else if (isOpen) this.image(`st_grate_${grate}`, px, py);
+    else this.frame(flavor === 'a' ? 'st_oxyda' : 'st_flat', 0, px, py);
+  }
 
   private drawMarble(ox: number, oy: number): void {
     const { ctx } = this;

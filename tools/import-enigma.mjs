@@ -38,6 +38,45 @@ const OXYD = /^st_oxyd(_([abcd]))?$/;
 const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|inverse|fake|adhesionless|ice_heating|hay|space)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
+// Interactive objects (src/game/objects.ts): kind patterns and the images they need.
+const OBJECTS = [
+  [/^st_door(_[abcd])?(_ew)?(_open)?$/, ['st_oxyda', 'st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed', 'st_flat', 'st_door_b', 'st_door_d_ns', 'st_door_d_ew', 'sh_doorh', 'sh_doorv', 'sh_round', 'sh_solid']],
+  [/^st_switch(_black|_white)?(_instant)?$/, ['st_switch', 'st_switch_black', 'st_switch_white', 'sh_round']],
+  [/^it_trigger$/, ['it_trigger']],
+  [/^it_document$/, ['it_document']],
+  [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
+];
+const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop']);
+// Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces)$/;
+const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
+
+const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
+
+/** Level strings by key: German translation if present, else English. */
+function levelTexts(xml) {
+  const texts = {};
+  for (const m of xml.matchAll(/<el:string el:key="([^"]*)">([\s\S]*?)<\/el:string>/g)) {
+    const de = /<el:translation el:lang="de"[^>]*>([\s\S]*?)<\/el:translation>/.exec(m[2]);
+    const en = /<el:english[^>]*>([\s\S]*?)<\/el:english>/.exec(m[2]);
+    const t = de?.[1] ?? en?.[1];
+    if (t && unxml(t)) texts[m[1]] = unxml(t);
+  }
+  return texts;
+}
+
+/** Objects named by a target token among the level's objects (as objects.ts resolves it). */
+function resolveTarget(token, objs) {
+  if (/^#\d+$/.test(token)) return objs.filter((o) => '#' + o.a.$id === token);
+  if (token.startsWith('%')) return [];
+  if (/[*?]/.test(token)) {
+    const re = new RegExp('^' + token.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+    return objs.filter((o) => o.a.name && re.test(o.a.name));
+  }
+  return objs.filter((o) => o.a.name === token);
+}
+
 const licenceOk = (l) => /GPL|GPJ|Donated to Enigma|public domain/i.test(l);
 
 function attr(xml, re) {
@@ -114,6 +153,12 @@ function imageFor(kind) {
   return hasImage(k) ? k : null;
 }
 
+function objectDef(x, y, o) {
+  const a = {};
+  for (const [k, v] of Object.entries(o)) if (k !== 'k' && KEEP_ATTR.test(k) && v !== '') a[k] = v;
+  return { x, y, k: o.k, a };
+}
+
 function convert(pack, meta, xml, exp) {
   blockers = new Set();
   return finish(convertLevel(pack, meta, xml, exp));
@@ -139,11 +184,20 @@ function convertLevel(pack, meta, xml, exp) {
   const pool = [...'.#o~,;:-_=+*%&$§!|/<>()[]{}^`\'"0123456789abcdefghijklmnpqrstuvwxyzÄÖÜäöüßéèêàâçñ']; // '@' and A–Z have own meanings
   let oxyds = 0;
   const rows = [];
+  const objs = [];
+  const allObjects = new Map(); // $id → kind, to name unsupported targets
+  for (const c of w.cells) for (const o of c) if (o) allObjects.set(o.$id, o);
   for (let y = 0; y < w.h; y++) {
     let row = '';
     for (let x = 0; x < w.w; x++) {
       const [fl, st, it] = w.cells[y * w.w + x];
-      if (it) reject(`Gegenstand ${it.k}`);
+      if (it) {
+        const im = objectImages(it.k);
+        if (im) {
+          objs.push(objectDef(x, y, it));
+          im.forEach((i) => imgs.add(i));
+        } else reject(`Gegenstand ${it.k}`);
+      }
       if (!fl) {
         reject('Feld ohne Boden');
         continue;
@@ -166,6 +220,9 @@ function convertLevel(pack, meta, xml, exp) {
           def.symbol = Number.isInteger(color) && color >= 0 && color < 26 ? String.fromCharCode(65 + color) : '?';
           oxyds++;
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
+        } else if (objectImages(st.k)) {
+          objs.push(objectDef(x, y, st));
+          objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {
           def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1]}`;
           imgs.add(def.stone);
@@ -189,6 +246,19 @@ function convertLevel(pack, meta, xml, exp) {
     }
     rows.push(row);
   }
+  // Every action must be a supported message to a supported object (no Lua callbacks).
+  for (const o of objs) {
+    for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
+      const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
+      tokens(o.a[key]).forEach((t, i) => {
+        const act = acts[i] ?? '';
+        if (act === 'callback' || resolveTarget(t, objs).length === 0) {
+          const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
+          reject(named ? `Stein ${named.k.replace(/_[nesw]+$/, '')}` : 'Lua-Rückruf');
+        } else if (!ACTIONS.has(act)) reject(`Aktion ${act}`);
+      });
+    }
+  }
   if (oxyds === 0) reject('keine Oxyd-Steine');
   else if (oxyds % 2) reject('ungerade Zahl Oxyd-Steine');
   if (blockers.size) return null;
@@ -203,6 +273,8 @@ function convertLevel(pack, meta, xml, exp) {
     legend,
     start: { x: Math.round(a.x * 1000) / 1000, y: Math.round(a.y * 1000) / 1000 },
     source: { pack, file: `${meta.xpath.replace(/^\.\//, '')}.xml` },
+    ...(objs.length ? { objects: objs } : {}),
+    ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };
 }
 

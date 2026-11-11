@@ -1,4 +1,5 @@
 import type { Level } from './level';
+import { ALL_FACES, EAST, NORTH, SOUTH, WEST } from './objects';
 import FLOORS from './floors.generated.json';
 
 // Rolling physics modelled on Enigma (GPL-2.0-or-later, src/world.cc), which
@@ -43,7 +44,15 @@ export function floorProps(kind: string): { friction: number; adhesion: number }
   return p;
 }
 
-export type Contact = { kind: 'signal'; index: number; speed: number } | { kind: 'wall'; speed: number };
+export type Contact =
+  | { kind: 'signal'; index: number; speed: number }
+  | { kind: 'wall'; speed: number }
+  | { kind: 'object'; col: number; row: number; speed: number };
+
+/** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
+export interface Blockers {
+  blockAt(col: number, row: number): number;
+}
 
 export class PhysicsWorld {
   /** Solid cells: -1 = free, -2 = wall, >= 0 = index of the signal stone. */
@@ -62,7 +71,10 @@ export class PhysicsWorld {
   private normals: number[] = []; // contact normals of the last step (x, y pairs)
   readonly mass = 1;
 
-  constructor(level: Level) {
+  constructor(
+    level: Level,
+    private readonly blockers: Blockers | null = null,
+  ) {
     this.width = level.width;
     this.height = level.height;
     this.solid = new Int32Array(level.width * level.height).fill(-1);
@@ -162,49 +174,80 @@ export class PhysicsWorld {
     for (let row = r0; row <= r1; row++) {
       for (let col = c0; col <= c1; col++) {
         const kind = this.solidAt(col, row);
-        if (kind === -1) continue;
-        const qx = Math.max(col, Math.min(this.pos.x, col + 1));
-        const qy = Math.max(row, Math.min(this.pos.y, row + 1));
-        let nx = this.pos.x - qx;
-        let ny = this.pos.y - qy;
-        let dist = Math.hypot(nx, ny);
-        if (dist >= r + CONTACT_ZONE) continue;
-        if (dist >= r) {
-          // Resting contact without overlap: only stop forces into the stone.
-          this.normals.push(nx / dist, ny / dist);
+        if (kind !== -1) {
+          this.contactBox(col, row, kind, onContact);
           continue;
         }
-        if (dist < 1e-9) {
-          const dl = this.pos.x - col;
-          const dr = col + 1 - this.pos.x;
-          const du = this.pos.y - row;
-          const dd = row + 1 - this.pos.y;
-          const m = Math.min(dl, dr, du, dd);
-          [nx, ny] = m === dl ? [-1, 0] : m === dr ? [1, 0] : m === du ? [0, -1] : [0, 1];
-          dist = -m;
-        } else {
-          nx /= dist;
-          ny /= dist;
+        const faces = this.blockers?.blockAt(col, row) ?? 0;
+        if (faces === 0) continue;
+        if (faces === ALL_FACES) {
+          this.contactBox(col, row, -3, onContact);
+          continue;
         }
-        this.pos.x += nx * (r - dist);
-        this.pos.y += ny * (r - dist);
-        this.normals.push(nx, ny);
-        const vn = this.vel.x * nx + this.vel.y * ny;
-        const key = row * this.width + col;
-        const isNew = !this.touching.has(key) && !this.nowTouching.has(key);
-        if (vn < 0) {
-          const speed = Math.hypot(this.vel.x, this.vel.y);
-          const pushing = this.axisForce.x * nx + this.axisForce.y * ny < 0;
-          const e = pushing && -vn < REST_SPEED ? 0 : RESTITUTION;
-          this.vel.x -= (1 + e) * vn * nx;
-          this.vel.y -= (1 + e) * vn * ny;
-          if (isNew && speed >= HIT_SPEED) {
-            onContact(kind >= 0 ? { kind: 'signal', index: kind, speed } : { kind: 'wall', speed });
-          }
-        }
-        this.nowTouching.add(key);
+        // Door d: only the closed faces block, and only from outside (Door::collision_response).
+        const { x, y } = this.pos;
+        if (faces & NORTH && y < row) this.contactAt(Math.max(col, Math.min(x, col + 1)), row, col, row, -3, onContact);
+        if (faces & SOUTH && y > row + 1) this.contactAt(Math.max(col, Math.min(x, col + 1)), row + 1, col, row, -3, onContact);
+        if (faces & WEST && x < col) this.contactAt(col, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact);
+        if (faces & EAST && x > col + 1) this.contactAt(col + 1, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact);
       }
     }
+  }
+
+  /** Contact with a solid cell. kind: -2 wall, -3 object, >= 0 signal stone index. */
+  private contactBox(col: number, row: number, kind: number, onContact: (c: Contact) => void): void {
+    const qx = Math.max(col, Math.min(this.pos.x, col + 1));
+    const qy = Math.max(row, Math.min(this.pos.y, row + 1));
+    this.contactAt(qx, qy, col, row, kind, onContact);
+  }
+
+  /** Contact with the closest point (qx, qy) of a blocking shape in cell (col, row). */
+  private contactAt(qx: number, qy: number, col: number, row: number, kind: number, onContact: (c: Contact) => void): void {
+    const r = MARBLE_RADIUS;
+    let nx = this.pos.x - qx;
+    let ny = this.pos.y - qy;
+    let dist = Math.hypot(nx, ny);
+    if (dist >= r + CONTACT_ZONE) return;
+    if (dist >= r) {
+      // Resting contact without overlap: only stop forces into the stone.
+      this.normals.push(nx / dist, ny / dist);
+      return;
+    }
+    if (dist < 1e-9) {
+      const dl = this.pos.x - col;
+      const dr = col + 1 - this.pos.x;
+      const du = this.pos.y - row;
+      const dd = row + 1 - this.pos.y;
+      const m = Math.min(dl, dr, du, dd);
+      [nx, ny] = m === dl ? [-1, 0] : m === dr ? [1, 0] : m === du ? [0, -1] : [0, 1];
+      dist = -m;
+    } else {
+      nx /= dist;
+      ny /= dist;
+    }
+    this.pos.x += nx * (r - dist);
+    this.pos.y += ny * (r - dist);
+    this.normals.push(nx, ny);
+    const vn = this.vel.x * nx + this.vel.y * ny;
+    const key = row * this.width + col;
+    const isNew = !this.touching.has(key) && !this.nowTouching.has(key);
+    if (vn < 0) {
+      const speed = Math.hypot(this.vel.x, this.vel.y);
+      const pushing = this.axisForce.x * nx + this.axisForce.y * ny < 0;
+      const e = pushing && -vn < REST_SPEED ? 0 : RESTITUTION;
+      this.vel.x -= (1 + e) * vn * nx;
+      this.vel.y -= (1 + e) * vn * ny;
+      if (isNew && speed >= HIT_SPEED) {
+        onContact(
+          kind >= 0
+            ? { kind: 'signal', index: kind, speed }
+            : kind === -3
+              ? { kind: 'object', col, row, speed }
+              : { kind: 'wall', speed },
+        );
+      }
+    }
+    this.nowTouching.add(key);
   }
 
   get position(): { x: number; y: number } {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseLevel } from './level';
+import { NORTH, SOUTH } from "./objects";
 import { DEFAULT_MOUSE_SPEED, floorProps, MARBLE_RADIUS, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
 
 const level = parseLevel({
@@ -82,5 +83,21 @@ describe('PhysicsWorld (Enigma model)', () => {
     run(w, 0.2);
     expect(w.position.y).toBeLessThanOrEqual(4 - MARBLE_RADIUS + 1e-6);
     expect(w.position.y).toBeGreaterThan(1);
+  });
+
+  it("door d blocks only its closed faces, and only from outside", () => {
+    // closed door in cell (4, 2) with faces north and south
+    const blockers = { blockAt: (c: number, r: number) => (c === 4 && r === 2 ? NORTH | SOUTH : 0) };
+    const across = new PhysicsWorld(level, blockers);
+    across.respawn(2.5, 2.5);
+    across.setVelocity(12, 0);
+    run(across, 0.6);
+    expect(across.position.x).toBeGreaterThan(5); // rolled through west to east
+    const down = new PhysicsWorld(level, blockers);
+    down.respawn(4.5, 1.5);
+    down.setVelocity(0, 4);
+    const contacts = run(down, 0.3);
+    expect(down.position.y).toBeLessThan(2); // bounced off the north face
+    expect(contacts.some((c) => c.kind === "object" && c.col === 4 && c.row === 2)).toBe(true);
   });
 });

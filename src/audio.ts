@@ -2,7 +2,19 @@
 // tools/convert-sounds.mjs), mapped to game events as in Enigma's
 // data/sound-defaults.lua. Played through Web Audio for low latency.
 
-const SAMPLES = ['st-stone', 'st-oxydopen', 'st-oxydopened', 'shatter', 'menuok', 'menumove'] as const;
+const SAMPLES = [
+  'st-stone',
+  'st-oxydopen',
+  'st-oxydopened',
+  'shatter',
+  'menuok',
+  'menumove',
+  'st-switch',
+  'st-metal',
+  'it-triggerdown',
+  'it-triggerup',
+  'pickup',
+] as const;
 type Sample = (typeof SAMPLES)[number];
 
 export class Sfx {
@@ -74,6 +86,28 @@ export class Sfx {
   /** Marble falls into the abyss: shatter sound when the fall animation ends. */
   fall(delaySeconds: number): void {
     this.play('shatter', 0.8, delaySeconds);
+  }
+
+  /** Enigma: st_switch turning (switchon), its collision sound is metal. */
+  switchOn(): void {
+    this.play('st-switch');
+  }
+
+  metal(speed: number): void {
+    this.play('st-metal', Math.min(1, Math.max(0.25, speed / 8)));
+  }
+
+  trigger(down: boolean): void {
+    this.play(down ? 'it-triggerdown' : 'it-triggerup');
+  }
+
+  pickup(): void {
+    this.play('pickup');
+  }
+
+  /** Marble shatters at once (door closed over it). */
+  shatter(): void {
+    this.play('shatter', 0.8);
   }
 
   win(): void {

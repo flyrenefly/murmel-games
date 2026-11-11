@@ -1,29 +1,25 @@
 # Enigma-Import
 
-7 von 1322 Levels übernommen (5 Pakete).
+20 von 1322 Levels übernommen (7 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Gegenstand it_trigger | 324 | 4 |
+| Lua-Rückruf | 318 | 8 |
 | keine Oxyd-Steine | 294 | 0 |
-| Stein st_switch | 258 | 0 |
-| Stein st_door_d | 247 | 0 |
-| Stein st_box_wood | 245 | 4 |
-| Stein st_grate_cross | 240 | 3 |
+| Stein st_box_wood | 245 | 9 |
 | Stein st_laser | 225 | 0 |
-| Gegenstand it_document | 203 | 8 |
 | Akteure: ac_marble_black+ac_marble_white | 171 | 0 |
 | Stein st_passage_black | 152 | 0 |
 | Stein st_oneway | 149 | 2 |
 | Gegenstand it_meditation_hollow | 143 | 0 |
-| Boden fl_space | 141 | 3 |
+| Boden fl_space | 140 | 5 |
 | Gegenstand it_sensor | 139 | 1 |
 | Stein st_boulder | 135 | 0 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 0 |
-| Stein st_death | 125 | 2 |
+| Stein st_death | 125 | 3 |
 | Boden fl_slope_ps | 119 | 0 |
-| Stein st_puzzle_yellow | 117 | 1 |
+| Stein st_puzzle_yellow | 117 | 3 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
@@ -32,21 +28,20 @@
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Boden fl_slope_pw | 107 | 0 |
-| Stein st_timer | 107 | 5 |
+| Stein st_timer | 107 | 7 |
 | Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 0 |
-| Stein st_door_a | 99 | 0 |
 | Stein st_stoneimpulse | 96 | 0 |
 | Gegenstand it_seed_wood | 96 | 0 |
 | Gegenstand it_key | 94 | 0 |
-| Gegenstand it_wormhole_on | 94 | 0 |
+| Gegenstand it_wormhole_on | 94 | 1 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 0 |
 | Stein st_key | 90 | 0 |
-| Boden fl_swamp | 84 | 1 |
-| Boden fl_hay | 82 | 0 |
-| Stein st_brownie | 77 | 1 |
+| Boden fl_swamp | 84 | 2 |
+| Boden fl_hay | 82 | 1 |
+| Stein st_brownie | 77 | 2 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
 | Boden fl_slope_ise | 74 | 0 |
@@ -74,13 +69,13 @@
 | Boden fl_slope_one | 52 | 0 |
 | Boden fl_slope_onw | 52 | 0 |
 | Stein st_rotator_ccw | 52 | 0 |
-| Stein st_puzzle | 52 | 1 |
+| Stein st_puzzle | 52 | 3 |
 | Stein st_box_rock | 51 | 0 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
 | Stein st_chess_black | 49 | 0 |
-| Stein st_pull | 48 | 0 |
+| Stein st_pull | 48 | 1 |
 | Stein st_rawglass_movable | 46 | 0 |
 | Stein st_invisible | 43 | 1 |
 | Stein st_turnstilearm | 43 | 0 |
@@ -93,7 +88,6 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Gegenstand it_spring_keep | 38 | 0 |
-| Stein st_door_b | 38 | 0 |
 | Gegenstand it_springboard | 38 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -103,7 +97,7 @@
 | Stein st_plop | 34 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Stein st_oneway_white | 33 | 0 |
-| Stein st_box_hay | 33 | 0 |
+| Stein st_box_hay | 33 | 1 |
 | Gegenstand it_wrench | 33 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
@@ -115,7 +109,6 @@
 | Akteure: ac_pearl_black+ac_pearl_white | 31 | 0 |
 | Stein st_death_invisible | 30 | 0 |
 | Stein st_granite_hollow | 29 | 0 |
-| Stein st_switch_black | 29 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
@@ -129,15 +122,15 @@
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
+| Stein fl_bridge_gc | 26 | 0 |
 | Stein st_granite_movable | 26 | 0 |
 | Stein st_greenbrown_hollow | 25 | 0 |
 | Boden fl_slope_te | 25 | 0 |
 | Gegenstand it_meditation_dent | 25 | 0 |
 | Gegenstand it_meditation_hill | 25 | 0 |
 | Gegenstand it_blocker | 25 | 0 |
-| Gegenstand it_umbrella | 24 | 0 |
+| Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 0 |
-| Stein st_grate_framed | 24 | 0 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Akteure: ac_marble_black+ac_rotor | 23 | 0 |
@@ -145,7 +138,7 @@
 | Boden fl_slope_tw | 23 | 0 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_fake_quake | 22 | 0 |
+| Stein st_fake_quake | 22 | 1 |
 | Gegenstand it_spring_drop | 22 | 0 |
 | Stein st_chameleon | 22 | 0 |
 | Stein st_ghost_break | 22 | 0 |
@@ -160,7 +153,6 @@
 | Gegenstand it_pipe_es | 20 | 0 |
 | Gegenstand it_vortex_closed | 20 | 0 |
 | Stein st_magic_brick | 19 | 0 |
-| Stein st_switch_white | 19 | 0 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Boden fl_scales_concrete | 19 | 0 |
@@ -197,11 +189,10 @@
 | Stein st_ice | 14 | 1 |
 | Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
-| Stein st_redfiber | 13 | 0 |
-| Stein st_door_c | 13 | 0 |
+| Stein st_redfiber | 13 | 1 |
 | Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_landmine | 13 | 1 |
+| Gegenstand it_landmine | 13 | 2 |
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
@@ -214,11 +205,13 @@
 | Boden fl_slope | 11 | 0 |
 | Gegenstand it_crack_s | 11 | 0 |
 | Akteure: ac_marble_black+ac_marble_white+ac_rotor | 11 | 1 |
-| Gegenstand it_burnable_fireproof | 11 | 0 |
+| Gegenstand it_burnable_fireproof | 11 | 1 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
+| Aktion openclose | 10 | 0 |
+| Stein it_magnet_off | 10 | 0 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 0 |
@@ -239,10 +232,12 @@
 | Stein st_monoflop | 8 | 0 |
 | Akteure: ac_marble_black+ac_rotor+ac_top | 8 | 0 |
 | Stein st_plaster_movable | 8 | 0 |
+| Stein it_vortex_closed | 8 | 0 |
 | Stein st_camouflage_movable | 8 | 0 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Akteure: ac_marble_black+ac_marble_white+ac_pearl_white | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
+| Stein fl_bridge_bw | 7 | 0 |
 | Stein st_blur_magic | 7 | 0 |
 | Stein st_blur_straight | 7 | 0 |
 | Stein st_camouflage_hollow | 7 | 0 |
@@ -275,10 +270,12 @@
 | Gegenstand it_meditation_volcano | 4 | 0 |
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
+| Stein st_oxyd_a | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
+| Stein st_oxyd_b | 3 | 1 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Akteure: ac_marble_white+ac_pearl_white | 3 | 0 |
@@ -286,15 +283,16 @@
 | Stein st_laserflop | 3 | 0 |
 | Akteure: ac_killer_white+ac_marble_black+ac_marble_white | 3 | 0 |
 | Stein st_metal_hollow | 3 | 0 |
+| Stein fl_bridge_bn | 3 | 0 |
 | Akteure: ac_marble_black+ac_marble_white+ac_rotor+ac_top | 3 | 0 |
 | Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Boden fl_hay_framed | 3 | 0 |
 | Akteure: ac_pearl_white+ac_top | 3 | 0 |
-| Gegenstand it_strip_s | 3 | 0 |
-| Gegenstand it_strip_new | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
+| Gegenstand it_strip_new | 3 | 0 |
+| Gegenstand it_strip_s | 3 | 0 |
 | Akteure: ac_bug+ac_horse+ac_marble_black+ac_marble_white+ac_rotor+ac_top | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Akteure: ac_marble_black+ac_pearl_white+ac_rotor+ac_top | 2 | 0 |
@@ -317,6 +315,7 @@
 | Boden fl_slope_twl | 2 | 0 |
 | Boden fl_slope_tnl | 2 | 0 |
 | Akteure: ac_horse+ac_marble_black+ac_rotor | 2 | 0 |
+| Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Akteure: ac_bug+ac_marble_black+ac_marble_white | 2 | 0 |
 | Boden fl_slope_tsr | 2 | 0 |
@@ -330,19 +329,26 @@
 | Gegenstand it_wormhole_off | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Akteure: ac_marble_black+ac_pearl_black | 2 | 0 |
+| Stein fl_bridge_be | 2 | 0 |
 | Akteure: ac_marble_glass | 2 | 0 |
 | Akteure: ac_marble_black+ac_pearl_white+ac_top | 1 | 0 |
 | Akteure: ac_marble_black+ac_pearl_white+ac_rotor | 1 | 0 |
+| Stein it_seed_volcano | 1 | 0 |
 | Akteure: ac_killer_white+ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
+| Stein it_meditation_hill | 1 | 0 |
 | Akteure: ac_pearl_black+ac_top | 1 | 0 |
+| Stein st_oxyd_c | 1 | 0 |
 | Akteure: ac_horse+ac_marble_black+ac_marble_white+ac_rotor | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden fl_slope_ter | 1 | 0 |
 | Boden fl_slope_tnr | 1 | 0 |
 | Lizenz: special | 1 | 1 |
+| Stein st_door_d | 1 | 0 |
+| Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
 | Akteure: ac_bug+ac_horse+ac_marble_black+ac_rotor+ac_top | 1 | 0 |
 | Stein st_darkglass_movable | 1 | 0 |
+| Stein it_meditation_bump | 1 | 0 |
 | Akteure: ac_horse+ac_marble_black+ac_marble_white+ac_rotor+ac_top | 1 | 0 |
 | Akteure: ac_killer_white+ac_pearl_black | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
@@ -350,10 +356,12 @@
 | Akteure: ac_bug+ac_horse+ac_marble_black+ac_top | 1 | 0 |
 | Akteure: ac_bug+ac_marble_black+ac_top | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
+| Stein fl_water | 1 | 0 |
 | Akteure: ac_killer_white+ac_marble_black+ac_pearl_white | 1 | 0 |
 | Akteure: ac_bug+ac_killer_white+ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
 | Akteure: ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
 | Boden fl_scales_gray | 1 | 0 |
+| Stein fl_bridge_bs | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
 | Boden fl_forward | 1 | 0 |
@@ -361,6 +369,7 @@
 | Gegenstand it_pipe_w | 1 | 0 |
 | Gegenstand it_pipe_n | 1 | 0 |
 | Gegenstand it_pipe_s | 1 | 0 |
+| Stein it_meditation_hollow | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Akteure: ac_horse+ac_killer_black+ac_pearl_white | 1 | 0 |
 | Akteure: ac_marble_white+ac_pearl_black | 1 | 0 |
@@ -368,3 +377,4 @@
 | Boden fl_forward_darkgray | 1 | 0 |
 | Akteure: ac_marble_glass+ac_marble_white | 1 | 0 |
 | Stein st_dispenser_bombwhite | 1 | 0 |
+| Stein fl_tigris | 1 | 0 |

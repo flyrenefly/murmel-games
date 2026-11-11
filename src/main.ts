@@ -2,6 +2,7 @@ import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
 import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
+import { ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
@@ -72,6 +73,7 @@ let packName = 'Murmel';
 let level: Level;
 let board: PairBoard;
 let physics: PhysicsWorld | null = null;
+let objects: ObjectWorld = new ObjectWorld([], 1);
 let acc = 0;
 let falls = 0;
 let falling = -1; // seconds into the fall animation, -1 = not falling
@@ -89,7 +91,7 @@ function buildRenderer(): void {
   document.body.dataset.style = style;
   if (set) {
     document.body.dataset.theme = 'klassisch';
-    void classic.build(level, set, board.states);
+    void classic.build(level, set, board.states, objects);
   } else view.build(level, style as ThemeId, board.states);
 }
 
@@ -110,7 +112,8 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   level = parseLevel(packList[i]);
   board = new PairBoard(level.signals.map((s) => s.symbol));
   physics?.dispose();
-  physics = new PhysicsWorld(level);
+  objects = new ObjectWorld(level.objects, level.width, level.texts);
+  physics = new PhysicsWorld(level, objects);
   acc = 0;
   falls = 0;
   falling = -1;
@@ -142,11 +145,11 @@ function cycleStyle(): void {
 }
 
 let toastTimer = 0;
-function showToast(text: string): void {
+function showToast(text: string, ms = 1400): void {
   toast.textContent = text;
   toast.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => (toast.hidden = true), 1400);
+  toastTimer = window.setTimeout(() => (toast.hidden = true), ms);
 }
 
 function changeMouseSpeed(delta: number): void {
@@ -346,8 +349,38 @@ function handlePairEvents(events: PairEvent[]): void {
 }
 
 function onContact(c: Contact): void {
+  if (c.kind === 'object') {
+    // Switches sound metallic (Switch::collision_sound), doors like stone.
+    if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
+    else sfx.stone(c.speed);
+    objects.hit(c.col, c.row, 0);
+    return;
+  }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
   if (c.kind === 'signal') handlePairEvents(board.hit(c.index));
+}
+
+/** The marble dies: fall animation, then respawn at the start. */
+function marbleDies(shatter: boolean): void {
+  if (falling >= 0 || !physics) return;
+  falling = 0;
+  physics.setActive(false);
+  objects.marbleGone();
+  falls++;
+  if (shatter) sfx.shatter();
+  else sfx.fall(FALL_SECONDS);
+  updateHud();
+}
+
+function handleObjectEvents(events: ObjectEvent[]): void {
+  for (const e of events.splice(0)) {
+    if (e.type === 'shatter') marbleDies(true);
+    else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
+    else if (e.name === 'switch') sfx.switchOn();
+    else if (e.name === 'triggerdown') sfx.trigger(true);
+    else if (e.name === 'triggerup') sfx.trigger(false);
+    else if (e.name === 'pickup') sfx.pickup();
+  }
 }
 
 // ---------- main loop ----------
@@ -377,14 +410,11 @@ function frame(now: number): void {
       const p = physics.position;
       cur.x = p.x;
       cur.y = p.y;
+      if (falling < 0) objects.marbleAt(Math.floor(p.x), Math.floor(p.y));
+      objects.update(PHYSICS_DT * 1000);
+      handleObjectEvents(objects.events);
       const under = cellAt(level, Math.floor(p.x), Math.floor(p.y));
-      if (falling < 0 && under && isDeadly(under.floor)) {
-        falling = 0;
-        physics.setActive(false);
-        falls++;
-        sfx.fall(FALL_SECONDS);
-        updateHud();
-      }
+      if (falling < 0 && under && isDeadly(under.floor)) marbleDies(false);
       acc -= PHYSICS_DT;
     }
   } else {
@@ -492,4 +522,11 @@ requestAnimationFrame((t) => {
     physics.setVelocity(v.x + x, v.y + y);
   },
   mouse: (dx: number, dy: number) => physics?.addMouseForce(dx * mouseSpeed, dy * mouseSpeed),
+  objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone })),
+  /** Test helper: put the marble at x/y (tile units). */
+  teleport: (x: number, y: number) => {
+    physics?.respawn(x, y);
+    prev.x = cur.x = x;
+    prev.y = cur.y = y;
+  },
 };

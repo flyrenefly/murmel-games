@@ -12,7 +12,7 @@ Herkunft laut Enigma (`ENIGMA-SOUNDS-README.txt`):
 | shatter.wav | AfterStep |
 | st-oxydopened.wav | xboing |
 | menuok.wav | xlogical |
-| st-stone.wav, st-oxydopen.wav, menumove.wav, ballcollision.wav | nach bestem Wissen des Enigma-Teams gemeinfrei |
+| st-stone.wav, st-oxydopen.wav, menumove.wav, ballcollision.wav, st-switch.wav, st-metal.wav, it-triggerdown.wav, it-triggerup.wav, pickup.wav | nach bestem Wissen des Enigma-Teams gemeinfrei |
 
 Enigma verteilt diese Dateien als Teil seines GPL-Pakets; Murmel übernimmt sie
 mit dieser Quellenangabe.

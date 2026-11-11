@@ -86,6 +86,31 @@ Level und exportiert den fertigen Weltzustand:
 4. Oxyd-Farben ohne feste Vorgabe werden wie in Enigma bei jedem Levelstart neu
    gemischt (`?` im Levelformat).
 
+## Enigma-Objekte nachbauen – Stufe 1 (ab 11.11.2026)
+
+Nutzerentscheidung 11.11.2026: Objekte einzeln nachbauen (statt Enigma als WebAssembly).
+Erster Konverterlauf: 7 von 1322 Levels; fast jedes Level braucht mehrere Objekte.
+Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quelltext:
+
+- **Levelformat:** neben `map`/`legend` eine Liste `objects` (`{x, y, k, a}`: Zelle,
+  Enigma-Art, Attribute). Interaktive Steine und alle Gegenstände stehen dort.
+- **Nachrichten** (`Object::performAction`, `StateObject::message`): Ziel = Name,
+  `#id` oder `name#*`; Aktion `toggle` (Standard), `signal` (Wert 0/1), `open`/`on`,
+  `close`/`off`; `target_N`/`action_N` je Zustand; `inverse` kehrt den Wert um.
+  Lua-Rückrufe (`callback`) werden nicht nachgebaut – solche Levels bleiben draußen.
+- **it_trigger:** gedrückt, solange der Murmel-Mittelpunkt auf dem Feld liegt;
+  sendet `true` beim Drücken, `false` beim Loslassen; `invisible` = unsichtbar.
+- **st_switch** (auch `_black`/`_white`, `instant`): kippt beim Treffer, Animation
+  3 × 60 ms, Aktion mit neuem Zustand nach der Animation (sofort bei `instant`);
+  farbige Schalter reagieren nur auf die gleichfarbige Murmel.
+- **st_door_a/b/c/d:** geschlossen massiv, offen durchlässig, Öffnen/Schließen mit
+  Animation (60 ms je Bild), während der Bewegung massiv; schließt eine Tür über der
+  Murmel, zerspringt sie. `st_door_d` sperrt nur die beiden Seiten aus `faces`
+  (`$connections`: W=1, S=2, O=4, N=8).
+- **st_grate_cross/framed:** für die rollende Murmel durchlässig.
+- **it_document:** beim Überrollen erscheint der Text (aus `el:string` des Levels,
+  deutsch falls übersetzt); Abweichung: kein Inventar, der Zettel verschwindet sofort.
+
 ## Enigma-Levels übernehmen (Phase 2)
 
 Analyse am 11.11.2026 über die Leveldateien von Enigma (Stand Repo master):

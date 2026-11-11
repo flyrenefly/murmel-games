@@ -1,5 +1,11 @@
 [
  {
+  "pack": "tutorial_basic",
+  "title": "Basic Tutorial",
+  "count": 9,
+  "of": 65
+ },
+ {
   "pack": "enigma_i",
   "title": "Enigma I",
   "count": 2,
@@ -8,13 +14,19 @@
  {
   "pack": "enigma_ii",
   "title": "Enigma II",
+  "count": 3,
+  "of": 100
+ },
+ {
+  "pack": "enigma_iii",
+  "title": "Enigma III",
   "count": 1,
   "of": 100
  },
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 2,
+  "count": 3,
   "of": 100
  },
  {
