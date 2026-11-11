@@ -48,6 +48,7 @@ const OBJECTS = [
   [/^st_timer$/, ['st_timer', 'sh_round']],
   [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
+  [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
@@ -178,6 +179,9 @@ function convertLevel(pack, meta, xml, exp) {
     blockers = null;
     return reject(`Lizenz: ${licence || 'keine Angabe'}`);
   }
+  // Not built yet: hollow puzzle stones and other floors for fallen puzzles.
+  if (/hollow\s*=\s*true/.test(xml)) reject('Puzzle hohl');
+  if (/FallenPuzzle/.test(xml)) reject('FallenPuzzle');
   if (/el:single="false"/.test(xml)) {
     blockers = null;
     return reject('nur Netzwerkspiel');

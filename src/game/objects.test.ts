@@ -200,6 +200,66 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(3, 0)).toBe(1); // now WEST
   });
 
+  describe("puzzle stones", () => {
+    const Y = (x: number, y: number, c: number): ObjectDef => ({ x, y, k: "st_puzzle_yellow", a: { color: "3", $connections: String(c) } });
+    const B = (x: number, y: number, c: number): ObjectDef => ({ x, y, k: "st_puzzle", a: { color: "4", $connections: String(c) } });
+    const pos = (w: ObjectWorld) => w.objects.filter((o) => !o.gone).map((o) => [o.col, o.row, Number(o.attrs.$connections)]);
+    const floors = new Map<string, string>();
+    const env: ObjectEnv = {
+      stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5,
+      floorAt: (c, r) => floors.get(c + "," + r) ?? "fl_gray",
+      setFloor: (c, r, k) => void floors.set(c + "," + r, k),
+    };
+    const pw = (defs: ObjectDef[]) => {
+      floors.clear();
+      const w = new ObjectWorld(defs, W, {}, env);
+      w.marbleAt(0, 4);
+      return w;
+    };
+
+    it("a hit on a yellow line rotates it away from the marble", () => {
+      // three stones in a row, connections west/east open (incomplete)
+      const w = pw([Y(2, 1, 4), Y(3, 1, 5), Y(4, 1, 1 | 4)]);
+      w.hit(2, 1, 0, -1, 0, -2); // marble west of (2,1), soft hit
+      expect(pos(w)).toEqual([[3, 1, 4], [4, 1, 5], [2, 1, 5]]);
+    });
+
+    it("a complete yellow puzzle with no other neighbours explodes stone by stone", () => {
+      const w = pw([Y(2, 1, 4), Y(3, 1, 1)]); // east ↔ west: complete
+      w.hit(2, 1, 0, -1, 0, -2);
+      expect(w.blockAt(2, 1)).toBe(0); // exploding: passable
+      expect(w.objects[1].puzzle).toBe("ignited");
+      w.update(300);
+      w.update(100);
+      expect(w.objects.every((o) => o.gone)).toBe(true);
+      expect(w.events.filter((e) => e.type === "sound" && e.name === "explode")).toHaveLength(2);
+    });
+
+    it("a single yellow stone is pushed like a box when hit hard", () => {
+      const w = pw([Y(2, 1, 4)]);
+      w.hit(2, 1, 0, -1, 0, -6);
+      expect(pos(w)).toEqual([[3, 1, 4]]);
+    });
+
+    it("a blue fragment moves as a whole and sinks into water as a floor", () => {
+      const w = pw([B(2, 1, 4), B(3, 1, 1 | 2), B(3, 2, 8)]); // L-shape, complete
+      w.hit(2, 1, 0, 0, -1, -6); // marble above (2,1): push south
+      expect(pos(w)).toEqual([[2, 2, 4], [3, 2, 3], [3, 3, 8]]);
+      floors.set("2,3", "fl_water");
+      floors.set("3,3", "fl_water");
+      floors.set("3,4", "fl_water");
+      w.hit(2, 2, 0, 0, -1, -6);
+      expect(pos(w)).toEqual([]);
+      expect(floors.get("3,4")).toBe("fl_gray");
+    });
+
+    it("a blue fragment does not move into another stone", () => {
+      const w = pw([B(2, 1, 4), B(3, 1, 1), B(2, 2, 0)]);
+      w.hit(2, 1, 0, 0, -1, -6);
+      expect(pos(w)).toEqual([[2, 1, 4], [3, 1, 1], [2, 2, 0]]);
+    });
+  });
+
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 

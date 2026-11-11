@@ -107,6 +107,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
+  if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
@@ -343,6 +344,22 @@ export class ClassicView {
     };
     const p = world.progress(o);
     const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'puzzle') {
+      if (o.gone) return;
+      if (o.puzzle === 'exploding') {
+        if (pass === 'stone') this.image('it_explosion', px, py);
+        return;
+      }
+      if (pass === 'shadow') {
+        this.image('sh_solid', px, py);
+        return;
+      }
+      // st_puzzle_<colour>.png: 4×4 sheet, column-major by connection bits (models-2d.lua).
+      const c = Number(o.attrs.$connections) || 0;
+      const im = this.img![o.attrs.color === '3' ? 'st_puzzle_yellow' : 'st_puzzle_blue'];
+      if (im) this.ctx.drawImage(im, Math.floor(c / 4) * 32, (c % 4) * 32, 32, 32, px, py, 32, 32);
+      return;
+    }
     if (o.cls === 'death') {
       if (o.kind === 'st_death_invisible' || o.attrs.invisible === 'true') return;
       if (pass === 'shadow') this.image('sh_round', px, py);

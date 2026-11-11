@@ -16,6 +16,7 @@ const SAMPLES = [
   'pickup',
   'st-move',
   'quake',
+  'explosion0',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -101,6 +102,11 @@ export class Sfx {
 
   trigger(down: boolean): void {
     this.play(down ? 'it-triggerdown' : 'it-triggerup');
+  }
+
+  /** Enigma stonedestroy (puzzle stones exploding). */
+  explode(): void {
+    this.play('explosion0', 0.7);
   }
 
   quake(): void {

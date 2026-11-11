@@ -3,7 +3,8 @@
 // switches, triggers and doors that talk to each other by messages, grates,
 // documents, pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone) and
 // timers (stones/TimerStone.cc), quake stones (stones/QuakeStone.cc), death stones
-// (stones/DeathStone.cc) and one-way stones (stones/OneWayStone.cc).
+// (stones/DeathStone.cc), one-way stones (stones/OneWayStone.cc) and puzzle stones
+// (stones/PuzzleStone.cc).
 // Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
@@ -14,7 +15,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -34,6 +35,20 @@ export const DEATH_MS = 3 * 140;
 /** Enigma Direction numbers (WEST 0, SOUTH 1, EAST 2, NORTH 3) as face bits. */
 const DIR_FACE = [1, 2, 4, 8];
 const DIR_SUFFIX: Record<string, number> = { w: 0, s: 1, e: 2, n: 3 };
+/** Puzzle stones: Enigma colour number of yellow ones (blue is 4). */
+const PUZZLE_YELLOW = '3';
+/** PuzzleStone::explodeStone: neighbours ignite after 0.2 s; it_explosion lasts 50 ms. */
+const PUZZLE_FUSE_MS = 200;
+export const PUZZLE_EXPLODE_MS = 50;
+/** Bridge floor of a fallen puzzle (server::FallenPuzzle default). */
+const FALLEN_PUZZLE = 'fl_gray';
+/** Steps in face-bit order with their bit: W, S, E, N. */
+const STEPS: [number, number, number][] = [
+  [-1, 0, 1],
+  [0, 1, 2],
+  [1, 0, 4],
+  [0, -1, 8],
+];
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
 export const PUSH_SPEED = 4;
 /** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
@@ -75,6 +90,9 @@ export interface GameObject {
   gone: boolean;
   /** Timer: time of the next alarm (ms), and the value it will send. */
   alarm?: { at: number; value: boolean };
+  /** Puzzle stone: 'pending' (cluster about to explode), 'ignited' (explodes at `fuse`), 'exploding'. */
+  puzzle?: 'pending' | 'ignited' | 'exploding';
+  fuse?: number;
 }
 
 export type ObjectEvent =
@@ -82,7 +100,7 @@ export type ObjectEvent =
   | { type: 'shatter' }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -95,6 +113,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_quake') return 'quake';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
+  if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
   return null;
 }
 
@@ -190,6 +209,8 @@ export class ObjectWorld {
       }
       if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
+      // PuzzleStone::collision_response: exploding stones let the marble pass.
+      if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding') return ALL_FACES;
     }
     return 0;
   }
@@ -210,6 +231,10 @@ export class ObjectWorld {
         this.quake(o);
         continue;
       }
+      if (o.cls === 'puzzle') {
+        this.hitPuzzle(o, nx, ny, vn);
+        return; // the puzzle may have moved: no further objects of this cell
+      }
       if (o.cls !== 'switch') continue;
       const c = o.attrs.color;
       const ic = c === undefined || c === '' ? 0 : Number(c) + 1;
@@ -220,6 +245,8 @@ export class ObjectWorld {
   /** Any contact with the stone in this cell, also a soft one (Stone::actor_touch). */
   touch(col: number, row: number): void {
     for (const o of this.at(col, row)) {
+      // PuzzleStone::actor_contact: ignited or exploding puzzle stones shatter the marble.
+      if (o.cls === 'puzzle' && (o.puzzle === 'ignited' || o.puzzle === 'exploding')) this.events.push({ type: 'shatter' });
       if (o.cls !== 'death') continue;
       // DeathStone::actor_touch: the marble shatters, the stone pulses.
       this.events.push({ type: 'shatter' });
@@ -259,9 +286,160 @@ export class ObjectWorld {
     return true;
   }
 
+  // ---------- puzzle stones (PuzzleStone.cc, Enigma mode) ----------
+
+  private puzzleAt(col: number, row: number, color: string): GameObject | null {
+    return this.at(col, row).find((x) => x.cls === 'puzzle' && !x.gone && (x.attrs.color ?? '') === color) ?? null;
+  }
+
+  private conn(o: GameObject): number {
+    return Number(o.attrs.$connections) || 0;
+  }
+
+  /** findFragment: stones joined by matching connections; complete = no open connection. */
+  puzzleFragment(o: GameObject): { cluster: GameObject[]; complete: boolean } {
+    const color = o.attrs.color ?? '';
+    const seen = new Set([o]);
+    const todo = [o];
+    let complete = true;
+    while (todo.length) {
+      const p = todo.pop()!;
+      for (const [dx, dy, bit] of STEPS) {
+        if (!(this.conn(p) & bit)) continue;
+        const q = this.puzzleAt(p.col + dx, p.row + dy, color);
+        const back = bit === 1 ? 4 : bit === 4 ? 1 : bit === 2 ? 8 : 2;
+        if (!q || !(this.conn(q) & back)) {
+          complete = false;
+          continue;
+        }
+        if (!seen.has(q)) {
+          seen.add(q);
+          todo.push(q);
+        }
+      }
+    }
+    return { cluster: [...seen], complete };
+  }
+
+  /** findAdjacents: all puzzle stones of the colour touching each other. */
+  private puzzleAdjacents(o: GameObject): GameObject[] {
+    const color = o.attrs.color ?? '';
+    const seen = new Set([o]);
+    const todo = [o];
+    while (todo.length) {
+      const p = todo.pop()!;
+      for (const [dx, dy] of STEPS) {
+        const q = this.puzzleAt(p.col + dx, p.row + dy, color);
+        if (q && !seen.has(q)) {
+          seen.add(q);
+          todo.push(q);
+        }
+      }
+    }
+    return [...seen];
+  }
+
+  private hitPuzzle(o: GameObject, nx: number, ny: number, vn: number): void {
+    if (o.puzzle) return; // not idle
+    const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+    if (!face) return; // contact_face is NODIR: neither rotation nor move
+    const dx = -nx;
+    const dy = -ny;
+    const push = vn < -PUSH_SPEED;
+    if (o.attrs.color === PUZZLE_YELLOW) {
+      if (this.explodePuzzle(o)) return;
+      // A single yellow stone moves like a box, otherwise its line rotates.
+      if (push && this.puzzleFragment(o).cluster.length === 1 && !this.stoneAt(o.col + dx, o.row + dy)) {
+        this.movePuzzles([o], dx, dy, false);
+      } else this.rotatePuzzleLine(o, dx, dy);
+    } else if (push) {
+      this.moveCluster(o, dx, dy);
+    }
+  }
+
+  /** explodeCluster: a complete fragment that touches no other stone of its colour explodes. */
+  private explodePuzzle(o: GameObject): boolean {
+    const { cluster, complete } = this.puzzleFragment(o);
+    if (!complete || this.puzzleAdjacents(o).length !== cluster.length) return false;
+    for (const p of cluster) p.puzzle = 'pending';
+    this.explodeStone(o);
+    return true;
+  }
+
+  private explodeStone(o: GameObject): void {
+    o.puzzle = 'exploding';
+    o.moving = { to: 0, since: this.now, dur: PUZZLE_EXPLODE_MS };
+    this.events.push({ type: 'sound', name: 'explode' });
+    for (const [dx, dy] of STEPS) {
+      const q = this.puzzleAt(o.col + dx, o.row + dy, o.attrs.color ?? '');
+      if (q && q.puzzle === 'pending') {
+        q.puzzle = 'ignited';
+        q.fuse = this.now + PUZZLE_FUSE_MS;
+      }
+    }
+  }
+
+  /** rotateLine: the same-coloured stones from o in a direction shift by one, the last wraps to o's place. */
+  private rotatePuzzleLine(o: GameObject, dx: number, dy: number): void {
+    const color = o.attrs.color ?? '';
+    const line: GameObject[] = [];
+    for (let c = o.col, r = o.row, p = this.puzzleAt(c, r, color); p; c += dx, r += dy, p = this.puzzleAt(c, r, color)) line.push(p);
+    if (line.length < 2) return;
+    const cells = line.map((p) => [p.col, p.row]);
+    line.forEach((p) => this.unplace(p));
+    line.forEach((p, i) => {
+      const [c, r] = cells[(i + 1) % cells.length];
+      p.col = c;
+      p.row = r;
+      this.place(p);
+    });
+    this.events.push({ type: 'sound', name: 'move' });
+  }
+
+  /** moveCluster: the whole fragment moves if every target cell is free or part of it. */
+  private moveCluster(o: GameObject, dx: number, dy: number): void {
+    const { cluster, complete } = this.puzzleFragment(o);
+    const members = new Set(cluster);
+    for (const p of cluster) {
+      const c = p.col + dx;
+      const r = p.row + dy;
+      if (this.env.stoneAt(c, r)) return;
+      if (this.at(c, r).some((x) => !x.gone && x.cls !== 'trigger' && x.cls !== 'document' && !members.has(x))) return;
+    }
+    // Pushed by the marble (waterSink): water always takes the cluster, abyss only a complete one.
+    const bridge = cluster.every((p) => {
+      const fl = this.env.floorAt(p.col + dx, p.row + dy);
+      return (fl === 'fl_abyss' && complete) || fl === 'fl_water';
+    });
+    this.movePuzzles(cluster, dx, dy, bridge);
+  }
+
+  private movePuzzles(list: GameObject[], dx: number, dy: number, bridge: boolean): void {
+    const old = list.map((p) => [p.col, p.row]);
+    list.forEach((p) => this.unplace(p));
+    for (const p of list) {
+      p.col += dx;
+      p.row += dy;
+      this.place(p);
+      if (p.col === this.marble.col && p.row === this.marble.row) this.events.push({ type: 'shatter' });
+    }
+    this.events.push({ type: 'sound', name: 'move' });
+    if (bridge) {
+      for (const p of list) {
+        p.gone = true;
+        this.unplace(p);
+        this.env.setFloor(p.col, p.row, FALLEN_PUZZLE);
+        this.events.push({ type: 'floor', col: p.col, row: p.row });
+      }
+    }
+    for (const [c, r] of old) this.updateTriggers(c, r);
+    for (const p of list) this.updateTriggers(p.col, p.row);
+  }
+
   /** Trigger::updateIState: pressed by the marble or a stone on it. */
   private updateTriggers(col: number, row: number): void {
-    const pressed = (col === this.marble.col && row === this.marble.row) || this.at(col, row).some((x) => x.cls === 'box' && !x.gone);
+    const pressed =
+      (col === this.marble.col && row === this.marble.row) || this.at(col, row).some((x) => (x.cls === 'box' || x.cls === 'puzzle') && !x.gone);
     for (const o of this.at(col, row)) {
       if (o.cls !== 'trigger' || o.state === (pressed ? 1 : 0)) continue;
       o.state = pressed ? 1 : 0;
@@ -311,6 +489,15 @@ export class ObjectWorld {
   /** Advance animations by ms milliseconds. */
   update(ms: number): void {
     this.now += ms;
+    for (const o of this.objects) {
+      if (o.puzzle === 'ignited' && o.fuse !== undefined && this.now >= o.fuse) this.explodeStone(o);
+      if (o.puzzle === 'exploding' && o.moving && this.now - o.moving.since >= o.moving.dur) {
+        // PuzzleStone::animcb: the stone is gone.
+        o.gone = true;
+        o.moving = null;
+        this.unplace(o);
+      }
+    }
     for (const o of this.objects) {
       // TimerStone::alarm: send the value, flip it; a non-looping timer stops.
       while (o.alarm && this.now >= o.alarm.at) {

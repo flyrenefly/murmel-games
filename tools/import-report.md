@@ -1,13 +1,13 @@
 # Enigma-Import
 
-52 von 1322 Levels übernommen (12 Pakete).
+58 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 362 | 15 |
+| Lua-Rückruf | 362 | 19 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
-| Akteure: ac_marble_black+ac_marble_white | 171 | 2 |
+| Akteure: ac_marble_black+ac_marble_white | 171 | 3 |
 | Stein st_passage_black | 152 | 0 |
 | Gegenstand it_meditation_hollow | 143 | 1 |
 | Gegenstand it_sensor | 139 | 1 |
@@ -15,7 +15,6 @@
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 1 |
 | Boden fl_slope_ps | 119 | 0 |
-| Stein st_puzzle_yellow | 117 | 5 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
@@ -26,11 +25,11 @@
 | Boden fl_slope_pw | 107 | 0 |
 | Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
-| Gegenstand it_magicwand | 101 | 0 |
+| Gegenstand it_magicwand | 101 | 1 |
 | Stein st_stoneimpulse | 96 | 3 |
 | Gegenstand it_seed_wood | 96 | 2 |
 | Gegenstand it_key | 94 | 0 |
-| Gegenstand it_wormhole_on | 94 | 3 |
+| Gegenstand it_wormhole_on | 94 | 4 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
@@ -62,7 +61,6 @@
 | Boden fl_slope_one | 52 | 0 |
 | Boden fl_slope_onw | 52 | 0 |
 | Stein st_rotator_ccw | 52 | 0 |
-| Stein st_puzzle | 52 | 3 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
@@ -103,13 +101,14 @@
 | Gegenstand it_coffee_drop | 28 | 0 |
 | Stein st_scissors | 28 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Akteure: ac_pearl_black | 28 | 0 |
+| Akteure: ac_pearl_black | 28 | 1 |
 | Stein st_actorimpulse_invisible | 27 | 0 |
 | Akteure: ac_marble_black+ac_top | 27 | 2 |
 | Stein st_blur_cross | 27 | 0 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
+| FallenPuzzle | 27 | 1 |
 | Gegenstand it_cross | 26 | 0 |
 | Stein fl_bridge_gc | 26 | 0 |
 | Stein st_granite_movable | 26 | 0 |
@@ -125,6 +124,7 @@
 | Akteure: ac_marble_black+ac_rotor | 23 | 3 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
+| Puzzle hohl | 23 | 1 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_fake_quake | 22 | 2 |

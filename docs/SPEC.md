@@ -125,6 +125,15 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Murmel; Pulsanimation 3 × 140 ms; `st_death_invisible` unsichtbar. Noch nicht: beweglich.
 - **st_oneway** (`OneWayStone.cc`): Durchgang nur in Pfeilrichtung (sperrt die Pfeilseite
   von außen); `signal`/`flip` drehen um; weiße sperren die schwarze Murmel ganz.
+- **st_puzzle** (`PuzzleStone.cc`, Enigma-Modus): Steine mit Verbindungen (`$connections`)
+  bilden Fragmente; vollständig = keine offene Verbindung. *Gelb:* Treffer auf eine Seite
+  rotiert die Reihe gleichfarbiger Steine von der Murmel weg (letzter rückt an den Anfang),
+  ein einzelner Stein wird bei kräftigem Stoß wie eine Kiste geschoben, ein vollständiges
+  Puzzle ohne weitere Nachbarn explodiert Stein für Stein (0,2 s Zündverzögerung, die
+  Explosion zerschmettert die Murmel). *Blau:* kräftiger Stoß schiebt das ganze Fragment,
+  wenn alle Zielfelder frei sind; über Wasser immer, über Abgrund nur vollständig wird es
+  zu Boden (`fl_gray`). Puzzlesteine drücken Trigger. Noch nicht: hohle Steine, Zauberstab,
+  Laser, `FallenPuzzle`.
 - **fl_space**: Reibung und Haftung 0 (Murmel lässt sich nicht beschleunigen). Böden mit
   `force_x/force_y` bleiben vorerst draußen.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`

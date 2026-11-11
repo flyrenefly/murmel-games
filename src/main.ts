@@ -399,6 +399,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'triggerup') sfx.trigger(false);
     else if (e.name === 'pickup') sfx.pickup();
     else if (e.name === 'move') sfx.move();
+    else if (e.name === 'explode') sfx.explode();
   }
 }
 
