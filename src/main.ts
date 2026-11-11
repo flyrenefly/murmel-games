@@ -295,6 +295,8 @@ let fastFrames = 0;
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, 0.1);
   last = now;
+  // CSS hides the mouse pointer over the playing field while playing.
+  if (document.body.dataset.mode !== mode) document.body.dataset.mode = mode;
 
   if (physics && mode !== 'menu') {
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];

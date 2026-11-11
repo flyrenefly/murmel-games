@@ -292,3 +292,9 @@ body[data-theme='klassisch'] {
 #toast[hidden] {
   display: none;
 }
+
+/* No mouse pointer over the playing field while playing (the marble is the pointer). */
+body[data-mode='play'] #game,
+body[data-mode='play'] #classic {
+  cursor: none;
+}
