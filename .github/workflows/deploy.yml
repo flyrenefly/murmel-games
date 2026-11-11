@@ -45,7 +45,7 @@ jobs:
           SFTP_USER: ${{ vars.IONOS_SFTP_USER }}
           LFTP_PASSWORD: ${{ secrets.IONOS_SFTP_PASSWORD }}
         run: |
-          sudo apt-get install -y -qq lftp > /dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp > /dev/null
           mkdir -p ~/.ssh
           cp deploy/ionos_known_hosts ~/.ssh/known_hosts
           lftp --env-password -u "$SFTP_USER" "sftp://$SFTP_HOST" <<'EOF'
