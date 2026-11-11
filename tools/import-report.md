@@ -1,15 +1,15 @@
 # Enigma-Import
 
-58 von 1322 Levels übernommen (13 Pakete).
+65 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 362 | 19 |
+| Lua-Rückruf | 362 | 20 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: ac_marble_black+ac_marble_white | 171 | 3 |
 | Stein st_passage_black | 152 | 0 |
-| Gegenstand it_meditation_hollow | 143 | 1 |
+| Gegenstand it_meditation_hollow | 143 | 2 |
 | Gegenstand it_sensor | 139 | 1 |
 | Stein st_boulder | 135 | 1 |
 | Stein st_passage_white | 134 | 0 |
@@ -29,7 +29,6 @@
 | Stein st_stoneimpulse | 96 | 3 |
 | Gegenstand it_seed_wood | 96 | 2 |
 | Gegenstand it_key | 94 | 0 |
-| Gegenstand it_wormhole_on | 94 | 4 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
@@ -66,11 +65,11 @@
 | Stein st_rotator_cw | 50 | 0 |
 | Stein st_chess_black | 49 | 1 |
 | Stein st_pull | 48 | 1 |
+| Wurmloch ohne Ziel | 46 | 2 |
 | Stein st_rawglass_movable | 46 | 0 |
-| Stein st_invisible | 43 | 2 |
+| Stein st_invisible | 43 | 3 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
-| Boden fl_inverse_white | 42 | 5 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Stein st_stoneimpulse_hollow | 41 | 0 |
 | Stein st_thief | 41 | 0 |
@@ -181,7 +180,7 @@
 | Stein st_redfiber | 13 | 2 |
 | Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_landmine | 13 | 2 |
+| Gegenstand it_landmine | 13 | 3 |
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
@@ -251,7 +250,6 @@
 | Gegenstand it_burnable_ash | 5 | 0 |
 | Boden fl_scales_platinum | 5 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
-| Boden fl_inverse_gray | 4 | 0 |
 | Boden fl_bridge_be | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
@@ -321,7 +319,6 @@
 | Akteure: ac_pearl_white+ac_rotor+ac_top | 2 | 0 |
 | Gegenstand it_strip | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
-| Gegenstand it_wormhole_off | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Akteure: ac_marble_black+ac_pearl_black | 2 | 0 |
 | Stein fl_bridge_be | 2 | 0 |

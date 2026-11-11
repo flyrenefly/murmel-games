@@ -134,6 +134,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   wenn alle Zielfelder frei sind; über Wasser immer, über Abgrund nur vollständig wird es
   zu Boden (`fl_gray`). Puzzlesteine drücken Trigger. Noch nicht: hohle Steine, Zauberstab,
   Laser, `FallenPuzzle`.
+- **it_wormhole** (`WormHole.cc`): zieht die Murmel an (Kraft 0,6·strength/Abstand, Standard
+  strength 30, range 10, unabhängig vom Boden) und versetzt sie, sobald ihr Mittelpunkt
+  näher als 0,125 an der Lochmitte ist, ans Ziel (Tempo 0); `interval` sperrt danach.
+  Das Ziel (Objektname, `#id` oder Position) löst der Konverter in Koordinaten auf.
+  `on`/`off` schalten nur den Sog.
+- **fl_inverse** (weiß/grau): Haftung −2 – Mausbewegung wirkt umgekehrt.
 - **fl_space**: Reibung und Haftung 0 (Murmel lässt sich nicht beschleunigen). Böden mit
   `force_x/force_y` bleiben vorerst draußen.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`

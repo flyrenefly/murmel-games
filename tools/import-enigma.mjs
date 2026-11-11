@@ -35,7 +35,7 @@ const STONES = new Set([
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
 const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
 const OXYD = /^st_oxyd(_([abcd]))?$/;
-const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|inverse|fake|adhesionless|ice_heating|hay)/;
+const SPECIAL_FLOORS = /^fl_(slope|swamp|bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|hay)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -48,6 +48,7 @@ const OBJECTS = [
   [/^st_timer$/, ['st_timer', 'sh_round']],
   [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
+  [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
@@ -55,7 +56,7 @@ const OBJECTS = [
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -161,6 +162,11 @@ function imageFor(kind) {
   return hasImage(k) ? k : null;
 }
 
+/** Every object of the exported world with its cell. */
+function* allCells(w) {
+  for (let i = 0; i < w.cells.length; i++) for (const o of w.cells[i]) if (o) yield { x: i % w.w, y: Math.floor(i / w.w), o };
+}
+
 function objectDef(x, y, o) {
   const a = {};
   for (const [k, v] of Object.entries(o)) if (k !== 'k' && KEEP_ATTR.test(k) && v !== '') a[k] = v;
@@ -261,6 +267,24 @@ function convertLevel(pack, meta, xml, exp) {
       row += ch;
     }
     rows.push(row);
+  }
+  // Wormholes: resolve the destination (object name, #id or position) to a point.
+  for (const o of objs) {
+    if (!o.k.startsWith('it_wormhole')) continue;
+    const src = [...allCells(w)].find((c) => c.o.$id === o.a.$id)?.o ?? {};
+    const tok = tokens(src.destination)[0] ?? '';
+    let dest = null;
+    const pos = /^(-?[\d.]+),(-?[\d.]+)$/.exec(tok);
+    if (pos) dest = [Number(pos[1]), Number(pos[2])];
+    else {
+      const t = [...allCells(w)].find((c) => c.o.name === tok || '#' + c.o.$id === tok);
+      if (t) dest = [t.x + 0.5, t.y + 0.5];
+    }
+    if (!dest) reject('Wurmloch ohne Ziel');
+    else o.a.dest = `${dest[0]},${dest[1]}`;
+    if (src.scissor === 'true' || src.scissor === undefined) {
+      /* scissor cuts rubber bands; Murmel has none, so it changes nothing */
+    }
   }
   // Every action must be a supported message to a supported object (no Lua callbacks).
   for (const o of objs) {

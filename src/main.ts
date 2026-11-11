@@ -125,6 +125,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     },
   }, Math.random, lv.compat);
   physics = new PhysicsWorld(level, objects);
+  physics.setForceField((x, y) => objects.fieldForce(x, y));
   acc = 0;
   falls = 0;
   falling = -1;
@@ -430,7 +431,16 @@ function frame(now: number): void {
       const p = physics.position;
       cur.x = p.x;
       cur.y = p.y;
-      if (falling < 0) objects.marbleAt(Math.floor(p.x), Math.floor(p.y));
+      if (falling < 0) {
+        const to = objects.warpTarget(p.x, p.y);
+        if (to) {
+          // WarpActor without keeping the velocity.
+          physics.respawn(to.x, to.y);
+          prev.x = cur.x = to.x;
+          prev.y = cur.y = to.y;
+        }
+        objects.marbleAt(Math.floor(physics.position.x), Math.floor(physics.position.y));
+      }
       objects.update(PHYSICS_DT * 1000);
       handleObjectEvents(objects.events);
       const under = cellAt(level, Math.floor(p.x), Math.floor(p.y));

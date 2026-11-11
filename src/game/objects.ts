@@ -4,7 +4,7 @@
 // documents, pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone) and
 // timers (stones/TimerStone.cc), quake stones (stones/QuakeStone.cc), death stones
 // (stones/DeathStone.cc), one-way stones (stones/OneWayStone.cc) and puzzle stones
-// (stones/PuzzleStone.cc).
+// (stones/PuzzleStone.cc) and wormholes (items/WormHole.cc).
 // Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
@@ -15,7 +15,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -93,6 +93,8 @@ export interface GameObject {
   /** Puzzle stone: 'pending' (cluster about to explode), 'ignited' (explodes at `fuse`), 'exploding'. */
   puzzle?: 'pending' | 'ignited' | 'exploding';
   fuse?: number;
+  /** Wormhole: teleport disabled until this time (attribute interval). */
+  engagedUntil?: number;
 }
 
 export type ObjectEvent =
@@ -114,6 +116,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
+  if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
   return null;
 }
 
@@ -436,6 +439,43 @@ export class ObjectWorld {
     for (const p of list) this.updateTriggers(p.col, p.row);
   }
 
+  // ---------- wormholes (WormHole.cc) ----------
+
+  /** Sum of the wormhole pulls on the marble at x/y (WormHole::globalForce, not scaled by the floor). */
+  fieldForce(x: number, y: number): [number, number] {
+    let fx = 0;
+    let fy = 0;
+    for (const o of this.objects) {
+      if (o.cls !== 'wormhole' || o.state !== 1) continue;
+      const strength = 0.6 * numAttr(o.attrs.strength, 30);
+      const range = numAttr(o.attrs.range, 10);
+      const dx = o.col + 0.5 - x;
+      const dy = o.row + 0.5 - y;
+      const sq = dx * dx + dy * dy;
+      if (sq >= 0.025 && sq < range * range) {
+        fx += (strength / sq) * dx;
+        fy += (strength / sq) * dy;
+      }
+    }
+    return [fx, fy];
+  }
+
+  /** WormHole::actor_hit: marble centre within 0.125 of a wormhole centre → its destination. */
+  warpTarget(x: number, y: number): { x: number; y: number } | null {
+    for (const o of this.at(Math.floor(x), Math.floor(y))) {
+      if (o.cls !== 'wormhole' || (o.engagedUntil ?? -1) > this.now) continue;
+      const dx = x - (o.col + 0.5);
+      const dy = y - (o.row + 0.5);
+      if (dx * dx + dy * dy >= 0.015625) continue;
+      const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(o.attrs.dest ?? '');
+      if (!m) continue;
+      const latency = numAttr(o.attrs.interval, 0);
+      if (latency > 0) o.engagedUntil = this.now + latency * 1000;
+      return { x: Number(m[1]), y: Number(m[2]) };
+    }
+    return null;
+  }
+
   /** Trigger::updateIState: pressed by the marble or a stone on it. */
   private updateTriggers(col: number, row: number): void {
     const pressed =
@@ -537,6 +577,10 @@ export class ObjectWorld {
       else o.alarm = undefined;
       return;
     }
+    if (o.cls === 'wormhole') {
+      o.state = s; // on/off switches the pull; teleporting works either way
+      return;
+    }
     if (o.cls !== 'door' && o.cls !== 'switch') return; // others ignore state writes
     const to = target(o);
     if (s === to) return;
@@ -635,7 +679,12 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
-  return kind.endsWith('_open') || kind === 'st_timer' ? 1 : 0;
+  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' ? 1 : 0;
+}
+
+function numAttr(v: string | undefined, fallback: number): number {
+  const n = Number(v);
+  return v !== undefined && v !== '' && Number.isFinite(n) ? n : fallback;
 }
 
 /** Timer interval in ms (objects.xml default 1 s). */

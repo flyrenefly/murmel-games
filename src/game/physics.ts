@@ -66,6 +66,8 @@ export class PhysicsWorld {
   private readonly mouse = { x: 0, y: 0 };
   private mouseTime = 0;
   private readonly axisForce = { x: 0, y: 0 };
+  /** Global forces (wormholes): added unscaled, like Enigma's force fields. */
+  private field: ((x: number, y: number) => [number, number]) | null = null;
   private active = true;
   private touching = new Set<number>();
   private nowTouching = new Set<number>();
@@ -107,6 +109,10 @@ export class PhysicsWorld {
     this.mouseTime = WORLD_TICK;
   }
 
+  setForceField(field: ((x: number, y: number) => [number, number]) | null): void {
+    this.field = field;
+  }
+
   /** Continuous force from keys/tilt/gamepad, before floor adhesion. */
   setAxisForce(fx: number, fy: number): void {
     this.axisForce.x = fx;
@@ -128,6 +134,11 @@ export class PhysicsWorld {
         this.mouse.x = this.mouse.y = 0;
         this.mouseTime = 0;
       }
+    }
+    if (this.field) {
+      const [gx, gy] = this.field(this.pos.x, this.pos.y);
+      fx += gx;
+      fy += gy;
     }
     // No pushing into stones the marble already rests against.
     for (let i = 0; i < this.normals.length; i += 2) {

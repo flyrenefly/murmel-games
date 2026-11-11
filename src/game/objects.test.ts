@@ -260,6 +260,21 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("a wormhole pulls the marble and teleports it from near its centre", () => {
+    const w = world([{ x: 5, y: 0, k: "it_wormhole_on", a: { dest: "8.5,2.5" } }]);
+    const [fx, fy] = w.fieldForce(3.5, 0.5);
+    expect(fx).toBeCloseTo((0.6 * 30) / 4 * 2, 5); // strength/d² · d, towards the hole
+    expect(fy).toBe(0);
+    expect(w.warpTarget(5.3, 0.5)).toBeNull(); // 0.2 from the centre: outside 0.125
+    expect(w.warpTarget(5.55, 0.45)).toEqual({ x: 8.5, y: 2.5 });
+  });
+
+  it("a switched-off wormhole does not pull but still teleports", () => {
+    const w = world([{ x: 5, y: 0, k: "it_wormhole_off", a: { dest: "1.5,1.5", $state: "0" } }]);
+    expect(w.fieldForce(3.5, 0.5)).toEqual([0, 0]);
+    expect(w.warpTarget(5.5, 0.5)).toEqual({ x: 1.5, y: 1.5 });
+  });
+
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 

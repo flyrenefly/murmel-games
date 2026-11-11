@@ -107,6 +107,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
+  if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
@@ -309,10 +310,12 @@ export class ClassicView {
       const py = oy + o.row * T;
       if (o.cls === 'trigger' && o.attrs.invisible !== 'true') this.frame('it_trigger', o.state ? 1 : 0, px, py);
       else if (o.cls === 'document' && !o.gone && img.it_document) ctx.drawImage(img.it_document, px, py);
+      // it_wormhole: 2 frames à 100 ms while on, frame 1 when off.
+      else if (o.cls === 'wormhole') this.frame('it_wormhole', o.state ? Math.floor(this.now / 100) % 2 : 0, px, py);
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document') continue;
+        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
