@@ -36,6 +36,8 @@ export interface LevelFile {
   objects?: ObjectDef[];
   /** Texts of documents by key. */
   texts?: Record<string, string>;
+  /** Enigma compatibility version of an imported level (message names of API 1 below 1.10). */
+  compat?: number;
 }
 
 export interface Cell {
@@ -64,6 +66,7 @@ export interface Level {
   signals: SignalStone[];
   objects: ObjectDef[];
   texts: Record<string, string>;
+  compat: number;
 }
 
 export const DEFAULT_LEGEND: Record<string, CellDef> = {
@@ -147,6 +150,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     signals,
     objects,
     texts: file.texts ?? {},
+    compat: file.compat ?? 1.1,
   };
 }
 

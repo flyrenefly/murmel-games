@@ -45,12 +45,16 @@ const OBJECTS = [
   [/^it_trigger$/, ['it_trigger']],
   [/^it_document$/, ['it_document']],
   [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
+  [/^st_timer$/, ['st_timer', 'sh_round']],
+  [/^st_quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop)$/;
+// API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
+const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
 
 const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
@@ -177,6 +181,7 @@ function convertLevel(pack, meta, xml, exp) {
     return reject('nur Netzwerkspiel');
   }
   const w = exp.world;
+  const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   if (actors.length !== 1 || actors[0] !== 'ac_marble_black') reject(`Akteure: ${[...new Set(actors)].sort().join('+') || 'keine'}`);
 
@@ -258,7 +263,10 @@ function convertLevel(pack, meta, xml, exp) {
         if (act === 'callback' || resolveTarget(t, objs).length === 0) {
           const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
           reject(named ? `Stein ${named.k.replace(/_[nesw]+$/, '')}` : 'Lua-Rückruf');
-        } else if (!ACTIONS.has(act)) reject(`Aktion ${act}`);
+        } else if (!ACTIONS.has(act)) {
+          const ok = compat < 1.1 && resolveTarget(t, objs).every((x) => API1_ACTIONS.some(([re, a]) => a === act && re.test(x.k)));
+          if (!ok) reject(`Aktion ${act}`);
+        }
       });
     }
   }
@@ -277,6 +285,7 @@ function convertLevel(pack, meta, xml, exp) {
     start: { x: Math.round(a.x * 1000) / 1000, y: Math.round(a.y * 1000) / 1000 },
     source: { pack, file: `${meta.xpath.replace(/^\.\//, '')}.xml` },
     ...(objs.length ? { objects: objs } : {}),
+    ...(compat < 1.1 ? { compat } : {}),
     ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };
 }

@@ -116,6 +116,26 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Abgrund, Wasser oder Sumpf wird sie zum Boden (`fl_wood_framed_h/_v`, Heu, Fels).
   Kisten drücken Trigger. Noch nicht: mit Drähten verbundene Kisten, Axt.
 
+- **st_timer** (`TimerStone.cc`): sendet alle `interval` s (Standard 1) abwechselnd
+  true/false, beginnend mit true; `loop=false` einmal; `on`/`off`/`signal` starten/stoppen.
+- **st_quake** (`QuakeStone.cc`): sieht aus wie ein geschlossener Oxyd-Stein; Treffer,
+  `toggle` oder `signal` mit true lassen ihn beben (800 ms) und schließen **alle**
+  Oxyd-Steine, auch gelöste Paare.
+- **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
+  umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
+
+## Auffindbarkeit (SEO, ab 11.11.2026)
+
+Nutzerwunsch: bei der Suche nach „Enigma“ oder „Oxyd“ gefunden werden.
+- Startseite: Titel/Beschreibung mit Oxyd, Enigma, Murmelspiel, Browser, kostenlos;
+  canonical, Open Graph/Twitter mit `og-image.png` (1200×630), JSON-LD `WebSite` +
+  `VideoGame` (isBasedOn Enigma), noscript-Text.
+- Inhaltsseite `ueber.html`: Spielprinzip, Steuerung, Oxyd-Geschichte, Enigma, Levels,
+  FAQ mit `FAQPage`-JSON-LD. Oxyd nur als Bezug („in der Tradition von“), mit Hinweis,
+  dass Murmel unabhängig ist und keine Originalinhalte enthält.
+- `robots.txt`, `sitemap.xml`, `manifest.webmanifest`, `favicon.svg`.
+- Offen beim Nutzer: Google Search Console (Domain bestätigen, Sitemap einreichen).
+
 ## Enigma-Levels übernehmen (Phase 2)
 
 Analyse am 11.11.2026 über die Leveldateien von Enigma (Stand Repo master):

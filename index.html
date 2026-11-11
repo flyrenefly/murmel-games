@@ -4,8 +4,68 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#05050c" />
-    <meta name="description" content="Murmel – ein freies Murmel-Rätselspiel im Browser. Rolle die Murmel und öffne die Oxyd-Steine paarweise." />
-    <title>Murmel</title>
+    <title>Murmel – Murmelspiel wie Oxyd und Enigma, kostenlos im Browser</title>
+    <meta
+      name="description"
+      content="Murmelspiel wie Oxyd und Enigma: Murmel mit der Maus rollen, Oxyd-Steine paarweise öffnen, Enigma-Levels spielen. Kostenlos im Browser, ohne Installation."
+    />
+    <meta name="keywords" content="Oxyd, Enigma, Murmelspiel, Oxyd online, Enigma Spiel, Oxyd Browser, Murmel Rätselspiel, Atari ST Spiel, Oxyd Nachfolger, Geschicklichkeitsspiel, Puzzle, kostenlos, Open Source" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://murmel.games/" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Murmel" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:url" content="https://murmel.games/" />
+    <meta property="og:title" content="Murmel – Murmelspiel wie Oxyd und Enigma im Browser" />
+    <meta property="og:description" content="Rolle die Murmel, öffne die Oxyd-Steine paarweise – mit Levels aus Enigma. Kostenlos, ohne Installation, freie Software." />
+    <meta property="og:image" content="https://murmel.games/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://murmel.games/#website",
+            "url": "https://murmel.games/",
+            "name": "Murmel",
+            "inLanguage": "de"
+          },
+          {
+            "@type": "VideoGame",
+            "@id": "https://murmel.games/#game",
+            "name": "Murmel",
+            "alternateName": ["Murmel – Oxyd-artiges Murmelspiel", "Murmelspiel mit Enigma-Levels"],
+            "url": "https://murmel.games/",
+            "description": "Freies Murmel-Rätselspiel im Browser in der Tradition von Oxyd (Atari ST) und Enigma: Die Murmel wird mit der Maus gerollt, Oxyd-Steine werden paarweise geöffnet. Enthält Levels aus dem freien Spiel Enigma.",
+            "genre": ["Puzzle", "Geschicklichkeitsspiel", "Murmelspiel"],
+            "keywords": "Oxyd, Enigma, Murmelspiel, Puzzle, Browserspiel",
+            "gamePlatform": ["Webbrowser", "PC", "Smartphone"],
+            "applicationCategory": "Game",
+            "operatingSystem": "Alle (Browser)",
+            "playMode": "SinglePlayer",
+            "inLanguage": "de",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+            "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+            "codeRepository": "https://github.com/flyrenefly/murmel-games",
+            "isBasedOn": {
+              "@type": "SoftwareApplication",
+              "name": "Enigma",
+              "url": "https://www.nongnu.org/enigma/",
+              "license": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
+            },
+            "isPartOf": { "@id": "https://murmel.games/#website" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <canvas id="game"></canvas>
@@ -38,7 +98,16 @@
 
     <div id="loading">Murmel wird geladen …</div>
 
+    <noscript>
+      <h1>Murmel – Murmelspiel wie Oxyd und Enigma im Browser</h1>
+      <p>
+        Murmel ist ein freies Murmel-Rätselspiel in der Tradition von Oxyd und Enigma. Zum Spielen
+        wird JavaScript benötigt. Mehr über das Spiel: <a href="ueber.html">Über Murmel</a>.
+      </p>
+    </noscript>
+
     <footer id="credits">
+      <a href="ueber.html">Über das Spiel</a> ·
       Freie Software (GPL-3.0-or-later) ·
       <a href="https://github.com/flyrenefly/murmel-games" target="_blank" rel="noopener">Quellcode</a> ·
       Grafik „Klassisch“ und Rollphysik nach <a href="https://github.com/Enigma-Game/Enigma" target="_blank" rel="noopener">Enigma</a> (GPL)

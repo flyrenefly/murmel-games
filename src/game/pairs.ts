@@ -32,6 +32,14 @@ export class PairBoard {
     return this.states.every((s) => s === 'solved');
   }
 
+  /** OxydStone::closeAllStandardOxyds (st_quake): every open stone closes, solved pairs too. */
+  closeAll(): PairEvent[] {
+    const indices = this.states.flatMap((s, i) => (s === 'closed' ? [] : [i]));
+    for (const i of indices) this.states[i] = 'closed';
+    this.single = null;
+    return indices.length ? [{ type: 'closed', indices }] : [];
+  }
+
   hit(index: number): PairEvent[] {
     if (this.states[index] !== 'closed') return [];
 

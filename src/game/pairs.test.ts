@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { PairBoard } from './pairs';
 
+describe('closeAll', () => {
+  it('closes open stones and solved pairs', () => {
+    const b = new PairBoard(['A', 'B', 'A', 'B']);
+    b.hit(0);
+    b.hit(2); // A solved
+    b.hit(1); // B open
+    expect(b.closeAll()).toEqual([{ type: 'closed', indices: [0, 1, 2] }]);
+    expect(b.states).toEqual(['closed', 'closed', 'closed', 'closed']);
+    expect(b.hit(3)).toEqual([{ type: 'opened', index: 3 }]);
+  });
+});
+
 describe('PairBoard (Enigma rules)', () => {
   it('opens the first hit stone and keeps it open', () => {
     const b = new PairBoard(['A', 'B', 'A', 'B']);

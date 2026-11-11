@@ -163,4 +163,66 @@ describe('ObjectWorld', () => {
       expect(w.objects[0].state).toBe(0);
     });
   });
+
+  it("a quake stone shakes on a hit or signal and announces the quake once", () => {
+    const w = world([{ x: 3, y: 0, k: "st_quake", a: { name: "q" } }, { x: 1, y: 0, k: "it_trigger", a: { target: "q", action: "signal" } }]);
+    expect(w.blockAt(3, 0)).toBe(ALL_FACES);
+    w.hit(3, 0);
+    w.hit(3, 0); // still shaking
+    expect(w.events.filter((e) => e.type === "quake")).toHaveLength(1);
+    w.update(900);
+    w.marbleAt(1, 0);
+    expect(w.events.filter((e) => e.type === "quake")).toHaveLength(2);
+    w.update(900);
+    w.marbleAt(2, 0); // release sends false: no quake
+    expect(w.events.filter((e) => e.type === "quake")).toHaveLength(2);
+  });
+
+  describe("timers", () => {
+    const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
+
+    it("a looping timer sends true and false in turn", () => {
+      const w = world([door(5), timer({ interval: "2" })]);
+      w.update(1900);
+      expect(w.objects[0].moving).toBeNull();
+      w.update(200); // 2 s: true → opens
+      w.update(200);
+      expect(w.objects[0].state).toBe(1);
+      w.update(2000); // 4 s: false → closes
+      w.update(500);
+      expect(w.objects[0].state).toBe(0);
+    });
+
+    it("a non-looping timer fires once and stops", () => {
+      const w = world([door(5), timer({ interval: "1", loop: "false", action: "toggle" })]);
+      w.update(5000);
+      w.update(200); // door animation
+      expect(w.objects[0].state).toBe(1);
+      expect(w.objects[1].state).toBe(0);
+    });
+
+    it("off stops a timer, on starts it again with true", () => {
+      const w = world([
+        door(5),
+        timer({ name: "t" }),
+        { x: 2, y: 0, k: "it_trigger", a: { target: "t", action: "off" } },
+      ]);
+      w.marbleAt(2, 0);
+      w.update(3000);
+      expect(w.objects[0].state).toBe(0);
+      expect(w.blockAt(3, 0)).toBe(ALL_FACES);
+    });
+
+    it("API 1 levels rename openclose for doors to toggle", () => {
+      const defs = [door(5), timer({ action: "openclose", loop: "false" })];
+      const old = new ObjectWorld(defs, W, {}, undefined, Math.random, 1.0);
+      old.update(1500);
+      old.update(200);
+      expect(old.objects[0].state).toBe(1);
+      const now = new ObjectWorld(defs, W, {}, undefined, Math.random, 1.1);
+      now.update(1500);
+      now.update(200);
+      expect(now.objects[0].state).toBe(0); // unknown message is ignored
+    });
+  });
 });

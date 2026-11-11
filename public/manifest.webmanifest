@@ -1,0 +1,11 @@
+{
+  "name": "Murmel – Murmelspiel wie Oxyd und Enigma",
+  "short_name": "Murmel",
+  "description": "Freies Murmel-Rätselspiel im Browser in der Tradition von Oxyd und Enigma.",
+  "lang": "de",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#05050c",
+  "theme_color": "#05050c",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

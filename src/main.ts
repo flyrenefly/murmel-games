@@ -123,7 +123,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       const cell = cellAt(lv, c, r);
       if (cell) cell.floor = kind;
     },
-  });
+  }, Math.random, lv.compat);
   physics = new PhysicsWorld(level, objects);
   acc = 0;
   falls = 0;
@@ -388,6 +388,10 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     if (e.type === 'shatter') marbleDies(true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
+    else if (e.type === 'quake') {
+      sfx.quake();
+      handlePairEvents(board.closeAll());
+    }
     else if (e.name === 'switch') sfx.switchOn();
     else if (e.name === 'triggerdown') sfx.trigger(true);
     else if (e.name === 'triggerup') sfx.trigger(false);

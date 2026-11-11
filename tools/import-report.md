@@ -1,10 +1,10 @@
 # Enigma-Import
 
-27 von 1322 Levels übernommen (7 Pakete).
+39 von 1322 Levels übernommen (12 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 318 | 8 |
+| Lua-Rückruf | 364 | 15 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: ac_marble_black+ac_marble_white | 171 | 1 |
@@ -15,7 +15,7 @@
 | Gegenstand it_sensor | 139 | 1 |
 | Stein st_boulder | 135 | 1 |
 | Stein st_passage_white | 134 | 0 |
-| Stein st_fourswitch | 131 | 0 |
+| Stein st_fourswitch | 131 | 1 |
 | Stein st_death | 125 | 4 |
 | Boden fl_slope_ps | 119 | 0 |
 | Stein st_puzzle_yellow | 117 | 4 |
@@ -27,7 +27,6 @@
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Boden fl_slope_pw | 107 | 0 |
-| Stein st_timer | 107 | 7 |
 | Akteure: ac_pearl_white | 106 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 0 |
@@ -51,7 +50,6 @@
 | Stein st_oneway_black | 67 | 0 |
 | Stein st_actorimpulse | 64 | 1 |
 | Stein st_break_oxydc | 62 | 0 |
-| Stein st_quake | 61 | 1 |
 | Gegenstand it_vortex_open | 61 | 0 |
 | Stein st_swap | 61 | 0 |
 | Stein st_knight | 59 | 0 |
@@ -92,7 +90,7 @@
 | Stein st_lightglass | 36 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 0 |
+| Stein st_plop | 34 | 1 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Stein st_oneway_white | 33 | 0 |
 | Gegenstand it_wrench | 33 | 0 |
@@ -130,7 +128,7 @@
 | Gegenstand it_crack_m | 24 | 0 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
-| Akteure: ac_marble_black+ac_rotor | 23 | 0 |
+| Akteure: ac_marble_black+ac_rotor | 23 | 1 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
 | Boden fl_bridge_bw | 23 | 0 |
@@ -186,7 +184,7 @@
 | Stein st_ice | 14 | 1 |
 | Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
-| Stein st_redfiber | 13 | 1 |
+| Stein st_redfiber | 13 | 2 |
 | Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_landmine | 13 | 2 |
@@ -207,7 +205,6 @@
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
-| Aktion openclose | 10 | 0 |
 | Stein it_magnet_off | 10 | 0 |
 | Stein st_box_wood (verbunden) | 10 | 2 |
 | Gegenstand it_pencil | 10 | 0 |
@@ -335,7 +332,9 @@
 | Akteure: ac_marble_black+ac_pearl_white+ac_rotor | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Akteure: ac_killer_white+ac_marble_black+ac_marble_white+ac_pearl_white+ac_rotor+ac_top | 1 | 0 |
+| Aktion trigger | 1 | 0 |
 | Stein it_meditation_hill | 1 | 0 |
+| Aktion kill | 1 | 0 |
 | Akteure: ac_pearl_black+ac_top | 1 | 0 |
 | Stein st_oxyd_c | 1 | 0 |
 | Akteure: ac_horse+ac_marble_black+ac_marble_white+ac_rotor | 1 | 0 |

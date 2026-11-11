@@ -1,7 +1,8 @@
 // Interactive Enigma objects (GPL-2.0-or-later, modelled on Enigma's src/Object.cc,
 // StateObject.cc, items/Trigger.cc, stones/Switch.cc, stones/Door.cc, SimpleStones.cc):
 // switches, triggers and doors that talk to each other by messages, grates,
-// documents and pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone).
+// documents, pushable boxes (stones/BoxStone.cc, stones.cc maybe_push_stone) and
+// timers (stones/TimerStone.cc) and quake stones (stones/QuakeStone.cc).
 // Times in milliseconds, cells in tile units.
 
 /** One object of a level file: cell, Enigma kind and attributes as text. */
@@ -12,7 +13,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake';
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -25,6 +26,8 @@ const FRAME_MS = 60;
 /** Number of animation frames of a door opening/closing (models-2d.lua). */
 const DOOR_FRAMES: Record<string, number> = { a: 2, b: 8, c: 2, d: 7 };
 const SWITCH_FRAMES = 3;
+/** st_quaking: 4 frames ping-pong, twice, 50 ms each. */
+export const QUAKE_MS = 16 * 50;
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
 export const PUSH_SPEED = 4;
 /** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
@@ -39,6 +42,15 @@ export interface ObjectEnv {
 }
 
 const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
+
+/**
+ * Old levels (Enigma compatibility < 1.10, API 1) use other message names; Enigma
+ * translates them per receiving class (api1init.lua MessageRenaming).
+ */
+const API1_RENAMING: Record<string, string> = {
+  door__openclose: 'toggle',
+  switch__onoff: 'toggle',
+};
 
 export interface GameObject {
   /** Enigma object id ("$id"), referenced as "#id". */
@@ -55,12 +67,15 @@ export interface GameObject {
   attrs: Record<string, string>;
   /** Picked up (documents) or sunk into the floor (boxes). */
   gone: boolean;
+  /** Timer: time of the next alarm (ms), and the value it will send. */
+  alarm?: { at: number; value: boolean };
 }
 
 export type ObjectEvent =
   | { type: 'text'; text: string }
   | { type: 'shatter' }
   | { type: 'floor'; col: number; row: number }
+  | { type: 'quake' }
   | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' };
 
 export function objectClass(kind: string): ObjectClass | null {
@@ -70,6 +85,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
+  if (kind === 'st_timer') return 'timer';
+  if (kind === 'st_quake') return 'quake';
   return null;
 }
 
@@ -97,6 +114,8 @@ export class ObjectWorld {
     private readonly texts: Record<string, string> = {},
     private readonly env: ObjectEnv = NO_ENV,
     random: () => number = Math.random,
+    /** Enigma compatibility version of the level (API 1 below 1.10). */
+    private readonly compat = 1.1,
   ) {
     for (const d of defs) {
       const cls = objectClass(d.k);
@@ -118,7 +137,13 @@ export class ObjectWorld {
       if (o.kind === 'st_box_wood') o.kind = random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v';
       this.objects.push(o);
       this.place(o);
+      if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
     }
+  }
+
+  /** TimerStone::updateAlarm: next alarm after `interval` seconds, first value true. */
+  private startTimer(o: GameObject): void {
+    o.alarm = { at: this.now + timerInterval(o), value: true };
   }
 
   private place(o: GameObject): void {
@@ -155,7 +180,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
     }
     return 0;
   }
@@ -172,11 +197,22 @@ export class ObjectWorld {
         if (face && vn < -PUSH_SPEED && !o.gone) this.push(o, -nx, -ny);
         continue;
       }
+      if (o.cls === 'quake') {
+        this.quake(o);
+        continue;
+      }
       if (o.cls !== 'switch') continue;
       const c = o.attrs.color;
       const ic = c === undefined || c === '' ? 0 : Number(c) + 1;
       if (ic === 0 || ic === color + 1) this.setState(o, target(o) === 1 ? 0 : 1);
     }
+  }
+
+  /** QuakeStone: an idle quake stone shakes and closes all Oxyd stones. */
+  private quake(o: GameObject): void {
+    if (o.moving) return; // already shaking
+    o.moving = { to: 0, since: this.now, dur: QUAKE_MS };
+    this.events.push({ type: 'quake' });
   }
 
   /** Stone::move_stone: move a box one cell if the cell is free. */
@@ -257,6 +293,17 @@ export class ObjectWorld {
   update(ms: number): void {
     this.now += ms;
     for (const o of this.objects) {
+      // TimerStone::alarm: send the value, flip it; a non-looping timer stops.
+      while (o.alarm && this.now >= o.alarm.at) {
+        const value = o.alarm.value;
+        if (o.attrs.loop === 'false') {
+          o.alarm = undefined;
+          o.state = 0;
+        } else o.alarm = { at: o.alarm.at + timerInterval(o), value: !value };
+        this.performAction(o, value);
+      }
+    }
+    for (const o of this.objects) {
       const m = o.moving;
       if (!m || this.now - m.since < m.dur) continue;
       o.moving = null;
@@ -276,6 +323,14 @@ export class ObjectWorld {
   }
 
   private setState(o: GameObject, s: number): void {
+    if (o.cls === 'timer') {
+      // TimerStone::setState: 1 starts the timer (value true first), 0 stops it.
+      if (s === o.state) return;
+      o.state = s;
+      if (s === 1) this.startTimer(o);
+      else o.alarm = undefined;
+      return;
+    }
     if (o.cls !== 'door' && o.cls !== 'switch') return; // others ignore state writes
     const to = target(o);
     if (s === to) return;
@@ -298,6 +353,11 @@ export class ObjectWorld {
   }
 
   private message(o: GameObject, msg: string, value: boolean): void {
+    if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
+    if (o.cls === 'quake') {
+      if (msg === 'toggle' || (msg === 'signal' && value)) this.quake(o);
+      return;
+    }
     switch (msg) {
       case 'toggle':
         this.setState(o, target(o) === 1 ? 0 : 1);
@@ -348,7 +408,13 @@ function target(o: GameObject): number {
 function initialState(kind: string, a: Record<string, string>): number {
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
-  return kind.endsWith('_open') ? 1 : 0;
+  return kind.endsWith('_open') || kind === 'st_timer' ? 1 : 0;
+}
+
+/** Timer interval in ms (objects.xml default 1 s). */
+function timerInterval(o: GameObject): number {
+  const v = Number(o.attrs.interval);
+  return (Number.isFinite(v) && v > 0 ? v : 1) * 1000;
 }
 
 /** Floor a box turns into when it sinks (BoxStone::maybe_fall_or_stopfire). */

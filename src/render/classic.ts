@@ -103,6 +103,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_trigger') return ['it_trigger'];
   if (kind === 'it_document') return ['it_document'];
   if (kind.startsWith('st_grate')) return ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed'];
+  if (kind === 'st_timer') return ['st_timer', 'sh_round'];
+  if (kind === 'st_quake') return ['st_quake', 'st_oxydb', 'sh_round'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
@@ -339,6 +341,24 @@ export class ClassicView {
     };
     const p = world.progress(o);
     const to = o.moving ? o.moving.to : o.state;
+    if (o.cls === 'quake') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.moving) {
+        // st_quaking: frames 0 1 2 3 3 2 1 0, twice, 50 ms each.
+        const seq = [0, 1, 2, 3, 3, 2, 1, 0];
+        this.frame('st_quake', seq[Math.min(15, Math.floor(p * 16)) % 8], px, py);
+      } else this.frame('st_oxydb', 0, px, py); // looks like a closed Oxyd stone
+      return;
+    }
+    if (o.cls === 'timer') {
+      if (o.attrs.invisible === 'true') return;
+      // models-2d.lua timer_anim: frames 3 2 1 2 3 4 5 4 à 120 ms; stopped: frame 3.
+      const seq = [2, 1, 0, 1, 2, 3, 4, 3];
+      const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_timer', f, px, py);
+      return;
+    }
     if (o.cls === 'box') {
       if (o.gone) return;
       if (pass === 'shadow') this.image('sh_round', px, py);
