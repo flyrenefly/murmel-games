@@ -1,0 +1,221 @@
+:root {
+  --bg: #0b0c14;
+  --panel: rgba(14, 16, 28, 0.78);
+  --text: #eef1f7;
+  --muted: #a7adbd;
+  --accent: #22e6ff;
+  --accent-2: #ff3bd4;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: block;
+  touch-action: none;
+}
+
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  pointer-events: none;
+}
+
+.hud-left,
+.hud-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.hud-left {
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.hud-left span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0b0c14;
+  font-weight: 600;
+  border: none;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 6, 12, 0.45);
+}
+
+#overlay[hidden] {
+  display: none;
+}
+
+.card {
+  width: min(420px, 100%);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.card h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.keys {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+#ov-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#level-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+#level-list[hidden] {
+  display: none;
+}
+
+button.level {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+button.level span {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-variant-numeric: tabular-nums;
+}
+
+button.level em {
+  margin-left: auto;
+  color: #3ddc97;
+  font-style: normal;
+}
+
+button.level.current {
+  border-color: var(--accent);
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+#credits {
+  position: fixed;
+  bottom: max(6px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(200, 205, 220, 0.55);
+  pointer-events: none;
+}
+
+#credits a {
+  color: inherit;
+  pointer-events: auto;
+}
+
+@media (max-width: 520px) {
+  #hud {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .hud-left {
+    font-size: 13px;
+  }
+  button {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}

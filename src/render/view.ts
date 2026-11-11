@@ -1,0 +1,238 @@
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import type { Level } from '../game/level';
+import type { StoneState } from '../game/pairs';
+import { MARBLE_RADIUS } from '../game/physics';
+import { blobShadow, stoneFace } from './textures';
+import { createTheme, type ThemeId, type ThemeKit } from './themes';
+
+const WALL_H = 0.7;
+const STONE_H = 0.6;
+const FLOOR_H = 0.3;
+const CAM_DIR = new THREE.Vector3(0, 1, 0.42).normalize();
+
+/** Three.js scene for one level in one theme. World: x = column, z = row, y = up. */
+export class View {
+  readonly renderer: THREE.WebGLRenderer;
+  private readonly camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+  private scene = new THREE.Scene();
+  private composer: EffectComposer | null = null;
+  private kit: ThemeKit | null = null;
+  private level: Level | null = null;
+  private stoneTops: THREE.MeshStandardMaterial[] = [];
+  private stoneMeshes: THREE.Object3D[] = [];
+  private readonly marble: THREE.Mesh;
+  private readonly shadow: THREE.Mesh;
+  private followLight: THREE.PointLight | null = null;
+  private readonly shadowTex = blobShadow();
+  private readonly tmpQ = new THREE.Quaternion();
+  private readonly tmpAxis = new THREE.Vector3();
+  private pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  private pulses: { obj: THREE.Object3D; t: number }[] = [];
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.setPixelRatio(this.pixelRatio);
+    this.marble = new THREE.Mesh(new THREE.SphereGeometry(MARBLE_RADIUS, 48, 32));
+    this.shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(MARBLE_RADIUS * 3, MARBLE_RADIUS * 3).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: this.shadowTex, transparent: true, depthWrite: false }),
+    );
+  }
+
+  get themeLabel(): string {
+    return this.kit?.label ?? '';
+  }
+
+  build(level: Level, theme: ThemeId, states: readonly StoneState[]): void {
+    this.clear();
+    this.level = level;
+    const kit = (this.kit = createTheme(theme));
+    const scene = (this.scene = new THREE.Scene());
+    scene.background = kit.background;
+    this.followLight = kit.addLights(scene, this.renderer);
+
+    const W = level.width;
+    const floorCells: [number, number][] = [];
+    const wallCells: [number, number][] = [];
+    level.cells.forEach((c, i) => {
+      const col = i % W;
+      const row = Math.floor(i / W);
+      if (c.stone === 'wall') wallCells.push([col, row]);
+      else if (c.floor !== 'abyss') floorCells.push([col, row]);
+    });
+
+    // Floor: one instanced mesh = one draw call.
+    const m = new THREE.Matrix4();
+    const floor = new THREE.InstancedMesh(new THREE.BoxGeometry(1, FLOOR_H, 1), kit.floor, floorCells.length);
+    floorCells.forEach(([c, r], i) => {
+      floor.setMatrixAt(i, m.makeTranslation(c + 0.5, -FLOOR_H / 2, r + 0.5));
+      const tint = kit.floorTint(hash(c, r));
+      if (tint) floor.setColorAt(i, tint);
+    });
+    scene.add(floor);
+
+    const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, WALL_H, 1), kit.wall, wallCells.length);
+    wallCells.forEach(([c, r], i) => walls.setMatrixAt(i, m.makeTranslation(c + 0.5, WALL_H / 2, r + 0.5)));
+    scene.add(walls);
+
+    if (kit.wallEdges) {
+      // Top outline of every wall block, merged into one line mesh.
+      const pts: number[] = [];
+      const y = WALL_H + 0.002;
+      for (const [c, r] of wallCells) {
+        const sides: [number, number, number, number, boolean][] = [
+          [c, r, c + 1, r, !isWall(level, c, r - 1)],
+          [c, r + 1, c + 1, r + 1, !isWall(level, c, r + 1)],
+          [c, r, c, r + 1, !isWall(level, c - 1, r)],
+          [c + 1, r, c + 1, r + 1, !isWall(level, c + 1, r)],
+        ];
+        for (const [x1, z1, x2, z2, show] of sides) if (show) pts.push(x1, y, z1, x2, y, z2);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      scene.add(new THREE.LineSegments(g, kit.wallEdges));
+    }
+
+    // Deep backdrop below the floor: visible through every abyss cell.
+    const abyss = new THREE.Mesh(new THREE.PlaneGeometry(W + 40, level.height + 40).rotateX(-Math.PI / 2), kit.abyss);
+    abyss.position.set(W / 2, -2.5, level.height / 2);
+    scene.add(abyss);
+
+    const bodyGeo = new THREE.BoxGeometry(0.96, STONE_H, 0.96);
+    const topGeo = new THREE.PlaneGeometry(0.92, 0.92).rotateX(-Math.PI / 2);
+    this.stoneTops = [];
+    this.stoneMeshes = [];
+    for (const s of level.signals) {
+      const group = new THREE.Group();
+      group.position.set(s.col + 0.5, 0, s.row + 0.5);
+      const body = new THREE.Mesh(bodyGeo, kit.stoneBody);
+      body.position.y = STONE_H / 2;
+      const mat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.05 });
+      if (kit.face.glow) {
+        mat.emissive = new THREE.Color('#ffffff');
+        mat.emissiveIntensity = 0.9;
+      }
+      const top = new THREE.Mesh(topGeo, mat);
+      top.position.y = STONE_H + 0.003;
+      group.add(body, top);
+      scene.add(group);
+      this.stoneTops.push(mat);
+      this.stoneMeshes.push(group);
+    }
+    states.forEach((st, i) => this.setStoneState(i, st, false));
+
+    this.marble.material = kit.marble;
+    (this.shadow.material as THREE.MeshBasicMaterial).opacity = kit.shadowOpacity;
+    scene.add(this.marble, this.shadow);
+
+    if (kit.bloom) {
+      const composer = new EffectComposer(this.renderer);
+      composer.addPass(new RenderPass(scene, this.camera));
+      const size = this.renderer.getSize(new THREE.Vector2());
+      composer.addPass(new UnrealBloomPass(size.clone().multiplyScalar(0.5), kit.bloom.strength, kit.bloom.radius, kit.bloom.threshold));
+      composer.addPass(new OutputPass());
+      this.composer = composer;
+    }
+    this.resize();
+  }
+
+  setStoneState(index: number, state: StoneState, animate = true): void {
+    if (!this.level || !this.kit) return;
+    const mat = this.stoneTops[index];
+    const tex = stoneFace(this.level.signals[index].symbol, state, this.kit.face, this.kit.id);
+    mat.map = tex;
+    if (this.kit.face.glow) mat.emissiveMap = tex;
+    mat.needsUpdate = true;
+    if (animate) this.pulses.push({ obj: this.stoneMeshes[index], t: 0 });
+  }
+
+  /** x/y in tile units (physics coordinates), lift = height offset (negative while falling). */
+  updateMarble(x: number, y: number, vx: number, vy: number, dt: number, lift: number, scale: number): void {
+    this.marble.position.set(x, MARBLE_RADIUS + lift, y);
+    this.marble.scale.setScalar(scale);
+    const speed = Math.hypot(vx, vy);
+    if (speed > 1e-4 && dt > 0) {
+      this.tmpAxis.set(vy / speed, 0, -vx / speed);
+      this.tmpQ.setFromAxisAngle(this.tmpAxis, (speed * dt) / MARBLE_RADIUS);
+      this.marble.quaternion.premultiply(this.tmpQ);
+    }
+    this.shadow.position.set(x + 0.06, 0.004, y + 0.06);
+    this.shadow.visible = lift > -0.05;
+    if (this.followLight) this.followLight.position.set(x, 1.2 + lift, y);
+  }
+
+  render(dt: number): void {
+    for (let i = this.pulses.length - 1; i >= 0; i--) {
+      const p = this.pulses[i];
+      p.t += dt;
+      const k = Math.min(p.t / 0.25, 1);
+      p.obj.scale.setScalar(1 + Math.sin(k * Math.PI) * 0.08);
+      if (k >= 1) this.pulses.splice(i, 1);
+    }
+    if (this.composer) this.composer.render(dt);
+    else this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Lower the resolution when frames get slow (adaptive quality). */
+  setPixelRatio(pr: number): void {
+    this.pixelRatio = pr;
+    this.renderer.setPixelRatio(pr);
+    this.resize();
+  }
+
+  get currentPixelRatio(): number {
+    return this.pixelRatio;
+  }
+
+  resize(): void {
+    const canvas = this.renderer.domElement;
+    const w = canvas.clientWidth || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    this.renderer.setSize(w, h, false);
+    this.composer?.setPixelRatio(this.pixelRatio);
+    this.composer?.setSize(w, h);
+    this.camera.aspect = w / h;
+    if (this.level) {
+      const halfH = (this.level.height / 2) * 1.08 + 0.4;
+      const halfW = ((this.level.width / 2) * 1.04 + 0.4) / this.camera.aspect;
+      const dist = Math.max(halfH, halfW) / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+      const center = new THREE.Vector3(this.level.width / 2, 0, this.level.height / 2);
+      this.camera.position.copy(center).addScaledVector(CAM_DIR, dist);
+      this.camera.lookAt(center);
+    }
+    this.camera.updateProjectionMatrix();
+  }
+
+  private clear(): void {
+    this.scene.remove(this.marble, this.shadow);
+    this.scene.traverse((o) => {
+      if (o === this.marble || o === this.shadow) return;
+      const mesh = o as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (o instanceof THREE.Mesh && o.parent && this.stoneTops.includes(o.material as THREE.MeshStandardMaterial)) {
+        (o.material as THREE.Material).dispose();
+      }
+    });
+    this.composer?.dispose();
+    this.composer = null;
+    this.kit?.dispose();
+    this.kit = null;
+    this.pulses = [];
+  }
+}
+
+function isWall(level: Level, c: number, r: number): boolean {
+  if (c < 0 || r < 0 || c >= level.width || r >= level.height) return false;
+  return level.cells[r * level.width + c].stone === 'wall';
+}
+
+function hash(c: number, r: number): number {
+  const s = Math.sin(c * 127.1 + r * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
