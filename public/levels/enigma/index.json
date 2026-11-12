@@ -14,7 +14,7 @@
  {
   "pack": "enigma_i",
   "title": "Enigma I",
-  "count": 39,
+  "count": 40,
   "of": 100
  },
  {
@@ -26,7 +26,7 @@
  {
   "pack": "enigma_iii",
   "title": "Enigma III",
-  "count": 31,
+  "count": 32,
   "of": 100
  },
  {
@@ -50,7 +50,7 @@
  {
   "pack": "enigma_vii",
   "title": "Enigma VII",
-  "count": 9,
+  "count": 10,
   "of": 100
  },
  {

@@ -512,6 +512,40 @@ describe('ObjectWorld', () => {
     w.hit(4, 1, 0, -1, 0, -6); // nothing at all
   });
 
+  describe("four switch (FourSwitch)", () => {
+    it("state targets: the old direction gets false (not on the first turn), the new one true", () => {
+      const w = world([
+        { x: 5, y: 0, k: "st_door_a", a: { name: "d1" } },
+        { x: 6, y: 0, k: "st_door_a", a: { name: "d2" } },
+        { x: 3, y: 2, k: "st_fourswitch", a: { $state: "3", target_2: "d1", action_2: "open", target_1: "d2", action_1: "open", target_3: "d1", action_3: "close" } },
+      ]);
+      w.hit(3, 2, 0, -1, 0, -1); // north → east: opens d1
+      w.update(300);
+      expect(w.objects[2].state).toBe(2);
+      expect(w.objects[0].state).toBe(1);
+      w.hit(3, 2, 0, -1, 0, -1); // east → south: east gets "open" false (doors open anyway), south opens d2
+      w.update(300);
+      expect(w.objects[2].state).toBe(1);
+      expect(w.objects[1].state).toBe(1);
+      expect(w.fourswitchFrame(w.objects[2])).toBe(2); // st_fourswitch-s
+    });
+
+    it("a plain target gets the new direction: boulders orientate, Lua callbacks get the number", () => {
+      const w = world([
+        { x: 3, y: 2, k: "st_fourswitch", a: { $state: "3", target: "b", action: "orientate" } },
+        { x: 7, y: 3, k: "st_boulder_n", a: { name: "b" } },
+        { x: 3, y: 4, k: "st_fourswitch", a: { $state: "3", target: "lua_fn" } },
+      ]);
+      const calls: unknown[] = [];
+      w.onCallback = (fn, value) => calls.push([fn, value]);
+      w.hit(3, 2, 0, -1, 0, -1); // north → east
+      expect(w.objects[1].state).toBe(2);
+      w.hit(3, 4, 0, -1, 0, -1);
+      w.hit(3, 4, 0, -1, 0, -1);
+      expect(calls).toEqual([["lua_fn", 2], ["lua_fn", 1]]);
+    });
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

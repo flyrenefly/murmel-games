@@ -64,6 +64,17 @@ export function runtimeKinds(code) {
   return [...kinds];
 }
 
+/**
+ * Kinds of all ti entries, for callbacks that set tiles kept in their own tables
+ * (floors = {[NORTH] = ti["A"], …}; wo[pos] = floors[dir]).
+ */
+export function allTileKinds(code) {
+  if (!/wo\[[^\]]+\]\s*=(?!=)/.test(bodies(code))) return [];
+  const kinds = new Set();
+  for (const d of code.matchAll(/ti\[\s*"[^"]*"\s*\]\s*=([^\n]*)/g)) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+  return [...kinds];
+}
+
 /** Run the level script in init mode on the exported world; returns world attributes and errors. */
 export async function luaInit(code, w) {
   const named = [];

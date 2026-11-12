@@ -1,6 +1,6 @@
 # Enigma-Import
 
-186 von 1322 Levels übernommen (15 Pakete).
+189 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,7 +9,6 @@
 | Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
 | Lua-Rückruf | 165 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_fourswitch | 131 | 3 |
 | Boden fl_slope_ps | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
@@ -23,7 +22,7 @@
 | Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Lua-Init | 98 | 0 |
+| Lua-Init | 96 | 0 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Stein st_key | 90 | 0 |
@@ -95,6 +94,7 @@
 | Stein st_scissors | 28 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein st_actorimpulse_invisible | 27 | 1 |
+| Stein fl_bridge_gc | 27 | 0 |
 | Akteur ac_horse | 27 | 0 |
 | Stein st_blur_cross | 27 | 3 |
 | Gegenstand it_strip_ns | 27 | 0 |
@@ -102,7 +102,6 @@
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
 | Stein st_greenbrown_hollow | 26 | 1 |
-| Stein fl_bridge_gc | 26 | 0 |
 | Boden fl_slope_te | 25 | 1 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
@@ -175,7 +174,6 @@
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Objekt ot_timer (Lua-Init) | 12 | 0 |
 | Lua: :add | 11 | 0 |
 | ungerade Zahl Oxyd-Steine | 11 | 1 |
 | Boden fl_slope | 11 | 0 |
@@ -183,6 +181,7 @@
 | Gegenstand it_burnable_fireproof | 11 | 1 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
+| Objekt ot_timer (Lua-Init) | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Lua: :nearest | 10 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
@@ -259,17 +258,18 @@
 | Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
+| Lua: it_death | 3 | 0 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
 | Stein fl_bridge_bn | 3 | 0 |
-| Lua: st_fourswitch | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
 | Lua: fl_fake_abyss | 3 | 0 |
 | Lua: :setfire | 3 | 0 |
 | Lua: mod() | 3 | 0 |
+| Lua: fl_slope_pe | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
 | Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
@@ -283,7 +283,6 @@
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
-| Lua: it_death | 2 | 0 |
 | Lua: st_break_white | 2 | 0 |
 | Gummiband an bewegtem oder unbekanntem Anker | 2 | 2 |
 | Lua: :contains_cell | 2 | 0 |
@@ -301,7 +300,6 @@
 | Stein st_metal_hollow | 2 | 0 |
 | Lua: st_invisible | 2 | 0 |
 | Stein st_volcano_active | 2 | 1 |
-| Lua: fl_slope_pe | 2 | 0 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
 | Stein st_invisible_hollow | 2 | 0 |
@@ -342,7 +340,7 @@
 | Lua: st_break_black | 1 | 0 |
 | Lua: solidfloor() | 1 | 0 |
 | Lua: func() | 1 | 0 |
-| Lua: :closeall | 1 | 0 |
+| Lua: :closeall | 1 | 1 |
 | Lua: get_map_size() | 1 | 0 |
 | Lua: kill_stone() | 1 | 0 |
 | Lua: add_multicell() | 1 | 0 |
@@ -451,6 +449,9 @@
 | Lua: it_coin_l | 1 | 0 |
 | Lua: it_explosion | 1 | 0 |
 | Lua: it_key | 1 | 0 |
+| Lua: fl_slope_pn | 1 | 0 |
+| Lua: fl_slope_ps | 1 | 0 |
+| Lua: fl_slope_pw | 1 | 0 |
 | Lua: st_oxyd_d | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
@@ -462,6 +463,7 @@
 | Lua: st_window_w | 1 | 0 |
 | Lua: st_window_s | 1 | 0 |
 | Lua: st_window_n | 1 | 0 |
+| Aktion turn | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
 | Lua: it_bottle_broken | 1 | 0 |
 | Gegenstand it_pipe_w | 1 | 0 |

@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
@@ -146,6 +146,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Four switch: has turned before (FourSwitch::m_inactive_so_far is false). */
+  turned?: boolean;
   /** Swap stone: moved at this time in this Enigma direction (0.1 s animation). */
   swapped?: { since: number; dir: number };
   /** Seed: growing since this time; box: grown from a seed, growing since this time. */
@@ -182,6 +184,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
   if (kind === 'st_swap') return 'swap';
+  if (kind === 'st_fourswitch') return 'fourswitch';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
   if (PASSAGE.test(kind)) return 'passage';
@@ -236,7 +239,7 @@ export class ObjectWorld {
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
   /** Lua function as action target (Object::performAction → lua::CallFunc). */
-  onCallback: ((fn: string, value: boolean, sender: GameObject) => void) | null = null;
+  onCallback: ((fn: string, value: boolean | number, sender: GameObject) => void) | null = null;
   /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves. */
   fallenPuzzle = FALLEN_PUZZLE;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
@@ -328,7 +331,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -350,6 +353,10 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'fourswitch') {
+        this.turnFourswitch(o); // FourSwitch::actor_hit
+        continue;
+      }
       if (o.cls === 'swap') {
         // Stone::actor_hit → impulse in the push direction (SwapStone::on_impulse)
         const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
@@ -739,6 +746,31 @@ export class ObjectWorld {
     o.growing = this.now;
   }
 
+  // ---------- four switches (FourSwitch.cc) ----------
+
+  /**
+   * FourSwitch::turn: one step clockwise (counterclock: anticlockwise). With state targets
+   * (target_0 … target_3) the old direction gets false (not on the first turn) and the new
+   * one true; with a plain "target" the new direction is sent as value (API 1: true for W/E).
+   */
+  private turnFourswitch(o: GameObject): void {
+    const global = !!o.attrs.target;
+    if (!global && o.turned) this.performAction(o, false);
+    o.turned = true;
+    // Enigma directions W0 S1 E2 N3: clockwise N→E→S→W is −1
+    o.state = truthy(o.attrs.counterclock) ? (o.state + 1) % 4 : (o.state + 3) % 4;
+    this.events.push({ type: 'sound', name: 'switch' });
+    if (global) {
+      if (this.compat < 1.1) this.performAction(o, o.state % 2 === 0);
+      else this.performAction(o, o.state !== 0, o.state);
+    } else this.performAction(o, true);
+  }
+
+  /** st_fourswitch image: frames n e s w. */
+  fourswitchFrame(o: GameObject): number {
+    return [3, 2, 1, 0][o.state & 3];
+  }
+
   // ---------- swap stones (SwapStone.cc) ----------
 
   /**
@@ -796,6 +828,8 @@ export class ObjectWorld {
   private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
     const [dx, dy] = STEPS[d];
     if (raising) this.events.push({ type: 'oxyd', col: o.col + dx, row: o.row + dy });
+    // FourSwitch::message("_trigger", false): turns
+    if (!raising) for (const f of this.at(o.col + dx, o.row + dy)) if (f.cls === 'fourswitch' && !f.gone) this.turnFourswitch(f);
     // PassageStone::message("_trigger"): toggles on every trigger
     for (const p of this.at(o.col + dx, o.row + dy)) if (p.cls === 'passage' && !p.gone) p.state = 1 - p.state;
   }
@@ -1131,7 +1165,7 @@ export class ObjectWorld {
     }
   }
 
-  private message(o: GameObject, msg: string, value: boolean): void {
+  private message(o: GameObject, msg: string, value: boolean, num?: number): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
     if (o.cls === 'quake') {
       // A fake quake stone has no messages.
@@ -1163,7 +1197,17 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'fourswitch') {
+      // FourSwitch::message: signal with an odd value (or any in API 1) and a falling _trigger turn it
+      if (msg === 'toggle' || (msg === 'signal' && ((num ?? (value ? 1 : 0)) % 2 === 1 || this.compat < 1.1))) this.turnFourswitch(o);
+      return;
+    }
     if (o.cls === 'boulder') {
+      // BoulderStone::message "orientate": the direction of the value
+      if (msg === 'orientate' && num !== undefined) {
+        this.boulderTurn(o, num & 3);
+        return;
+      }
       // BoulderStone::message: turn (clockwise), turnback, flip; counterclock swaps turn directions
       const ccw = truthy(o.attrs.counterclock);
       const cw = (d: number) => (d + 3) % 4; // W→N→E→S→W in Enigma numbering (W0 S1 E2 N3)
@@ -1203,8 +1247,11 @@ export class ObjectWorld {
   }
 
   /** Enigma Object::performAction: send the action messages to all targets. */
-  performAction(o: GameObject, value: boolean): void {
-    if (truthy(o.attrs.inverse)) value = !value;
+  performAction(o: GameObject, value: boolean, num?: number): void {
+    if (truthy(o.attrs.inverse)) {
+      value = !value;
+      if (num !== undefined && o.cls === 'fourswitch') num = 3 - num; // FourSwitch::invertActionValue
+    }
     const s = o.state;
     const targets = splitTokens(o.attrs[`target_${s}`] ?? o.attrs.target);
     const actions = splitTokens(o.attrs[`action_${s}`] ?? o.attrs.action);
@@ -1212,8 +1259,8 @@ export class ObjectWorld {
       const action = actions[i] ?? '';
       const objs = this.resolve(t);
       // No target object: a Lua function of the level, if any (action "callback" or empty).
-      if (objs.length === 0 && (action === '' || action === 'callback')) this.onCallback?.(t, value, o);
-      for (const obj of objs) this.message(obj, action === '' ? 'toggle' : action, value);
+      if (objs.length === 0 && (action === '' || action === 'callback')) this.onCallback?.(t, num ?? value, o);
+      for (const obj of objs) this.message(obj, action === '' ? 'toggle' : action, value, num);
     });
   }
 
@@ -1250,6 +1297,8 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // FourSwitch: state = direction (default north)
+  if (kind === 'st_fourswitch') return Number.isInteger(Number(a.$state)) && a.$state !== '' && a.$state !== undefined ? Number(a.$state) & 3 : 3;
   // PassageStone: state = colour (0 black, 1 white)
   if (PASSAGE.test(kind)) {
     const c = a.color ?? a.$state;

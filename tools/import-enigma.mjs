@@ -10,7 +10,7 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -60,6 +60,7 @@ const OBJECTS = [
   [/^it_extralife$/, ['it_extralife']],
   [/^it_yinyang$/, ['it_yinyang']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
+  [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
   [/^st_chameleon$/, []], // drawn with the floor image of its cell
   [/^st_passage(_black|_white)?(_square|_slash|_cross|_frame|_backslash)?$/, [...['square', 'slash', 'cross', 'frame', 'backslash'].flatMap((f) => [`st_passage_black_${f}`, `st_passage_white_${f}`]), 'sh_round', ...['slash', 'cross', 'frame', 'backslash'].map((f) => `sh_passage_${f}`)]],
   [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
@@ -71,7 +72,7 @@ const OBJECTS = [
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
@@ -480,6 +481,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
         if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
         else if (v !== 'nil') imgs.add(v);
       }
+    }
+    // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
+    for (const k of allTileKinds(lua.code)) {
+      const v = kinds[k] === undefined ? runtimeKind(k) : null;
+      if (!v) continue;
+      kinds[k] = v;
+      if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
+      else if (v !== 'nil') imgs.add(v);
     }
   }
   if (oxyds === 0) reject('keine Oxyd-Steine');

@@ -361,6 +361,14 @@ GROUP.__index = function(g, k)
   end
   return nil
 end
+-- for obj in group do … end (Lua 5.1 generic for calls the group as iterator)
+GROUP.__call = function(g, _, prev)
+  if prev == nil then return rawget(g, 1) end
+  for i, o in ipairs(g) do
+    if o == prev then return rawget(g, i + 1) end
+  end
+  return nil
+end
 GROUP.__newindex = function(g, k, v)
   if type(k) == "number" then return rawset(g, k, v) end
   for _, o in ipairs(g) do o[k] = v end

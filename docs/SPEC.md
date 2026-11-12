@@ -270,6 +270,15 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   dahinter den Platz tauschen – Objektsteine wie Mauern der Karte; ohne Stein dahinter
   passiert nichts. 0,1 s Richtungsbild (st_swap_n/s/e/w). Abweichung: Mit Oxyd-Steinen
   tauscht er in Murmel nicht (deren Platz ist dort fest mit der Paarlogik verbunden).
+- **st_fourswitch** (`FourSwitch.cc`): Jeder Treffer dreht ihn eine Richtung weiter (im
+  Uhrzeigersinn, `counterclock` umgekehrt); auch signal (ungerader Wert, API 1 jeder),
+  toggle und ein fallender Felsbrocken-Auslöser. Mit `target_0`…`target_3` erhält die alte
+  Richtung false (nicht beim ersten Drehen), die neue true; mit `target` geht die neue
+  Richtung als Zahl an das Ziel (`orientate` an Felsbrocken, Zahl an Lua-Rückrufe; API 1:
+  true für West/Ost). Nachrichten tragen dafür optional einen Zahlenwert.
+- **Lua-Ergänzungen:** Gruppen sind als Iterator aufrufbar (`for o in group do`); setzt ein
+  Rückruf Kacheln, nimmt der Importer die unterstützten Arten aller `ti`-Einträge auf
+  (Kacheln in eigenen Tabellen wie `floors[dir]`).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

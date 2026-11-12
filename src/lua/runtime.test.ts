@@ -136,12 +136,15 @@ function check()
     local n = 0
     for _ in ipairs(court) do n = n + 1 end
     r[#r + 1] = tostring(n)
+    local m = 0
+    for _ in court do m = m + 1 end -- a group as iterator (Lua 5.1 style)
+    r[#r + 1] = tostring(m)
     wo["Result"] = table.concat(r, " ")
 end`;
     const lua = await startLua(code, w.host);
     lua.callback('check', true, '');
     expect(lua.lastError).toBe('');
-    expect(w.host.world('Result')).toBe('2 nil court#2 8,9 2,1 2');
+    expect(w.host.world('Result')).toBe('2 nil court#2 8,9 2,1 2 2');
   });
 
   it('reports Lua errors instead of throwing', async () => {

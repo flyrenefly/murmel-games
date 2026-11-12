@@ -66,7 +66,7 @@ export class LuaLevel {
   }
 
   /** Call the level function `name` like Enigma's callback (value, sender). */
-  callback(name: string, value: boolean, senderRef: string): void {
+  callback(name: string, value: boolean | number, senderRef: string): void {
     this.callGlobal('__callback', [name, value, senderRef]);
   }
 
@@ -86,11 +86,12 @@ export class LuaLevel {
     }
   }
 
-  private callGlobal(name: string, args: (string | boolean)[]): void {
+  private callGlobal(name: string, args: (string | boolean | number)[]): void {
     const { lua } = this.f;
     lua.lua_getglobal(this.L, this.str(name));
     for (const a of args) {
       if (typeof a === 'boolean') lua.lua_pushboolean(this.L, a);
+      else if (typeof a === 'number') lua.lua_pushinteger(this.L, a);
       else lua.lua_pushstring(this.L, this.str(a));
     }
     if (lua.lua_pcall(this.L, args.length, 0, 0) !== lua.LUA_OK) this.fail();
