@@ -413,6 +413,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   à 50 ms; Treffer klingen metallisch.
   Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
+- **st_window(_n/e/s/w…)** (`WindowStone.cc`): Scheiben (3/32 dick) an den Seiten aus
+  `$connections` bzw. der Endung; sie halten Kugeln von beiden Seiten auf (`blockAt` mit Flag
+  `PANES`). Treffer: Impuls = Tempo zur Scheibe × Masse; > 35 zerspringt die Kugel, > 22
+  (mit Hammer 15) bricht die getroffene Scheibe, ohne Scheiben verschwindet der Stein; `secure`
+  (grün) bricht nie. Bild st_window_blue/_green nach Seitenbits, Schatten sh_window je Seite.
+  Offen: Kratzer (Ring), Verschieben mit dem Schraubenschlüssel, Bruchanimation, Explosionen.
 - **st_key + it_key** (`KeySwitch.cc`, `SimpleItems.cc` Key): Ist der Schalter aus und liegt
   der Schlüssel mit gleichem `code` vorn im Inventar des Besitzers der Kugel, nimmt ein Treffer
   ihn und schaltet ein (Aktion mit true); eingeschaltet gibt ein Treffer den Schlüssel zurück

@@ -594,6 +594,21 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("a window has panes on its faces; a hard hit breaks one, a very hard one shatters the marble", () => {
+    const w = world([{ x: 4, y: 1, k: "st_window_ns", a: { $connections: "5" } }]); // faces N + S
+    expect(w.blockAt(4, 1)).toBe(8 | 2 | 16);
+    w.marbleAt(4, 0, 0); // above the window
+    w.hit(4, 1, 0, 0, -1, -10, 0, 0, 0); // slow: nothing
+    expect(w.blockAt(4, 1) & 15).toBe(10);
+    w.hit(4, 1, 0, 0, -1, -25, 0, 0, 0); // breaks the north pane
+    expect(w.blockAt(4, 1) & 15).toBe(2);
+    w.marbleAt(4, 1, 0); // inside, hitting the south pane from within
+    w.hit(4, 1, 0, 0, -1, -40, 0, 0, 0);
+    expect(w.events).toContainEqual({ type: "shatter", marble: 0 });
+    w.hit(4, 1, 0, 0, -1, -30, 0, 0, 0); // breaks the last pane: the stone is gone
+    expect(w.blockAt(4, 1)).toBe(0);
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

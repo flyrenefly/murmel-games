@@ -1,6 +1,6 @@
 # Enigma-Import
 
-501 von 1322 Levels übernommen (17 Pakete).
+505 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -16,7 +16,7 @@
 | Lua: st_oxyd | 103 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
 | Gegenstand it_dynamite | 72 | 2 |
-| Lua: API 1 | 69 | 0 |
+| Lua: API 1 | 69 | 1 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
@@ -33,7 +33,6 @@
 | Stein st_thief | 41 | 3 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
-| Stein st_window | 38 | 4 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Lua: strlen() | 35 | 0 |
@@ -96,13 +95,13 @@
 | Stein st_magic_oxydc | 14 | 1 |
 | Lua: draw_stones() | 14 | 0 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
-| Gegenstand it_bottle_broken | 14 | 0 |
+| Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 4 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 3 |
-| Stein st_disco_light | 14 | 3 |
+| Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
 | Stein st_polarswitch | 13 | 1 |
@@ -164,7 +163,6 @@
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
 | Stein st_brownie (verbunden) | 5 | 2 |
-| Lua: st_window | 5 | 0 |
 | Lua: it_death | 4 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
@@ -175,6 +173,7 @@
 | Gegenstand it_extinguisher_medium | 4 | 0 |
 | Stein st_death_movable | 4 | 0 |
 | Gegenstand it_strip_nsw | 4 | 0 |
+| Aktion inner_pull | 4 | 0 |
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
@@ -379,10 +378,6 @@
 | Lua: it_dynamite | 1 | 0 |
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |
-| Lua: st_window_e | 1 | 0 |
-| Lua: st_window_w | 1 | 0 |
-| Lua: st_window_s | 1 | 0 |
-| Lua: st_window_n | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
 | Lua: it_bottle_broken | 1 | 0 |
 | Gegenstand it_pipe_w | 1 | 0 |

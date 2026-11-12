@@ -1,7 +1,7 @@
 import { type ActorDef, createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
 import type { Level } from './level';
 import { type BodyForce, Rubberband } from './rubber';
-import { ALL_FACES, EAST, NORTH, SOUTH, WEST } from './objects';
+import { ALL_FACES, EAST, NORTH, PANES, SOUTH, WEST } from './objects';
 import FLOORS from './floors.generated.json';
 
 // Rolling physics modelled on Enigma (GPL-2.0-or-later, src/world.cc), which
@@ -475,8 +475,19 @@ export class PhysicsWorld {
           this.contactBox(b, col, row, -3, onContact, who);
           continue;
         }
-        // Door d: only the closed faces block, and only from outside (Door::collision_response).
         const { x, y } = b.pos;
+        if (faces & PANES) {
+          // WindowStone::collision_response: panes 3/32 thick at the faces, from both sides
+          const fw = 3 / 32;
+          const pane = (x0: number, y0: number, x1: number, y1: number) =>
+            this.contactAt(b, Math.max(x0, Math.min(x, x1)), Math.max(y0, Math.min(y, y1)), col, row, -3, onContact, who);
+          if (faces & WEST) pane(col, row, col + fw, row + 1);
+          if (faces & EAST) pane(col + 1 - fw, row, col + 1, row + 1);
+          if (faces & NORTH) pane(col, row, col + 1, row + fw);
+          if (faces & SOUTH) pane(col, row + 1 - fw, col + 1, row + 1);
+          continue;
+        }
+        // Door d: only the closed faces block, and only from outside (Door::collision_response).
         if (faces & NORTH && y < row) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row, col, row, -3, onContact, who);
         if (faces & SOUTH && y > row + 1) this.contactAt(b, Math.max(col, Math.min(x, col + 1)), row + 1, col, row, -3, onContact, who);
         if (faces & WEST && x < col) this.contactAt(b, col, Math.max(row, Math.min(y, row + 1)), col, row, -3, onContact, who);

@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -59,6 +59,8 @@ export const SOUTH = 2;
 export const EAST = 4;
 export const NORTH = 8;
 export const ALL_FACES = 15;
+/** blockAt flag: the faces are thin window panes that block from both sides (WindowStone). */
+export const PANES = 16;
 
 const FRAME_MS = 60;
 /** Number of animation frames of a door opening/closing (models-2d.lua). */
@@ -161,6 +163,13 @@ function isItem(o: GameObject): boolean {
 
 /** BlockerStone shrinking/growing: 3 frames à 60 ms. */
 const BLOCKER_MS = 3 * 60;
+
+/** WindowStone faces: from $connections (open sides) or the kind suffix (st_window = south). */
+export function windowFaces(o: GameObject): number {
+  if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return ALL_FACES ^ (Number(o.attrs.$connections) & ALL_FACES);
+  const s = /^st_window_([nesw]+)$/.exec(o.kind)?.[1] ?? 's';
+  return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
 
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
@@ -289,7 +298,7 @@ export type ObjectEvent =
   | { type: 'oxydMsg'; col: number; row: number; msg: string; value: boolean }
   /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
   | { type: 'oxyd'; col: number; row: number }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' | 'mirror' | 'laser' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' | 'mirror' | 'laser' | 'glass' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -324,6 +333,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'ot_counter') return 'counter';
   if (kind === 'st_pull') return 'pull';
   if (kind === 'st_laserswitch') return 'laserswitch';
+  if (/^st_window(_[nesw]+)?$/.test(kind)) return 'window';
   if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
@@ -487,6 +497,7 @@ export class ObjectWorld {
       }
       if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
+      if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
         if (color !== o.state) return ALL_FACES;
@@ -509,6 +520,10 @@ export class ObjectWorld {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'keyswitch') {
         this.hitKeySwitch(o, by);
+        return;
+      }
+      if (o.cls === 'window') {
+        this.hitWindow(o, nx, ny, vn, by);
         return;
       }
       if (o.cls === 'mirror') {
@@ -1135,6 +1150,37 @@ export class ObjectWorld {
   /** st_laser sheet: column N E S W, row 1 off, rows 1..8 animated (100 ms) when on. */
   laserLook(o: GameObject): { col: number; row: number } {
     return { col: 3 - laserDir(o), row: o.state === 1 ? 1 + (Math.floor(this.now / 100) % 8) : 1 };
+  }
+
+  // ---------- windows (WindowStone.cc) ----------
+
+  /**
+   * WindowStone::actor_hit: impulse = speed into the pane × mass. Above 35 the marble shatters, above
+   * 22 (15 with a hammer in hand) the pane breaks – not for secure (green) windows.
+   */
+  private hitWindow(o: GameObject, nx: number, ny: number, vn: number, by: number): void {
+    const faces = windowFaces(o);
+    if (!faces) return;
+    // which pane: the marble inside the cell hits the far one, outside the near one
+    const m = by >= 0 ? this.slot(by) : null;
+    const inside = !!m && m.col === o.col && m.row === o.row;
+    let face = 0;
+    if (Math.abs(nx) >= Math.abs(ny)) face = (nx < 0) !== inside ? WEST : EAST;
+    else face = (ny < 0) !== inside ? NORTH : SOUTH;
+    if (!(faces & face)) return;
+    const mass = by >= 0 && this.isPearl(by) ? 0.7 : 1;
+    const impulse = -vn * mass;
+    const secure = truthy(o.attrs.secure);
+    const threshold = 22 - (this.wields('it_hammer') ? 7 : 0);
+    if (secure) return;
+    if (impulse > 35 && by >= 0) this.events.push({ type: 'shatter', marble: by });
+    else if (impulse > threshold) {
+      // WindowStone::breakFaces
+      const rest = faces & ~face;
+      o.attrs = { ...o.attrs, $connections: String(ALL_FACES ^ rest) };
+      this.events.push({ type: 'sound', name: 'glass' });
+      if (rest === 0) this.remove(o);
+    }
   }
 
   // ---------- key switches (KeySwitch.cc) ----------

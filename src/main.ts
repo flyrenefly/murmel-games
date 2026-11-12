@@ -578,6 +578,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'landmine') sfx.landmine();
     else if (e.name === 'mirror') sfx.mirror();
     else if (e.name === 'laser') sfx.laser();
+    else if (e.name === 'glass') sfx.shatter();
   }
 }
 
