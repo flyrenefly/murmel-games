@@ -192,6 +192,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_pull') return ['st_pull', 'sh_rawglass', 'sh_pull'];
   if (kind.startsWith('st_rotator')) return ['st_rotator_cw', 'st_rotator_ccw', 'sh_round'];
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
+  if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
   if (kind.startsWith('st_actorimpulse')) return ['st_actorimpulse', 'sh_actorimpulse'];
   if (kind.startsWith('st_blur')) return ['st_blur_straight', 'st_blur_cross', 'sh_round', ...PASSAGE_IMAGES];
@@ -624,6 +625,13 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'laserswitch') {
+      // st_laserswitch0 = st_oxydb; on: st_quake PingPong, 50 ms per frame
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.state === 1) this.frame('st_quake', [0, 1, 2, 3, 3, 2, 1, 0][Math.floor(this.now / 50) % 8], px, py);
+      else this.image('st_oxydb', px, py);
       return;
     }
     if (o.cls === 'blocker') {

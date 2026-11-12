@@ -451,6 +451,23 @@ describe('ObjectWorld', () => {
       expect(w.events).toContainEqual({ type: "laserhit", marble: 0 });
       expect(w.canDropAt(3.5, 1.5)).toBe(false);
     });
+
+    it("a laser switch turns on with light and off without it", () => {
+      const w = lworld([
+        door(8),
+        { x: 1, y: 2, k: "st_laser", a: { $state: "0" } },
+        { x: 5, y: 2, k: "st_laserswitch", a: { target: "door1", action: "toggle" } },
+      ]);
+      expect(w.objects[2].state).toBe(0);
+      w.sendMessage(w.objects[1], "on", true);
+      w.update(10);
+      expect(w.objects[2].state).toBe(1);
+      w.update(400);
+      expect(w.blockAt(8, 0)).toBe(0);
+      w.sendMessage(w.objects[1], "off", true);
+      w.update(10);
+      expect(w.objects[2].state).toBe(0);
+    });
   });
 
   it("a crack grows when a marble enters, seeds its neighbours and finally dissolves into abyss", () => {

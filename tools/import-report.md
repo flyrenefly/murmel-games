@@ -1,13 +1,13 @@
 # Enigma-Import
 
-471 von 1322 Levels übernommen (17 Pakete).
+476 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 2 |
+| Lua-Rückruf | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
-| Lua-Rückruf | 115 | 1 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Lua-Init | 108 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
@@ -30,13 +30,12 @@
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 2 |
+| Stein st_thief | 41 | 3 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
-| Stein st_window | 38 | 3 |
+| Stein st_window | 38 | 4 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
-| Stein st_laserswitch | 36 | 5 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
@@ -98,6 +97,7 @@
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 1 |
 | Stein st_plaster_breakable | 14 | 0 |
+| Lua: :add | 14 | 2 |
 | Stein st_magic_oxydc | 14 | 1 |
 | Lua: draw_stones() | 14 | 0 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
@@ -108,7 +108,6 @@
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 2 |
 | Stein st_disco_light | 14 | 3 |
-| Lua: :add | 13 | 2 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
 | Stein st_polarswitch | 13 | 1 |
@@ -125,7 +124,7 @@
 | Stein st_brake | 11 | 0 |
 | Lua: :nearest | 10 | 4 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
-| Stein st_box_wood (verbunden) | 10 | 2 |
+| Stein st_box_wood (verbunden) | 10 | 3 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 2 |

@@ -401,7 +401,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Eine Kugel näher als 0,21 an der Strahlachse zerspringt (`_laserhit`). Neues Licht öffnet
   Oxyd-Steine, dreht Felsbrocken um und startet Impulssteine; die erste Berechnung löst nichts
   aus. Auf Strahlfelder kann nichts abgelegt werden. Klänge st-laser, st-mirrorturn.
-  Offen: Laserschalter, Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
+  **st_laserswitch** (`LaserSwitch.cc`): an, solange Licht auf ihn fällt (Aktion true), sonst
+  aus (false); der Anfangszustand löst nichts aus. Bild aus = st_oxydb, an = st_quake pendelnd
+  à 50 ms; Treffer klingen metallisch.
+  Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
 - **st_key + it_key** (`KeySwitch.cc`, `SimpleItems.cc` Key): Ist der Schalter aus und liegt
   der Schlüssel mit gleichem `code` vorn im Inventar des Besitzers der Kugel, nimmt ein Treffer
