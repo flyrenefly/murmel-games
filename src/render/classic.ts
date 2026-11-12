@@ -170,6 +170,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
   if (kind === 'st_swap') return ['st_swap', 'sh_round'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
+  if (kind.startsWith('st_actorimpulse')) return ['st_actorimpulse', 'sh_actorimpulse'];
   if (kind.startsWith('st_blur')) return ['st_blur_straight', 'st_blur_cross', 'sh_round', ...PASSAGE_IMAGES];
   if (kind.startsWith('st_chess')) return ['st_chess_black', 'st_chess_white', 'sh_round'];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
@@ -518,6 +519,13 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'actorimpulse') {
+      if (!world.actorimpulseVisible(o)) return;
+      const f = world.actorimpulseFrame(o);
+      if (pass === 'shadow') shadowFrame('sh_actorimpulse', f, true);
+      else this.frame('st_actorimpulse', f, px, py);
       return;
     }
     if (o.cls === 'blur') {

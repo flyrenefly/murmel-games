@@ -450,6 +450,12 @@ function onContact(c: Contact): void {
   }
   if (c.kind === 'object') {
     if (c.by >= 0) objects.touch(c.col, c.row, c.by); // other actors only hit
+    if (c.by >= 0 && c.vn < 0 && physics) {
+      // ActorImpulseStone::actor_hit: away from the bumper's centre
+      const m = physics.marbles[c.by];
+      const f = objects.bump(c.col, c.row, m.pos.x, m.pos.y);
+      if (f) physics.kick(c.by, f[0], f[1]);
+    }
     if (!c.hit) return;
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);

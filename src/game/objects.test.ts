@@ -530,6 +530,23 @@ describe('ObjectWorld', () => {
     expect(w.inventory).toEqual(["it_yinyang"]);
   });
 
+  it("an actor impulse stone blocks, pushes the marble away from its centre and then pulses for 180 ms", () => {
+    const w = world([{ x: 3, y: 1, k: "st_actorimpulse" }, { x: 6, y: 1, k: "st_actorimpulse_invisible", a: { strength: "50" } }]);
+    expect(w.blockAt(3, 1)).toBe(ALL_FACES);
+    const f = w.bump(3, 1, 3.5, 0.5)!;
+    expect(f[0]).toBeCloseTo(0, 6);
+    expect(f[1]).toBeCloseTo(-200, 6); // away from the centre (north)
+    expect(w.bump(3, 1, 3.5, 0.5)).toBeNull(); // pulsing
+    expect(w.actorimpulseFrame(w.objects[0])).toBe(0);
+    w.update(70);
+    expect(w.actorimpulseFrame(w.objects[0])).toBe(2);
+    w.update(120);
+    expect(w.bump(3, 1, 2.5, 1.5)![0]).toBeCloseTo(-200, 6);
+    expect(w.actorimpulseVisible(w.objects[1])).toBe(false);
+    expect(w.bump(6, 1, 7.5, 1.5)![0]).toBeCloseTo(50, 6);
+    expect(w.actorimpulseVisible(w.objects[1])).toBe(true);
+  });
+
   it("ring and spoon are picked up and dropped again like plain items", () => {
     const w = world([{ x: 3, y: 0, k: "it_ring" }, { x: 5, y: 0, k: "it_spoon" }]);
     w.actorStep(3.5, 0.5, 0);

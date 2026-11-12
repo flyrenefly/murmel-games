@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool']);
@@ -88,6 +88,9 @@ const STEPS: [number, number, number][] = [
 ];
 /** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
 export const BOULDER_MS = 3 * 120;
+/** server::BumperForce and the PingPong frames of st_actorimpulse_anim. */
+const BUMPER_FORCE = 200;
+const BUMPER_FRAMES = [0, 1, 2, 2, 1, 0];
 /** ChessStone: knight move when rolling sideways faster than this; animations 5 × 120 ms. */
 const CHESS_HIT = 1.5;
 const CHESS_ANIM_MS = 5 * 120;
@@ -149,6 +152,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** ActorImpulseStone: start of the PULSING animation (idle when unset or over). */
+  pulse?: number;
   /** Vortex: phase, its start, the swallowed marble, destination index and target vortex. */
   vortex?: { phase: 'open' | 'closed' | 'opening' | 'closing' | 'swallowing' | 'warping' | 'emitting'; since: number; marble?: number; idx?: number; target?: GameObject };
   /** Chess stone (ChessStone): phase, its start and the knight's destination. */
@@ -196,6 +201,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_yinyang') return 'yinyang';
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
   if (kind === 'it_ring' || kind === 'it_spoon') return 'tool';
+  if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -347,7 +353,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -795,6 +801,40 @@ export class ObjectWorld {
     o.growing = this.now;
   }
 
+  // ---------- actor impulse stones (ActorImpulseStone.cc) ----------
+
+  /**
+   * ActorImpulseStone::actor_hit: an idle bumper pushes the actor away from its centre with
+   * distortedVelocity(direction, strength) (BumperForce 200) and pulses; returns that force or null.
+   */
+  bump(col: number, row: number, x: number, y: number): [number, number] | null {
+    const o = this.at(col, row).find((b) => b.cls === 'actorimpulse' && !b.gone);
+    if (!o || this.pulsing(o)) return null;
+    o.pulse = this.now;
+    const dx = x - (col + 0.5);
+    const dy = y - (row + 0.5);
+    const d = Math.hypot(dx, dy) || 1;
+    const [vx, vy] = [dx / d, dy / d];
+    const num = (k: string, def: number) => (o.attrs[k] !== undefined && o.attrs[k] !== '' ? Number(o.attrs[k]) : def);
+    const f = num('hit_strength', num('strength', BUMPER_FORCE));
+    return [(num('hit_distortion_xx', 1) * vx + num('hit_distortion_xy', 0) * vy) * f, (num('hit_distortion_yx', 0) * vx + num('hit_distortion_yy', 1) * vy) * f];
+  }
+
+  private pulsing(o: GameObject): boolean {
+    return o.pulse !== undefined && this.now - o.pulse < BUMPER_FRAMES.length * 30;
+  }
+
+  /** st_actorimpulse_anim: PingPong over 3 frames à 30 ms; idle frame 0. */
+  actorimpulseFrame(o: GameObject): number {
+    return this.pulsing(o) ? BUMPER_FRAMES[Math.floor((this.now - o.pulse!) / 30)] : 0;
+  }
+
+  /** st_actorimpulse_invisible is drawn only while it pulses (no glasses yet). */
+  actorimpulseVisible(o: GameObject): boolean {
+    const invisible = o.attrs.invisible !== undefined ? truthy(o.attrs.invisible) : o.kind.endsWith('_invisible');
+    return !invisible || this.pulsing(o);
+  }
+
   // ---------- vortices (Vortex.cc) ----------
 
   private vortexOf(o: GameObject): NonNullable<GameObject['vortex']> {
@@ -1043,6 +1083,13 @@ export class ObjectWorld {
   /** BoulderStone::triggerObstacle: only Oxyd stones react (tryOpen on a raising trigger). */
   private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
     const [dx, dy] = STEPS[d];
+    // ActorImpulseStone::message("_trigger", true): sends the boulder back
+    if (raising)
+      for (const b of this.at(o.col + dx, o.row + dy))
+        if (b.cls === 'actorimpulse' && !b.gone) {
+          o.state = (o.state + 2) % 4;
+          b.pulse = this.now;
+        }
     if (raising) this.events.push({ type: 'oxyd', col: o.col + dx, row: o.row + dy });
     // FourSwitch::message("_trigger", false): turns
     if (!raising) for (const f of this.at(o.col + dx, o.row + dy)) if (f.cls === 'fourswitch' && !f.gone) this.turnFourswitch(f);

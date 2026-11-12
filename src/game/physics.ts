@@ -568,6 +568,16 @@ export class PhysicsWorld {
     this.marbles[i].active = active;
   }
 
+  /**
+   * Actor::addForce for one world step: World::move_actors applies forceacc × 6 ("historical
+   * accident") during the next ActorTimeStep, i.e. a velocity change of 6·f·dt/mass.
+   */
+  kick(i: number, fx: number, fy: number): void {
+    const m = this.marbles[i];
+    m.vel.x += (6 * fx * PHYSICS_DT) / m.mass;
+    m.vel.y += (6 * fy * PHYSICS_DT) / m.mass;
+  }
+
   /** Actor "disconnect" (vortex/wormhole scissor): its rubber bands snap. */
   cutRubbers(i: number): void {
     const m = this.marbles[i];

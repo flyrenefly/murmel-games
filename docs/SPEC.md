@@ -315,6 +315,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (`force` in der Legende); jeder andere Boden mit `force_x`/`force_y` wirkt ebenso. Bild aus
   dem 6 × 4-Bogen `fl_slope` (DefSubimages spaltenweise). Wechselt der Boden zur Laufzeit,
   entfällt die Kraft. Die 3D-Ansicht zeigt Gefälle nicht.
+- **st_actorimpulse / _invisible** (`ActorImpulseStone.cc`): fester Stein; berührt ihn eine
+  Murmel (auf ihn zu), bekommt sie einen Stoß weg von seiner Mitte: `distortedVelocity`
+  (Richtung × `hit_strength` bzw. `strength`, Standard BumperForce 200, Verzerrung
+  `hit_distortion_xx/xy/yx/yy`), wirksam als forceacc × 6 für einen Physiktakt. Danach pulsiert
+  er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
+  nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
+  Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

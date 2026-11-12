@@ -1,10 +1,10 @@
 # Enigma-Import
 
-249 von 1322 Levels übernommen (15 Pakete).
+256 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| keine Oxyd-Steine | 294 | 2 |
+| keine Oxyd-Steine | 294 | 5 |
 | Stein st_laser | 225 | 3 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 6 |
 | Lua-Rückruf | 163 | 1 |
@@ -26,7 +26,6 @@
 | Boden fl_bridge_gc | 69 | 1 |
 | Stein st_oxyd | 68 | 0 |
 | Lua: API 1 | 65 | 0 |
-| Stein st_actorimpulse | 64 | 4 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
@@ -51,7 +50,7 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_springboard | 38 | 2 |
+| Gegenstand it_springboard | 38 | 3 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -77,14 +76,13 @@
 | Gegenstand it_coffee_drop | 28 | 0 |
 | Stein st_scissors | 28 | 1 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Stein st_actorimpulse_invisible | 27 | 2 |
 | Stein fl_bridge_gc | 27 | 0 |
 | Akteur ac_horse | 27 | 1 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
-| Stein st_greenbrown_hollow | 26 | 1 |
+| Stein st_greenbrown_hollow | 26 | 2 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 1 |
@@ -114,12 +112,12 @@
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| mehrere weiße Murmeln | 16 | 3 |
+| mehrere weiße Murmeln | 16 | 4 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 1 |
 | Stein st_break_boulder | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
-| Gegenstand it_magnet_on | 15 | 0 |
+| Gegenstand it_magnet_on | 15 | 2 |
 | Stein st_break_black | 15 | 0 |
 | Gegenstand it_flag_white | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
