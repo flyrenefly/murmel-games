@@ -16,10 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand']);
+/** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3 };
+/** German names of inventory items for the display. */
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab' };
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -28,8 +32,6 @@ export const SEED_GROW_MS = SEED_GROW_FRAMES.length * 120;
 export const BOX_GROW_MS = 3 * 130;
 /** Inventory::max_items. */
 export const MAX_ITEMS = 12;
-/** SeedItem traits: pick-up radius 0.2. */
-const SEED_RADIUS = 0.2;
 
 /** Meditation states (Meditation.cc): negative = dents that pull, positive = hills that push. */
 const MEDITATION_STATE: Record<string, number> = {
@@ -166,6 +168,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_landmine') return 'landmine';
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
+  if (kind === 'it_magicwand') return 'wand';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
@@ -316,6 +319,17 @@ export class ObjectWorld {
         if (o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
         continue;
       }
+      // BoulderStone::actor_hit: the magic wand turns a boulder round.
+      if (o.cls === 'boulder') {
+        if (this.wields('it_magicwand') && o.boulder?.phase !== 'falling') this.boulderTurn(o, (o.state + 2) % 4);
+        continue;
+      }
+      // OneWayStone::actor_hit: the wand turns a plain one-way stone round (not black/white ones).
+      if (o.cls === 'oneway') {
+        const coloured = (o.attrs.color ?? '') !== '' || /_(black|white)/.test(o.kind);
+        if (!coloured && this.wields('it_magicwand')) o.state = (o.state + 2) % 4;
+        continue;
+      }
       if (o.cls === 'puzzle') {
         this.hitPuzzle(o, nx, ny, vn);
         return; // the puzzle may have moved: no further objects of this cell
@@ -442,8 +456,13 @@ export class ObjectWorld {
       if (push && this.puzzleFragment(o).cluster.length === 1 && !this.stoneAt(o.col + dx, o.row + dy)) {
         this.movePuzzles([o], dx, dy, false);
       } else this.rotatePuzzleLine(o, dx, dy);
-    } else if (push) {
-      this.moveCluster(o, dx, dy);
+    } else {
+      // BLUE: with the wand first try to explode the cluster, then move it, then rotate the line.
+      const wand = this.wields('it_magicwand');
+      if (wand && this.explodePuzzle(o)) return;
+      const before = o.col * 1000 + o.row;
+      if (push) this.moveCluster(o, dx, dy);
+      if (wand && o.col * 1000 + o.row === before) this.rotatePuzzleLine(o, dx, dy);
     }
   }
 
@@ -601,10 +620,11 @@ export class ObjectWorld {
           const ny = Math.min(Math.max(y, r), r + 1);
           if (Math.hypot(x - nx, y - ny) < radius + 0.01) this.events.push({ type: 'shatter', marble });
         }
-      // Item::actor_hit (SeedItem: radius 0.2, not while growing) → Player::pick_up.
+      // Item::actor_hit (SeedItem: radius 0.2, not while growing; others 0.3) → Player::pick_up.
       for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
-        if (o.cls !== 'seed' || o.gone || o.growing !== undefined || this.inventory.length >= MAX_ITEMS) continue;
-        if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= SEED_RADIUS) continue;
+        const radius = PICKUP_RADIUS[o.cls];
+        if (radius === undefined || o.gone || o.growing !== undefined || this.inventory.length >= MAX_ITEMS) continue;
+        if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
         this.unplace(o);
         this.inventory.unshift(o.kind);
@@ -630,9 +650,19 @@ export class ObjectWorld {
     if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && ITEM_CLASSES.has(o.cls))) return false;
     if (col < 0 || row < 0 || col >= this.width) return false;
     const kind = this.inventory.shift()!;
-    const o = this.add(kind, 'seed', col, row);
-    this.startGrowing(o);
+    const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
+    if (o.cls === 'seed') this.startGrowing(o);
     return true;
+  }
+
+  /** Right click: player::RotateInventory(+1) → Inventory::rotate_left (the first item goes last). */
+  rotateInventory(): void {
+    if (this.inventory.length > 1) this.inventory.push(this.inventory.shift()!);
+  }
+
+  /** player::WieldedItemIs: the first inventory item. */
+  private wields(kind: string): boolean {
+    return this.inventory[0] === kind;
   }
 
   private add(kind: string, cls: ObjectClass, col: number, row: number): GameObject {

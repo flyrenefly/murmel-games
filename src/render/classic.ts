@@ -144,6 +144,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
+  if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
@@ -380,6 +381,7 @@ export class ClassicView {
       else if (o.cls === 'wormhole') this.frame('it_wormhole', o.state ? Math.floor(this.now / 100) % 2 : 0, px, py);
       else if (o.cls === 'meditation' && !o.gone) this.image(meditationImage(o.state), px, py);
       else if (o.cls === 'landmine' && !o.gone) this.image(o.exploding !== undefined ? 'it_explosion' : 'it_landmine', px, py);
+      else if (o.cls === 'wand') this.image('it_magicwand', px, py);
       else if (o.cls === 'seed' && !o.gone) {
         const age = world.growAge(o);
         this.frame('it_seed', age < 0 ? 0 : SEED_GROW_FRAMES[Math.min(SEED_GROW_FRAMES.length - 1, Math.floor(age / 120))], px, py);
@@ -387,7 +389,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed') continue;
+        if (o.gone || o.col < 0 || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

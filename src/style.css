@@ -71,6 +71,7 @@ body {
 }
 #btn-swap[hidden],
 #btn-drop[hidden],
+#btn-rotate[hidden],
 #hud-items[hidden] {
   display: none;
 }

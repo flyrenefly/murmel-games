@@ -2,7 +2,7 @@ import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
 import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
-import { ObjectWorld, type ObjectEvent } from './game/objects';
+import { ITEM_NAMES, ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
@@ -49,6 +49,7 @@ const btnRestart = $<HTMLButtonElement>('btn-restart');
 const btnLevels = $<HTMLButtonElement>('btn-levels');
 const btnSwap = $<HTMLButtonElement>('btn-swap');
 const btnDrop = $<HTMLButtonElement>('btn-drop');
+const btnRotate = $<HTMLButtonElement>('btn-rotate');
 const hudItems = $('hud-items');
 const overlay = $('overlay');
 const ovTitle = $('ov-title');
@@ -246,8 +247,8 @@ const twoMarbles = () => (physics?.marbles.length ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
-    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}`
-    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
+    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}`
+    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
 function showStart(): void {
@@ -601,17 +602,40 @@ function dropItem(): boolean {
   updateItems();
   return true;
 }
+/** The level has a magic wand to pick up. */
+function hasWand(): boolean {
+  return objects.objects.some((o) => o.cls === 'wand');
+}
 /** The level has seeds to pick up. */
 function hasSeeds(): boolean {
   return objects.objects.some((o) => o.cls === 'seed');
 }
-/** Inventory display: number of seeds. */
+/** Inventory display: the first item is the one in hand (Enigma's inventory, left to right). */
 function updateItems(): void {
-  const n = objects.inventory.length;
+  const inv = objects.inventory;
+  const n = inv.length;
   hudItems.hidden = n === 0;
   btnDrop.hidden = n === 0;
-  hudItems.textContent = n ? `Samen ${n}` : '';
+  btnRotate.hidden = n < 2;
+  const names = inv.map((k) => ITEM_NAMES[k] ?? k);
+  const rest = new Map<string, number>();
+  for (const s of names.slice(1)) rest.set(s, (rest.get(s) ?? 0) + 1);
+  hudItems.textContent = n ? [`Hand: ${names[0]}`, ...[...rest].map(([s, c]) => (c > 1 ? `${s} ${c}` : s))].join(' · ') : '';
 }
+/** Right click / Tab: rotate the inventory (player::RotateInventory). */
+function rotateItems(): void {
+  if (mode !== 'play' || objects.inventory.length < 2) return;
+  objects.rotateInventory();
+  sfx.menu();
+  updateItems();
+}
+btnRotate.addEventListener('click', (e) => {
+  e.stopPropagation();
+  rotateItems();
+});
+window.addEventListener('contextmenu', (e) => {
+  if (mode === 'play') e.preventDefault();
+});
 /** Left click / Space: use the first inventory item; without items the yin-yang swaps marbles. */
 function useItem(): void {
   if (!dropItem()) swapMarble();
@@ -623,6 +647,7 @@ btnDrop.addEventListener('click', (e) => {
 window.addEventListener('mousedown', (e) => {
   // Enigma: a left click uses the first inventory item (seeds, then the yin-yang).
   if (e.button === 0 && mode === 'play' && input.locked) useItem();
+  else if (e.button === 2 && mode === 'play') rotateItems();
 });
 btnLevels.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -640,6 +665,11 @@ window.addEventListener('keydown', (e) => {
       input.releaseLock();
       if (!input.locked) showPause();
     } else if (mode === 'menu' && overlay.hidden === false && ovTitle.textContent === 'Pause' && e.code === 'KeyP') startPlaying();
+    return;
+  }
+  if (e.code === 'Tab' && mode === 'play') {
+    e.preventDefault();
+    rotateItems();
     return;
   }
   if (e.code === 'Space' && mode === 'play') {

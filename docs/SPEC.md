@@ -188,6 +188,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   stürzt er ab (Sturzanimation, dann weg), Wasser hält ihn nicht auf. Die Murmel kann ihn
   nicht schieben; Impulssteine bewegen ihn. Nachrichten turn, turnback, flip
   (counterclock). Offen: Zauberstab, Licht (Laser), Rotatoren.
+- **it_magicwand** und Inventardrehung (`SimpleItems.cc`, `player.cc`): gewöhnlicher
+  Gegenstand (Aufheben unter 0,3 zur Feldmitte, bei jedem Schritt – wie in Enigma wird ein
+  abgelegter Gegenstand nahe der Mitte sofort wieder aufgehoben). Er wirkt, wenn er vorn
+  liegt (`WieldedItemIs`): Ein Treffer dreht Felsbrocken und farblose Einbahnsteine um;
+  blaue Puzzlesteine explodieren zuerst als Cluster, sonst verschieben sie sich, sonst
+  rotiert die Reihe. Rechtsklick, Tab oder „Drehen“ rotiert das Inventar
+  (`Inventory::rotate_left`). Die Leiste zeigt „Hand: …“ und den Rest.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

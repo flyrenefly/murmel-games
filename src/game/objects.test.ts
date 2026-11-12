@@ -423,6 +423,40 @@ describe('ObjectWorld', () => {
     });
   });
 
+  describe("magic wand", () => {
+    it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
+      const w = world([
+        { x: 3, y: 0, k: "it_magicwand" },
+        { x: 5, y: 2, k: "st_boulder_e" },
+        { x: 7, y: 2, k: "st_oneway_e" },
+        { x: 8, y: 2, k: "st_oneway_black_e" },
+      ]);
+      w.inventory.push("it_seed_wood");
+      w.actorStep(3.75, 0.5, 0); // 0.25 from the centre
+      expect(w.inventory).toEqual(["it_magicwand", "it_seed_wood"]);
+      w.rotateInventory();
+      expect(w.inventory).toEqual(["it_seed_wood", "it_magicwand"]);
+      w.hit(5, 2, 0, -1, 0, -1); // seed in hand: nothing happens
+      expect(w.objects[1].state).toBe(2);
+      w.rotateInventory();
+      w.hit(5, 2, 0, -1, 0, -1);
+      expect(w.objects[1].state).toBe(0); // east → west
+      w.hit(7, 2, 0, -1, 0, -1);
+      expect(w.objects[2].state).toBe(0);
+      w.hit(8, 2, 0, -1, 0, -1);
+      expect(w.objects[3].state).toBe(2); // black one-way stones ignore the wand
+    });
+
+    it("can be dropped again; a dropped wand is an item that can be picked up", () => {
+      const w = world([]);
+      w.inventory.push("it_magicwand");
+      expect(w.dropItem(4.5, 1.5)).toBe(true);
+      expect(w.objects[0]).toMatchObject({ kind: "it_magicwand", cls: "wand", col: 4, row: 1 });
+      w.actorStep(4.5, 1.5, 0);
+      expect(w.inventory).toEqual(["it_magicwand"]);
+    });
+  });
+
   describe("wood seeds", () => {
     it("the marble picks a seed up near its centre and drops it; it grows into a wood box", () => {
       const w = world([{ x: 3, y: 0, k: "it_seed_wood" }]);
