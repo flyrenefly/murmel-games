@@ -149,6 +149,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion'];
   if (kind === 'it_magicwand') return ['it_magicwand'];
+  if (kind === 'it_extralife') return ['it_extralife'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
@@ -389,6 +390,7 @@ export class ClassicView {
       else if (o.cls === 'landmine' && !o.gone) this.image(o.exploding !== undefined ? 'it_explosion' : 'it_landmine', px, py);
       else if (o.cls === 'wand') this.image('it_magicwand', px, py);
       else if (o.cls === 'spring') this.image('it_spring', px, py);
+      else if (o.cls === 'extralife') this.image('it_extralife', px, py);
       else if (o.cls === 'seed' && !o.gone) {
         const age = world.growAge(o);
         this.frame('it_seed', age < 0 ? 0 : SEED_GROW_FRAMES[Math.min(SEED_GROW_FRAMES.length - 1, Math.floor(age / 120))], px, py);
@@ -396,7 +398,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

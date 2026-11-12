@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang' };
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -171,6 +171,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
+  if (kind === 'it_extralife') return 'extralife';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
   if (/^it_spring(_keep|_drop)?$/.test(kind)) return 'spring';

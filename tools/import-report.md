@@ -1,6 +1,6 @@
 # Enigma-Import
 
-146 von 1322 Levels übernommen (14 Pakete).
+150 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -30,7 +30,6 @@
 | Lua-Init | 98 | 0 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
-| Gegenstand it_extralife | 90 | 3 |
 | Stein st_key | 90 | 0 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -43,7 +42,7 @@
 | Stein st_actorimpulse | 64 | 1 |
 | Akteur ac_pearl_black | 64 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
-| Gegenstand it_vortex_open | 61 | 1 |
+| Gegenstand it_vortex_open | 61 | 2 |
 | Stein st_swap | 61 | 1 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
@@ -74,7 +73,7 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_springboard | 38 | 0 |
+| Gegenstand it_springboard | 38 | 1 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -90,7 +89,7 @@
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
-| Gegenstand it_flag_black | 32 | 1 |
+| Gegenstand it_flag_black | 32 | 2 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_chess_white | 31 | 0 |
@@ -102,7 +101,7 @@
 | Gegenstand it_coffee_drop | 28 | 0 |
 | Stein st_scissors | 28 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Stein st_actorimpulse_invisible | 27 | 0 |
+| Stein st_actorimpulse_invisible | 27 | 1 |
 | Akteur ac_horse | 27 | 0 |
 | Stein st_blur_cross | 27 | 0 |
 | Gegenstand it_strip_ns | 27 | 0 |
@@ -268,7 +267,6 @@
 | Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
-| Lua: it_extralife | 3 | 1 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |

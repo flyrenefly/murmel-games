@@ -79,6 +79,13 @@ let packName = 'Murmel';
 let level: Level;
 let board: PairBoard;
 let physics: PhysicsWorld | null = null;
+/** Extra lives carried into the next level after a win (player::PrepareLevel keeps them). */
+let carryLives: number | null = null;
+/** After the death animation: restart the level, as a new game or keeping the lives. */
+let pendingRestart: 'new' | 'keep' | null = null;
+/** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
+const enigmaRules = (): boolean => level.id.startsWith('enigma:');
+const livesLeft = (): number => objects.inventory.filter((k) => k === 'it_extralife').length;
 /** Lua callbacks of the current level (null = none). */
 let lua: LuaLevel | null = null;
 /** wo["GlobalForce"] of the current level. */
@@ -146,6 +153,15 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     const [fx, fy] = objects.fieldForce(x, y, flying);
     return [fx + force.x, fy + force.y];
   });
+  // player::NewGame: two extra lives (ProvideExtralifes), kept from the last level after a win;
+  // with two marbles the yin-yang is an inventory item in front (player::AddYinYang).
+  pendingRestart = null;
+  if (enigmaRules()) {
+    const lives = carryLives ?? (lv.world.ProvideExtralifes === 'false' ? 0 : 2);
+    for (let k = 0; k < lives; k++) objects.inventory.push('it_extralife');
+  }
+  carryLives = null;
+  if (physics.marbles.length > 1) objects.inventory.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
     const ph = physics;
@@ -357,7 +373,7 @@ function onWin(): void {
       last
         ? [['Levels', showLevels], ['Nochmal', restart]]
         : [
-            ['Nächstes Level', async () => { await loadLevel(packId, levelIndex + 1); startPlaying(); }],
+            ['Nächstes Level', async () => { carryLives = enigmaRules() ? livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
           ],
     );
@@ -426,6 +442,15 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   physics.setActive(false, i);
   objects.marbleGone(i);
   falls++;
+  // player::CheckDeadActors / resurrect_actor: every death costs an extra life.
+  if (enigmaRules() && level.world.InfiniteReincarnation !== 'true') {
+    const idx = objects.inventory.indexOf('it_extralife');
+    if (idx >= 0) objects.inventory.splice(idx, 1);
+    updateItems();
+    // ConserveLevel false: the level restarts (costing the life); without a life: a new game.
+    if (idx < 0) pendingRestart = 'new';
+    else if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+  }
   if (how === 'sink') sfx.swamped();
   else if (shatter) sfx.shatter();
   else sfx.fall(FALL_SECONDS);
@@ -525,6 +550,17 @@ function frame(now: number): void {
     falling[i] = f + dt;
     if (falling[i] < FALL_SECONDS + 0.25) return Math.min(falling[i] / FALL_SECONDS, 1);
     falling[i] = -1;
+    if (pendingRestart) {
+      const how = pendingRestart;
+      pendingRestart = null;
+      if (how === 'keep') carryLives = livesLeft();
+      else showToast('Keine Extraleben mehr – das Level beginnt neu.', 2500);
+      void (async () => {
+        await loadLevel(packId, levelIndex);
+        startPlaying();
+      })();
+      return -1;
+    }
     physics.respawn(startPos[i].x, startPos[i].y, i);
     return -1;
   });
@@ -616,6 +652,11 @@ function dropItem(): boolean {
   const m = ph.marbles[i];
   if (!m.active || falling[i] >= 0) return true; // BasicBall::can_drop_items
   const first = objects.inventory[0];
+  // it_yinyang: switch to the other marble, the item stays
+  if (first === 'it_yinyang') {
+    swapMarble();
+    return true;
+  }
   // Spring::activate: it_spring(_keep) makes the marble jump and stays; it_spring_drop is
   // dropped (only where no item lies) and makes it jump.
   if (first === 'it_spring' || first === 'it_spring_keep') {

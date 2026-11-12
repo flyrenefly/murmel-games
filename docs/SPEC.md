@@ -222,6 +222,18 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_chameleon** (`ChameleonStone.cc`): zeigt das Bild des Bodens darunter (verdeckt
   Gegenstände dort), Akteure rollen hindurch (`STONE_PASS`), andere Steine können nicht
   hinein.
+- **Leben und it_extralife** (`player.cc`, Nutzerentscheidung 12.11.: Enigmas Regel für die
+  Enigma-Levels, Murmels eigene Levels behalten unbegrenzte Leben): Ein neues Spiel
+  (Levelauswahl, Neustart) beginnt mit zwei Extraleben im Inventar (`ProvideExtralifes`,
+  sonst keine); nach einem gewonnenen Level werden die übrigen ins nächste mitgenommen
+  (`PrepareLevel`). Jeder Tod kostet eins (außer `InfiniteReincarnation`). Ohne Extraleben
+  beginnt das Level als neues Spiel. Bei `ConserveLevel = false` startet nach einem Tod das
+  ganze Level neu (das Leben ist verbraucht). Extraleben sind Gegenstände: aufheben,
+  ablegen (Klick, wenn eines vorn liegt), drehen. Mit zwei Murmeln liegt der Yin-Yang
+  als Gegenstand vorn im Inventar (`AddYinYang`), ein Klick damit wechselt die Murmel.
+  Der Importer übernimmt `ConserveLevel`, `ProvideExtralifes`, `InfiniteReincarnation`
+  (bei API-1-Levels per Textsuche). Offen: Ist eine von zwei Murmeln ohne Leben tot,
+  wechselt Enigma zur anderen statt neu zu starten.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

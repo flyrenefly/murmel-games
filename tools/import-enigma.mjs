@@ -57,6 +57,7 @@ const OBJECTS = [
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
   [/^it_magicwand$/, ['it_magicwand']],
+  [/^it_extralife$/, ['it_extralife']],
   [/^st_chameleon$/, []], // drawn with the floor image of its cell
   [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
   [/^st_boulder(_[nesw])?$/, ['st_boulder', 'st_boulder_fall', 'sh_round']],
@@ -69,6 +70,8 @@ const OBJECTS = [
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
+/** World attributes of Enigma's life rule (player.cc), read once at level start. */
+const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
 const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
@@ -433,8 +436,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // World attributes set by the level script (wo["GlobalForce"] …), also without callbacks.
   const world = {};
   if (lua) {
-    for (const k of RUNTIME_WORLD) if (lua.world[k] !== undefined) world[k] = lua.world[k];
+    for (const k of [...RUNTIME_WORLD, ...LIFE_WORLD]) if (lua.world[k] !== undefined) world[k] = lua.world[k];
     if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k))) reject('Lua-Init (Weltwert)');
+    // Life rules of levels whose init the shim cannot run (API 1: enigma.ConserveLevel = FALSE)
+    if (lua.error) {
+      for (const k of LIFE_WORLD) {
+        const m = new RegExp(`(?:enigma\\.${k}|wo\\[\\s*"${k}"\\s*\\])\\s*=\\s*(TRUE|FALSE|true|false|[01])\\b`).exec(lua.code);
+        if (m) world[k] = /^(TRUE|true|1)$/.test(m[1]) ? 'true' : 'false';
+      }
+    }
   }
   const kinds = {};
   if (needsLua) {
