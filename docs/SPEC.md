@@ -308,6 +308,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   fehlen noch). **it_spoon**: Benutzen lässt die Murmel zerspringen (`_suicide`), sie kommt an
   derselben Stelle wieder (`inplaceRespawn`) und kostet nach Enigma-Regel ein Leben. Beide
   werden danach abgelegt, wenn dort kein Gegenstand liegt (`ITEM_DROP`).
+- **fl_slope_*** (`SlopeFloor.cc`): konstante Bodenkraft auf Murmeln und Akteure am Boden
+  (nicht im Sprung) – Richtung aus der Form (pw/ps/pe/pn gerade, i…/o… Ecken diagonal,
+  t… Röhren), normiert, mal `strength` oder `wo["SlopeForce"]` (Standard 25); `slope` setzt
+  die Richtung, `force_x`/`force_y` ersetzen alles. Der Konverter legt die Kraft je Feld ab
+  (`force` in der Legende); jeder andere Boden mit `force_x`/`force_y` wirkt ebenso. Bild aus
+  dem 6 × 4-Bogen `fl_slope` (DefSubimages spaltenweise). Wechselt der Boden zur Laufzeit,
+  entfällt die Kraft. Die 3D-Ansicht zeigt Gefälle nicht.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

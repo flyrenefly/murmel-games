@@ -1,24 +1,20 @@
 # Enigma-Import
 
-215 von 1322 Levels übernommen (15 Pakete).
+249 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 2 |
-| Stein st_laser | 225 | 2 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 3 |
+| Stein st_laser | 225 | 3 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 6 |
 | Lua-Rückruf | 163 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
-| Boden fl_slope_ps | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
-| Boden fl_slope_pn | 113 | 1 |
 | Stein st_mirror_slab | 112 | 0 |
-| Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
-| Boden fl_slope_pw | 107 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
@@ -26,30 +22,22 @@
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Stein st_key | 90 | 0 |
-| Boden fl_slope_inw | 76 | 0 |
-| Boden fl_slope_isw | 75 | 0 |
-| Boden fl_slope_ise | 74 | 0 |
 | Gegenstand it_dynamite | 72 | 0 |
-| Boden fl_bridge_gc | 69 | 0 |
-| Boden fl_slope_ine | 69 | 0 |
+| Boden fl_bridge_gc | 69 | 1 |
 | Stein st_oxyd | 68 | 0 |
 | Lua: API 1 | 65 | 0 |
-| Stein st_actorimpulse | 64 | 2 |
+| Stein st_actorimpulse | 64 | 4 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
 | Gegenstand it_bomb_black | 56 | 0 |
 | Gegenstand it_coin_s | 55 | 0 |
-| Boden fl_slope_ose | 55 | 0 |
 | Stein st_mirror_triangle | 55 | 0 |
 | Objekt ot_counter | 54 | 0 |
 | Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 0 |
-| Boden fl_slope_osw | 53 | 0 |
-| Boden fl_slope_one | 52 | 0 |
-| Boden fl_slope_onw | 52 | 0 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
@@ -78,7 +66,7 @@
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
-| Gegenstand it_flag_black | 32 | 2 |
+| Gegenstand it_flag_black | 32 | 3 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
@@ -87,31 +75,27 @@
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
-| Stein st_scissors | 28 | 0 |
+| Stein st_scissors | 28 | 1 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein st_actorimpulse_invisible | 27 | 2 |
 | Stein fl_bridge_gc | 27 | 0 |
-| Akteur ac_horse | 27 | 0 |
+| Akteur ac_horse | 27 | 1 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
 | Stein st_greenbrown_hollow | 26 | 1 |
-| Boden fl_slope_te | 25 | 1 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 0 |
-| Boden fl_slope_tw | 23 | 2 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
-| Boden fl_slope_ts | 21 | 1 |
-| Boden fl_slope_tn | 21 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Stein st_stoneimpulse_movable | 20 | 0 |
@@ -123,14 +107,14 @@
 | Boden fl_scales_concrete | 19 | 2 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
-| Akteur ac_bug | 18 | 1 |
+| Akteur ac_bug | 18 | 2 |
 | Gegenstand it_spade | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 0 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| mehrere weiße Murmeln | 16 | 2 |
+| mehrere weiße Murmeln | 16 | 3 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 1 |
 | Stein st_break_boulder | 15 | 2 |
@@ -163,16 +147,15 @@
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Lua: :add | 11 | 0 |
+| Lua: :add | 11 | 1 |
 | ungerade Zahl Oxyd-Steine | 11 | 1 |
-| Boden fl_slope | 11 | 0 |
 | Gegenstand it_crack_s | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 1 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Objekt ot_timer (Lua-Init) | 11 | 0 |
 | Stein st_brake | 11 | 0 |
-| Lua: :nearest | 10 | 0 |
+| Lua: :nearest | 10 | 1 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Lua: :drawRect | 10 | 1 |
 | Stein it_magnet_off | 10 | 0 |
@@ -206,6 +189,7 @@
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
+| Lua-Init (Weltwert) | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
@@ -254,14 +238,11 @@
 | Lua: fl_fake_abyss | 3 | 0 |
 | Lua: :setfire | 3 | 0 |
 | Lua: mod() | 3 | 0 |
-| Lua: fl_slope_pe | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Boden fl_slope_tel | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Lua: st_mirror | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Lua: it_cross | 3 | 0 |
-| Boden mit Kraft (fl_space) | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
@@ -278,13 +259,12 @@
 | Stein st_shogun_sm | 2 | 0 |
 | Gegenstand it_crack_i | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 0 |
-| Lua: fl_slope_te | 2 | 0 |
 | Lua: :newMap | 2 | 0 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
 | Stein st_metal_hollow | 2 | 0 |
 | Lua: st_invisible | 2 | 0 |
-| Stein st_volcano_active | 2 | 1 |
+| Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
 | Stein st_invisible_hollow | 2 | 0 |
@@ -292,20 +272,12 @@
 | Lua: draw_floor() | 2 | 0 |
 | Stein st_darkglass_hollow | 2 | 0 |
 | Lua: :sound | 2 | 0 |
-| Boden mit Kraft (fl_fake_abyss) | 2 | 0 |
 | Gegenstand it_extinguisher_empty | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
-| Boden fl_slope_tsl | 2 | 0 |
-| Boden fl_slope_twl | 2 | 0 |
-| Boden fl_slope_tnl | 2 | 0 |
-| Boden mit Kraft (fl_wood) | 2 | 0 |
-| Boden mit Kraft (fl_darkgray) | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Boden fl_slope_tsr | 2 | 0 |
-| Boden fl_slope_twr | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
 | Lua: it_cherry | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
@@ -368,7 +340,6 @@
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
 | Lua: hammer() | 1 | 0 |
-| Boden mit Kraft (fl_himalaya) | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
 | Lua: create_world() | 1 | 0 |
 | Lua: strchar() | 1 | 0 |
@@ -376,11 +347,9 @@
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | Lua: it_burnable | 1 | 0 |
 | Stein st_oxyd_b | 1 | 0 |
-| Boden mit Kraft (fl_dark) | 1 | 0 |
+| zu viele Feldarten | 1 | 0 |
 | Stein fl_concrete | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
-| Boden mit Kraft (fl_sahara) | 1 | 0 |
-| Boden mit Kraft (fl_water) | 1 | 0 |
 | Lua: it_strip_ew | 1 | 0 |
 | Lua: it_strip_ns | 1 | 0 |
 | Lua: floor() | 1 | 0 |
@@ -388,15 +357,12 @@
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |
-| Boden fl_slope_ter | 1 | 0 |
-| Boden fl_slope_tnr | 1 | 0 |
 | Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Stein st_door_d | 1 | 0 |
 | Lua: it_burnable_oil | 1 | 0 |
 | Lua: gsub() | 1 | 0 |
-| Boden mit Kraft (fl_lawn) | 1 | 0 |
 | Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
 | Stein st_redbrown_movable (verbunden) | 1 | 0 |
@@ -412,12 +378,10 @@
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
 | Lua: st_lightpassenger | 1 | 0 |
-| Boden mit Kraft (fl_rock) | 1 | 0 |
 | Stein st_flat_movable (verbunden) | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |
-| Boden mit Kraft (fl_sand) | 1 | 0 |
 | Lua: it_crack_m | 1 | 0 |
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
@@ -433,9 +397,6 @@
 | Lua: it_coin_l | 1 | 0 |
 | Lua: it_explosion | 1 | 0 |
 | Lua: it_key | 1 | 0 |
-| Lua: fl_slope_pn | 1 | 0 |
-| Lua: fl_slope_ps | 1 | 0 |
-| Lua: fl_slope_pw | 1 | 0 |
 | Lua: st_oxyd_d | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |

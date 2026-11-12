@@ -118,7 +118,7 @@ async function loadImages(set: ClassicSet, names: Iterable<string>): Promise<Ima
 function levelImages(level: Level): string[] {
   const names: string[] = [];
   for (const c of level.cells) {
-    names.push(c.floor);
+    names.push(c.floor.startsWith('fl_slope') ? 'fl_slope' : c.floor);
     if (c.stone && c.stone !== 'st_oxyd') names.push(c.stone);
   }
   for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
@@ -326,11 +326,11 @@ export class ClassicView {
       const col = i % level.width;
       const row = Math.floor(i / level.width);
       // Floors with several images (stacked vertically) get a stable random variant.
-      const [name, fixed] = floorImage(cell.floor, img);
+      const [name, fixed, sheetCol = 0] = floorImage(cell.floor, img);
       const im = img[name] ?? img.fl_gray;
       const variants = Math.max(1, Math.floor(im.height / T));
       const v = fixed ?? Math.floor(hash(col, row) * variants);
-      g.drawImage(im, 0, v * T, T, T, col * T, row * T, T, T);
+      g.drawImage(im, sheetCol * T, v * T, T, T, col * T, row * T, T, T);
     });
     // Shadows fall onto the floor before the stones are drawn.
     for (const s of level.signals) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
@@ -748,7 +748,19 @@ export class ClassicView {
  * Image and fixed variant of a floor kind: bridges built from boxes use
  * fl_wood_framed (variant 0 horizontal, 1 vertical); hay/rock bridges the plain floor.
  */
-function floorImage(kind: string, img: Images): [string, number | undefined] {
+/** models-2d.lua: fl_slope is a 6 × 4 sheet (DefSubimages, column by column); shape → subimage. */
+const SLOPE_SUB: Record<string, number> = {
+  '': 21, pw: 4, ps: 1, pe: 3, pn: 2, inw: 12, isw: 11, ise: 9, ine: 10, onw: 8, osw: 6, ose: 5, one: 7,
+  tw: 21, ts: 21, te: 21, tn: 21, twl: 2, tsl: 4, tel: 1, tnl: 3, twr: 1, tsr: 3, ter: 2, tnr: 4,
+};
+
+/** Floor image: name, row (variant) and column in its sheet. */
+function floorImage(kind: string, img: Images): [string, number | undefined, number?] {
+  const slope = /^fl_slope(?:_(\w+))?$/.exec(kind);
+  if (slope) {
+    const n = (SLOPE_SUB[slope[1] ?? ''] ?? 21) - 1;
+    return ['fl_slope', n % 4, Math.floor(n / 4)];
+  }
   if (kind === 'fl_wood_framed_h') return ['fl_wood_framed', 0];
   if (kind === 'fl_wood_framed_v') return ['fl_wood_framed', 1];
   if (img[kind]) return [kind, undefined];

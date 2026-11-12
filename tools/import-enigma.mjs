@@ -38,7 +38,27 @@ const STONES = new Set([
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
 const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
 const OXYD = /^st_oxyd(_([abcd]))?$/;
-const SPECIAL_FLOORS = /^fl_(slope|bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
+/** SlopeFloor.cc: shape → slope direction (xforce/yforce index; -1 = none). */
+const SLOPE_DIR = { '': -1, pw: 0, ps: 1, pe: 2, pn: 3, inw: 4, isw: 5, ise: 6, ine: 7, onw: 4, osw: 5, ose: 6, one: 7, tw: 0, ts: 1, te: 2, tn: 3, twl: 4, tsl: 5, tel: 6, tnl: 7, twr: 5, tsr: 6, ter: 7, tnr: 4 };
+const SLOPE_X = [-1, 0, 1, 0, -1, -1, 1, 1];
+const SLOPE_Y = [0, 1, 0, -1, -1, 1, 1, -1];
+
+/** Floor::add_force: force_x/force_y, or for slopes direction (normalised) × strength (SlopeForce 25). */
+function floorForce(fl, slopeForce) {
+  const fx = Number(fl.force_x) || 0;
+  const fy = Number(fl.force_y) || 0;
+  if (fx !== 0 || fy !== 0) return [fx, fy];
+  const m = /^fl_slope(?:_(\w+))?$/.exec(fl.k);
+  if (!m) return null;
+  const dir = fl.slope !== undefined && fl.slope !== '' ? Number(fl.slope) : SLOPE_DIR[m[1] ?? ''];
+  if (!(dir >= 0 && dir < 8)) return null;
+  const s = fl.strength !== undefined && fl.strength !== '' ? Number(fl.strength) : slopeForce;
+  const n = Math.hypot(SLOPE_X[dir], SLOPE_Y[dir]);
+  const r = (v) => Math.round(v * 1000) / 1000;
+  return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
+}
+
+const SPECIAL_FLOORS = /^fl_(bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -268,6 +288,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
     return reject('nur Netzwerkspiel');
   }
   const w = exp.world;
+  // wo["SlopeForce"] (server::SlopeForce, default 25) from the level's init
+  const slopeForce = lua?.world?.SlopeForce !== undefined ? Number(lua.world.SlopeForce) : 25;
+  if (lua?.error && lua.code.includes('SlopeForce')) reject('Lua-Init (Weltwert)');
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
@@ -310,15 +333,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
       // Sinking marbles (models-2d.lua) for the renderer.
       if (fl.k === 'fl_swamp') for (const i of ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink']) imgs.add(i);
-      // Floor forces (force_x/force_y) are not modelled yet.
-      if ((Number(fl.force_x) || 0) !== 0 || (Number(fl.force_y) || 0) !== 0) reject(`Boden mit Kraft (${fl.k})`);
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
       if (!flImg) {
         reject(`Boden ohne Bild ${fl.k}`);
         continue;
       }
       imgs.add(flImg);
-      const def = { floor: DEADLY.has(fl.k) ? fl.k : flImg };
+      const def = { floor: DEADLY.has(fl.k) ? fl.k : fl.k.startsWith('fl_slope') ? fl.k : flImg };
+      const force = floorForce(fl, slopeForce);
+      if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
       if (st) {
         const ox = OXYD.exec(st.k);
         if (ox) {

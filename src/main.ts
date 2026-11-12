@@ -149,7 +149,10 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     floorAt: (c, r) => cellAt(lv, c, r)?.floor ?? 'fl_abyss',
     setFloor: (c, r, kind) => {
       const cell = cellAt(lv, c, r);
-      if (cell) cell.floor = kind;
+      if (cell) {
+        cell.floor = kind;
+        delete cell.force;
+      }
     },
     staticStone: (c, r) => cellAt(lv, c, r)?.stone ?? null,
     setStaticStone: (c, r, kind) => {

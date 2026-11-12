@@ -21,6 +21,8 @@ export interface CellDef {
   flavor?: string;
   /** Start position of the marble (centre of this cell). */
   start?: boolean;
+  /** Constant floor force (Floor::add_force: force_x/force_y, or a slope's direction × strength). */
+  force?: [number, number];
 }
 
 export interface LevelFile {
@@ -64,6 +66,8 @@ export interface LevelLua {
 export interface Cell {
   floor: string;
   stone: string | null;
+  /** Floor force of this cell's floor (cleared when the floor changes). */
+  force?: [number, number];
 }
 
 export interface SignalStone {
@@ -146,7 +150,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
         startCells++;
         if (!file.start) start = { x: col + 0.5, y: row + 0.5 };
       }
-      cells.push({ floor, stone });
+      cells.push(def.force ? { floor, stone, force: def.force } : { floor, stone });
     }
   }
 

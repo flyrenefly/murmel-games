@@ -212,6 +212,14 @@ export class PhysicsWorld {
     return this.solid[r * this.width + c];
   }
 
+  /** Floor::add_force: the constant force of the floor under the actor (slopes, force_x/y). */
+  private floorForce(pos: { x: number; y: number }): [number, number] {
+    const c = Math.floor(pos.x);
+    const r = Math.floor(pos.y);
+    if (c < 0 || r < 0 || c >= this.width || r >= this.height) return [0, 0];
+    return this.cells[r * this.width + c].force ?? [0, 0];
+  }
+
   private floorProps(pos: { x: number; y: number }): { friction: number; adhesion: number } {
     const c = Math.floor(pos.x);
     const r = Math.floor(pos.y);
@@ -298,15 +306,20 @@ export class PhysicsWorld {
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
       const k = i === this.cur || m.pearl ? adhesion : 0;
-      add(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
+      const [ffx, ffy] = this.floorForce(m.pos);
+      add(m, (this.axisForce.x + mx) * k + ffx, (this.axisForce.y + my) * k + ffy, friction);
     });
     const targets = this.marbles.flatMap((m, i) => (m.active ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));
     for (const e of this.enemies) {
       const { friction, adhesion } = this.floorProps(e.pos);
+      const [ffx, ffy] = this.floorForce(e.pos);
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
-        add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR, friction);
-      } else add(e, ...e.chaseForce(targets, dt), friction);
+        add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR + ffx, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR + ffy, friction);
+      } else {
+        const [cx, cy] = e.chaseForce(targets, dt);
+        add(e, cx + ffx, cy + ffy, friction);
+      }
     }
     // 2. Rubber bands (bands of a falling marble rest).
     for (const r of this.rubbers) {

@@ -161,6 +161,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (kind.startsWith('fl_')) {
         if (look === 'nil') return;
         cell(x, y).floor = look;
+        delete cell(x, y).force;
         attrs.set(`c:fl:${x}:${y}`, decl);
       } else if (kind.startsWith('st_')) {
         removeStone(x, y);

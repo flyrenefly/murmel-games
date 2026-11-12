@@ -297,6 +297,28 @@ describe('rubber bands (ot_rubberband)', () => {
   });
 });
 
+describe('floor force (SlopeFloor, force_x/force_y)', () => {
+  it('a slope pushes the marble with its constant force; a plain floor does not', () => {
+    const w = new PhysicsWorld(
+      parseLevel({
+        id: 'sl',
+        title: 'SL',
+        author: 'x',
+        license: 'GPL',
+        map: ['#########', '#@>>>>>A#', '#A......#', '#########'],
+        legend: { '>': { floor: 'fl_slope_pe', force: [25, 0] } },
+      }),
+    );
+    w.respawn(3.5, 1.5);
+    run(w, 0.1);
+    expect(w.marbles[0].vel.x).toBeGreaterThan(1);
+    expect(w.marbles[0].vel.y).toBeCloseTo(0, 6);
+    w.respawn(3.5, 2.5);
+    run(w, 0.1);
+    expect(w.marbles[0].vel.x).toBe(0);
+  });
+});
+
 describe('swamp (fl_swamp)', () => {
   const swamp = () =>
     new PhysicsWorld(
