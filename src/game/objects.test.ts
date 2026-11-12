@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
+import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, passageLook, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
 
 const W = 10;
 
@@ -452,6 +452,20 @@ describe('ObjectWorld', () => {
     const w = world([{ x: 4, y: 0, k: "st_chameleon" }, { x: 3, y: 0, k: "st_box_wood" }]);
     expect(w.blockAt(4, 0)).toBe(0);
     expect(w.push(w.objects[1], 1, 0)).toBe(false);
+  });
+
+  it("st_passage lets only actors of its colour pass; signal toggles the colour (PassageStone)", () => {
+    const w = world([
+      { x: 4, y: 0, k: "st_passage_black", a: { $state: "0", $flavor: "frame", name: "p" } },
+      { x: 2, y: 0, k: "it_trigger", a: { target: "p", action: "signal" } },
+    ]);
+    expect(w.blockAt(4, 0, 0)).toBe(0); // black marble
+    expect(w.blockAt(4, 0, 1)).toBe(ALL_FACES); // white marble or pearl
+    expect(w.blockAt(4, 0, 2)).toBe(ALL_FACES); // rotor (no colour)
+    w.marbleAt(2, 0);
+    expect(w.objects[0].state).toBe(1);
+    expect(w.blockAt(4, 0, 1)).toBe(0);
+    expect(passageLook(w.objects[0])).toEqual({ image: "st_passage_white_frame", shadow: "sh_passage_frame" });
   });
 
   describe("magic wand", () => {

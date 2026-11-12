@@ -59,6 +59,7 @@ const OBJECTS = [
   [/^it_magicwand$/, ['it_magicwand']],
   [/^it_extralife$/, ['it_extralife']],
   [/^st_chameleon$/, []], // drawn with the floor image of its cell
+  [/^st_passage(_black|_white)?(_square|_slash|_cross|_frame|_backslash)?$/, [...['square', 'slash', 'cross', 'frame', 'backslash'].flatMap((f) => [`st_passage_black_${f}`, `st_passage_white_${f}`]), 'sh_round', ...['slash', 'cross', 'frame', 'backslash'].map((f) => `sh_passage_${f}`)]],
   [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
   [/^st_boulder(_[nesw])?$/, ['st_boulder', 'st_boulder_fall', 'sh_round']],
   [/^st_brownie$/, ['st_brownie', 'sh_round']],
@@ -72,7 +73,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');

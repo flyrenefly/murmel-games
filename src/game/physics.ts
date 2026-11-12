@@ -130,7 +130,8 @@ interface Body {
 
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
-  blockAt(col: number, row: number): number;
+  /** color: 0 black, 1 white (marbles, pearls, killers), 2 = no colour. */
+  blockAt(col: number, row: number, color?: number): number;
 }
 
 export class PhysicsWorld {
@@ -442,7 +443,7 @@ export class PhysicsWorld {
           this.contactBox(b, col, row, kind, onContact, who);
           continue;
         }
-        const faces = this.blockers?.blockAt(col, row) ?? 0;
+        const faces = this.blockers?.blockAt(col, row, who.color) ?? 0;
         if (faces === 0) continue;
         if (faces === ALL_FACES) {
           this.contactBox(b, col, row, -3, onContact, who);

@@ -248,6 +248,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Rotoren `attacknearest` / `prefercurrent`** (`RotorBase::think`): nur die nächste Kugel
   jagen; alle 0,8–1,6 s mit Wahrscheinlichkeit `prefercurrent` nur die gesteuerte Murmel.
   (Wurde vorher vom Importer weggelassen; außer Persecution Mania nutzt kein Level es.)
+- **st_passage_black / st_passage_white** (`PassageStone.cc`): Nur ein Akteur der eigenen
+  Farbe kommt durch (Murmeln, Perlen, Killer); Rotoren und Kreisel prallen ab, Kisten
+  können nicht hinein. signal/toggle und der Auslöser eines Felsbrockens wechseln die
+  Farbe, open/on → weiß, close/off → schwarz. Form (square, slash, cross, frame,
+  backslash) liefert der Export seit enigma-web 701939f7 als `$flavor` (Lauf 43234502499;
+  neuer Export = neue Zufallsvarianten). `blockAt` kennt dafür die Farbe des Akteurs.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

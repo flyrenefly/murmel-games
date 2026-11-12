@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife']);
@@ -174,6 +174,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_extralife') return 'extralife';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
+  if (PASSAGE.test(kind)) return 'passage';
   if (/^it_spring(_keep|_drop)?$/.test(kind)) return 'spring';
   // A named Oxyd stone as message target; the stone itself is part of the level map.
   if (kind === 'st_oxyd_ref') return 'oxydref';
@@ -201,6 +202,14 @@ export function movableLook(kind: string): { image: string; shadow: string } | n
 
 /** A hollow puzzle stone (OBJBIT_HOLLOW, exported as $hollow): the marble passes through it. */
 export const isHollow = (o: GameObject): boolean => o.attrs.$hollow === 'true';
+
+/** PassageStone: st_passage[_black|_white][_square|_slash|_cross|_frame|_backslash]. */
+const PASSAGE = /^st_passage(_black|_white)?(_square|_slash|_cross|_frame|_backslash)?$/;
+/** Image and shadow of a passage stone (state 0 black, 1 white; models-2d.lua). */
+export function passageLook(o: GameObject): { image: string; shadow: string } {
+  const flavor = o.attrs.flavor || o.attrs.$flavor || PASSAGE.exec(o.kind)?.[2]?.slice(1) || 'square';
+  return { image: `st_passage_${o.state === 1 ? 'white' : 'black'}_${flavor}`, shadow: flavor === 'square' ? 'sh_round' : `sh_passage_${flavor}` };
+}
 
 /** Messages the objects understand (others need Lua or unsupported objects). */
 export const SUPPORTED_ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'grow']);
@@ -293,7 +302,7 @@ export class ObjectWorld {
    * Which faces of a cell block the marble: 0 = free, ALL_FACES = solid,
    * otherwise the face bits (door d).
    */
-  blockAt(col: number, row: number): number {
+  blockAt(col: number, row: number, color = 2): number {
     for (const o of this.at(col, row)) {
       if (o.cls === 'door') {
         if (o.state === 1 && !o.moving) continue;
@@ -301,6 +310,11 @@ export class ObjectWorld {
       }
       if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
+      // PassageStone::collision_response: only an actor of the stone's colour passes.
+      if (o.cls === 'passage') {
+        if (color !== o.state) return ALL_FACES;
+        continue;
+      }
       // PuzzleStone::collision_response: exploding stones let the marble pass.
       // PuzzleStone::collision_response: hollow or exploding stones let the marble pass.
       if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding' && !isHollow(o)) return ALL_FACES;
@@ -709,6 +723,8 @@ export class ObjectWorld {
   private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
     const [dx, dy] = STEPS[d];
     if (raising) this.events.push({ type: 'oxyd', col: o.col + dx, row: o.row + dy });
+    // PassageStone::message("_trigger"): toggles on every trigger
+    for (const p of this.at(o.col + dx, o.row + dy)) if (p.cls === 'passage' && !p.gone) p.state = 1 - p.state;
   }
 
   /** Stone::move_stone + BoulderStone::on_move; on an abyss the boulder falls (on_floor_change). */
@@ -1063,6 +1079,13 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'passage') {
+      // PassageStone: signal toggles the colour (any value); otherwise StateObject messages
+      if (msg === 'signal' || msg === 'toggle') o.state = 1 - o.state;
+      else if (msg === 'open' || msg === 'on') o.state = 1;
+      else if (msg === 'close' || msg === 'off') o.state = 0;
+      return;
+    }
     if (o.cls === 'oxydref') {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
@@ -1154,6 +1177,11 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // PassageStone: state = colour (0 black, 1 white)
+  if (PASSAGE.test(kind)) {
+    const c = a.color ?? a.$state;
+    return c !== undefined && c !== '' ? (Number(c) === 1 ? 1 : 0) : kind.includes('_white') ? 1 : 0;
+  }
   // Boulder: direction from orientation or kind suffix, default north ($state is internal)
   if (/^st_boulder/.test(kind)) return onewayDir(kind, { orientation: a.orientation ?? '' });
   if (kind in MEDITATION_STATE) {

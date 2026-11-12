@@ -26,49 +26,49 @@
  {
   "pack": "enigma_iii",
   "title": "Enigma III",
-  "count": 23,
+  "count": 28,
   "of": 100
  },
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 19,
+  "count": 20,
   "of": 100
  },
  {
   "pack": "enigma_v",
   "title": "Enigma V",
-  "count": 10,
+  "count": 13,
   "of": 100
  },
  {
   "pack": "enigma_vi",
   "title": "Enigma VI",
-  "count": 7,
+  "count": 9,
   "of": 100
  },
  {
   "pack": "enigma_vii",
   "title": "Enigma VII",
-  "count": 7,
+  "count": 9,
   "of": 100
  },
  {
   "pack": "enigma_viii",
   "title": "Enigma VIII",
-  "count": 2,
+  "count": 4,
   "of": 100
  },
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 5,
+  "count": 6,
   "of": 100
  },
  {
   "pack": "enigma_x",
   "title": "Enigma X",
-  "count": 4,
+  "count": 5,
   "of": 100
  },
  {
@@ -86,7 +86,7 @@
  {
   "pack": "enigma_advent_10",
   "title": "Advent 2010",
-  "count": 1,
+  "count": 2,
   "of": 24
  }
 ]

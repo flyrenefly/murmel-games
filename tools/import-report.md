@@ -1,19 +1,17 @@
 # Enigma-Import
 
-156 von 1322 Levels übernommen (15 Pakete).
+174 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 2 |
 | Stein st_laser | 225 | 1 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
-| Lua-Rückruf | 166 | 1 |
-| Stein st_passage_black | 152 | 3 |
+| Lua-Rückruf | 165 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_passage_white | 134 | 3 |
 | Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
-| Lua: :drawMap | 117 | 0 |
+| Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
@@ -37,7 +35,7 @@
 | Boden fl_slope_ine | 69 | 0 |
 | Stein st_oxyd | 68 | 0 |
 | Lua: API 1 | 65 | 0 |
-| Stein st_actorimpulse | 64 | 1 |
+| Stein st_actorimpulse | 64 | 2 |
 | Stein st_break_oxydc | 62 | 0 |
 | Gegenstand it_vortex_open | 61 | 3 |
 | Stein st_swap | 61 | 2 |
@@ -55,22 +53,22 @@
 | Boden fl_slope_osw | 53 | 0 |
 | Boden fl_slope_one | 52 | 0 |
 | Boden fl_slope_onw | 52 | 0 |
-| Stein st_rotator_ccw | 52 | 1 |
+| Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_chess_black | 49 | 2 |
+| Stein st_chess_black | 49 | 3 |
 | Stein st_pull | 48 | 2 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_stone() | 41 | 0 |
 | Stein st_thief | 41 | 0 |
-| Gegenstand it_yinyang | 40 | 2 |
+| Gegenstand it_yinyang | 40 | 3 |
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_springboard | 38 | 1 |
+| Gegenstand it_springboard | 38 | 2 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -100,14 +98,14 @@
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein st_actorimpulse_invisible | 27 | 1 |
 | Akteur ac_horse | 27 | 0 |
-| Stein st_blur_cross | 27 | 0 |
+| Stein st_blur_cross | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
-| FallenPuzzle | 27 | 2 |
+| FallenPuzzle | 27 | 6 |
 | Gegenstand it_cross | 26 | 0 |
+| Stein st_greenbrown_hollow | 26 | 1 |
 | Stein fl_bridge_gc | 26 | 0 |
-| Stein st_greenbrown_hollow | 25 | 1 |
 | Boden fl_slope_te | 25 | 1 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
@@ -144,9 +142,9 @@
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| mehrere weiße Murmeln | 16 | 0 |
+| mehrere weiße Murmeln | 16 | 1 |
 | Stein st_break_plain | 16 | 0 |
-| Boden fl_scales_bridgewood | 16 | 0 |
+| Boden fl_scales_bridgewood | 16 | 1 |
 | Stein st_break_boulder | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Gegenstand it_magnet_on | 15 | 0 |
@@ -166,7 +164,7 @@
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 0 |
 | Gegenstand it_weight | 14 | 0 |
-| Stein st_flash | 14 | 0 |
+| Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 1 |
 | Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
@@ -214,7 +212,7 @@
 | Stein st_monoflop | 8 | 0 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein it_vortex_closed | 8 | 0 |
-| Stein st_box_rock (verbunden) | 8 | 0 |
+| Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
@@ -268,7 +266,6 @@
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
-| Stein st_metal_hollow | 3 | 0 |
 | Stein fl_bridge_bn | 3 | 0 |
 | Lua: st_fourswitch | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
@@ -284,8 +281,8 @@
 | Lua: it_cross | 3 | 0 |
 | Boden mit Kraft (fl_space) | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
-| Gegenstand it_strip_new | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
+| Gegenstand it_strip_new | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
@@ -304,6 +301,7 @@
 | Lua: :newMap | 2 | 0 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
+| Stein st_metal_hollow | 2 | 0 |
 | Lua: st_invisible | 2 | 0 |
 | Stein st_volcano_active | 2 | 1 |
 | Lua: fl_slope_pe | 2 | 0 |
@@ -321,8 +319,8 @@
 | Boden fl_slope_tsl | 2 | 0 |
 | Boden fl_slope_twl | 2 | 0 |
 | Boden fl_slope_tnl | 2 | 0 |
-| Boden mit Kraft (fl_darkgray) | 2 | 0 |
 | Boden mit Kraft (fl_wood) | 2 | 0 |
+| Boden mit Kraft (fl_darkgray) | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
@@ -368,7 +366,6 @@
 | Lua: hollow() | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Lua: st_spitter | 1 | 0 |
-| Lua: st_passage | 1 | 0 |
 | Lua: it_brush | 1 | 0 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
@@ -435,7 +432,6 @@
 | Lua: st_puzzle_yellow_e | 1 | 0 |
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
-| Lua: st_passage_black_frame | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
 | Lua: st_lightpassenger | 1 | 0 |
 | Lua: st_swap | 1 | 0 |

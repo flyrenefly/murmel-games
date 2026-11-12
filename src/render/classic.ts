@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, EAST, type GameObject, isHollow, meditationImage, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
+import { doorFlavor, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -51,6 +51,12 @@ const BASE_IMAGES = [
 const MEDITATION_IMAGES = ['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`);
 /** Swamp levels: sinking marbles (models-2d.lua, 7 frames). */
 const SINK_IMAGES = ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink'];
+const PASSAGE_FLAVORS = ['square', 'slash', 'cross', 'frame', 'backslash'];
+const PASSAGE_IMAGES = [
+  ...PASSAGE_FLAVORS.flatMap((f) => [`st_passage_black_${f}`, `st_passage_white_${f}`]),
+  'sh_round',
+  ...PASSAGE_FLAVORS.slice(1).map((f) => `sh_passage_${f}`),
+];
 /** Jumping marbles (models-2d.lua: 4 frames, ping-pong à 70 ms). */
 const JUMP_IMAGES = ['ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump'];
 type Images = Record<string, HTMLImageElement>;
@@ -157,6 +163,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind === 'it_extralife') return ['it_extralife'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
+  if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
@@ -500,6 +507,11 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'passage') {
+      const look = passageLook(o);
+      this.image(pass === 'shadow' ? look.shadow : look.image, px, py);
       return;
     }
     if (o.cls === 'chameleon') {
