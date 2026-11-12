@@ -453,6 +453,24 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("a crack grows when a marble enters, seeds its neighbours and finally dissolves into abyss", () => {
+    const floors: Record<string, string> = {};
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 3, y: 1, k: "it_crack_m" }], W, {}, env, () => 0); // random 0: always
+    w.marbleAt(2, 1);
+    w.marbleAt(3, 1); // enter: MEDIUM → LARGE, neighbours get invisible cracks
+    expect(w.objects[0].state).toBe(2);
+    expect(w.objects.filter((o) => o.kind === "it_crack_i").map((o) => [o.col, o.row, o.state])).toEqual([[3, 0, -1], [4, 1, -1], [3, 2, -1], [2, 1, -1]]);
+    expect(w.crackLook(w.objects[1])).toBeNull();
+    w.marbleAt(4, 1); // the invisible one becomes SMALL
+    expect(w.objects.find((o) => o.col === 4 && o.row === 1)!.state).toBe(0);
+    w.marbleAt(3, 1); // LARGE → DISSOLVING
+    expect(w.crackLook(w.objects[0])).toEqual({ image: "it_crack_abyss", frame: 3 });
+    w.update(650);
+    expect(floors["3,1"]).toBe("fl_abyss");
+    expect(w.objects[0].gone).toBe(true);
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

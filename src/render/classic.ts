@@ -181,6 +181,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_key')) return ['it_key'];
   if (kind === 'st_key') return ['st_key_on', 'st_key_off', 'sh_round'];
   if (kind.startsWith('st_laser')) return ['st_laser', 'sh_rounded', 'it_laser'];
+  if (kind.startsWith('it_crack')) return ['it_crack_abyss', 'it_crack_water'];
   if (kind.startsWith('st_mirror')) return ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
@@ -455,6 +456,10 @@ export class ClassicView {
       else if (o.cls === 'tool') this.image(o.kind, px, py);
       else if (o.cls === 'springboard') this.frame('it_springboard', world.springboardFrame(o), px, py);
       else if (o.cls === 'key') this.frame('it_key', 0, px, py); // Item model it_key (codes only in the inventory)
+      else if (o.cls === 'crack') {
+        const look = world.crackLook(o);
+        if (look) this.frame(look.image, look.frame, px, py);
+      }
       else if (o.cls === 'sensor') {
         const look = world.sensorLook(o);
         if (look) this.frame(look.image, look.frame, px, py);
@@ -473,7 +478,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-419 von 1322 Levels übernommen (17 Pakete).
+426 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -25,7 +25,6 @@
 | Gegenstand it_bomb_black | 56 | 3 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Objekt ot_counter | 54 | 1 |
-| Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | Stein st_rotator_ccw | 52 | 2 |
@@ -48,7 +47,7 @@
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 3 |
+| Stein st_plop | 34 | 4 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Gegenstand it_wrench | 33 | 0 |
 | Lua: set_actor() | 32 | 0 |
@@ -72,7 +71,6 @@
 | Gegenstand it_cross | 26 | 0 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 2 |
-| Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 1 |
@@ -89,12 +87,12 @@
 | Stein st_magic_brick | 19 | 2 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Boden fl_scales_concrete | 19 | 2 |
+| Boden fl_scales_concrete | 19 | 3 |
 | Akteure: nicht genau eine schwarze Murmel | 18 | 3 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 3 |
-| Gegenstand it_spade | 17 | 0 |
+| Gegenstand it_spade | 17 | 1 |
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
@@ -131,7 +129,6 @@
 | Lua: :drawRect | 12 | 1 |
 | Aktion onoff | 12 | 1 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Gegenstand it_crack_s | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
@@ -147,6 +144,7 @@
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 0 |
+| Lua-Init (Weltwert) | 9 | 0 |
 | Boden fl_bridge_bn | 9 | 0 |
 | Stein st_break_bug | 9 | 0 |
 | Gegenstand it_burnable_burning | 9 | 0 |
@@ -170,7 +168,6 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
-| Lua-Init (Weltwert) | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
@@ -238,7 +235,6 @@
 | Stein st_shogun_sl | 2 | 0 |
 | Stein st_shogun_ml | 2 | 0 |
 | Stein st_shogun_sm | 2 | 0 |
-| Gegenstand it_crack_i | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
@@ -360,7 +356,6 @@
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |
-| Lua: it_crack_m | 1 | 0 |
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 0 |

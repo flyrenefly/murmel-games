@@ -353,6 +353,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
+- **it_crack_i/s/m/l(_water)** (`Crack.cc`): Betritt eine Kugel (nicht im Sprung) das Feld,
+  wächst der Riss mit Wahrscheinlichkeit `fragility` (Standard `wo["Fragility"]` 1; unsichtbare
+  auch mit `spreading`) eine Stufe; bis „groß“ bekommen die vier Nachbarböden (nicht Abgrund,
+  Wasser, Sumpf) mit `spreading` (Standard `wo["CrackSpreading"]` 0,5) einen unsichtbaren Riss
+  bzw. reißen weiter (nicht bei Wasserrissen). Aus „groß“ zerfällt der Boden in 5 × 120 ms zu
+  Abgrund (Wasserriss: Wasser). Nachrichten crack/ignite. Enigmas Klänge dafür sind leer.
+  Offen: Trümmer bei Explosionen, Bodenattribut `fragility`.
 - **Laser** (`laser.cc`, `LaserStone.cc`, `MirrorStone.cc`): `st_laser(_n/e/s/w)` strahlt
   eingeschaltet in seine Richtung (Standard Ost; on/off/toggle/signal, orientate/turn/turnback).
   Alle 10 ms (Enigmas Tick) werden die Strahlen neu berechnet: feldweise, Steine halten auf

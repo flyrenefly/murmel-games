@@ -90,6 +90,7 @@ const OBJECTS = [
   [/^it_key$/, ['it_key']],
   [/^st_key$/, ['st_key_on', 'st_key_off', 'sh_round']],
   [/^st_laser(_[nesw])?$/, ['st_laser', 'sh_rounded', 'it_laser']],
+  [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
@@ -112,7 +113,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -425,6 +426,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (!dest) reject('Wurmloch ohne Ziel');
     else o.a.dest = `${dest[0]},${dest[1]}`;
   }
+  // Cracks: wo["Fragility"]/["CrackSpreading"] of the level script as their defaults
+  for (const o of objs) {
+    if (!o.k.startsWith('it_crack')) continue;
+    if (o.a.fragility === undefined && lua?.world?.Fragility !== undefined) o.a.fragility = String(lua.world.Fragility);
+    if (o.a.spreading === undefined && lua?.world?.CrackSpreading !== undefined) o.a.spreading = String(lua.world.CrackSpreading);
+  }
+  if (lua?.error && /Fragility|CrackSpreading/.test(lua.code)) reject('Lua-Init (Weltwert)');
   // Magnets: wo["MagnetForce"]/["MagnetRange"] of the level script as their defaults (_updateglobals)
   for (const o of objs) {
     if (!o.k.startsWith('it_magnet')) continue;

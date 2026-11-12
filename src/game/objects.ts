@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3 };
 /** German names of inventory items for the display. */
@@ -154,6 +154,9 @@ function flagColor(kind: string): number {
   return kind === 'it_flag_white' ? 1 : 0;
 }
 
+/** it_crack_*_anim: 5 frames à 120 ms. */
+const CRACK_DISSOLVE_MS = 5 * 120;
+
 /** server::BumperForce and the PingPong frames of st_actorimpulse_anim. */
 const BUMPER_FORCE = 200;
 const BUMPER_FRAMES = [0, 1, 2, 2, 1, 0];
@@ -220,6 +223,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Crack: start of DISSOLVING (the floor breaks away after 5 × 120 ms). */
+  dissolving?: number;
   /** Springboard: start of its animation (it_springboard_anim). */
   bounce?: number;
   /** Meditation: the pearl resting in it and since when (-1 = engaged after 1 s). */
@@ -287,6 +292,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_key(_\d+)?$/.test(kind)) return 'key';
   if (kind === 'st_key') return 'keyswitch';
   if (/^st_laser(_[nesw])?$/.test(kind)) return 'laser';
+  if (/^it_crack(_[isml])?(_water)?$/.test(kind)) return 'crack';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -1101,6 +1107,68 @@ export class ObjectWorld {
     return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
   }
 
+  // ---------- cracks (Crack.cc) ----------
+
+  private crackWater(o: GameObject): boolean {
+    return o.attrs.flavor !== undefined && o.attrs.flavor !== '' ? o.attrs.flavor === 'water' : o.kind.endsWith('_water');
+  }
+
+  /** Floor::is_destructible: not abyss, water or swamp. */
+  private destructible(col: number, row: number): boolean {
+    const f = this.env.floorAt(col, row);
+    return !!f && f !== 'fl_abyss' && f !== 'fl_water' && f !== 'fl_swamp';
+  }
+
+  /** Crack::crack: with probability fragility (invisible: also spreading) one stage further. */
+  private crack(o: GameObject): void {
+    if (!this.destructible(o.col, o.row) || o.state >= 3) return;
+    const fragility = numAttr(o.attrs.fragility, 1);
+    const spreading = numAttr(o.attrs.spreading, 0.5);
+    if ((o.state === -1 && this.random() < spreading) || this.random() < fragility) {
+      o.state++;
+      if (o.state === 3) o.dissolving = this.now; // sound-defaults.lua: crack is silent
+    }
+  }
+
+  /** Crack::actor_enter: crack, and below DISSOLVING crack or seed the neighbour floors. */
+  private crackEnter(col: number, row: number): void {
+    for (const o of this.at(col, row)) {
+      if (o.cls !== 'crack' || o.gone) continue;
+      this.crack(o);
+      if (o.state >= 3) continue;
+      const water = this.crackWater(o);
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const c = col + dx;
+        const r = row + dy;
+        if (c < 0 || r < 0 || c >= this.width || !this.destructible(c, r)) continue;
+        if (water && this.env.floorAt(c, r) === 'fl_space') continue;
+        const item = this.at(c, r).find((x) => !x.gone && ITEM_CLASSES.has(x.cls));
+        if (item) {
+          if (!water && item.cls === 'crack') this.crack(item); // message "crack"
+        } else if (this.random() < numAttr(o.attrs.spreading, 0.5)) {
+          const n = this.add(water ? 'it_crack_i_water' : 'it_crack_i', 'crack', c, r);
+          n.state = -1;
+          n.attrs = { ...(o.attrs.fragility !== undefined ? { fragility: o.attrs.fragility } : {}), ...(o.attrs.spreading !== undefined ? { spreading: o.attrs.spreading } : {}), ...(water ? { flavor: 'water' } : {}) };
+        }
+      }
+    }
+  }
+
+  /** Crack::animcb: the floor becomes abyss (water for water cracks), the crack is gone. */
+  private crackDissolved(o: GameObject): void {
+    this.remove(o);
+    this.env.setFloor(o.col, o.row, this.crackWater(o) ? 'fl_water' : 'fl_abyss');
+    this.events.push({ type: 'floor', col: o.col, row: o.row });
+  }
+
+  /** it_crack_abyss/_water sheet: stage 0..2, dissolving frames 3..7 à 120 ms; invisible: null. */
+  crackLook(o: GameObject): { image: string; frame: number } | null {
+    if (o.state < 0) return null;
+    const image = this.crackWater(o) ? 'it_crack_water' : 'it_crack_abyss';
+    if (o.state >= 3) return { image, frame: 3 + Math.min(4, Math.floor((this.now - (o.dissolving ?? this.now)) / 120)) };
+    return { image, frame: o.state };
+  }
+
   // ---------- sensors (Sensor.cc) ----------
 
   /** An actor entered (leave = false) or left the cell: sensors (exit sensors on leaving) act. */
@@ -1576,6 +1644,7 @@ export class ObjectWorld {
     if (col >= 0 && (col !== m.realCol || row !== m.realRow)) {
       if (m.realCol !== undefined && m.realCol >= 0) this.sensorStep(m.realCol, m.realRow!, true);
       this.sensorStep(col, row, false);
+      this.crackEnter(col, row);
       m.realCol = col;
       m.realRow = row;
     }
@@ -1619,6 +1688,7 @@ export class ObjectWorld {
     for (const o of this.objects) {
       if (o.cls === 'chess' && !o.gone) this.chessStep(o);
       if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
+      if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
         // one decision per finished cycle; a move restarts the cycle (init_model)
@@ -1832,6 +1902,11 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'crack') {
+      // Crack::message: crack / ignite
+      if (msg === 'crack' || msg === 'ignite') this.crack(o);
+      return;
+    }
     if (o.cls === 'laser') {
       // LaserStone::message / setState: on, off, toggle, signal; orientate, turn, turnback
       if (msg === 'orientate' && num !== undefined) o.attrs = { ...o.attrs, orientation: String(num) };
@@ -1983,6 +2058,12 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   // Vortex: 1 open, 0 closed
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
+  // Crack: INVISIBLE -1, SMALL 0, MEDIUM 1, LARGE 2
+  if (/^it_crack/.test(kind)) {
+    const s = Number(a.$state);
+    if (a.$state !== undefined && a.$state !== '' && s >= -1 && s <= 2) return s;
+    return /^it_crack_i/.test(kind) ? -1 : /^it_crack_m/.test(kind) ? 1 : /^it_crack_l/.test(kind) ? 2 : 0;
+  }
   // MirrorStone: state = orientation (Enigma direction W 0, S 1, E 2, N 3), default north
   if (MIRROR_KIND.test(kind)) {
     const v = Number(a.orientation);
