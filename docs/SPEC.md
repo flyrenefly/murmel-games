@@ -424,6 +424,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   einen Gegenstand ins Inventar (Vorrat `stock`, Standard 1000). Eine Explosion zerbricht ihn
   (7 × 50 ms); danach zerbrechen benachbarte Spender, der Gegenstand im Feld wird gezündet, sonst
   bleibt eine leere Explosion. Axt-Spender fehlt.
+- **st_turnstile(_red/_green) + st_turnstilearm_n/e/s/w** (`Turnstile.cc`): Ein Stoß auf einen Arm
+  dreht den Drehpunkt (Richtung nach Enigmas Tabelle aus Armseite und Stoßrichtung; grün mit
+  Schraubenschlüssel umgekehrt), wenn die überstrichenen Felder frei sind; Arme ohne Drehpunkt werden
+  geschoben. Gegenstände im Schwenkbereich werden getroffen, die übrigen Arme stoßen die Steine
+  dahinter an, Aktion mit !uhrzeigersinn. Kugeln: Rot nimmt nur die anstoßende Kugel mit, andere im
+  Schwenkbereich zerspringen; grün nimmt alle im Schwenkbereich mit (Versatz um 90° gedreht).
+  signal/turn/turnback drehen. Arme als blaue Puzzlesteine (st_puzzle1/2/4/8), Klang st-move.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

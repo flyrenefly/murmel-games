@@ -1,13 +1,13 @@
 # Enigma-Import
 
-581 von 1322 Levels übernommen (17 Pakete).
+594 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 2 |
-| Lua-Rückruf | 118 | 1 |
+| Lua-Rückruf | 118 | 2 |
 | Gegenstand it_puller_n | 115 | 0 |
-| Gegenstand it_puller_s | 114 | 0 |
+| Gegenstand it_puller_s | 114 | 1 |
 | keine Oxyd-Steine | 111 | 0 |
 | Lua-Init | 110 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
@@ -19,7 +19,6 @@
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
-| Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Stein st_shogun | 40 | 0 |
@@ -40,7 +39,6 @@
 | Gegenstand it_coffee_drop | 28 | 4 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Stein st_turnstile_red | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 2 |
 | Gegenstand it_glasses | 27 | 1 |
@@ -51,7 +49,6 @@
 | Gegenstand it_squashed | 24 | 1 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_ghost_break | 23 | 0 |
-| Stein st_turnstile_green | 23 | 0 |
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
@@ -83,7 +80,7 @@
 | Gegenstand it_seed_hay | 14 | 5 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
-| Stein st_ice | 14 | 4 |
+| Stein st_ice | 14 | 6 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
@@ -98,6 +95,7 @@
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
+| Aktion turn | 10 | 3 |
 | Stein st_box_wood (verbunden) | 10 | 3 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
@@ -110,7 +108,6 @@
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
-| Aktion turn | 8 | 2 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
@@ -192,6 +189,7 @@
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
 | mehrere weiße Murmeln | 2 | 0 |
+| Aktion turnback | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
@@ -247,7 +245,6 @@
 | Lua: fl_bridge | 1 | 0 |
 | Lua: it_trap | 1 | 0 |
 | Lua: st_greenbrown_hollow | 1 | 0 |
-| Aktion turnback | 1 | 0 |
 | Aktion trigger | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
 | Lua: st_darkglass_hollow | 1 | 0 |
@@ -313,11 +310,6 @@
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_rubberband | 1 | 0 |
-| Lua: st_turnstile | 1 | 0 |
-| Lua: st_turnstilearm_n | 1 | 0 |
-| Lua: st_turnstilearm_e | 1 | 0 |
-| Lua: st_turnstilearm_s | 1 | 0 |
-| Lua: st_turnstilearm_w | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
 | Lua: fl_yinyang_yin | 1 | 0 |

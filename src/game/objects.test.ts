@@ -600,6 +600,24 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("a turnstile arm pushed sideways rotates the pivot; a stone in the way blocks it", () => {
+    const w = world([
+      { x: 4, y: 2, k: "st_turnstile_green" },
+      { x: 4, y: 1, k: "st_turnstilearm_n" },
+      { x: 4, y: 3, k: "st_turnstilearm_s" },
+    ]);
+    // push the north arm east (marble west of it): clockwise → north arm goes east, south arm west
+    w.hit(4, 1, 0, -1, 0, -6, 0, 0, 0);
+    expect(w.objects.slice(1).map((o) => [o.col, o.row, o.state])).toEqual([[5, 2, 2], [3, 2, 0]]);
+    expect(w.events.some((e) => e.type === "turnstile" && e.cw)).toBe(true);
+    w.update(100);
+    // a box at the north-east corner now blocks turning the east arm back north (counterclockwise)
+    const box = { x: 5, y: 1, k: "st_box" };
+    const w2 = world([{ x: 4, y: 2, k: "st_turnstile" }, { x: 5, y: 2, k: "st_turnstilearm_e" }, box]);
+    w2.hit(5, 2, 0, 0, 1, -6, 0, 0, 0); // push the east arm north
+    expect([w2.objects[1].col, w2.objects[1].row]).toEqual([5, 2]);
+  });
+
   it("a dispenser hands out its items; an explosion breaks it", () => {
     const w = world([{ x: 4, y: 1, k: "st_dispenser_bombblack", a: { stock: "1" } }, { x: 5, y: 2, k: "it_bomb_white" }]);
     w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0);

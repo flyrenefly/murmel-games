@@ -196,6 +196,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
+  if (/^st_turnstile(_red|_green)?$/.test(kind)) return ['st_turnstile', 'st_turnstile_green', 'sh_solid'];
+  if (kind.startsWith('st_turnstilearm')) return ['st_puzzle_blue', 'sh_solid'];
   if (kind.startsWith('st_lightpassenger')) return ['st_lightpassenger', 'st_lightpassenger_off', 'st_lightpassenger_break', 'sh_rawglass'];
   if (kind.startsWith('st_dispenser')) return [kind === 'st_dispenser' ? 'st_dispenser_bombblack' : kind, 'sh_round', 'it_bomb', 'it_dynamite', 'it_dynamite_burning', 'it_extralife', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
   if (kind === 'st_thief') return ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag'];
@@ -643,6 +645,22 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'turnstile' || o.cls === 'turnstilearm') {
+      if (pass === 'shadow') {
+        this.image('sh_solid', px, py);
+        return;
+      }
+      if (o.cls === 'turnstile') {
+        const look = world.turnstileLook(o);
+        this.frame(look.image, look.frame, px, py);
+      } else {
+        // arms: blue puzzle pieces connected towards the pivot (st_puzzle1/2/4/8)
+        const conn = [4, 8, 1, 2][o.state];
+        const im = this.img!.st_puzzle_blue;
+        if (im) ctx.drawImage(im, Math.floor(conn / 4) * T, (conn % 4) * T, T, T, px, py, T, T);
+      }
       return;
     }
     if (o.cls === 'lightpassenger') {

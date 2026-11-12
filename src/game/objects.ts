@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag']);
@@ -277,6 +277,8 @@ export interface GameObject {
   blast?: number;
   /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
   igniteAt?: number;
+  /** Turnstile pivot: start of the last rotation (60 ms animation). */
+  pivotTurn?: number;
   /** Light passenger: next move time, skate direction (-1 none), blocked, blinking, breaking start. */
   pass?: { next: number; dir: number; blocked: boolean; blink: boolean; breaking?: number };
   /** Thief: phase (none = idle), its start, the marble robbed and the loot in its bag. */
@@ -321,6 +323,8 @@ export type ObjectEvent =
   | { type: 'items' }
   /** PullStone: actors in the stone's new cell are warped into its old cell. */
   | { type: 'pullWarp'; fromCol: number; fromRow: number; toCol: number; toRow: number }
+  /** TurnstilePivot rotated: main moves (or shatters) the marbles in the swept fields. */
+  | { type: 'turnstile'; col: number; row: number; cw: boolean; red: boolean; sender: number; seen: boolean[] }
   /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
   | { type: 'laserhit'; marble: number }
   /** Debris::actor_hit → "_fall": marble i falls. */
@@ -382,6 +386,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
+  if (/^st_turnstile(_red|_green)?$/.test(kind)) return 'turnstile';
+  if (/^st_turnstilearm(_[nesw])?$/.test(kind)) return 'turnstilearm';
   if (/^st_lightpassenger(_on|_off)?$/.test(kind)) return 'lightpassenger';
   if (/^st_dispenser(_bombblack|_bombwhite|_dynamite|_extralife)?$/.test(kind)) return 'dispenser';
   if (kind === 'it_bag') return 'bag';
@@ -547,7 +553,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || o.cls === 'turnstile' || o.cls === 'turnstilearm' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -580,6 +586,12 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot') {
         this.hitCoinslot(o, by);
+        return;
+      }
+      if (o.cls === 'turnstilearm') {
+        // Stone::actor_hit → impulse in the push direction → TurnstileArm::on_impulse
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED) this.armImpulse(o, STEPS.findIndex(([x, y]) => x === -nx && y === -ny), by);
         return;
       }
       if (o.cls === 'lightpassenger') {
@@ -941,6 +953,7 @@ export class ObjectWorld {
       else if (o.cls === 'box') this.push(o, dx, dy);
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
+      else if (o.cls === 'turnstilearm') this.armImpulse(o, d, -1);
       else if (o.cls === 'lightpassenger' && (o.state === 0 || !this.lit.has(o.row * this.width + o.col))) this.push(o, dx, dy);
       else if ((o.cls === 'rotator' && rotatorMovable(o)) || (o.cls === 'mirror' && mirrorFlags(o).movable)) this.push(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
@@ -1414,6 +1427,101 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  // ---------- turnstiles (Turnstile.cc) ----------
+
+  /** TurnstileArm::on_impulse: rotate the pivot (actions by arm side and impulse), else move. */
+  private armImpulse(o: GameObject, d: number, sender: number): void {
+    if (d < 0) return;
+    const s = o.state;
+    const pivot = this.at(o.col - L_DX[s], o.row - L_DY[s]).find((x) => x.cls === 'turnstile' && !x.gone);
+    if (!pivot) {
+      this.push(o, L_DX[d], L_DY[d]);
+      return;
+    }
+    // [arm side][impulse]: 1 = right (clockwise), -1 = left, 0 = stay (W S E N)
+    const ACTIONS = [[0, -1, 0, 1], [1, 0, -1, 0], [0, 1, 0, -1], [-1, 0, 1, 0]];
+    const a = ACTIONS[s][d];
+    if (!a) return;
+    let cw = a === 1;
+    if (!this.turnstileRed(pivot) && sender >= 0 && this.wields('it_wrench')) cw = !cw;
+    this.rotateTurnstile(pivot, cw, sender, o);
+  }
+
+  private turnstileRed(p: GameObject): boolean {
+    return (p.attrs.flavor || (p.kind === 'st_turnstile_green' ? 'green' : 'red')) !== 'green';
+  }
+
+  /** The arms of a pivot by side bit (W 1, S 2, E 4, N 8). */
+  private turnstileArms(p: GameObject): Map<number, GameObject> {
+    const arms = new Map<number, GameObject>();
+    for (let d = 0; d < 4; d++) {
+      const a = this.at(p.col + L_DX[d], p.row + L_DY[d]).find((x) => x.cls === 'turnstilearm' && !x.gone && x.state === d);
+      if (a) arms.set(d, a);
+    }
+    return arms;
+  }
+
+  /** TurnstilePivot::rotate: only if the swept cells are free; arms move, items get hit. */
+  private rotateTurnstile(p: GameObject, cw: boolean, sender: number, initiator: GameObject | null): boolean {
+    if (p.pivotTurn !== undefined && this.now - p.pivotTurn < 60) return false;
+    const arms = this.turnstileArms(p);
+    const bits = [...arms.keys()].reduce((b, d) => b | (1 << d), 0);
+    const free = (dx: number, dy: number) => !this.stoneAt(p.col + dx, p.row + dy);
+    let ok = true;
+    if (cw) {
+      if (bits & L_N) ok &&= free(1, -1) && (!!(bits & L_E) || free(1, 0));
+      if (bits & L_W) ok &&= free(-1, -1) && (!!(bits & L_N) || free(0, -1));
+      if (bits & L_S) ok &&= free(-1, 1) && (!!(bits & L_W) || free(-1, 0));
+      if (bits & L_E) ok &&= free(1, 1) && (!!(bits & L_S) || free(0, 1));
+    } else {
+      if (bits & L_N) ok &&= free(-1, -1) && (!!(bits & L_W) || free(-1, 0));
+      if (bits & L_W) ok &&= free(-1, 1) && (!!(bits & L_S) || free(0, 1));
+      if (bits & L_S) ok &&= free(1, 1) && (!!(bits & L_E) || free(1, 0));
+      if (bits & L_E) ok &&= free(1, -1) && (!!(bits & L_N) || free(0, -1));
+    }
+    if (!ok) return false;
+    p.pivotTurn = this.now;
+    this.events.push({ type: 'sound', name: 'move' }); // movesmall; turnstileleft/right are missing in Enigma
+    // rotate_arms: take them all off, then put them on their new sides
+    const moved: [GameObject, number][] = [];
+    for (const [d, a] of arms) {
+      this.unplace(a);
+      moved.push([a, cw ? (d + 3) % 4 : (d + 1) % 4]);
+    }
+    let newBits = 0;
+    for (const [a, nd] of moved) {
+      const [oc, or] = [a.col, a.row];
+      a.col = p.col + L_DX[nd];
+      a.row = p.row + L_DY[nd];
+      a.state = nd;
+      this.place(a);
+      newBits |= 1 << nd;
+      this.stoneHitsItems(a.col, a.row);
+      this.updateTriggers(oc, or);
+      this.updateTriggers(a.col, a.row);
+    }
+    // calc_arm_seen: the swept cells around the pivot (NW, N, NE, E, SE, S, SW, W)
+    const NEEDED = [
+      [L_W, L_N, L_N, L_E, L_E, L_S, L_S, L_W],
+      [L_N, L_N, L_E, L_E, L_S, L_S, L_W, L_W],
+    ];
+    const TO_X = [-1, 0, 1, 1, 1, 0, -1, -1];
+    const TO_Y = [-1, -1, -1, 0, 1, 1, 1, 0];
+    const seen = NEEDED[cw ? 1 : 0].map((b) => (newBits & b) !== 0);
+    seen.forEach((s, i) => s && this.stoneHitsItems(p.col + TO_X[i], p.row + TO_Y[i]));
+    this.events.push({ type: 'turnstile', col: p.col, row: p.row, cw, red: this.turnstileRed(p), sender, seen });
+    // the other arms pass the rotation on to the stones beyond them
+    for (const [a, nd] of moved) if (a !== initiator) this.sendImpulse(a.col + L_DX[nd], a.row + L_DY[nd], nd);
+    this.performAction(p, !cw);
+    return true;
+  }
+
+  /** Pivot: st_turnstile(_green) frame 0, while turning frame 1 then 0 (2 × 30 ms). */
+  turnstileLook(o: GameObject): { image: string; frame: number } {
+    const age = o.pivotTurn === undefined ? 1e9 : this.now - o.pivotTurn;
+    return { image: this.turnstileRed(o) ? 'st_turnstile' : 'st_turnstile_green', frame: age < 30 ? 1 : 0 };
   }
 
   // ---------- light passengers (LightPassengerStone.cc) ----------
@@ -2760,6 +2868,17 @@ export class ObjectWorld {
       }
       return;
     }
+    if (o.cls === 'turnstile') {
+      // TurnstilePivot::message: signal (0 = clockwise), turn, turnback
+      const cc = truthy(o.attrs.counterclock);
+      if (msg === 'signal') this.rotateTurnstile(o, !value, -1, null);
+      else if (msg === 'turn' || msg === 'turnback') this.rotateTurnstile(o, (msg === 'turn') !== cc, -1, null);
+      return;
+    }
+    if (o.cls === 'turnstilearm') {
+      if (msg === 'orientate' && num !== undefined && num >= 0 && num <= 3) o.state = num;
+      return;
+    }
     if (o.cls === 'lightpassenger') {
       // on/off/toggle/signal; a boulder's _trigger toggles
       if (msg === 'on' || (msg === 'signal' && value)) o.state = 1;
@@ -2952,6 +3071,12 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
   // RotatorStone: 0 clockwise, 1 counterclockwise
   if (/^st_rotator/.test(kind)) return a.counterclock !== undefined && a.counterclock !== '' ? (truthy(a.counterclock) ? 1 : 0) : kind.includes('_ccw') ? 1 : 0;
+  // TurnstileArm: state = side of the pivot it sits on (W 0, S 1, E 2, N 3), default north
+  if (/^st_turnstilearm/.test(kind)) {
+    const v = Number(a.orientation ?? a.$state);
+    if ((a.orientation ?? a.$state) !== undefined && v >= 0 && v <= 3) return v;
+    return DIR_LETTER[/^st_turnstilearm_([nesw])$/.exec(kind)?.[1] ?? 'n'];
+  }
   // LightPassengerStone: on unless _off
   if (/^st_lightpassenger/.test(kind)) return a.$state !== undefined && a.$state !== '' ? (Number(a.$state) ? 1 : 0) : kind.endsWith('_off') ? 0 : 1;
   // CoinSlot: always off at the start

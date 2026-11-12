@@ -519,7 +519,50 @@ function handleObjectEvents(events: ObjectEvent[]): void {
       const m = physics?.marbles[e.marble];
       if (m && m.active && m.jump <= 0) marbleDies(e.marble, false);
     }
-    else if (e.type === 'pullWarp') {
+    else if (e.type === 'turnstile') {
+      // TurnstilePivot::handleActorsAndItems: marbles in the swept fields
+      const TO_INDEX = [[0, 7, 6], [1, -1, 5], [2, 3, 4]];
+      const TO_X = [-1, 0, 1, 1, 1, 0, -1, -1];
+      const TO_Y = [-1, -1, -1, 0, 1, 1, 1, 0];
+      const ROT = [
+        [6, 0, 0, 2, 2, 4, 4, 6],
+        [2, 2, 4, 4, 6, 6, 0, 0],
+        [6, 6, 0, 0, 2, 2, 4, 4],
+        [2, 4, 4, 6, 6, 0, 0, 2],
+      ];
+      const cx = e.col + 0.5;
+      const cy = e.row + 0.5;
+      physics?.marbles.forEach((m, i) => {
+        if (!m.active || falling[i] >= 0) return;
+        const dx = Math.floor(m.pos.x) - e.col;
+        const dy = Math.floor(m.pos.y) - e.row;
+        if (dx < -1 || dx > 1 || dy < -1 || dy > 1 || Math.hypot(m.pos.x - cx, m.pos.y - cy) > 1.58114 + m.radius) return;
+        const src = TO_INDEX[dx + 1][dy + 1];
+        if (src < 0) return;
+        const dst = ROT[(e.cw ? 1 : 0) + (e.red ? 2 : 0)][src];
+        let warp = false;
+        if (e.red) {
+          warp = i === e.sender;
+          if (!warp && e.seen[src]) marbleDies(i, true); // hit by an arm
+        } else warp = e.seen[src];
+        if (!warp) return;
+        const tc = e.col + TO_X[dst];
+        const tr = e.row + TO_Y[dst];
+        if (!cellAt(level, tc, tr)) {
+          marbleDies(i, true);
+          return;
+        }
+        let ox = m.pos.x - (Math.floor(m.pos.x) + 0.5);
+        let oy = m.pos.y - (Math.floor(m.pos.y) + 0.5);
+        const len = Math.hypot(ox, oy);
+        const max = 0.5 - m.radius;
+        if (len > max) {
+          ox *= max / len;
+          oy *= max / len;
+        }
+        physics!.respawn(tc + 0.5 + (e.cw ? -oy : oy), tr + 0.5 + (e.cw ? ox : -ox), i);
+      });
+    } else if (e.type === 'pullWarp') {
       // PullStone::on_impulse: WarpActor into the old cell (clamped into it), without velocity
       physics?.marbles.forEach((m, i) => {
         if (!m.active || Math.floor(m.pos.x) !== e.fromCol || Math.floor(m.pos.y) !== e.fromRow) return;
