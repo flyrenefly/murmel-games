@@ -241,6 +241,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Gummibänder und `velocity_x/_y` aus dem Level gelten. Bilder `ac_pearl_*`, `sh_pearl`,
   Fallanimation 70 65 60 55 50 ms. In Murmels Physik sind sie Einträge in `marbles` mit
   `pearl: true`.
+- **Weiße Murmel ohne Yin-Yang** (Levels ohne `el:network`): Sie gehört Spieler 2
+  (`controllers` 2) und ist im Einzelspiel eine passive Kugel ohne Mauskraft; der Yin-Yang
+  fehlt. Sie hat eigene zwei Extraleben (Spieler 2); ohne Leben bleibt sie liegen, außer
+  sie ist `essential` – dann beginnt das Level neu.
+- **Rotoren `attacknearest` / `prefercurrent`** (`RotorBase::think`): nur die nächste Kugel
+  jagen; alle 0,8–1,6 s mit Wahrscheinlichkeit `prefercurrent` nur die gesteuerte Murmel.
+  (Wurde vorher vom Importer weggelassen; außer Persecution Mania nutzt kein Level es.)
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

@@ -157,7 +157,7 @@ function actorImages(k, color) {
   }
   return [];
 }
-const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y)$/;
+const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential)$/;
 
 const reasons = new Map(); // blocker -> levels it blocks (among others)
 const only = new Map(); // blocker -> levels it alone blocks
@@ -265,7 +265,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
   const whites = actors.filter((k) => k === 'ac_marble_white').length;
   if (whites > 1) reject('mehrere weiße Murmeln');
-  else if (whites === 1 && !/el:network="true"/.test(xml)) reject('weiße Murmel ohne Yin-Yang');
+  // Without network play there is no yin-yang: the white marble (controllers 2) is a passive ball.
+  const passiveWhite = whites === 1 && !/el:network="true"/.test(xml);
   // Rubber bands need the export with their values (enigma-web level-export since 11.11. evening).
   const banded = w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers));
   if (banded && !Array.isArray(w.rubberbands)) reject('Gummiband (alter Export)');
@@ -471,6 +472,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const a = w.actors.find((x) => x.o.k === 'ac_marble_black');
   const others = w.actors.filter((x) => x !== a).map((x) => {
     const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
+    if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
     actorImages(x.o.k, attrs.color).forEach((i) => usedImages.add(i));
     return { k: x.o.k, x: Math.round(x.x * 1000) / 1000, y: Math.round(x.y * 1000) / 1000, ...(Object.keys(attrs).length ? { a: attrs } : {}) };
   });

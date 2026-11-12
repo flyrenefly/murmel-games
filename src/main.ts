@@ -86,6 +86,9 @@ let pendingRestart: 'new' | 'keep' | null = null;
 /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
 const enigmaRules = (): boolean => level.id.startsWith('enigma:');
 const livesLeft = (): number => objects.inventory.filter((k) => k === 'it_extralife').length;
+/** Extra lives of player 2 (the passive white marble) and marbles that stay dead. */
+let player2Lives = 0;
+let deadForever: boolean[] = [];
 /** Lua callbacks of the current level (null = none). */
 let lua: LuaLevel | null = null;
 /** wo["GlobalForce"] of the current level. */
@@ -161,6 +164,8 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     for (let k = 0; k < lives; k++) objects.inventory.push('it_extralife');
   }
   carryLives = null;
+  player2Lives = lv.world.ProvideExtralifes === 'false' ? 0 : 2;
+  deadForever = physics.marbles.map(() => false);
   if (physics.steerable > 1) objects.inventory.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -444,12 +449,20 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   falls++;
   // player::CheckDeadActors / resurrect_actor: every death costs an extra life.
   if (enigmaRules() && level.world.InfiniteReincarnation !== 'true') {
-    const idx = objects.inventory.indexOf('it_extralife');
-    if (idx >= 0) objects.inventory.splice(idx, 1);
-    updateItems();
-    // ConserveLevel false: the level restarts (costing the life); without a life: a new game.
-    if (idx < 0) pendingRestart = 'new';
-    else if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+    const m = physics.marbles[i];
+    if (m.passive) {
+      // player 2's own lives; without one it stays dead, unless it is essential
+      if (player2Lives > 0) player2Lives--;
+      else if (m.essential) pendingRestart = 'new';
+      else deadForever[i] = true;
+    } else {
+      const idx = objects.inventory.indexOf('it_extralife');
+      if (idx >= 0) objects.inventory.splice(idx, 1);
+      updateItems();
+      // ConserveLevel false: the level restarts (costing the life); without a life: a new game.
+      if (idx < 0) pendingRestart = 'new';
+      else if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+    }
   }
   if (how === 'sink') sfx.swamped();
   else if (shatter) sfx.shatter();
@@ -549,6 +562,8 @@ function frame(now: number): void {
     if (f < 0 || !physics) return -1;
     falling[i] = f + dt;
     if (falling[i] < FALL_SECONDS + 0.25) return Math.min(falling[i] / FALL_SECONDS, 1);
+    // a marble without lives that is not essential stays fallen: still 'falling', never drawn
+    if (deadForever[i]) return 1;
     falling[i] = -1;
     if (pendingRestart) {
       const how = pendingRestart;
@@ -588,7 +603,7 @@ function frame(now: number): void {
     x: e.prev.x + (e.pos.x - e.prev.x) * a,
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
-  actors.push(...marbles.filter((_, i) => i !== ci));
+  actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i]));
   // Rubber bands: flat list x1, y1, x2, y2 (interpolated like the actors).
   const lerp = (b: { pos: { x: number; y: number }; prev: { x: number; y: number } }) => [b.prev.x + (b.pos.x - b.prev.x) * a, b.prev.y + (b.pos.y - b.prev.y) * a];
   const bands: number[] = [];

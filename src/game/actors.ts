@@ -55,6 +55,11 @@ export class Enemy {
   readonly gohome: boolean;
   /** Killer colour: 1 = white (ac_killer_white), 0 = black. */
   readonly color: number;
+  /** RotorBase: chase only the nearest ball; probability to chase only the steered marble. */
+  readonly attacknearest: boolean;
+  readonly prefercurrent: number;
+  private keepStrategy = 0;
+  private currentOnly = false;
   normals: number[] = [];
   touching = new Set<number>();
   nowTouching = new Set<number>();
@@ -72,21 +77,39 @@ export class Enemy {
     this.strength = num(a.strength, 10);
     this.gohome = bool(a.gohome, true);
     this.color = kind === 'killer' ? num(a.color, def.k === 'ac_killer_black' ? 0 : 1) : 0;
+    this.attacknearest = bool(a.attacknearest, false);
+    this.prefercurrent = num(a.prefercurrent, 0);
   }
 
   /**
    * RotorBase::think: force towards the living marbles within range (sum of the
    * directions), otherwise towards home.
    */
-  chaseForce(marbles: readonly { x: number; y: number }[]): [number, number] {
+  chaseForce(marbles: readonly { x: number; y: number; current?: boolean }[], dt = 0, random: () => number = Math.random): [number, number] {
+    // every 0.8–1.6 s decide whether to chase only the steered marble (prefercurrent)
+    this.keepStrategy -= dt;
+    if (this.keepStrategy < 0) {
+      this.keepStrategy = 0.8 + random() * 0.8;
+      this.currentOnly = random() < this.prefercurrent;
+    }
     let tx = 0;
     let ty = 0;
     let target = false;
+    let best = Infinity;
     for (const m of marbles) {
       const dx = m.x - this.pos.x;
       const dy = m.y - this.pos.y;
       const d = Math.hypot(dx, dy);
-      if (d < this.range && d > 0) {
+      if (!(d < this.range && d > 0)) continue;
+      if ((this.attacknearest && !this.currentOnly) || (this.currentOnly && m.current)) {
+        // the nearest one (of the steered marble only, if currentOnly)
+        if (d < best) {
+          best = d;
+          tx = dx;
+          ty = dy;
+          target = true;
+        }
+      } else if (!this.currentOnly) {
         tx += dx / d;
         ty += dy / d;
         target = true;

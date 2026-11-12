@@ -71,6 +71,22 @@ describe('PhysicsWorld (Enigma model)', () => {
     expect(w.marbles[1].vel.x).toBeGreaterThan(w.marbles[0].vel.x);
   });
 
+  it('a white marble without yin-yang (passive) ignores the mouse and cannot be swapped to', () => {
+    const lv = parseLevel({
+      id: 'w', title: 'W', author: 'x', license: 'GPL',
+      map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'],
+      actors: [{ k: 'ac_marble_white', x: 5.5, y: 2.5, a: { passive: 'true' } }],
+    });
+    const w = new PhysicsWorld(lv);
+    expect(w.marbles[1].passive).toBe(true);
+    expect(w.steerable).toBe(1);
+    expect(w.swap()).toBe(false);
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    expect(w.marbles[0].vel.x).toBeGreaterThan(0);
+    expect(w.marbles[1].vel.x).toBe(0);
+  });
+
   it('friction slows the marble down to a stop', () => {
     const w = new PhysicsWorld(level);
     w.setVelocity(2, 0);

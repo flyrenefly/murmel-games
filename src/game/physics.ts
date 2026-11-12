@@ -76,6 +76,10 @@ export interface Marble extends Body {
   jump: number;
   /** ac_pearl (Pearl, BasicBall): small, always follows the mouse, never the swapped-to marble. */
   readonly pearl: boolean;
+  /** White marble of player 2 in a single game (controllers 2, no yin-yang): no mouse at all. */
+  passive: boolean;
+  /** "essential" actor: its final death restarts the level. */
+  essential: boolean;
 }
 
 /** Pearl traits (Balls.cc): radius 13/64, mass 0.7; adhesion 1 like the marble. */
@@ -99,6 +103,8 @@ function makeMarble(color: number, x: number, y: number, pearl = false, vel = { 
     radius: pearl ? PEARL_RADIUS : MARBLE_RADIUS,
     mass: pearl ? PEARL_MASS : 1,
     pearl,
+    passive: false,
+    essential: false,
     color,
     active: true,
     sink: 0,
@@ -166,7 +172,12 @@ export class PhysicsWorld {
     this.enemies = createEnemies(level.actors ?? []);
     this.marbles = [makeMarble(0, level.start.x, level.start.y)];
     const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
-    if (white) this.marbles.push(makeMarble(1, white.x, white.y));
+    if (white) {
+      const w = makeMarble(1, white.x, white.y);
+      w.passive = white.a?.passive === 'true';
+      w.essential = white.a?.essential === '1';
+      this.marbles.push(w);
+    }
     // Pearls: more balls of the player (velocity_x/_y as given by the level).
     const pearls = new Map<ActorDef, Marble>();
     for (const a of level.actors ?? []) {
@@ -285,16 +296,16 @@ export class PhysicsWorld {
       const { friction, adhesion } = this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
-      const k = i === this.cur || m.pearl ? adhesion : 0;
+      const k = (i === this.cur && !m.passive) || m.pearl ? adhesion : 0;
       add(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
     });
-    const targets = this.marbles.filter((m) => m.active).map((m) => m.pos);
+    const targets = this.marbles.flatMap((m, i) => (m.active ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));
     for (const e of this.enemies) {
       const { friction, adhesion } = this.floorProps(e.pos);
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
         add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR, friction);
-      } else add(e, ...e.chaseForce(targets), friction);
+      } else add(e, ...e.chaseForce(targets, dt), friction);
     }
     // 2. Rubber bands (bands of a falling marble rest).
     for (const r of this.rubbers) {
@@ -526,13 +537,13 @@ export class PhysicsWorld {
   /** Yin-yang: steer the other marble (player::SwapPlayers). */
   /** Marbles one can switch between with the yin-yang (not the pearls). */
   get steerable(): number {
-    return this.marbles.filter((m) => !m.pearl).length;
+    return this.marbles.filter((m) => !m.pearl && !m.passive).length;
   }
 
   swap(): boolean {
     if (this.steerable < 2) return false;
     do this.cur = (this.cur + 1) % this.marbles.length;
-    while (this.marbles[this.cur].pearl);
+    while (this.marbles[this.cur].pearl || this.marbles[this.cur].passive);
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
     return true;

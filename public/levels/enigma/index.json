@@ -6,6 +6,12 @@
   "of": 65
  },
  {
+  "pack": "tutorial_training",
+  "title": "Training",
+  "count": 1,
+  "of": 2
+ },
+ {
   "pack": "enigma_i",
   "title": "Enigma I",
   "count": 39,
@@ -20,7 +26,7 @@
  {
   "pack": "enigma_iii",
   "title": "Enigma III",
-  "count": 22,
+  "count": 23,
   "of": 100
  },
  {
@@ -38,7 +44,7 @@
  {
   "pack": "enigma_vi",
   "title": "Enigma VI",
-  "count": 6,
+  "count": 7,
   "of": 100
  },
  {

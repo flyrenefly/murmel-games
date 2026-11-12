@@ -1,6 +1,6 @@
 # Enigma-Import
 
-153 von 1322 Levels übernommen (14 Pakete).
+156 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -8,9 +8,9 @@
 | Stein st_laser | 225 | 1 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
 | Lua-Rückruf | 166 | 1 |
-| Stein st_passage_black | 152 | 2 |
+| Stein st_passage_black | 152 | 3 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_passage_white | 134 | 0 |
+| Stein st_passage_white | 134 | 3 |
 | Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
 | Lua: :drawMap | 117 | 0 |
@@ -18,7 +18,6 @@
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
 | Stein st_mirror_slab | 112 | 0 |
-| weiße Murmel ohne Yin-Yang | 111 | 3 |
 | Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
@@ -40,7 +39,7 @@
 | Lua: API 1 | 65 | 0 |
 | Stein st_actorimpulse | 64 | 1 |
 | Stein st_break_oxydc | 62 | 0 |
-| Gegenstand it_vortex_open | 61 | 2 |
+| Gegenstand it_vortex_open | 61 | 3 |
 | Stein st_swap | 61 | 2 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
@@ -67,7 +66,7 @@
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_stone() | 41 | 0 |
 | Stein st_thief | 41 | 0 |
-| Gegenstand it_yinyang | 40 | 0 |
+| Gegenstand it_yinyang | 40 | 2 |
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
@@ -109,14 +108,14 @@
 | Gegenstand it_cross | 26 | 0 |
 | Stein fl_bridge_gc | 26 | 0 |
 | Stein st_greenbrown_hollow | 25 | 1 |
-| Boden fl_slope_te | 25 | 0 |
+| Boden fl_slope_te | 25 | 1 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 0 |
-| Boden fl_slope_tw | 23 | 0 |
+| Boden fl_slope_tw | 23 | 2 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_ghost_break | 22 | 0 |
@@ -171,7 +170,7 @@
 | Stein st_ice | 14 | 1 |
 | Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
-| Stein st_redfiber | 13 | 2 |
+| Stein st_redfiber | 13 | 3 |
 | Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
@@ -383,7 +382,7 @@
 | Aktion trigger | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
 | Lua: st_darkglass_hollow | 1 | 0 |
-| Lua: :st | 1 | 0 |
+| Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
 | Lua: ferry_movement() | 1 | 0 |
 | Aktion kill | 1 | 0 |
