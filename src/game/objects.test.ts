@@ -499,6 +499,27 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(0); // toggled open twice and closed once → open
   });
 
+  it("a bridge closes under a stone, opens again without it, and obeys open/close", () => {
+    const floors: Record<string, string> = { "3,1": "fl_bridge_gc_open" };
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 3, y: 1, k: "fl_bridge", a: { flavor: "gc", name: "b" } }, { x: 4, y: 1, k: "st_box" }], W, {}, env);
+    w.marbleAt(0, 0);
+    w.update(10);
+    expect(floors["3,1"]).toBe("fl_bridge_gc_open");
+    w.hit(4, 1, 0, 1, 0, -6); // box onto the bridge
+    w.update(10);
+    expect(w.bridgeLook(w.objects[0])).not.toBeNull(); // closing
+    w.update(700);
+    expect(floors["3,1"]).toBe("fl_bridge_gc_closed");
+    w.hit(3, 1, 0, -1, 0, -6); // box away to the east again
+    w.update(10);
+    w.update(700);
+    expect(floors["3,1"]).toBe("fl_bridge_gc_open");
+    w.sendMessage(w.objects[0], "close", true);
+    w.update(710);
+    expect(floors["3,1"]).toBe("fl_bridge_gc_closed");
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

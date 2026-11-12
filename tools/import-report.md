@@ -1,12 +1,12 @@
 # Enigma-Import
 
-430 von 1322 Levels übernommen (17 Pakete).
+439 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 169 | 1 |
+| Lua-Rückruf | 159 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
-| Lua: :drawMap | 118 | 1 |
+| Lua: :drawMap | 118 | 2 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
@@ -16,7 +16,6 @@
 | Lua: st_oxyd | 103 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
 | Gegenstand it_dynamite | 72 | 1 |
-| Boden fl_bridge_gc | 69 | 2 |
 | Lua: API 1 | 69 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
@@ -29,9 +28,9 @@
 | Stein st_mail | 54 | 1 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
-| Stein st_blocker | 50 | 3 |
+| Stein st_blocker | 50 | 5 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_pull | 48 | 4 |
+| Stein st_pull | 48 | 5 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -48,7 +47,6 @@
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
 | Stein st_plop | 34 | 4 |
-| Stein fl_bridge_gc | 34 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Gegenstand it_wrench | 33 | 0 |
 | Lua: set_actor() | 32 | 0 |
@@ -74,7 +72,6 @@
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 1 |
-| Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
@@ -143,10 +140,8 @@
 | Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 0 |
 | Lua-Init (Weltwert) | 9 | 0 |
-| Boden fl_bridge_bn | 9 | 0 |
 | Stein st_break_bug | 9 | 0 |
 | Gegenstand it_burnable_burning | 9 | 0 |
-| Stein fl_bridge_bw | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Aktion turn | 8 | 0 |
@@ -157,6 +152,7 @@
 | Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: :orientate | 7 | 2 |
+| Aktion openclose | 7 | 0 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
 | Wurmloch ohne Ziel | 7 | 0 |
@@ -166,7 +162,7 @@
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
-| Boden fl_adhesionless | 6 | 0 |
+| Boden fl_adhesionless | 6 | 1 |
 | Stein st_lightpassenger_off | 6 | 0 |
 | Stein st_box_hay (verbunden) | 6 | 2 |
 | Stein st_disco_dark | 6 | 0 |
@@ -178,11 +174,10 @@
 | Gegenstand it_strip_es | 5 | 0 |
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
-| Stein st_brownie (verbunden) | 5 | 1 |
+| Stein st_brownie (verbunden) | 5 | 2 |
 | Lua: st_window | 5 | 0 |
 | Lua: it_death | 4 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
-| Boden fl_bridge_be | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
 | Lua: lib.math | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
@@ -195,7 +190,6 @@
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
-| Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
 | Gegenstand it_strip_w | 3 | 0 |
@@ -203,7 +197,6 @@
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
 | Lua: :newMap | 3 | 0 |
-| Stein fl_bridge_bn | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
 | Lua: st_invisible | 3 | 0 |
@@ -234,7 +227,6 @@
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
-| Lua: fl_bridge_bw | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
@@ -258,7 +250,6 @@
 | Lua: it_hammer | 2 | 0 |
 | Lua: it_pencil | 2 | 0 |
 | Lua: st_blocker | 2 | 0 |
-| Stein fl_bridge_be | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
@@ -333,7 +324,6 @@
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |
-| Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Lua: it_burnable_oil | 1 | 0 |
@@ -362,7 +352,6 @@
 | Lua: it_strip | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Stein fl_bridge_bs | 1 | 0 |
 | Lua: it_coin_l | 1 | 0 |
 | Lua: it_burnable_ignited | 1 | 1 |
 | Lua: res.random | 1 | 0 |
@@ -393,7 +382,6 @@
 | Lua: st_break_oxydc | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
 | Lua: it_bomb_black | 1 | 0 |
-| Lua: fl_bridge_bn | 1 | 0 |
 | Lua: st_dispenser_bombblack | 1 | 0 |
 | Lua: it_bomb_white | 1 | 0 |
 | Lua: st_break_bug | 1 | 0 |
@@ -406,7 +394,6 @@
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |
 | Lua: st_window_e | 1 | 0 |
-| Lua: fl_bridge_gc | 1 | 0 |
 | Lua: st_window_w | 1 | 0 |
 | Lua: st_window_s | 1 | 0 |
 | Lua: st_window_n | 1 | 0 |

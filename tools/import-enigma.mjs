@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(bridge|forward|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
+const SPECIAL_FLOORS = /^fl_(forward|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -92,6 +92,7 @@ const OBJECTS = [
   [/^st_laser(_[nesw])?$/, ['st_laser', 'sh_rounded', 'it_laser']],
   [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
   [/^fl_scales$/, ['fl_scales']],
+  [/^fl_bridge$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
@@ -349,6 +350,17 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
       // Sinking marbles (models-2d.lua) for the renderer.
       if (fl.k === 'fl_swamp') for (const i of ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink']) imgs.add(i);
+      // BridgeFloor: floor fl_bridge_<gc|bw>_<open|closed> plus an object fl_bridge for its state
+      const bridge = /^fl_bridge(?:_(gc|bw|bs|be|bn))?$/.exec(fl.k);
+      if (bridge) {
+        const flavor = fl.flavor || bridge[1] || 'gc';
+        const def = objectDef(x, y, fl);
+        objs.push({ ...def, k: 'fl_bridge', a: { ...def.a, flavor } });
+        const img = flavor === 'gc' ? 'fl_bridge_gc' : 'fl_bridge_bw';
+        for (const i of [`${img}_open`, `${img}_closed`, `fl_bridge_${flavor}`]) imgs.add(i);
+        if (flavor !== 'gc') imgs.add('fl_bridge_bw_open'), imgs.add('fl_bridge_bw_closed');
+        fl.k = `${img}_${fl.$state === '0' ? 'closed' : 'open'}`;
+      }
       // ScalesFloor: the base floor of its flavor, plus an object fl_scales that acts like a trigger
       const scales = /^fl_scales(?:_(\w+))?$/.exec(fl.k);
       if (scales) {

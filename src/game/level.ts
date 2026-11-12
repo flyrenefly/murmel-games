@@ -124,7 +124,8 @@ function resolve(ch: string, legend: Record<string, CellDef>): CellDef | undefin
   return undefined;
 }
 
-export const isDeadly = (floor: string): boolean => DEADLY_FLOORS.has(floor);
+/** Deadly floors; an open bridge (fl_bridge_*_open) lets actors fall too (BridgeFloor::actor_contact). */
+export const isDeadly = (floor: string): boolean => DEADLY_FLOORS.has(floor) || /^fl_bridge_\w+_open$/.test(floor);
 
 /**
  * @param random random source for the colour assignment of '?' Oxyd stones

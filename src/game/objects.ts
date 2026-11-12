@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -223,6 +223,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Bridge floor: phase, its start and whether it was closed explicitly (OBJBIT_EXPLICIT). */
+  bridge?: { phase: 'open' | 'closed' | 'opening' | 'closing'; since: number; explicit: boolean };
   /** Scales: checked once (the initial state acts not). */
   scales?: boolean;
   /** Crack: start of DISSOLVING (the floor breaks away after 5 × 120 ms). */
@@ -296,6 +298,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_laser(_[nesw])?$/.test(kind)) return 'laser';
   if (/^it_crack(_[isml])?(_water)?$/.test(kind)) return 'crack';
   if (kind === 'fl_scales') return 'scales';
+  if (kind === 'fl_bridge') return 'bridge';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -419,7 +422,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -427,7 +430,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales') return;
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -1110,6 +1113,87 @@ export class ObjectWorld {
     return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
   }
 
+  // ---------- bridges (BridgeFloor.cc) ----------
+
+  private bridgeOf(o: GameObject): NonNullable<GameObject['bridge']> {
+    if (!o.bridge) {
+      const explicit = o.state === 0;
+      o.bridge = { phase: explicit || this.bridgeStone(o) ? 'closed' : 'open', since: -1e9, explicit };
+      this.bridgeFloor(o);
+    }
+    return o.bridge;
+  }
+
+  /** A stone that is not floating (hollow) lies on the bridge. */
+  private bridgeStone(o: GameObject): boolean {
+    return this.at(o.col, o.row).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.kind !== 'st_stoneimpulse_hollow' && !isHollow(x));
+  }
+
+  private bridgeImage(o: GameObject): string {
+    const f = o.attrs.flavor || 'gc';
+    return f === 'gc' ? 'fl_bridge_gc' : 'fl_bridge_bw';
+  }
+
+  /** The floor kind follows the phase: walkable only when closed. */
+  private bridgeFloor(o: GameObject): void {
+    const kind = `${this.bridgeImage(o)}_${o.bridge!.phase === 'closed' ? 'closed' : 'open'}`;
+    if (this.env.floorAt(o.col, o.row) === kind) return;
+    this.env.setFloor(o.col, o.row, kind);
+    this.events.push({ type: 'floor', col: o.col, row: o.row });
+  }
+
+  private bridgeMs(o: GameObject): number {
+    return (o.attrs.flavor || 'gc') === 'gc' ? 10 * 70 : 9 * 70;
+  }
+
+  /** BridgeFloor::set_iState: a running animation reverses from where it is. */
+  private bridgeAnim(o: GameObject, phase: 'opening' | 'closing'): void {
+    const b = this.bridgeOf(o);
+    const dur = this.bridgeMs(o);
+    const done = b.phase === 'opening' || b.phase === 'closing' ? Math.min(dur, this.now - b.since) : dur;
+    o.bridge = { ...b, phase, since: b.phase === 'opening' || b.phase === 'closing' ? this.now - (dur - done) : this.now };
+    this.bridgeFloor(o);
+  }
+
+  /** BridgeFloor::setState: 1 opens (not under a stone), 0 closes; remembers an explicit close. */
+  private bridgeSet(o: GameObject, open: number): void {
+    const b = this.bridgeOf(o);
+    if (open === 1 && (b.phase === 'closed' || b.phase === 'closing') && !this.bridgeStone(o)) this.bridgeAnim(o, 'opening');
+    else if (open === 0 && (b.phase === 'open' || b.phase === 'opening')) this.bridgeAnim(o, 'closing');
+    o.bridge!.explicit = open === 0;
+  }
+
+  /** BridgeFloor::stone_change and animcb. */
+  private bridgeStep(o: GameObject): void {
+    const b = this.bridgeOf(o);
+    const stone = this.bridgeStone(o);
+    if (stone && (b.phase === 'open' || b.phase === 'opening')) this.bridgeAnim(o, 'closing');
+    else if (!stone && (b.phase === 'closed' || b.phase === 'closing') && !b.explicit) this.bridgeAnim(o, 'opening');
+    const c = o.bridge!;
+    if ((c.phase === 'opening' || c.phase === 'closing') && this.now - c.since >= this.bridgeMs(o)) {
+      o.bridge = { ...c, phase: c.phase === 'opening' ? 'open' : 'closed', since: this.now };
+      this.bridgeFloor(o);
+    }
+    o.state = o.bridge!.phase === 'closed' ? 0 : 1;
+  }
+
+  /** Animation frame while opening/closing (fl_bridge_gc: 10 frames, others 9 incl. closed/open), else null. */
+  bridgeLook(o: GameObject): { image: string; frame: number } | null {
+    const b = this.bridgeOf(o);
+    if (b.phase !== 'opening' && b.phase !== 'closing') return null;
+    const gc = (o.attrs.flavor || 'gc') === 'gc';
+    const n = gc ? 10 : 9;
+    const f = Math.min(n - 1, Math.floor((this.now - b.since) / 70));
+    // gc: closing 0..9, opening reversed; others: opening 0..8 (closed → open), closing reversed
+    const frame = gc ? (b.phase === 'closing' ? f : n - 1 - f) : b.phase === 'opening' ? f : n - 1 - f;
+    const flavor = o.attrs.flavor || 'gc';
+    if (gc) return { image: 'fl_bridge_gc', frame };
+    // others: frame 0 = closed image, 1..7 the sheet, 8 = open image
+    if (frame === 0) return { image: 'fl_bridge_bw_closed', frame: 0 };
+    if (frame === n - 1) return { image: 'fl_bridge_bw_open', frame: 0 };
+    return { image: `fl_bridge_${flavor}`, frame: frame - 1 };
+  }
+
   // ---------- scales (ScalesFloor.cc) ----------
 
   /**
@@ -1716,6 +1800,7 @@ export class ObjectWorld {
       if (o.cls === 'chess' && !o.gone) this.chessStep(o);
       if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
       if (o.cls === 'scales' && !o.gone) this.scalesStep(o);
+      if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
@@ -1930,6 +2015,19 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'bridge') {
+      // StateObject messages → BridgeFloor::setState / toggleState
+      const b = this.bridgeOf(o);
+      const closed = b.phase === 'closed' || b.phase === 'closing';
+      if (msg === 'open' || msg === 'on') this.bridgeSet(o, 1);
+      else if (msg === 'close' || msg === 'off') this.bridgeSet(o, 0);
+      else if (msg === 'signal') this.bridgeSet(o, value ? 1 : 0);
+      else if (msg === 'toggle') {
+        if (closed && this.bridgeStone(o)) b.explicit = !b.explicit;
+        else this.bridgeSet(o, closed ? 1 : 0);
+      }
+      return;
+    }
     if (o.cls === 'crack') {
       // Crack::message: crack / ignite
       if (msg === 'crack' || msg === 'ignite') this.crack(o);
@@ -2120,7 +2218,7 @@ function initialState(kind: string, a: Record<string, string>): number {
   }
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
-  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'ot_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' || kind === 'it_magnet_on' ? 1 : 0;
+  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'ot_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' || kind === 'it_magnet_on' || kind === 'fl_bridge' ? 1 : 0;
 }
 
 function numAttr(v: string | undefined, fallback: number): number {

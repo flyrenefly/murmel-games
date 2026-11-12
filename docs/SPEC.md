@@ -353,6 +353,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
+- **fl_bridge(_gc/bw/bs/be/bn)** (`BridgeFloor.cc`): Bodenart `fl_bridge_<gc|bw>_open/closed`
+  (bs/be/bn mit den bw-Bildern) plus ein Objekt `fl_bridge` außerhalb des Zellrasters. Offen und
+  während des Öffnens/Schließens (gc 10, sonst 9 Bilder à 70 ms) fällt jede Kugel hinein
+  (`isDeadly`); ein nicht hohler Stein schließt sie, ohne Stein öffnet sie sich wieder, außer sie
+  wurde ausdrücklich geschlossen. open/on/close/off/signal/toggle; eine laufende Animation kehrt
+  um. Standard offen.
 - **fl_scales_*** (`ScalesFloor.cc`): Der Konverter legt den Grundboden des Geschmacks
   (brick, bridgewood, concrete, darkgray, gray, platinum) und ein Objekt `fl_scales` an, das nicht
   im Zellraster steht (weder Stein noch Gegenstand). Gedrückt, wenn ein nicht hohler Stein darauf
