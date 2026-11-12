@@ -369,6 +369,31 @@ describe('ObjectWorld', () => {
     expect(w.sensorLook(w.objects[2])).toEqual({ image: "it_sensor_exit", frame: 1 }); // 500 ms into the 3 × 600 ms animation
   });
 
+  it("a key switch takes the matching key and switches on; hit again it gives the key back", () => {
+    const w = world([
+      door(8),
+      { x: 2, y: 1, k: "it_key", a: { code: "3" } },
+      { x: 4, y: 1, k: "it_key" },
+      { x: 5, y: 0, k: "st_key", a: { code: "3", target: "door1", action: "toggle" } },
+    ]);
+    w.actorStep(4.5, 1.5, 0); // plain key first
+    w.actorStep(2.5, 1.5, 0);
+    expect(w.inventory).toEqual(["it_key_3", "it_key"]);
+    w.rotateInventory();
+    w.hit(5, 0, 0, 0, 1, -3, 0, 0, 0); // wrong key in hand: nothing
+    expect(w.objects[3].state).toBe(0);
+    w.rotateInventory();
+    w.hit(5, 0, 0, 0, 1, -3, 0, 0, 0);
+    expect(w.objects[3].state).toBe(1);
+    expect(w.inventory).toEqual(["it_key"]);
+    expect(w.keySwitchFrame(w.objects[3])).toBe(3);
+    w.update(500);
+    expect(w.blockAt(8, 0)).toBe(0);
+    w.hit(5, 0, 0, 0, 1, -3, 0, 0, 0);
+    expect(w.inventory).toEqual(["it_key_3", "it_key"]);
+    expect(w.objects[3].state).toBe(0);
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

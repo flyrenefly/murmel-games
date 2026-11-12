@@ -465,7 +465,7 @@ function onContact(c: Contact): void {
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
     else sfx.stone(c.speed);
-    objects.hit(c.col, c.row, c.color, c.nx, c.ny, c.vn, c.vx, c.vy);
+    objects.hit(c.col, c.row, c.color, c.nx, c.ny, c.vn, c.vx, c.vy, c.by);
     return;
   }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
@@ -509,6 +509,7 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
 function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
     if (e.type === 'shatter') marbleDies(e.marble, true);
+    else if (e.type === 'items') updateItems();
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
     else if (e.type === 'jump') marbleJumps(e.marble); // Springboard: "_jump"

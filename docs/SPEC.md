@@ -353,6 +353,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
+- **st_key + it_key** (`KeySwitch.cc`, `SimpleItems.cc` Key): Ist der Schalter aus und liegt
+  der Schlüssel mit gleichem `code` vorn im Inventar des Besitzers der Kugel, nimmt ein Treffer
+  ihn und schaltet ein (Aktion mit true); eingeschaltet gibt ein Treffer den Schlüssel zurück
+  (wenn Platz ist) und schaltet aus. `secure` (ab 1.10): nichts, solange die Kugel auf einem
+  Zielfeld steht. Schlüssel mit Code heißen im Inventar `it_key_<code>`; Bilder `st_key_on/off`
+  (Bild = Code 1–8, außer `invisible`), am Boden immer `it_key`.
 - **it_sensor / _inverse / _exit / _filter0 / _filter1** (`Sensor.cc`): Betritt eine Kugel
   sein Feld, führt er seine Aktion mit `true` aus (inverse: `false`); der Ausgangssensor beim
   Verlassen. Ein Sprung auf derselben Stelle und der Tod lösen nichts aus. Bild 2 × 300 ms,

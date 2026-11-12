@@ -178,6 +178,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_springboard') return ['it_springboard', ...JUMP_IMAGES];
   if (kind.startsWith('it_magnet')) return ['it_magnet_on', 'it_magnet_off'];
   if (kind.startsWith('it_sensor')) return ['it_sensor', 'it_sensor_exit'];
+  if (kind.startsWith('it_key')) return ['it_key'];
+  if (kind === 'st_key') return ['st_key_on', 'st_key_off', 'sh_round'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
@@ -438,6 +440,7 @@ export class ClassicView {
       else if (o.cls === 'yinyang') this.frame('it_yinyang', 0, px, py); // DefTiles: it_yinyang, it_yangyin
       else if (o.cls === 'tool') this.image(o.kind, px, py);
       else if (o.cls === 'springboard') this.frame('it_springboard', world.springboardFrame(o), px, py);
+      else if (o.cls === 'key') this.frame('it_key', 0, px, py); // Item model it_key (codes only in the inventory)
       else if (o.cls === 'sensor') {
         const look = world.sensorLook(o);
         if (look) this.frame(look.image, look.frame, px, py);
@@ -456,7 +459,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
@@ -552,6 +555,11 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'keyswitch') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame(o.state === 1 ? 'st_key_on' : 'st_key_off', world.keySwitchFrame(o), px, py);
       return;
     }
     if (o.cls === 'actorimpulse') {

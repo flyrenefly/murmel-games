@@ -1,11 +1,11 @@
 # Enigma-Import
 
-393 von 1322 Levels übernommen (17 Pakete).
+395 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Stein st_laser | 225 | 3 |
-| Lua-Rückruf | 163 | 1 |
+| Lua-Rückruf | 171 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
@@ -13,13 +13,11 @@
 | Stein st_mirror_slab | 112 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
+| Lua-Init | 105 | 2 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
-| Lua-Init | 103 | 2 |
 | Lua: st_oxyd | 103 | 0 |
-| Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
-| Stein st_key | 90 | 0 |
 | Gegenstand it_dynamite | 72 | 1 |
 | Boden fl_bridge_gc | 69 | 1 |
 | Lua: API 1 | 69 | 0 |
@@ -65,8 +63,8 @@
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
 | Lua: oxyd() | 30 | 0 |
+| Stein fl_bridge_gc | 29 | 0 |
 | Gegenstand it_death | 29 | 0 |
-| Stein fl_bridge_gc | 28 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 1 |
 | Stein st_scissors | 28 | 1 |
@@ -172,6 +170,8 @@
 | Wurmloch ohne Ziel | 7 | 0 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
+| Lua: :can_go_south | 6 | 0 |
+| Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
 | Lua-Init (Weltwert) | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
@@ -181,8 +181,6 @@
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
-| Lua: :can_go_south | 5 | 0 |
-| Lua: :can_go_east | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
 | Gegenstand it_strip_sw | 5 | 0 |
@@ -220,6 +218,7 @@
 | Lua: format() | 3 | 0 |
 | Lua: st_invisible | 3 | 0 |
 | Lua: mod() | 3 | 0 |
+| Lua: it_sword | 3 | 0 |
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
@@ -258,12 +257,12 @@
 | Lua: laser() | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
+| Stein st_door_d | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
 | Lua: it_cherry | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
 | Gegenstand it_strip_n | 2 | 0 |
 | Lua: st_knight | 2 | 0 |
-| Lua: it_sword | 2 | 0 |
 | Gegenstand it_strip | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
@@ -271,7 +270,6 @@
 | Lua: st_blocker | 2 | 0 |
 | Stein fl_bridge_be | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |
-| Lua: it_key | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
@@ -334,6 +332,7 @@
 | Lua: it_burnable | 1 | 0 |
 | Stein st_oxyd_b | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
+| Stein st_rawglass | 1 | 0 |
 | Lua: draw_items() | 1 | 0 |
 | Stein fl_concrete | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
@@ -348,7 +347,6 @@
 | Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
-| Stein st_door_d | 1 | 0 |
 | Lua: it_burnable_oil | 1 | 0 |
 | Lua: gsub() | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |

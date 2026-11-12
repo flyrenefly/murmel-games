@@ -16,14 +16,16 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel' };
+// Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
+for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -177,6 +179,8 @@ export interface GameObject {
 
 export type ObjectEvent =
   | { type: 'text'; text: string }
+  /** An inventory changed outside a pick-up (key switch). */
+  | { type: 'items' }
   /** marble: index of the marble that shatters. */
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
@@ -217,6 +221,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_springboard') return 'springboard';
   if (/^it_magnet(_on|_off)?$/.test(kind)) return 'magnet';
   if (/^it_sensor(_inverse|_exit|_filter[01])?$/.test(kind)) return 'sensor';
+  if (/^it_key(_\d+)?$/.test(kind)) return 'key';
+  if (kind === 'st_key') return 'keyswitch';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -374,7 +380,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -394,8 +400,12 @@ export class ObjectWorld {
    * The marble hit the stone in this cell. color: 0 = black marble, 1 = white.
    * nx/ny: contact normal (stone → marble), vn: marble speed along it (negative = into the stone).
    */
-  hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0): void {
+  hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'keyswitch') {
+        this.hitKeySwitch(o, by);
+        return;
+      }
       if (o.cls === 'fourswitch') {
         this.turnFourswitch(o); // FourSwitch::actor_hit
         continue;
@@ -792,7 +802,7 @@ export class ObjectWorld {
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
         this.unplace(o);
-        inv.unshift(o.kind);
+        inv.unshift(o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind);
         if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
         this.events.push({ type: 'sound', name: 'pickup' });
       }
@@ -853,6 +863,47 @@ export class ObjectWorld {
   /** it_springboard_anim: ReverseFrames of 2 images à 120 ms (frame 1, then 0). */
   springboardFrame(o: GameObject): number {
     return o.bounce !== undefined && this.now - o.bounce < 120 ? 1 : 0;
+  }
+
+  // ---------- key switches (KeySwitch.cc) ----------
+
+  /** Code of a key or key switch ('' = none); keys carry it in their kind (it_key_<code>). */
+  private keyCode(o: GameObject | string): string {
+    if (typeof o === 'string') return /^it_key_(\d+)$/.exec(o)?.[1] ?? '';
+    return o.attrs.code ?? /^it_key_(\d+)$/.exec(o.kind)?.[1] ?? '';
+  }
+
+  /**
+   * KeySwitch::actor_hit: off + the matching key in hand → the key goes in, on; on → the key comes
+   * back (if the inventory has room), off. "secure": not while the actor stands on a target.
+   */
+  private hitKeySwitch(o: GameObject, by: number): void {
+    const inv = by >= 0 ? (this.inventories[this.ownerOf(by)] ?? this.inventory) : this.inventory;
+    if (truthy(o.attrs.secure) && this.compat >= 1.1 && by >= 0) {
+      const m = this.slot(by);
+      for (const t of splitTokens(o.attrs.target)) if (this.resolve(t).some((x) => x.col === m.col && x.row === m.row)) return;
+    }
+    const code = this.keyCode(o);
+    if (o.state === 1) {
+      if (inv.length >= MAX_ITEMS) return;
+      inv.unshift(code ? `it_key_${code}` : 'it_key');
+    } else {
+      if (!inv[0] || this.objectClassOf(inv[0]) !== 'key' || this.keyCode(inv[0]) !== code) return;
+      inv.shift();
+    }
+    o.state = 1 - o.state;
+    this.events.push({ type: 'items' }, { type: 'sound', name: 'switch' });
+    this.performAction(o, o.state === 1);
+  }
+
+  private objectClassOf(kind: string): ObjectClass | null {
+    return objectClass(kind);
+  }
+
+  /** st_key_on/off: frame = code 1..8 unless invisible, else 0. */
+  keySwitchFrame(o: GameObject): number {
+    const c = Number(this.keyCode(o));
+    return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
   }
 
   // ---------- sensors (Sensor.cc) ----------
@@ -1581,6 +1632,16 @@ export class ObjectWorld {
     }
     if (o.cls === 'oxydref') {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
+      return;
+    }
+    if (o.cls === 'keyswitch') {
+      // StateObject messages → KeySwitch::setState (performs its action on a change)
+      const to = msg === 'toggle' ? 1 - o.state : msg === 'on' ? 1 : msg === 'off' ? 0 : msg === 'signal' ? (value ? 1 : 0) : o.state;
+      if (to !== o.state) {
+        o.state = to;
+        this.events.push({ type: 'sound', name: 'switch' });
+        this.performAction(o, to === 1);
+      }
       return;
     }
     if (o.cls === 'sensor') {
