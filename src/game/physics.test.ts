@@ -71,7 +71,7 @@ describe('PhysicsWorld (Enigma model)', () => {
     expect(w.marbles[1].vel.x).toBeGreaterThan(w.marbles[0].vel.x);
   });
 
-  it('a white marble without yin-yang (passive) ignores the mouse and cannot be swapped to', () => {
+  it('a white marble without yin-yang (passive) ignores the mouse until a yin-yang item swaps to it', () => {
     const lv = parseLevel({
       id: 'w', title: 'W', author: 'x', license: 'GPL',
       map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'],
@@ -79,12 +79,17 @@ describe('PhysicsWorld (Enigma model)', () => {
     });
     const w = new PhysicsWorld(lv);
     expect(w.marbles[1].passive).toBe(true);
-    expect(w.steerable).toBe(1);
-    expect(w.swap()).toBe(false);
+    expect(w.steerable).toBe(1); // no swap button
     w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
     run(w, 0.01);
     expect(w.marbles[0].vel.x).toBeGreaterThan(0);
     expect(w.marbles[1].vel.x).toBe(0);
+    // it_yinyang (player::SwapPlayers): now the white marble follows the mouse
+    expect(w.swap()).toBe(true);
+    expect(w.current).toBe(1);
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    expect(w.marbles[1].vel.x).toBeGreaterThan(0);
   });
 
   it('friction slows the marble down to a stop', () => {

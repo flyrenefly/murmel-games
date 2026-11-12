@@ -476,6 +476,17 @@ describe('ObjectWorld', () => {
     expect(passageLook(w.objects[0])).toEqual({ image: "st_passage_white_frame", shadow: "sh_passage_frame" });
   });
 
+  it("each player has an inventory: items go to the owner of the marble that picks them up", () => {
+    const w = world([{ x: 3, y: 0, k: "it_yinyang" }, { x: 6, y: 0, k: "it_magicwand" }]);
+    w.ownerOf = (marble) => (marble === 1 ? 1 : 0);
+    w.actorStep(3.5, 0.5, 1); // the white marble (player 2) picks up the yin-yang
+    w.actorStep(6.5, 0.5, 0); // the black one the wand
+    expect(w.inventories).toEqual([["it_magicwand"], ["it_yinyang"]]);
+    expect(w.inventory).toEqual(["it_magicwand"]);
+    w.player = 1;
+    expect(w.inventory).toEqual(["it_yinyang"]);
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

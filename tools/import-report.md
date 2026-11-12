@@ -1,6 +1,6 @@
 # Enigma-Import
 
-180 von 1322 Levels übernommen (15 Pakete).
+183 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,7 +9,7 @@
 | Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
 | Lua-Rückruf | 165 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_fourswitch | 131 | 2 |
+| Stein st_fourswitch | 131 | 3 |
 | Boden fl_slope_ps | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
@@ -48,7 +48,7 @@
 | Stein st_mirror_triangle | 55 | 0 |
 | Objekt ot_counter | 54 | 0 |
 | Gegenstand it_crack_l | 54 | 2 |
-| Stein st_floppy | 54 | 0 |
+| Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 0 |
 | Boden fl_slope_osw | 53 | 0 |
 | Boden fl_slope_one | 52 | 0 |
@@ -64,7 +64,6 @@
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_stone() | 41 | 0 |
 | Stein st_thief | 41 | 0 |
-| Gegenstand it_yinyang | 40 | 3 |
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
@@ -98,7 +97,7 @@
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein st_actorimpulse_invisible | 27 | 1 |
 | Akteur ac_horse | 27 | 0 |
-| Stein st_blur_cross | 27 | 2 |
+| Stein st_blur_cross | 27 | 3 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
@@ -135,7 +134,7 @@
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 1 |
 | Gegenstand it_spade | 17 | 0 |
-| Gegenstand it_ring | 17 | 1 |
+| Gegenstand it_ring | 17 | 3 |
 | Gegenstand it_burnable_ignited | 17 | 0 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |

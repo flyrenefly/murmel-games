@@ -297,7 +297,7 @@ export class PhysicsWorld {
       const { friction, adhesion } = this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
-      const k = (i === this.cur && !m.passive) || m.pearl ? adhesion : 0;
+      const k = i === this.cur || m.pearl ? adhesion : 0;
       add(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
     });
     const targets = this.marbles.flatMap((m, i) => (m.active ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));
@@ -541,10 +541,11 @@ export class PhysicsWorld {
     return this.marbles.filter((m) => !m.pearl && !m.passive).length;
   }
 
+  /** player::SwapPlayers: to the other marble (also a passive one, through a yin-yang item). */
   swap(): boolean {
-    if (this.steerable < 2) return false;
+    if (this.marbles.filter((m) => !m.pearl).length < 2) return false;
     do this.cur = (this.cur + 1) % this.marbles.length;
-    while (this.marbles[this.cur].pearl || this.marbles[this.cur].passive);
+    while (this.marbles[this.cur].pearl);
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
     return true;

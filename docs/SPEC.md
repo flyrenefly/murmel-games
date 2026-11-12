@@ -258,6 +258,14 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   oder Abgrund versunkener Puzzlestein hinterlässt (Standard fl_gray). Ein Bodenname gilt
   direkt; „=key“ heißt `enigma.settile(ti[key])` – der Importer löst die Kachel über die
   Lua-Schicht auf (`__describetile`). Gegenstände dort (it_strip, it_pipe) fehlen noch.
+- **it_yinyang als Gegenstand, Inventar je Spieler** (`SimpleItems.cc` Yinyang,
+  `player.cc`): Jeder Spieler hat ein eigenes Inventar mit eigenen Extraleben; was eine
+  Kugel aufhebt, gehört ihrem Besitzer (weiße Murmel = Spieler 2, schwarze Murmel und
+  Perlen = Spieler 1). Ein Yin-Yang im Inventar wechselt per Klick zum anderen Spieler
+  (`SwapPlayers`), auch zu einer sonst passiven weißen Murmel; angezeigt wird das
+  Inventar des aktuellen Spielers. Netzwerk-Levels geben beiden Spielern zu Beginn einen
+  Yin-Yang (`AddYinYang`). Hat Spieler 2 keine Leben mehr, bleibt die weiße Murmel liegen
+  und die Steuerung geht an Spieler 1 zurück.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

@@ -85,10 +85,11 @@ let carryLives: number | null = null;
 let pendingRestart: 'new' | 'keep' | null = null;
 /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
 const enigmaRules = (): boolean => level.id.startsWith('enigma:');
-const livesLeft = (): number => objects.inventory.filter((k) => k === 'it_extralife').length;
-/** Extra lives of player 2 (the passive white marble) and marbles that stay dead. */
-let player2Lives = 0;
+const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_extralife').length;
+/** Marbles that stay dead (player 2 without lives, not essential). */
 let deadForever: boolean[] = [];
+/** Owner of a marble: the white marble belongs to player 2 (YANG), pearls to player 1. */
+const ownerOf = (i: number): number => (physics?.marbles[i] && physics.marbles[i].color === 1 && !physics.marbles[i].pearl ? 1 : 0);
 /** Lua callbacks of the current level (null = none). */
 let lua: LuaLevel | null = null;
 /** wo["GlobalForce"] of the current level. */
@@ -160,14 +161,18 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   // player::NewGame: two extra lives (ProvideExtralifes), kept from the last level after a win;
   // with two marbles the yin-yang is an inventory item in front (player::AddYinYang).
   pendingRestart = null;
+  // Each player has an inventory (player.cc); player 2 owns the white marble.
+  objects.ownerOf = ownerOf;
   if (enigmaRules()) {
     const lives = carryLives ?? (lv.world.ProvideExtralifes === 'false' ? 0 : 2);
-    for (let k = 0; k < lives; k++) objects.inventory.push('it_extralife');
+    for (let k = 0; k < lives; k++) objects.inventories[0].push('it_extralife');
+    if (physics.marbles.some((_, k) => ownerOf(k) === 1)) {
+      for (let k = 0; k < (lv.world.ProvideExtralifes === 'false' ? 0 : 2); k++) objects.inventories[1].push('it_extralife');
+    }
   }
   carryLives = null;
-  player2Lives = lv.world.ProvideExtralifes === 'false' ? 0 : 2;
   deadForever = physics.marbles.map(() => false);
-  if (physics.steerable > 1) objects.inventory.unshift('it_yinyang');
+  if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
     const ph = physics;
@@ -451,18 +456,20 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   // player::CheckDeadActors / resurrect_actor: every death costs an extra life.
   if (enigmaRules() && level.world.InfiniteReincarnation !== 'true') {
     const m = physics.marbles[i];
-    if (m.passive) {
-      // player 2's own lives; without one it stays dead, unless it is essential
-      if (player2Lives > 0) player2Lives--;
-      else if (m.essential) pendingRestart = 'new';
-      else deadForever[i] = true;
+    const owner = ownerOf(i);
+    const inv = objects.inventories[owner];
+    const idx = inv.indexOf('it_extralife');
+    if (idx >= 0) inv.splice(idx, 1);
+    updateItems();
+    if (idx >= 0) {
+      // ConserveLevel false: the level restarts (costing the life)
+      if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+    } else if (owner === 0 || m.essential) {
+      pendingRestart = 'new'; // out of lives: a new game
     } else {
-      const idx = objects.inventory.indexOf('it_extralife');
-      if (idx >= 0) objects.inventory.splice(idx, 1);
-      updateItems();
-      // ConserveLevel false: the level restarts (costing the life); without a life: a new game.
-      if (idx < 0) pendingRestart = 'new';
-      else if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+      // player 2 without lives: the white marble stays dead; control goes back to player 1
+      deadForever[i] = true;
+      if (physics.current === i) swapMarble();
     }
   }
   if (how === 'sink') sfx.swamped();
@@ -654,6 +661,8 @@ btnRestart.addEventListener('click', (e) => {
 /** Yin-yang (it_yinyang): steer the other marble. */
 function swapMarble(): void {
   if (mode !== 'play' || !physics?.swap()) return;
+  objects.player = ownerOf(physics.current);
+  updateItems();
   sfx.menu();
   showToast(physics.marbles[physics.current].color === 1 ? 'Weiße Murmel' : 'Schwarze Murmel', 900);
 }

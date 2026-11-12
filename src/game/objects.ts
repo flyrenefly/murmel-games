@@ -16,12 +16,12 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3 };
 /** German names of inventory items for the display. */
 export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang' };
 
@@ -172,6 +172,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
   if (kind === 'it_extralife') return 'extralife';
+  if (kind === 'it_yinyang') return 'yinyang';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
   if (PASSAGE.test(kind)) return 'passage';
@@ -230,7 +231,15 @@ export class ObjectWorld {
   /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves. */
   fallenPuzzle = FALLEN_PUZZLE;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
-  readonly inventory: string[] = [];
+  readonly inventories: string[][] = [[], []];
+  /** The current player (YIN 0, YANG 1): player::CurrentPlayer. */
+  player = 0;
+  /** Owner of a marble (actor owner attribute): items it picks up go to that inventory. */
+  ownerOf: (marble: number) => number = () => 0;
+  /** The current player's inventory. */
+  get inventory(): string[] {
+    return this.inventories[this.player];
+  }
   private nextId = 0;
   /** Cell of each marble's centre (-1 = gone); init = false until its first marbleAt. */
   private marbles: { col: number; row: number; init: boolean }[] = [];
@@ -653,11 +662,12 @@ export class ObjectWorld {
       // Item::actor_hit (SeedItem: radius 0.2, not while growing; others 0.3) → Player::pick_up.
       for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
         const radius = PICKUP_RADIUS[o.cls];
-        if (radius === undefined || o.gone || o.growing !== undefined || this.inventory.length >= MAX_ITEMS) continue;
+        const inv = this.inventories[this.ownerOf(marble)] ?? this.inventory;
+        if (radius === undefined || o.gone || o.growing !== undefined || inv.length >= MAX_ITEMS) continue;
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
         this.unplace(o);
-        this.inventory.unshift(o.kind);
+        inv.unshift(o.kind);
         this.events.push({ type: 'sound', name: 'pickup' });
       }
     }
