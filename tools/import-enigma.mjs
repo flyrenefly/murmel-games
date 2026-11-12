@@ -316,7 +316,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
   // No black marble but pearls: the first pearl is the main ball (mainPearl)
   const blacks = actors.filter((k) => k === 'ac_marble_black').length;
-  if (blacks > 1 || (blacks === 0 && !actors.some((k) => /^ac_pearl/.test(k)))) reject('Akteure: nicht genau eine schwarze Murmel');
+  // further black marbles are steered together with the first (all of player 1)
+  if (blacks === 0 && !actors.some((k) => /^ac_pearl/.test(k))) reject('Akteure: nicht genau eine schwarze Murmel');
   // A white marble is steered with the yin-yang, which Enigma hands out in single play only
   // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
   const whites = actors.filter((k) => k === 'ac_marble_white').length;

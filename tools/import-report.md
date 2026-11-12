@@ -1,6 +1,6 @@
 # Enigma-Import
 
-489 von 1322 Levels übernommen (17 Pakete).
+493 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -76,7 +76,6 @@
 | Stein st_magic_brick | 19 | 2 |
 | Stein st_dispenser_bombblack | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Akteure: nicht genau eine schwarze Murmel | 18 | 4 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 3 |
@@ -151,6 +150,7 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
+| Akteure: nicht genau eine schwarze Murmel | 6 | 0 |
 | Lua: lib.math | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
@@ -266,7 +266,7 @@
 | Lua: getkey() | 1 | 0 |
 | Lua: :encode | 1 | 0 |
 | Lua: test() | 1 | 0 |
-| Lua: close() | 1 | 0 |
+| Lua: close() | 1 | 1 |
 | Lua: hollow() | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Lua: st_spitter | 1 | 0 |

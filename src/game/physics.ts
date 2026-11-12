@@ -78,6 +78,8 @@ export interface Marble extends Body {
   readonly pearl: boolean;
   /** White marble of player 2 in a single game (controllers 2, no yin-yang): no mouse at all. */
   passive: boolean;
+  /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
+  follow?: boolean;
   /** "essential" actor: its final death restarts the level. */
   essential: boolean;
 }
@@ -181,8 +183,9 @@ export class PhysicsWorld {
     // White marbles (several only as passive balls, without network play)
     const whites = new Map<ActorDef, Marble>();
     for (const white of level.actors ?? []) {
-      if (white.k !== 'ac_marble_white') continue;
-      const w = makeMarble(1, white.x, white.y);
+      if (white.k !== 'ac_marble_white' && white.k !== 'ac_marble_black') continue;
+      const w = makeMarble(white.k === 'ac_marble_black' ? 0 : 1, white.x, white.y);
+      w.follow = white.k === 'ac_marble_black';
       w.passive = white.a?.passive === 'true';
       w.essential = white.a?.essential === '1';
       this.marbles.push(w);
@@ -314,7 +317,8 @@ export class PhysicsWorld {
       const { friction, adhesion } = this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
-      const k = i === this.cur || m.pearl ? adhesion : 0;
+      const cur = this.marbles[this.cur];
+      const k = i === this.cur || m.pearl || (m.follow && cur && cur.color === 0) ? adhesion : 0;
       const [ffx, ffy] = this.floorForce(m.pos);
       add(m, (this.axisForce.x + mx) * k + ffx, (this.axisForce.y + my) * k + ffy, friction);
     });
@@ -560,14 +564,14 @@ export class PhysicsWorld {
   /** Yin-yang: steer the other marble (player::SwapPlayers). */
   /** Marbles one can switch between with the yin-yang (not the pearls). */
   get steerable(): number {
-    return this.marbles.filter((m) => !m.pearl && !m.passive).length;
+    return this.marbles.filter((m) => !m.pearl && !m.passive && !m.follow).length;
   }
 
   /** player::SwapPlayers: to the other marble (also a passive one, through a yin-yang item). */
   swap(): boolean {
-    if (this.marbles.filter((m) => !m.pearl).length < 2) return false;
+    if (this.marbles.filter((m) => !m.pearl && !m.follow).length < 2) return false;
     do this.cur = (this.cur + 1) % this.marbles.length;
-    while (this.marbles[this.cur].pearl);
+    while (this.marbles[this.cur].pearl || this.marbles[this.cur].follow);
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
     return true;

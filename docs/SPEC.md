@@ -263,7 +263,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   `pearl: true`. Levels ganz ohne schwarze Murmel (meist Meditation): Der Konverter macht die
   erste Perle zur Hauptkugel (`mainPearl`, Start, Akteurindex 0 für Gummibänder); sie bleibt
   eine Perle und wird im klassischen Stil als Perle gezeichnet (die 3D-Ansicht zeigt die
-  aktuelle Kugel weiter im Themenstil). Zwei schwarze Murmeln werden weiter abgelehnt.
+  aktuelle Kugel weiter im Themenstil). Weitere schwarze Murmeln gehören wie in Enigma Spieler 1
+  und folgen der Maus zusammen mit der aktuellen schwarzen Kugel (`follow`); der Yin-Yang
+  wechselt nicht zu ihnen.
 - **Weiße Murmel ohne Yin-Yang** (Levels ohne `el:network`): Sie gehört Spieler 2
   (`controllers` 2) und ist im Einzelspiel eine passive Kugel ohne Mauskraft; der Yin-Yang
   fehlt. Sie hat eigene zwei Extraleben (Spieler 2); ohne Leben bleibt sie liegen, außer

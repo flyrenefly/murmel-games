@@ -92,6 +92,21 @@ describe('PhysicsWorld (Enigma model)', () => {
     expect(w.marbles[1].vel.x).toBeGreaterThan(0);
   });
 
+  it('a second black marble follows the mouse together with the first and is no swap target', () => {
+    const lv = parseLevel({
+      id: 'b', title: 'B', author: 'x', license: 'GPL',
+      map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'],
+      actors: [{ k: 'ac_marble_black', x: 5.5, y: 2.5 }],
+    });
+    const w = new PhysicsWorld(lv);
+    expect(w.marbles[1]).toMatchObject({ color: 0, follow: true });
+    expect(w.steerable).toBe(1);
+    expect(w.swap()).toBe(false);
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    expect(w.marbles[1].vel.x).toBeCloseTo(w.marbles[0].vel.x, 6);
+  });
+
   it('friction slows the marble down to a stop', () => {
     const w = new PhysicsWorld(level);
     w.setVelocity(2, 0);
