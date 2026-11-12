@@ -15,6 +15,8 @@ export interface ActorSprite {
   sink?: number;
   /** Marbles: jump progress 0..1, -1 = on the floor. */
   jump?: number;
+  /** A pearl (ac_pearl): smaller ball with its own images. */
+  pearl?: boolean;
 }
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -131,6 +133,10 @@ export function actorImages(kind: string, color?: string): string[] {
   if (kind === 'ac_top') return ['ac_top', 'sh_top'];
   if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (kind === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
+  if (/^ac_pearl(_white|_black)?$/.test(kind)) {
+    const c = kind === 'ac_pearl_black' || color === '0' ? 'black' : 'white';
+    return [`ac_pearl_${c}`, `ac_pearl_${c}_fall`, 'sh_pearl', 'sh_pearl_fall'];
+  }
   return [];
 }
 
@@ -584,6 +590,10 @@ export class ClassicView {
       const cy = Math.round(oy + a.y * T);
       if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
       const s = 0.4 * SPRITE;
+      if (a.kind === 'marble' && a.pearl) {
+        this.drawPearl(cx, cy, a.color, a.fall ?? -1);
+        continue;
+      }
       if (a.kind === 'marble') {
         this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0, jump: a.jump ?? -1 });
         continue;
@@ -600,6 +610,28 @@ export class ClassicView {
       const im = img[a.kind === 'rotor' ? 'ac_rotor' : 'ac_top'];
       if (im) ctx.drawImage(im, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
     }
+  }
+
+  /** ac_pearl: sh_pearl offset 0.4; falling: 5 frames à 70 65 60 55 50 ms, then invisible. */
+  private drawPearl(cx: number, cy: number, color: number, fall: number): void {
+    const { ctx } = this;
+    const img = this.img!;
+    const name = color === 0 ? 'ac_pearl_black' : 'ac_pearl_white';
+    const s = 0.4 * SPRITE;
+    if (fall >= 0) {
+      const ms = fall * CLASSIC_FALL_SECONDS * 1000;
+      const steps = [70, 65, 60, 55, 50];
+      let f = 0;
+      for (let acc = steps[0]; f < steps.length && ms >= acc; ) acc += steps[++f] ?? 1e9;
+      if (f >= steps.length) return;
+      if (img.sh_pearl_fall) ctx.drawImage(img.sh_pearl_fall, 0, f * SPRITE, SPRITE, SPRITE, cx - s, cy - s, SPRITE, SPRITE);
+      const im = img[`${name}_fall`];
+      if (im) ctx.drawImage(im, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+      return;
+    }
+    if (img.sh_pearl) ctx.drawImage(img.sh_pearl, cx - s, cy - s);
+    const im = img[name];
+    if (im) ctx.drawImage(im, 0, 0, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
   }
 
   private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number; sink: number; jump?: number }): void {

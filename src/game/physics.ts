@@ -1,4 +1,4 @@
-import { createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
+import { type ActorDef, createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
 import type { Level } from './level';
 import { type BodyForce, Rubberband } from './rubber';
 import { ALL_FACES, EAST, NORTH, SOUTH, WEST } from './objects';
@@ -74,7 +74,14 @@ export interface Marble extends Body {
   sink: number;
   /** JUMPING: seconds of the jump left (0 = on the floor). */
   jump: number;
+  /** ac_pearl (Pearl, BasicBall): small, always follows the mouse, never the swapped-to marble. */
+  readonly pearl: boolean;
 }
+
+/** Pearl traits (Balls.cc): radius 13/64, mass 0.7; adhesion 1 like the marble. */
+export const PEARL_RADIUS = 13 / 64;
+const PEARL_MASS = 0.7;
+const isPearl = (k: string): boolean => /^ac_pearl(_white|_black)?$/.test(k);
 
 /** ac_marble-jump: PingPong of 4 frames à 70 ms (models-2d.lua). */
 export const JUMP_SECONDS = 8 * 0.07;
@@ -84,13 +91,14 @@ const SWAMP_SINK_SPEED = 4;
 const SWAMP_RAISE_SPEED = 6;
 export const SINK_DEPTH = 7; // BasicBall::maxSinkDepth
 
-function makeMarble(color: number, x: number, y: number): Marble {
+function makeMarble(color: number, x: number, y: number, pearl = false, vel = { x: 0, y: 0 }): Marble {
   return {
     pos: { x, y },
-    vel: { x: 0, y: 0 },
+    vel,
     prev: { x, y },
-    radius: MARBLE_RADIUS,
-    mass: 1,
+    radius: pearl ? PEARL_RADIUS : MARBLE_RADIUS,
+    mass: pearl ? PEARL_MASS : 1,
+    pearl,
     color,
     active: true,
     sink: 0,
@@ -159,11 +167,21 @@ export class PhysicsWorld {
     this.marbles = [makeMarble(0, level.start.x, level.start.y)];
     const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
     if (white) this.marbles.push(makeMarble(1, white.x, white.y));
+    // Pearls: more balls of the player (velocity_x/_y as given by the level).
+    const pearls = new Map<ActorDef, Marble>();
+    for (const a of level.actors ?? []) {
+      if (!isPearl(a.k)) continue;
+      const color = a.k === 'ac_pearl_black' || a.a?.color === '0' ? 0 : 1;
+      const p = makeMarble(color, a.x, a.y, true, { x: Number(a.a?.velocity_x) || 0, y: Number(a.a?.velocity_y) || 0 });
+      this.marbles.push(p);
+      pearls.set(a, p);
+    }
     // Bodies by actor index: 0 = black marble, n = level.actors[n - 1].
     const bodies: (Body | null)[] = [this.marbles[0]];
     let ei = 0;
     for (const a of level.actors ?? []) {
-      if (a.k === 'ac_marble_white') bodies.push(this.marbles[1]);
+      if (pearls.has(a)) bodies.push(pearls.get(a)!);
+      else if (a.k === 'ac_marble_white') bodies.push(this.marbles[1]);
       else if (ei < this.enemies.length && this.enemies[ei].kind === enemyKind(a.k)) bodies.push(this.enemies[ei++]);
       else bodies.push(null);
     }
@@ -265,8 +283,9 @@ export class PhysicsWorld {
         return;
       }
       const { friction, adhesion } = this.floorProps(m.pos);
-      // Only the marble of the current player feels the mouse (Floor::process_mouseforce).
-      const k = i === this.cur ? adhesion : 0;
+      // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
+      // pearls have controllers = 3 and always do.
+      const k = i === this.cur || m.pearl ? adhesion : 0;
       add(m, (this.axisForce.x + mx) * k, (this.axisForce.y + my) * k, friction);
     });
     const targets = this.marbles.filter((m) => m.active).map((m) => m.pos);
@@ -505,9 +524,15 @@ export class PhysicsWorld {
   }
 
   /** Yin-yang: steer the other marble (player::SwapPlayers). */
+  /** Marbles one can switch between with the yin-yang (not the pearls). */
+  get steerable(): number {
+    return this.marbles.filter((m) => !m.pearl).length;
+  }
+
   swap(): boolean {
-    if (this.marbles.length < 2) return false;
-    this.cur = (this.cur + 1) % this.marbles.length;
+    if (this.steerable < 2) return false;
+    do this.cur = (this.cur + 1) % this.marbles.length;
+    while (this.marbles[this.cur].pearl);
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
     return true;

@@ -161,7 +161,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     for (let k = 0; k < lives; k++) objects.inventory.push('it_extralife');
   }
   carryLives = null;
-  if (physics.marbles.length > 1) objects.inventory.unshift('it_yinyang');
+  if (physics.steerable > 1) objects.inventory.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
     const ph = physics;
@@ -179,7 +179,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   falling = physics.marbles.map(() => -1);
   deathKind = physics.marbles.map(() => 'fall' as const);
   startPos = physics.marbles.map((m) => ({ ...m.pos }));
-  btnSwap.hidden = physics.marbles.length < 2;
+  btnSwap.hidden = physics.steerable < 2;
   startTime = 0;
   playSeconds = 0;
   buildRenderer();
@@ -259,7 +259,7 @@ async function startTouch(): Promise<void> {
   startPlaying();
 }
 
-const twoMarbles = () => (physics?.marbles.length ?? 1) > 1;
+const twoMarbles = () => (physics?.steerable ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
@@ -575,6 +575,7 @@ function frame(now: number): void {
     fall: deathKind[i] === 'sink' && falling[i] >= 0 ? -1 : (fallen[i] ?? -1),
     sink: deathKind[i] === 'sink' && falling[i] >= 0 ? SINK_DEPTH : m.sink,
     jump: m.jump > 0 ? 1 - m.jump / JUMP_SECONDS : -1,
+    pearl: m.pearl,
     x: m.prev.x + (m.pos.x - m.prev.x) * a,
     y: m.prev.y + (m.pos.y - m.prev.y) * a,
   }));

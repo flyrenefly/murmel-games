@@ -1,13 +1,12 @@
 # Enigma-Import
 
-150 von 1322 Levels übernommen (14 Pakete).
+153 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| keine Oxyd-Steine | 294 | 0 |
+| keine Oxyd-Steine | 294 | 2 |
 | Stein st_laser | 225 | 1 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 1 |
-| Akteur ac_pearl_white | 179 | 3 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
 | Lua-Rückruf | 166 | 1 |
 | Stein st_passage_black | 152 | 2 |
 | Gegenstand it_sensor | 139 | 3 |
@@ -19,7 +18,7 @@
 | Gegenstand it_puller_s | 114 | 0 |
 | Boden fl_slope_pn | 113 | 0 |
 | Stein st_mirror_slab | 112 | 0 |
-| weiße Murmel ohne Yin-Yang | 111 | 2 |
+| weiße Murmel ohne Yin-Yang | 111 | 3 |
 | Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
@@ -40,10 +39,9 @@
 | Stein st_oxyd | 68 | 0 |
 | Lua: API 1 | 65 | 0 |
 | Stein st_actorimpulse | 64 | 1 |
-| Akteur ac_pearl_black | 64 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Gegenstand it_vortex_open | 61 | 2 |
-| Stein st_swap | 61 | 1 |
+| Stein st_swap | 61 | 2 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |

@@ -234,6 +234,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Der Importer übernimmt `ConserveLevel`, `ProvideExtralifes`, `InfiniteReincarnation`
   (bei API-1-Levels per Textsuche). Offen: Ist eine von zwei Murmeln ohne Leben tot,
   wechselt Enigma zur anderen statt neu zu starten.
+- **ac_pearl_white / ac_pearl_black** (`Balls.cc` Pearl): weitere Kugeln des Spielers
+  (Radius 13/64, Masse 0,7, `adhesion` 1, `controllers` 3 – sie folgen immer der Maus, der
+  Yin-Yang wechselt nur zwischen den Murmeln). Sonst wie Murmeln: fallen, zerspringen,
+  sinken, lösen Auslöser aus, heben Gegenstände auf, kosten beim Tod ein Extraleben;
+  Gummibänder und `velocity_x/_y` aus dem Level gelten. Bilder `ac_pearl_*`, `sh_pearl`,
+  Fallanimation 70 65 60 55 50 ms. In Murmels Physik sind sie Einträge in `marbles` mit
+  `pearl: true`.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

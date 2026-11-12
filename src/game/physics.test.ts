@@ -52,6 +52,25 @@ describe('PhysicsWorld (Enigma model)', () => {
     expect(w.velocity.x).toBeLessThan(1); // friction again
   });
 
+  it('pearls (ac_pearl_white) are small balls that always follow the mouse and are skipped by the swap', () => {
+    const lv = parseLevel({
+      id: 'p', title: 'P', author: 'x', license: 'GPL',
+      map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'],
+      actors: [{ k: 'ac_pearl_white', x: 4.5, y: 2.5 }],
+    });
+    const w = new PhysicsWorld(lv);
+    expect(w.marbles).toHaveLength(2);
+    expect(w.marbles[1]).toMatchObject({ pearl: true, color: 1 });
+    expect(w.marbles[1].radius).toBeCloseTo(13 / 64);
+    expect(w.steerable).toBe(1);
+    expect(w.swap()).toBe(false);
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+    run(w, 0.01);
+    expect(w.marbles[1].vel.x).toBeGreaterThan(0); // follows the mouse
+    // lighter than the marble: the same mouse force gives more speed
+    expect(w.marbles[1].vel.x).toBeGreaterThan(w.marbles[0].vel.x);
+  });
+
   it('friction slows the marble down to a stop', () => {
     const w = new PhysicsWorld(level);
     w.setVelocity(2, 0);
