@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -181,6 +181,9 @@ function breakMs(o: GameObject): number {
   return t === 'laser' || t === 'bug' ? 6 * 50 : 10 * 50;
 }
 
+/** CoinSlot insert animation: 18 frames à 20 ms. */
+const COIN_INSERT_MS = 18 * 20;
+
 /** Items an explosion leaves alone (itf_indestructible) – the others are destroyed. */
 const INDESTRUCTIBLE = new Set<ObjectClass>(['sensor', 'magnet', 'wormhole', 'vortex', 'springboard', 'trigger', 'meditation', 'debris', 'key']);
 
@@ -265,6 +268,8 @@ export interface GameObject {
   blast?: number;
   /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
   igniteAt?: number;
+  /** Coin slot: inserting since, time bought until, seconds waiting to be added after the insert. */
+  slot?: { inserting?: number; until: number; add: number };
   /** BreakStone: start of BREAKING (removed after the animation). */
   breaking?: number;
   /** Blocker: stone (solid, shrinking, growing) or item (open, with its lock state). */
@@ -360,6 +365,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_debris' || kind === 'it_debris_water') return 'debris';
   if (kind === 'it_dynamite' || kind === 'it_dynamite_burning') return 'dynamite';
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
+  if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
+  if (kind === 'st_coinslot' || kind === 'st_coinslot_instant') return 'coinslot';
   if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
@@ -521,7 +528,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -550,6 +557,10 @@ export class ObjectWorld {
       }
       if (o.cls === 'window') {
         this.hitWindow(o, nx, ny, vn, by);
+        return;
+      }
+      if (o.cls === 'coinslot') {
+        this.hitCoinslot(o, by);
         return;
       }
       if (o.cls === 'breakstone') {
@@ -1361,6 +1372,67 @@ export class ObjectWorld {
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
   }
 
+  // ---------- coin slots (CoinSlot.cc, Coin.cc) ----------
+
+  private slotOf(o: GameObject): NonNullable<GameObject['slot']> {
+    o.slot ??= { until: 0, add: 0 };
+    return o.slot;
+  }
+
+  private slotInstant(o: GameObject): boolean {
+    return o.attrs.instant !== undefined && o.attrs.instant !== '' ? truthy(o.attrs.instant) : o.kind === 'st_coinslot_instant';
+  }
+
+  /** CoinSlot::actor_hit: a coin in hand buys interval_s/_m/_l seconds (3/6/12; -2 rejects). */
+  private hitCoinslot(o: GameObject, by: number): void {
+    const s = this.slotOf(o);
+    const instant = this.slotInstant(o);
+    if (s.inserting !== undefined && !instant) return;
+    const inv = by >= 0 ? (this.inventories[this.ownerOf(by)] ?? this.inventory) : this.inventory;
+    const coin = inv[0];
+    if (!coin || !/^it_coin(_s|_m|_l)?$/.test(coin)) return;
+    const size = coin === 'it_coin_m' ? 'm' : coin === 'it_coin_l' ? 'l' : 's';
+    const interval = numAttr(o.attrs[`interval_${size}`], size === 's' ? 3 : size === 'm' ? 6 : 12);
+    if (interval === -2) return;
+    inv.shift();
+    this.events.push({ type: 'items' });
+    if (interval <= 0) return;
+    if (instant) {
+      const wasOn = o.state === 1;
+      s.until = Math.max(s.until, this.now) + interval * 1000;
+      o.state = 1;
+      if (!wasOn) this.performAction(o, true);
+    } else s.add += interval;
+    s.inserting = this.now;
+  }
+
+  /** CoinSlot::animcb / alarm: after the insert the time counts; when it runs out, off. */
+  private coinslotStep(o: GameObject): void {
+    const s = this.slotOf(o);
+    if (s.inserting !== undefined && this.now - s.inserting >= COIN_INSERT_MS) {
+      s.inserting = undefined;
+      if (!this.slotInstant(o)) {
+        s.until = Math.max(s.until, this.now) + s.add * 1000;
+        s.add = 0;
+        if (o.state !== 1) {
+          o.state = 1;
+          this.performAction(o, true);
+        }
+      }
+    }
+    if (o.state === 1 && s.inserting === undefined && this.now >= s.until) {
+      o.state = 0;
+      this.performAction(o, false);
+    }
+  }
+
+  /** st_coinslot (off), st_coinslot_insert 18 × 20 ms while inserting, its last frame when on. */
+  coinslotLook(o: GameObject): { image: string; frame: number } {
+    const s = this.slotOf(o);
+    if (s.inserting !== undefined) return { image: 'st_coinslot_insert', frame: Math.min(17, Math.floor((this.now - s.inserting) / 20)) };
+    return o.state === 1 ? { image: 'st_coinslot_insert', frame: 17 } : { image: 'st_coinslot', frame: 0 };
+  }
+
   // ---------- breakable stones (BreakStone.cc) ----------
 
   /** BreakStone::doBreak: BREAKING animation, then the stone is gone (stonedestroy = explosion0). */
@@ -2162,6 +2234,7 @@ export class ObjectWorld {
   private stoneHitsItems(col: number, row: number): void {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'landmine' && !o.gone) this.explode(o);
+      else if (o.cls === 'coin' && !o.gone) o.kind = o.kind === 'it_coin_m' ? 'it_coin_l' : o.kind === 'it_coin_l' ? 'it_coin_l' : 'it_coin_m'; // Coin::on_stonehit
       else if (o.cls === 'bomb' && !o.gone && o.blast === undefined && o.igniteAt === undefined) o.igniteAt = this.now + 10; // Bomb::on_stonehit
       else if (o.cls === 'seed' && !o.gone) this.startGrowing(o);
       else if (o.cls === 'meditation' && !o.gone) this.shovel(o);
@@ -2287,6 +2360,7 @@ export class ObjectWorld {
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
+      if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
@@ -2701,6 +2775,8 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
   // RotatorStone: 0 clockwise, 1 counterclockwise
   if (/^st_rotator/.test(kind)) return a.counterclock !== undefined && a.counterclock !== '' ? (truthy(a.counterclock) ? 1 : 0) : kind.includes('_ccw') ? 1 : 0;
+  // CoinSlot: always off at the start
+  if (kind === 'st_coinslot' || kind === 'st_coinslot_instant') return 0;
   // CounterGadget: any whole number
   if (kind === 'ot_counter') return Math.trunc(Number(a.$state ?? a.state)) || 0;
   // Crack: INVISIBLE -1, SMALL 0, MEDIUM 1, LARGE 2

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-529 von 1322 Levels übernommen (17 Pakete).
+540 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,16 +9,14 @@
 | Lua-Rückruf | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
-| Lua-Init | 108 | 2 |
+| Lua-Init | 109 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_knight | 59 | 1 |
+| Stein st_knight | 59 | 2 |
 | Gegenstand it_floppy | 58 | 0 |
-| Stein st_coinslot | 58 | 0 |
-| Gegenstand it_coin_s | 55 | 0 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
@@ -26,7 +24,7 @@
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 4 |
+| Stein st_thief | 41 | 6 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -42,10 +40,9 @@
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 4 |
+| Stein st_lightpassenger_on | 31 | 5 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
-| Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 3 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
@@ -61,7 +58,6 @@
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_ghost_break | 22 | 0 |
-| Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
@@ -78,14 +74,15 @@
 | Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 1 |
+| Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| Lua: :is | 15 | 2 |
+| Lua: :add | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Lua: :add | 14 | 2 |
 | Stein st_magic_oxydc | 14 | 1 |
 | Lua: draw_stones() | 14 | 0 |
+| Aktion onoff | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
@@ -102,7 +99,6 @@
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 3 |
 | Lua: :drawRect | 12 | 1 |
-| Aktion onoff | 12 | 1 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
@@ -121,7 +117,7 @@
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
-| Aktion turn | 8 | 0 |
+| Aktion turn | 8 | 2 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
@@ -159,11 +155,13 @@
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
+| Lua: it_sword | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Gegenstand it_extinguisher_medium | 4 | 0 |
 | Stein st_death_movable | 4 | 0 |
 | Gegenstand it_strip_nsw | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
+| Lua: it_cross | 4 | 0 |
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
@@ -179,20 +177,21 @@
 | Lua: format() | 3 | 0 |
 | Lua: st_invisible | 3 | 0 |
 | Lua: mod() | 3 | 0 |
-| Lua: it_sword | 3 | 0 |
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
-| Lua: it_cross | 3 | 0 |
+| Lua: it_cherry | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
+| Lua: st_knight | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
 | Lua: res.autotile | 2 | 0 |
+| Lua: :closeall | 2 | 1 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
@@ -214,10 +213,8 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_door_d | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
-| Lua: it_cherry | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
 | Gegenstand it_strip_n | 2 | 0 |
-| Lua: st_knight | 2 | 0 |
 | Gegenstand it_strip | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
@@ -226,13 +223,13 @@
 | Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
+| Lua: it_coffee | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |
 | Lua: :grid | 1 | 0 |
 | Lua: timer_action() | 1 | 0 |
 | Lua: solidfloor() | 1 | 0 |
 | Lua: func() | 1 | 0 |
-| Lua: :closeall | 1 | 1 |
 | Lua: get_map_size() | 1 | 0 |
 | Lua: kill_stone() | 1 | 0 |
 | Lua: add_multicell() | 1 | 0 |
@@ -325,14 +322,10 @@
 | Lua: it_strip | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Lua: it_coin_l | 1 | 0 |
 | Lua: it_burnable_ignited | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_thief | 1 | 0 |
-| Lua: st_coinslot | 1 | 0 |
-| Lua: it_coin_s | 1 | 0 |
-| Lua: it_coffee | 1 | 0 |
 | Lua: st_rubberband | 1 | 0 |
 | Lua: st_turnstile | 1 | 0 |
 | Lua: st_turnstilearm_n | 1 | 0 |
@@ -372,5 +365,6 @@
 | Lua: wo["ConserveLevel"] | 1 | 0 |
 | Lua: it_burnable_invisible | 1 | 0 |
 | Lua: st_barrier | 1 | 0 |
+| Lua: it_bottle | 1 | 0 |
 | Stein st_dispenser_bombwhite | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |

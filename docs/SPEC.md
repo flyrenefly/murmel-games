@@ -413,6 +413,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   à 50 ms; Treffer klingen metallisch.
   Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
+- **st_coinslot(_instant) + it_coin_s/m/l** (`CoinSlot.cc`, `Coin.cc`): Liegt eine Münze vorn
+  im Inventar, nimmt der Schlitz sie beim Treffer (Einwurf 18 × 20 ms) und ist dann für
+  `interval_s/_m/_l` Sekunden (3/6/12; -2 lehnt ab) an: Aktion true beim Einschalten, false am
+  Ende; weitere Münzen verlängern. `instant` zählt die Zeit sofort und nimmt Münzen auch während
+  des Einwurfs. Ein daraufgeschobener Stein macht eine Münze größer. Offen: Licht verwandelt
+  Münzen (Schirm/Hammer/Extraleben), coin_value in API 1.
 - **Explosionen** (`world.cc` SendExplosionEffect/explosion, `Dynamite.cc`, `Bomb.cc`,
   `SimpleItems.cc` Explosion/Debris): `it_dynamite` wird aufgehoben, brennt nach dem Ablegen
   (oder durch Zünden/Licht) 15 × 100 ms und zündet dann das 3 × 3-Feld (Bruchsteine brechen,

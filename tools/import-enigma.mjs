@@ -85,6 +85,8 @@ const OBJECTS = [
   [/^it_spoon$/, ['it_spoon']],
   [/^it_wrench$/, ['it_wrench']],
   [/^it_hammer$/, ['it_hammer']],
+  [/^it_coin(_s|_m|_l)?$/, ['it_coin_s', 'it_coin_m', 'it_coin_l']],
+  [/^st_coinslot(_instant)?$/, ['st_coinslot', 'st_coinslot_insert', 'sh_solid']],
   [/^it_dynamite(_burning)?$/, ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss']],
   [/^it_bomb(_black|_white)?(_burning)?$/, ['it_bomb', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
   [/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/, ['st_break_plain', 'st_break_black', 'st_break_white', 'st_break_oxydc', 'st_break_boulder', 'st_break_bug', 'st_flat', 'st_flat_break', 'sh_solid', 'sh_round']],
@@ -126,7 +128,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');

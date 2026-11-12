@@ -594,6 +594,23 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("a coin slot takes a coin, switches on after the insert and off when the time is over", () => {
+    const w = world([door(8), { x: 2, y: 1, k: "it_coin_m" }, { x: 5, y: 1, k: "st_coinslot", a: { target: "door1", action: "toggle" } }]);
+    w.actorStep(2.5, 1.5, 0);
+    expect(w.inventory).toEqual(["it_coin_m"]);
+    w.hit(5, 1, 0, -1, 0, -3, 0, 0, 0);
+    expect(w.inventory).toEqual([]);
+    expect(w.coinslotLook(w.objects[2]).image).toBe("st_coinslot_insert");
+    w.update(400); // insert done: on for 6 s
+    expect(w.objects[2].state).toBe(1);
+    w.update(400);
+    expect(w.blockAt(8, 0)).toBe(0);
+    w.update(5300);
+    expect(w.objects[2].state).toBe(1); // 0.36 s insert + 6 s
+    w.update(300);
+    expect(w.objects[2].state).toBe(0);
+  });
+
   it("dropped dynamite burns 1.5 s, then explodes: neighbours ignite, a hollow remains", () => {
     const floors: Record<string, string> = {};
     const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
