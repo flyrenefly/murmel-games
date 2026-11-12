@@ -447,6 +447,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_seed_hay / it_seed_greenbrown** (`SeedItem.cc`): wachsen wie Holzsamen zu einer Heukiste bzw.
   einem festen Grünbraunstein (Wachstumsbilder 4, 3, 2 ihres Bogens à 130 ms). Heukisten werden jetzt
   mit dem ersten Bild ihres Bogens gezeichnet (vorher der ganze Bogen). it_seed_volcano fehlt.
+- **it_umbrella** (`Umbrella.cc`, `Balls.cc` Schild): Benutzen gibt allen Kugeln des Besitzers 10 s
+  Schutz (aufaddiert): kein Zerspringen, Fallen oder Versinken; Halo (2 Bilder à 30 ms), in den letzten
+  3 s blinkend, Perlen mit kleinem Halo. Licht macht den Schirm in Enigma zur Explosion – fehlt.
+  **it_death** (`SimpleItems.cc` DeathItem): zerschmettert jede Kugel in seinem Feld (Bild 4 × 100 ms).
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

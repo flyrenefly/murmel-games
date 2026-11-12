@@ -78,6 +78,8 @@ export interface Marble extends Body {
   readonly pearl: boolean;
   /** White marble of player 2 in a single game (controllers 2, no yin-yang): no mouse at all. */
   passive: boolean;
+  /** Protected by an umbrella: does not sink (BasicBall::sink with has_shield). */
+  shielded?: boolean;
   /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
   follow?: boolean;
   /** "essential" actor: its final death restarts the level. */
@@ -348,7 +350,7 @@ export class PhysicsWorld {
       this.advance(m, f);
       this.collide(m, onContact, { by: i, color: m.color });
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
-      else this.sinkStep(m, i, onContact);
+      else if (!m.shielded) this.sinkStep(m, i, onContact);
     });
     for (const e of this.enemies) {
       this.advance(e, forces.get(e)!);

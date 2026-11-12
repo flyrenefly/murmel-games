@@ -47,6 +47,10 @@ const BASE_IMAGES = [
   'sh_marble',
   'ac_marble_black_fall',
   'sh_marble_fall',
+  'halo',
+  'halo-blink',
+  'halo-small',
+  'halo-small-blink',
 ];
 const MEDITATION_IMAGES = ['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`);
 /** Swamp levels: sinking marbles (models-2d.lua, 7 frames). */
@@ -175,7 +179,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind === 'it_extralife') return ['it_extralife'];
   if (kind === 'it_yinyang') return ['it_yinyang'];
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword') return [kind];
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return [kind];
+  if (kind === 'it_death') return ['it_death'];
   if (kind === 'st_knight') return ['st_knight', 'sh_round'];
   if (kind === 'st_floppy') return ['st_floppy_on', 'st_floppy_off', 'sh_round'];
   if (kind.startsWith('it_flag')) return ['it_flag_black', 'it_flag_white'];
@@ -286,6 +291,13 @@ export class ClassicView {
     if (state !== 'closed') s.opened = true;
   }
 
+  private halos: { x: number; y: number; rest: number; small: boolean }[] = [];
+
+  /** Shielded marbles (it_umbrella): halo, blinking in the last 3 s. */
+  updateHalos(h: { x: number; y: number; rest: number; small: boolean }[]): void {
+    this.halos = h;
+  }
+
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
   updateMarble(x: number, y: number, fall: number, color = 0, sink = 0, jump = -1, pearl = false): void {
     this.marble.pearl = pearl;
@@ -336,6 +348,13 @@ export class ClassicView {
     // The current ball: a pearl when the level has no black marble (mainPearl)
     if (this.marble.pearl) this.drawPearl(Math.round(ox + this.marble.x * T), Math.round(oy + this.marble.y * T), this.marble.color, this.marble.fall);
     else this.drawMarble(ox, oy, this.marble);
+    // BasicBall::update_halo: halo / halo-blink (2 frames à 30 ms), small ones for pearls
+    for (const h of this.halos) {
+      const im = this.img![`halo${h.small ? '-small' : ''}${h.rest <= 3 ? '-blink' : ''}`];
+      if (!im) continue;
+      const S = im.width;
+      this.ctx.drawImage(im, 0, (Math.floor(this.now / 30) % 2) * S, S, S, Math.round(ox + h.x * T - S / 2), Math.round(oy + h.y * T - S / 2), S, S);
+    }
     // Rubber bands: thick orange lines (Rubberband::postAddition, DL_Lines).
     if (this.rubbers.length) {
       ctx.strokeStyle = 'rgb(240, 140, 20)';
@@ -490,6 +509,7 @@ export class ClassicView {
       else if (o.cls === 'key') this.frame('it_key', 0, px, py); // Item model it_key (codes only in the inventory)
       else if (o.cls === 'coin') this.image(o.kind === 'it_coin' ? 'it_coin_s' : o.kind, px, py);
       else if (o.cls === 'bag') this.image('it_bag', px, py);
+      else if (o.cls === 'deathitem') this.frame('it_death', o.blast !== undefined && world.dispenserFrameAt(o.blast) < 4 ? world.dispenserFrameAt(o.blast) : 0, px, py);
       else if (o.cls === 'shogundot') this.frame(o.kind === 'it_shogun' ? 'it_shogun_s' : o.kind, [0, 1, 2, 1][Math.floor(this.now / 160) % 4], px, py);
       else if (o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') {
         const look = world.blastLook(o);
@@ -519,7 +539,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

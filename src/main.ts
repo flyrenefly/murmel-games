@@ -86,6 +86,8 @@ let pendingRestart: 'new' | 'keep' | null = null;
 /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
 const enigmaRules = (): boolean => level.id.startsWith('enigma:');
 const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_extralife').length;
+/** BasicBall shield (it_umbrella): seconds of protection left per marble. */
+let shield: number[] = [];
 /** Marbles a vortex has swallowed: since when (ms of play), -1 = not. */
 let inVortex: number[] = [];
 /** Marbles that stay dead (player 2 without lives, not essential). */
@@ -192,6 +194,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   carryLives = null;
   deadForever = physics.marbles.map(() => false);
   inVortex = physics.marbles.map(() => 0);
+  shield = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -480,6 +483,7 @@ function onContact(c: Contact): void {
 /** Marble i dies: fall animation, then respawn at its start. */
 function marbleDies(i: number, how: boolean | 'sink'): void {
   if (!physics || !(falling[i] < 0)) return;
+  if ((shield[i] ?? 0) > 0) return; // BasicBall::change_state_noshield
   const shatter = how === true;
   deathKind[i] = how === 'sink' ? 'sink' : shatter ? 'shatter' : 'fall';
   falling[i] = 0;
@@ -643,7 +647,11 @@ function frame(now: number): void {
 
   if (physics && mode !== 'menu') {
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];
-    if (mode === 'play') playSeconds += dt;
+    if (mode === 'play') {
+      playSeconds += dt;
+      shield = shield.map((s) => Math.max(0, s - dt));
+      physics?.marbles.forEach((m, i) => (m.shielded = (shield[i] ?? 0) > 0));
+    }
     if (falling[physics.current] < 0 && mode === 'play') {
       physics.addMouseForce(mdx * mouseSpeed, mdy * mouseSpeed);
       const [ax, ay] = input.axis();
@@ -739,6 +747,7 @@ function frame(now: number): void {
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
     classic.updateRubbers(bands);
+    classic.updateHalos(marbles.flatMap((m, i) => ((shield[i] ?? 0) > 0 && !deadForever[i] ? [{ x: m.x, y: m.y, rest: shield[i], small: !!m.pearl }] : [])));
     classic.render(dt);
   } else {
     const v = physics?.velocity ?? { x: 0, y: 0 };
@@ -820,6 +829,15 @@ function dropItem(): boolean {
       marbleJumps(i);
       updateItems();
     }
+    return true;
+  }
+  // Umbrella::activate: "_shield" for every marble of the owner, 10 s more each; the item is used up
+  if (first === 'it_umbrella') {
+    objects.inventory.shift();
+    updateItems();
+    ph.marbles.forEach((_, j) => {
+      if (ownerOf(j) === ownerOf(i)) shield[j] = (shield[j] ?? 0) + 10;
+    });
     return true;
   }
   // Ring::activate: swap places with the other marble, else back to the start (RespawnActor);

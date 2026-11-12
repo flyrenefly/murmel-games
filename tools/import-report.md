@@ -1,17 +1,17 @@
 # Enigma-Import
 
-649 von 1322 Levels übernommen (17 Pakete).
+653 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 2 |
-| Lua-Rückruf | 118 | 2 |
+| Lua-Rückruf | 118 | 3 |
 | Gegenstand it_puller_n | 115 | 0 |
-| Gegenstand it_puller_s | 114 | 1 |
+| Gegenstand it_puller_s | 114 | 2 |
 | keine Oxyd-Steine | 111 | 0 |
-| Lua-Init | 110 | 2 |
+| Lua-Init | 110 | 3 |
 | Gegenstand it_puller_e | 108 | 0 |
-| Gegenstand it_puller_w | 108 | 0 |
+| Gegenstand it_puller_w | 108 | 1 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
@@ -30,7 +30,6 @@
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 1 |
 | Lua: oxyd() | 30 | 0 |
-| Gegenstand it_death | 29 | 1 |
 | Gegenstand it_coffee_drop | 28 | 4 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
@@ -38,7 +37,6 @@
 | Gegenstand it_strip_ns | 27 | 2 |
 | Gegenstand it_glasses | 27 | 2 |
 | Gegenstand it_cross | 26 | 3 |
-| Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 2 |
@@ -52,9 +50,9 @@
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Akteur ac_bug | 18 | 3 |
-| Gegenstand it_spade | 17 | 1 |
+| Gegenstand it_spade | 17 | 2 |
 | Lua: fill_floor() | 17 | 0 |
-| Gegenstand it_burnable_ignited | 17 | 1 |
+| Gegenstand it_burnable_ignited | 17 | 2 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 3 |
 | Lua: :add | 16 | 2 |
@@ -79,7 +77,7 @@
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 4 |
-| Lua: :drawRect | 12 | 2 |
+| Lua: :drawRect | 12 | 3 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
@@ -115,7 +113,7 @@
 | Akteure: nicht genau eine schwarze Murmel | 6 | 1 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
-| Stein st_box_hay (verbunden) | 6 | 3 |
+| Stein st_box_hay (verbunden) | 6 | 5 |
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
@@ -127,7 +125,6 @@
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
 | Stein st_brownie (verbunden) | 5 | 2 |
-| Lua: it_death | 4 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
