@@ -293,6 +293,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   dahinter den Platz tauschen – Objektsteine wie Mauern der Karte; ohne Stein dahinter
   passiert nichts. 0,1 s Richtungsbild (st_swap_n/s/e/w). Abweichung: Mit Oxyd-Steinen
   tauscht er in Murmel nicht (deren Platz ist dort fest mit der Paarlogik verbunden).
+- **st_rotator_cw/_ccw(_movable)** (`RotatorStone.cc`): dreht sich ständig (8 Bilder à 70 ms);
+  nach jeder Umdrehung merkt er sich die vier Nachbarsteine und stößt 0,1 s später jeden, der noch
+  dort liegt, um sich herum (im Uhrzeigersinn: West → Nord …; gegen: umgekehrt) – mit Stone
+  ::send_impulse wie ein Impulsstein. Neues Licht kehrt die Drehrichtung um, der Schraubenschlüssel
+  auch; bewegliche werden geschoben (auch bewegliche Spiegel nehmen jetzt Impulse an).
 - **st_pull** (`PullStone.cc`): wie st_swap, aber entgegen dem Stoß – er kommt zur Kugel, auch auf
   freien Boden (nicht aus dem Level). Kugeln im Zielfeld werden ins alte Feld versetzt (auf
   dessen Ränder 0,01–0,99 begrenzt, ohne Tempo). Lichtdurchlässig. Bilder st_pull, Schatten

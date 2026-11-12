@@ -190,6 +190,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
   if (kind === 'st_swap') return ['st_swap', 'sh_round'];
   if (kind === 'st_pull') return ['st_pull', 'sh_rawglass', 'sh_pull'];
+  if (kind.startsWith('st_rotator')) return ['st_rotator_cw', 'st_rotator_ccw', 'sh_round'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
   if (kind.startsWith('st_actorimpulse')) return ['st_actorimpulse', 'sh_actorimpulse'];
   if (kind.startsWith('st_blur')) return ['st_blur_straight', 'st_blur_cross', 'sh_round', ...PASSAGE_IMAGES];
@@ -621,6 +622,14 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'rotator') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else {
+        const look = world.rotatorLook(o);
+        this.frame(look.image, look.frame, px, py);
+      }
       return;
     }
     if (o.cls === 'pull') {

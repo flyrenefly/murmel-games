@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -154,6 +154,14 @@ function flagColor(kind: string): number {
   return kind === 'it_flag_white' ? 1 : 0;
 }
 
+/** RotatorStone: one turn of the animation (8 × 70 ms). */
+const ROTATOR_TURN_MS = 8 * 70;
+
+/** RotatorStone movable (kind _movable or attribute). */
+function rotatorMovable(o: GameObject): boolean {
+  return o.attrs.movable !== undefined && o.attrs.movable !== '' ? truthy(o.attrs.movable) : o.kind.endsWith('_movable');
+}
+
 /** it_crack_*_anim: 5 frames à 120 ms. */
 const CRACK_DISSOLVE_MS = 5 * 120;
 
@@ -223,6 +231,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Rotator: start of the current turn, and the neighbours remembered for its impulses. */
+  rotor?: { since: number; alarm?: number; neighbors?: (GameObject | null)[] };
   /** Bridge floor: phase, its start and whether it was closed explicitly (OBJBIT_EXPLICIT). */
   bridge?: { phase: 'open' | 'closed' | 'opening' | 'closing'; since: number; explicit: boolean };
   /** Scales: checked once (the initial state acts not). */
@@ -303,6 +313,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'fl_bridge') return 'bridge';
   if (kind === 'ot_counter') return 'counter';
   if (kind === 'st_pull') return 'pull';
+  if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -461,7 +472,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -519,6 +530,13 @@ export class ObjectWorld {
         // Stone::actor_hit → impulse in the push direction (SwapStone::on_impulse)
         const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
         if (face && vn < -PUSH_SPEED) this.swapStone(o, -nx, -ny);
+        return;
+      }
+      if (o.cls === 'rotator') {
+        // RotatorStone::actor_hit: the wrench reverses it; a movable one is pushed
+        if (this.wields('it_wrench')) o.state = 1 - o.state;
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (rotatorMovable(o) && face && vn < -PUSH_SPEED) this.push(o, -nx, -ny);
         return;
       }
       if (o.cls === 'pull') {
@@ -797,6 +815,7 @@ export class ObjectWorld {
       else if (o.cls === 'box') this.push(o, dx, dy);
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
+      else if ((o.cls === 'rotator' && rotatorMovable(o)) || (o.cls === 'mirror' && mirrorFlags(o).movable)) this.push(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
     }
@@ -1055,6 +1074,7 @@ export class ObjectWorld {
           if (o.gone) continue;
           if (o.cls === 'boulder') o.state = (o.state + 2) % 4; // BoulderStone: turn round
           else if (o.cls === 'impulse' && o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
+          else if (o.cls === 'rotator') o.state = 1 - o.state; // RotatorStone::lightDirChanged
         }
       }
     }
@@ -1122,6 +1142,38 @@ export class ObjectWorld {
   keySwitchFrame(o: GameObject): number {
     const c = Number(this.keyCode(o));
     return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
+  }
+
+  // ---------- rotators (RotatorStone.cc) ----------
+
+  /**
+   * RotatorStone::animcb/alarm: after each turn (8 × 70 ms) it notes its four neighbour stones and
+   * 0.1 s later pushes each one still there round it (clockwise: west → north, …).
+   */
+  private rotatorStep(o: GameObject): void {
+    o.rotor ??= { since: this.now };
+    const r = o.rotor;
+    if (r.alarm !== undefined && this.now >= r.alarm) {
+      r.alarm = undefined;
+      for (let d = 0; d < 4; d++) {
+        const c = o.col + L_DX[d];
+        const w = o.row + L_DY[d];
+        const n = r.neighbors?.[d];
+        if (!n || n.gone || n.col !== c || n.row !== w) continue;
+        this.sendImpulse(c, w, o.state === 0 ? (d + 3) % 4 : (d + 1) % 4);
+      }
+    }
+    if (this.now - r.since >= ROTATOR_TURN_MS) {
+      r.since = this.now;
+      r.neighbors = [0, 1, 2, 3].map((d) => this.at(o.col + L_DX[d], o.row + L_DY[d]).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls)) ?? null);
+      r.alarm = this.now + 100;
+    }
+  }
+
+  /** st_rotator_cw/_ccw: 8 frames à 70 ms, running all the time. */
+  rotatorLook(o: GameObject): { image: string; frame: number } {
+    const since = o.rotor?.since ?? 0;
+    return { image: o.state === 1 ? 'st_rotator_ccw' : 'st_rotator_cw', frame: Math.min(7, Math.floor((this.now - since) / 70)) };
   }
 
   // ---------- bridges (BridgeFloor.cc) ----------
@@ -1820,6 +1872,7 @@ export class ObjectWorld {
       if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
       if (o.cls === 'scales' && !o.gone) this.scalesStep(o);
       if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
+      if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
@@ -2211,6 +2264,8 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   // Vortex: 1 open, 0 closed
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
+  // RotatorStone: 0 clockwise, 1 counterclockwise
+  if (/^st_rotator/.test(kind)) return a.counterclock !== undefined && a.counterclock !== '' ? (truthy(a.counterclock) ? 1 : 0) : kind.includes('_ccw') ? 1 : 0;
   // CounterGadget: any whole number
   if (kind === 'ot_counter') return Math.trunc(Number(a.$state ?? a.state)) || 0;
   // Crack: INVISIBLE -1, SMALL 0, MEDIUM 1, LARGE 2

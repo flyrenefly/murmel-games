@@ -1,10 +1,10 @@
 # Enigma-Import
 
-456 von 1322 Levels übernommen (17 Pakete).
+462 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 124 | 1 |
+| Lua-Rückruf | 123 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 2 |
 | Gegenstand it_puller_n | 115 | 0 |
@@ -25,10 +25,8 @@
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
-| Stein st_rotator_ccw | 52 | 3 |
 | XML fehlt | 50 | 50 |
-| Stein st_blocker | 50 | 5 |
-| Stein st_rotator_cw | 50 | 0 |
+| Stein st_blocker | 50 | 6 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -46,14 +44,14 @@
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
 | Stein st_plop | 34 | 4 |
 | Gegenstand it_pipe_ew | 34 | 0 |
-| Gegenstand it_wrench | 33 | 0 |
+| Gegenstand it_wrench | 33 | 2 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 2 |
+| Stein st_lightpassenger_on | 31 | 3 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
@@ -64,7 +62,7 @@
 | Gegenstand it_strip_ns | 27 | 1 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
-| Gegenstand it_cross | 26 | 0 |
+| Gegenstand it_cross | 26 | 1 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 2 |
 | Gegenstand it_pipe_sw | 24 | 0 |
@@ -193,8 +191,9 @@
 | Stein st_dispenser_dynamite | 4 | 0 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
+| Gummiband an bewegtem oder unbekanntem Anker | 3 | 3 |
 | Lua: new_kruskal_maze() | 3 | 0 |
-| Stein st_laserflop | 3 | 0 |
+| Stein st_laserflop | 3 | 1 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
@@ -216,7 +215,6 @@
 | Lua: res.autotile | 2 | 0 |
 | Lua: st_break_black | 2 | 0 |
 | Lua: st_break_white | 2 | 0 |
-| Gummiband an bewegtem oder unbekanntem Anker | 2 | 2 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
@@ -367,8 +365,6 @@
 | Lua: st_turnstilearm_w | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
 | Lua: st_break_boulder | 1 | 0 |
-| Lua: st_rotator_cw | 1 | 0 |
-| Lua: st_rotator_ccw | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
 | Lua: fl_yinyang_yin | 1 | 0 |
 | Lua: st_mail_n | 1 | 0 |

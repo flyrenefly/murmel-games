@@ -548,6 +548,16 @@ describe('ObjectWorld', () => {
     expect([w.objects[0].col, w.objects[1].col]).toEqual([2, 3]);
   });
 
+  it("a rotator pushes its neighbour stones round it after each turn (clockwise: west → north)", () => {
+    const w = world([{ x: 4, y: 2, k: "st_rotator_cw" }, { x: 3, y: 2, k: "st_box" }]);
+    w.update(10);
+    w.update(600); // one turn done: neighbours noted
+    expect([w.objects[1].col, w.objects[1].row]).toEqual([3, 2]);
+    w.update(110); // 0.1 s later the impulse
+    expect([w.objects[1].col, w.objects[1].row]).toEqual([3, 1]);
+    expect(w.rotatorLook(w.objects[0]).image).toBe("st_rotator_cw");
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing
