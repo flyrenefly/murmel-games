@@ -61,6 +61,7 @@ const OBJECTS = [
   [/^it_magicwand$/, ['it_magicwand']],
   [/^it_extralife$/, ['it_extralife']],
   [/^it_yinyang$/, ['it_yinyang']],
+  [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
   [/^st_chess(_black|_white)?$/, ['st_chess_black', 'st_chess_white', 'sh_round']],
@@ -80,7 +81,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -377,9 +378,24 @@ function convertLevel(pack, meta, xml, exp, lua) {
     }
     if (!dest) reject('Wurmloch ohne Ziel');
     else o.a.dest = `${dest[0]},${dest[1]}`;
-    if (src.scissor === 'true' || src.scissor === undefined) {
-      /* scissor cuts rubber bands; Murmel has none, so it changes nothing */
+  }
+  // Vortices: all destinations (Object::getDestinationByIndex) as points; objects by their centre.
+  for (const o of objs) {
+    if (!o.k.startsWith('it_vortex')) continue;
+    const src = [...allCells(w)].find((c) => c.o.$id === o.a.$id)?.o ?? {};
+    const raw = src.destination ?? '';
+    const pts = [];
+    const posRe = /(-?[\d.]+),(-?[\d.]+)/g;
+    if (/^\s*-?[\d.]+,-?[\d.]+/.test(raw)) for (const m of raw.matchAll(posRe)) pts.push([Number(m[1]), Number(m[2])]);
+    else {
+      for (const tok of tokens(raw)) {
+        const re = new RegExp('^' + tok.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+        for (const c of allCells(w)) if (c.o.name && re.test(c.o.name)) pts.push([c.x + 0.5, c.y + 0.5]);
+        const t = [...allCells(w)].find((c) => '#' + c.o.$id === tok);
+        if (t) pts.push([t.x + 0.5, t.y + 0.5]);
+      }
     }
+    if (pts.length) o.a.dests = pts.map((p) => p.join(',')).join(';');
   }
   if (lua && /"ot_timer"/.test(lua.code)) {
     if (lua.error) reject('Objekt ot_timer (Lua-Init)');

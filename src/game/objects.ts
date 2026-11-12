@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3 };
 /** German names of inventory items for the display. */
@@ -149,6 +149,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Vortex: phase, its start, the swallowed marble, destination index and target vortex. */
+  vortex?: { phase: 'open' | 'closed' | 'opening' | 'closing' | 'swallowing' | 'warping' | 'emitting'; since: number; marble?: number; idx?: number; target?: GameObject };
   /** Chess stone (ChessStone): phase, its start and the knight's destination. */
   chess?: { phase: 'idle' | 'disappearing' | 'appearing' | 'capturing' | 'captured' | 'falling' | 'sinking'; since: number; dest?: [number, number] };
   /** Four switch: has turned before (FourSwitch::m_inactive_so_far is false). */
@@ -165,6 +167,10 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
+  /** A vortex swallowed marble i (BasicBall FALLING_VORTEX). */
+  | { type: 'vortexGrab'; marble: number }
+  /** A vortex gives marble i out at x/y; cut = scissor (its rubber bands snap); rise = out of a vortex (it jumps). */
+  | { type: 'vortexWarp'; marble: number; x: number; y: number; cut: boolean; rise: boolean }
   /** A message to a named Oxyd stone (open, close, toggle, signal, shuffle, closeall …). */
   | { type: 'oxydMsg'; col: number; row: number; msg: string; value: boolean }
   /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
@@ -190,6 +196,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_yinyang') return 'yinyang';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
+  if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
   if (/^st_blur(_straight|_cross|_magic)?$/.test(kind)) return 'blur';
   if (/^st_chess(_black|_white)?$/.test(kind)) return 'chess';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
@@ -712,6 +719,16 @@ export class ObjectWorld {
           const ny = Math.min(Math.max(y, r), r + 1);
           if (Math.hypot(x - nx, y - ny) < radius + 0.01) this.events.push({ type: 'shatter', marble });
         }
+      // Vortex::actor_hit: an open vortex swallows a marble closer than 0.25; autoopen opens it
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.cls !== 'vortex' || o.gone) continue;
+        const v = this.vortexOf(o);
+        const d = Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5));
+        if (v.phase === 'open' && d < 0.25) {
+          o.vortex = { phase: 'swallowing', since: this.now, marble, idx: 0 };
+          this.events.push({ type: 'vortexGrab', marble });
+        } else if (v.phase === 'closed' && d > 0.25 && truthy(o.attrs.autoopen)) this.vortexSet(o, 1);
+      }
       // Item::actor_hit (SeedItem: radius 0.2, not while growing; others 0.3) → Player::pick_up.
       for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
         const radius = PICKUP_RADIUS[o.cls];
@@ -774,6 +791,90 @@ export class ObjectWorld {
   private startGrowing(o: GameObject): void {
     if (o.growing !== undefined || o.gone) return;
     o.growing = this.now;
+  }
+
+  // ---------- vortices (Vortex.cc) ----------
+
+  private vortexOf(o: GameObject): NonNullable<GameObject['vortex']> {
+    o.vortex ??= { phase: o.state === 1 ? 'open' : 'closed', since: -1e9 };
+    return o.vortex;
+  }
+
+  /** Vortex::setState: open (1) or close (0), with the 4 × 100 ms animation. */
+  private vortexSet(o: GameObject, open: number): void {
+    const v = this.vortexOf(o);
+    if (open === 1 && (v.phase === 'closed' || v.phase === 'closing')) o.vortex = { phase: 'opening', since: this.now };
+    else if (open === 0 && (v.phase === 'open' || v.phase === 'opening')) o.vortex = { phase: 'closing', since: this.now };
+    o.state = open;
+  }
+
+  /** Vortex covers the floor within 0.25 of its centre (Vortex::covers_floor). */
+  coversFloor(x: number, y: number): boolean {
+    return this.at(Math.floor(x), Math.floor(y)).some((o) => o.cls === 'vortex' && !o.gone && Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) < 0.25);
+  }
+
+  /** Vortex::emit_actor / warp_to: give the marble out, close (autoclose), perform the action. */
+  private vortexRelease(o: GameObject, at: GameObject | { x: number; y: number }, cut: boolean): void {
+    const v = this.vortexOf(o);
+    const pos = 'col' in at ? { x: at.col + 0.5, y: at.row + 0.5 } : at;
+    if (v.marble !== undefined) this.events.push({ type: 'vortexWarp', marble: v.marble, x: pos.x, y: pos.y, cut, rise: 'col' in at });
+    o.vortex = { phase: 'open', since: this.now };
+    o.state = 1;
+    if (at !== o) {
+      if (truthy(o.attrs.autoclose)) this.vortexSet(o, 0);
+      this.performAction(o, true);
+    }
+  }
+
+  /** Vortex::perform_warp: to destination idx – another vortex (opened if needed) or a point. */
+  private vortexWarp(o: GameObject): void {
+    const v = this.vortexOf(o);
+    const dests = (o.attrs.dests ?? '').split(';').filter((s) => s !== '').map((s) => s.split(',').map(Number));
+    const cut = o.attrs.scissor === undefined ? this.compat >= 1.1 : truthy(o.attrs.scissor);
+    const dest = dests[v.idx ?? 0];
+    if (!dest) {
+      this.vortexRelease(o, o, false); // no (more) destinations: back out here
+      return;
+    }
+    const [dx, dy] = dest;
+    const target = this.at(Math.floor(dx), Math.floor(dy)).find((x) => x.cls === 'vortex' && !x.gone);
+    if (!target) {
+      this.vortexRelease(o, { x: dx, y: dy }, cut);
+      return;
+    }
+    if (this.stoneAt(target.col, target.row)) {
+      // blocked destination vortex: try the next one after 0.8 s
+      o.vortex = { ...v, phase: 'warping', since: this.now + 400, idx: (v.idx ?? 0) + 1 };
+      return;
+    }
+    const t = this.vortexOf(target);
+    if (t.phase === 'open' || t.phase === 'opening') this.vortexRelease(o, target, cut);
+    else if (t.phase === 'closed' || t.phase === 'closing') {
+      this.vortexSet(target, 1);
+      o.vortex = { ...v, phase: 'emitting', since: this.now, target };
+    } else this.vortexRelease(o, o, false); // busy: back out here
+  }
+
+  private vortexStep(o: GameObject): void {
+    const v = this.vortexOf(o);
+    const age = this.now - v.since;
+    if (v.phase === 'opening' && age >= 400) o.vortex = { phase: 'open', since: this.now };
+    else if (v.phase === 'closing' && age >= 400) o.vortex = { phase: 'closed', since: this.now };
+    else if ((v.phase === 'swallowing' || v.phase === 'warping') && age >= 400) this.vortexWarp(o);
+    else if (v.phase === 'emitting' && age >= 400) {
+      const cut = o.attrs.scissor === undefined ? this.compat >= 1.1 : truthy(o.attrs.scissor);
+      this.vortexRelease(o, v.target ?? o, cut && v.target !== undefined);
+    }
+  }
+
+  /** it_vortex: frame 0 open … 3 closed; opening/closing 100 ms per frame. */
+  vortexFrame(o: GameObject): number {
+    const v = this.vortexOf(o);
+    const f = Math.min(3, Math.floor((this.now - v.since) / 100));
+    if (v.phase === 'closed') return 3;
+    if (v.phase === 'opening') return 3 - f;
+    if (v.phase === 'closing') return f;
+    return 0;
   }
 
   // ---------- chess stones (ChessStone.cc) ----------
@@ -1012,7 +1113,7 @@ export class ObjectWorld {
   }
 
   /** WormHole::actor_hit: marble centre within 0.125 of a wormhole centre → its destination. */
-  warpTarget(x: number, y: number): { x: number; y: number } | null {
+  warpTarget(x: number, y: number): { x: number; y: number; cut: boolean } | null {
     for (const o of this.at(Math.floor(x), Math.floor(y))) {
       if (o.cls !== 'wormhole' || (o.engagedUntil ?? -1) > this.now) continue;
       const dx = x - (o.col + 0.5);
@@ -1022,7 +1123,8 @@ export class ObjectWorld {
       if (!m) continue;
       const latency = numAttr(o.attrs.interval, 0);
       if (latency > 0) o.engagedUntil = this.now + latency * 1000;
-      return { x: Number(m[1]), y: Number(m[2]) };
+      // WormHole: scissor cuts the rubber bands of the warped actor
+      return { x: Number(m[1]), y: Number(m[2]), cut: truthy(o.attrs.scissor) };
     }
     return null;
   }
@@ -1098,6 +1200,7 @@ export class ObjectWorld {
     this.now += ms;
     for (const o of this.objects) {
       if (o.cls === 'chess' && !o.gone) this.chessStep(o);
+      if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
         // one decision per finished cycle; a move restarts the cycle (init_model)
@@ -1311,6 +1414,15 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'vortex') {
+      // StateObject messages → Vortex::setState / toggleState
+      const v = this.vortexOf(o);
+      const isOpen = v.phase === 'open' || v.phase === 'opening';
+      if (msg === 'open' || msg === 'on' || (msg === 'signal' && value)) this.vortexSet(o, 1);
+      else if (msg === 'close' || msg === 'off' || (msg === 'signal' && !value)) this.vortexSet(o, 0);
+      else if (msg === 'toggle') this.vortexSet(o, isOpen ? 0 : 1);
+      return;
+    }
     if (o.cls === 'chess') {
       // ChessStone::message: signal sets the colour, flip toggles it
       if (msg === 'signal') o.state = (num ?? (value ? 1 : 0)) === 1 ? 1 : 0;
@@ -1417,6 +1529,8 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // Vortex: 1 open, 0 closed
+  if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
   // BlurStone: 0 straight, 1 cross, 2 magic
   if (/^st_blur/.test(kind)) {
     const f = a.flavor || a.$flavor || /^st_blur_(\w+)$/.exec(kind)?.[1] || 'straight';

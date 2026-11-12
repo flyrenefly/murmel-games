@@ -1,13 +1,13 @@
 # Enigma-Import
 
-206 von 1322 Levels übernommen (15 Pakete).
+210 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 2 |
 | Stein st_laser | 225 | 2 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 3 |
-| Lua-Rückruf | 165 | 1 |
+| Lua-Rückruf | 163 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
 | Boden fl_slope_ps | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
@@ -22,7 +22,7 @@
 | Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Lua-Init | 96 | 0 |
+| Lua-Init | 96 | 1 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Stein st_key | 90 | 0 |
@@ -36,7 +36,6 @@
 | Lua: API 1 | 65 | 0 |
 | Stein st_actorimpulse | 64 | 2 |
 | Stein st_break_oxydc | 62 | 0 |
-| Gegenstand it_vortex_open | 61 | 3 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
@@ -90,7 +89,7 @@
 | Gegenstand it_coffee_drop | 28 | 0 |
 | Stein st_scissors | 28 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Stein st_actorimpulse_invisible | 27 | 1 |
+| Stein st_actorimpulse_invisible | 27 | 2 |
 | Stein fl_bridge_gc | 27 | 0 |
 | Akteur ac_horse | 27 | 0 |
 | Gegenstand it_strip_ns | 27 | 0 |
@@ -118,11 +117,10 @@
 | Stein st_stoneimpulse_movable | 20 | 0 |
 | Gegenstand it_bottle_idle | 20 | 0 |
 | Gegenstand it_pipe_es | 20 | 0 |
-| Gegenstand it_vortex_closed | 20 | 0 |
 | Stein st_magic_brick | 19 | 0 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Boden fl_scales_concrete | 19 | 1 |
+| Boden fl_scales_concrete | 19 | 2 |
 | Gegenstand it_spoon | 18 | 2 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
@@ -200,7 +198,6 @@
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 0 |
 | Stein st_plaster_movable | 8 | 0 |
-| Stein it_vortex_closed | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: set_attrib() | 7 | 0 |
@@ -396,6 +393,7 @@
 | Lua: lib.maze | 1 | 0 |
 | Boden fl_slope_ter | 1 | 0 |
 | Boden fl_slope_tnr | 1 | 0 |
+| Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Stein st_door_d | 1 | 0 |

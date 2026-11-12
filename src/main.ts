@@ -86,6 +86,8 @@ let pendingRestart: 'new' | 'keep' | null = null;
 /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
 const enigmaRules = (): boolean => level.id.startsWith('enigma:');
 const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_extralife').length;
+/** Marbles a vortex has swallowed: since when (ms of play), -1 = not. */
+let inVortex: number[] = [];
 /** Marbles that stay dead (player 2 without lives, not essential). */
 let deadForever: boolean[] = [];
 /** Owner of a marble: the white marble belongs to player 2 (YANG), pearls to player 1. */
@@ -180,6 +182,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   }
   carryLives = null;
   deadForever = physics.marbles.map(() => false);
+  inVortex = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -491,7 +494,18 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
-    else if (e.type === 'oxydMsg') {
+    else if (e.type === 'vortexGrab') {
+      // BasicBall FALLING_VORTEX: grabbed, shown falling into the vortex
+      inVortex[e.marble] = performance.now();
+      physics?.setActive(false, e.marble);
+      objects.marbleGone(e.marble);
+    } else if (e.type === 'vortexWarp') {
+      inVortex[e.marble] = 0;
+      physics?.respawn(e.x, e.y, e.marble);
+      if (e.cut) physics?.cutRubbers(e.marble);
+      // BasicBall RISING_VORTEX → JUMP_VORTEX → JUMPING: out of a vortex it jumps (no re-grab)
+      if (e.rise) physics?.jump(e.marble);
+    } else if (e.type === 'oxydMsg') {
       // StateObject::message → OxydStone::setState / message
       const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
       if (!s) continue;
@@ -555,7 +569,11 @@ function frame(now: number): void {
         if (falling[i] >= 0) return;
         const to = objects.warpTarget(m.pos.x, m.pos.y);
         // WarpActor without keeping the velocity.
-        if (to) ph.respawn(to.x, to.y, i);
+        if (to) {
+          ph.respawn(to.x, to.y, i);
+          if (to.cut) ph.cutRubbers(i);
+        }
+        if (inVortex[i]) return; // swallowed: nothing else happens to it
         // A jumping marble touches no items and presses no triggers (is_flying).
         if (m.jump > 0) return;
         objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
@@ -566,7 +584,7 @@ function frame(now: number): void {
       handleObjectEvents(objects.events);
       ph.marbles.forEach((m, i) => {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
-        if (falling[i] < 0 && m.jump <= 0 && under && isDeadly(under.floor)) marbleDies(i, false);
+        if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y)) marbleDies(i, false);
       });
       acc -= PHYSICS_DT;
     }
@@ -603,7 +621,7 @@ function frame(now: number): void {
     kind: 'marble' as const,
     color: m.color,
     // Sunk: invisible until the respawn (ac_marble-sunk).
-    fall: deathKind[i] === 'sink' && falling[i] >= 0 ? -1 : (fallen[i] ?? -1),
+    fall: inVortex[i] ? Math.min(1, (performance.now() - inVortex[i]) / 400) : deathKind[i] === 'sink' && falling[i] >= 0 ? -1 : (fallen[i] ?? -1),
     sink: deathKind[i] === 'sink' && falling[i] >= 0 ? SINK_DEPTH : m.sink,
     jump: m.jump > 0 ? 1 - m.jump / JUMP_SECONDS : -1,
     pearl: m.pearl,

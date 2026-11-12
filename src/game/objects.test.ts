@@ -286,13 +286,56 @@ describe('ObjectWorld', () => {
     expect(fx).toBeCloseTo((0.6 * 30) / 4 * 2, 5); // strength/d² · d, towards the hole
     expect(fy).toBe(0);
     expect(w.warpTarget(5.3, 0.5)).toBeNull(); // 0.2 from the centre: outside 0.125
-    expect(w.warpTarget(5.55, 0.45)).toEqual({ x: 8.5, y: 2.5 });
+    expect(w.warpTarget(5.55, 0.45)).toEqual({ x: 8.5, y: 2.5, cut: false });
+  });
+
+  describe("vortex (Vortex.cc)", () => {
+    it("an open vortex swallows a marble near its centre and gives it out at the next open vortex", () => {
+      const w = world([
+        { x: 3, y: 0, k: "it_vortex_open", a: { dests: "7.5,0.5" } },
+        { x: 7, y: 0, k: "it_vortex_open", a: {} },
+      ]);
+      w.actorStep(3.2, 0.5, 0); // 0.3 from the centre: nothing
+      expect(w.events.some((e) => e.type === "vortexGrab")).toBe(false);
+      w.actorStep(3.4, 0.5, 0);
+      expect(w.events).toContainEqual({ type: "vortexGrab", marble: 0 });
+      w.update(450); // perform_warp after 0.4 s
+      expect(w.events).toContainEqual({ type: "vortexWarp", marble: 0, x: 7.5, y: 0.5, cut: true, rise: true });
+    });
+
+    it("a closed destination vortex opens first; without destinations the marble comes back out", () => {
+      const w = world([
+        { x: 3, y: 0, k: "it_vortex_open", a: { dests: "7.5,0.5" } },
+        { x: 7, y: 0, k: "it_vortex_closed", a: {} },
+        { x: 1, y: 1, k: "it_vortex_open", a: {} },
+      ]);
+      w.actorStep(3.5, 0.5, 0);
+      w.update(450);
+      expect(w.events.some((e) => e.type === "vortexWarp")).toBe(false);
+      const target = w.objects.find((o) => o.col === 7)!;
+      expect(w.vortexFrame(target)).toBe(3); // opening starts at the closed frame
+      w.update(450);
+      expect(w.events).toContainEqual({ type: "vortexWarp", marble: 0, x: 7.5, y: 0.5, cut: true, rise: true });
+      w.actorStep(1.5, 1.5, 1);
+      w.update(450);
+      expect(w.events).toContainEqual({ type: "vortexWarp", marble: 1, x: 1.5, y: 1.5, cut: false, rise: true });
+    });
+
+    it("a closed vortex does not swallow; autoopen opens it when a marble comes near", () => {
+      const w = world([{ x: 3, y: 0, k: "it_vortex_closed", a: { autoopen: "true" } }]);
+      w.actorStep(3.5, 0.5, 0);
+      expect(w.events.some((e) => e.type === "vortexGrab")).toBe(false);
+      w.actorStep(3.1, 0.5, 0);
+      w.update(450);
+      w.actorStep(3.5, 0.5, 0);
+      expect(w.events).toContainEqual({ type: "vortexGrab", marble: 0 });
+    });
   });
 
   it("a switched-off wormhole does not pull but still teleports", () => {
     const w = world([{ x: 5, y: 0, k: "it_wormhole_off", a: { dest: "1.5,1.5", $state: "0" } }]);
     expect(w.fieldForce(3.5, 0.5)).toEqual([0, 0]);
-    expect(w.warpTarget(5.5, 0.5)).toEqual({ x: 1.5, y: 1.5 });
+    expect(w.warpTarget(5.5, 0.5)).toEqual({ x: 1.5, y: 1.5, cut: false });
   });
 
   it("st_brownie and *_movable stones are pushed like boxes but do not sink (StandardStone)", () => {

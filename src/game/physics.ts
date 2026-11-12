@@ -555,6 +555,15 @@ export class PhysicsWorld {
     this.marbles[i].active = active;
   }
 
+  /** Actor "disconnect" (vortex/wormhole scissor): its rubber bands snap. */
+  cutRubbers(i: number): void {
+    const m = this.marbles[i];
+    for (let k = this.rubbers.length - 1; k >= 0; k--) {
+      const r = this.rubbers[k];
+      if (r.a1 === m || r.a2 === m) this.rubbers.splice(k, 1);
+    }
+  }
+
   /** Put the marble at x/y (tile units, marble centre) and stop it. */
   respawn(x: number, y: number, i = this.cur): void {
     const m = this.marbles[i];
