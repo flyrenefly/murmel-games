@@ -487,6 +487,31 @@ describe('ObjectWorld', () => {
     expect(w.inventory).toEqual(["it_yinyang"]);
   });
 
+  it("st_swap exchanges places with the stone behind it: an object or a wall, not an Oxyd stone", () => {
+    const walls: Record<string, string | null> = { "5,0": "st_greenbrown", "3,2": "st_oxyd" };
+    const env: ObjectEnv = {
+      stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5 || !!walls[`${c},${r}`],
+      floorAt: () => "fl_gray",
+      setFloor: () => {},
+      staticStone: (c, r) => walls[`${c},${r}`] ?? null,
+      setStaticStone: (c, r, k) => void (walls[`${c},${r}`] = k),
+    };
+    const w = new ObjectWorld([{ x: 4, y: 0, k: "st_swap" }, { x: 2, y: 1, k: "st_swap" }, { x: 3, y: 1, k: "st_box_wood" }, { x: 3, y: 3, k: "st_swap" }], W, {}, env);
+    w.hit(4, 0, 0, -1, 0, -6); // from the west: east is the wall
+    expect(w.objects[0]).toMatchObject({ col: 5, row: 0 });
+    expect(walls["4,0"]).toBe("st_greenbrown");
+    expect(walls["5,0"]).toBe(null);
+    expect(w.swapFrame(w.objects[0])).toBe(3); // st_swap_e
+    w.update(150);
+    expect(w.swapFrame(w.objects[0])).toBe(0);
+    w.hit(2, 1, 0, -1, 0, -6); // the box changes places with it
+    expect(w.objects[1]).toMatchObject({ col: 3, row: 1 });
+    expect(w.objects[2]).toMatchObject({ col: 2, row: 1 });
+    w.hit(3, 3, 0, 0, 1, -6); // from below: north is an Oxyd stone – no swap
+    expect(w.objects[3]).toMatchObject({ col: 3, row: 3 });
+    w.hit(4, 1, 0, -1, 0, -6); // nothing at all
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

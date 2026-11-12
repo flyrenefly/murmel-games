@@ -147,6 +147,14 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       const cell = cellAt(lv, c, r);
       if (cell) cell.floor = kind;
     },
+    staticStone: (c, r) => cellAt(lv, c, r)?.stone ?? null,
+    setStaticStone: (c, r, kind) => {
+      const cell = cellAt(lv, c, r);
+      if (!cell) return;
+      cell.stone = kind;
+      physics?.setSolid(c, r, kind !== null);
+      classic.floorChanged();
+    },
   }, Math.random, lv.compat);
   if (lv.world.FallenPuzzle) objects.fallenPuzzle = lv.world.FallenPuzzle;
   physics = new PhysicsWorld(level, objects);

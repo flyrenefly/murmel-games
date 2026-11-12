@@ -59,6 +59,7 @@ const OBJECTS = [
   [/^it_magicwand$/, ['it_magicwand']],
   [/^it_extralife$/, ['it_extralife']],
   [/^it_yinyang$/, ['it_yinyang']],
+  [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_chameleon$/, []], // drawn with the floor image of its cell
   [/^st_passage(_black|_white)?(_square|_slash|_cross|_frame|_backslash)?$/, [...['square', 'slash', 'cross', 'frame', 'backslash'].flatMap((f) => [`st_passage_black_${f}`, `st_passage_white_${f}`]), 'sh_round', ...['slash', 'cross', 'frame', 'backslash'].map((f) => `sh_passage_${f}`)]],
   [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],

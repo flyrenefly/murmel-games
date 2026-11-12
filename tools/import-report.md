@@ -1,11 +1,11 @@
 # Enigma-Import
 
-183 von 1322 Levels übernommen (15 Pakete).
+186 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 2 |
-| Stein st_laser | 225 | 1 |
+| Stein st_laser | 225 | 2 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
 | Lua-Rückruf | 165 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
@@ -14,7 +14,7 @@
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
-| Boden fl_slope_pn | 113 | 0 |
+| Boden fl_slope_pn | 113 | 1 |
 | Stein st_mirror_slab | 112 | 0 |
 | Boden fl_slope_pe | 110 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
@@ -38,7 +38,6 @@
 | Stein st_actorimpulse | 64 | 2 |
 | Stein st_break_oxydc | 62 | 0 |
 | Gegenstand it_vortex_open | 61 | 3 |
-| Stein st_swap | 61 | 3 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
@@ -140,7 +139,7 @@
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| mehrere weiße Murmeln | 16 | 1 |
+| mehrere weiße Murmeln | 16 | 2 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 1 |
 | Stein st_break_boulder | 15 | 2 |
@@ -432,7 +431,6 @@
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
 | Lua: st_lightpassenger | 1 | 0 |
-| Lua: st_swap | 1 | 0 |
 | Boden mit Kraft (fl_rock) | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |

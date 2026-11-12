@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
@@ -88,6 +88,8 @@ const STEPS: [number, number, number][] = [
 ];
 /** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
 export const BOULDER_MS = 3 * 120;
+/** SwapStone: GameTimer alarm after 0.1 s ends the exchange. */
+export const SWAP_MS = 100;
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
 export const PUSH_SPEED = 4;
 /** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
@@ -99,6 +101,10 @@ export interface ObjectEnv {
   stoneAt(col: number, row: number): boolean;
   floorAt(col: number, row: number): string;
   setFloor(col: number, row: number, kind: string): void;
+  /** Plain stone of the map in a cell (null = none; 'st_oxyd' for Oxyd stones). */
+  staticStone?(col: number, row: number): string | null;
+  /** Change the plain stone of a cell (st_swap exchanging places with a wall). */
+  setStaticStone?(col: number, row: number, kind: string | null): void;
 }
 
 const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
@@ -140,6 +146,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Swap stone: moved at this time in this Enigma direction (0.1 s animation). */
+  swapped?: { since: number; dir: number };
   /** Seed: growing since this time; box: grown from a seed, growing since this time. */
   growing?: number;
 }
@@ -173,6 +181,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_magicwand') return 'wand';
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
+  if (kind === 'st_swap') return 'swap';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
   if (PASSAGE.test(kind)) return 'passage';
@@ -319,7 +328,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -341,6 +350,12 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'swap') {
+        // Stone::actor_hit → impulse in the push direction (SwapStone::on_impulse)
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED) this.swapStone(o, -nx, -ny);
+        return;
+      }
       if (o.cls === 'box') {
         // Only a hit on a face (axis normal) fast enough pushes, away from the marble.
         const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
@@ -603,6 +618,7 @@ export class ObjectWorld {
       if (o.gone) continue;
       if (o.cls === 'impulse') this.startImpulse(o, d);
       else if (o.cls === 'box') this.push(o, dx, dy);
+      else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
     }
@@ -721,6 +737,51 @@ export class ObjectWorld {
   private startGrowing(o: GameObject): void {
     if (o.growing !== undefined || o.gone) return;
     o.growing = this.now;
+  }
+
+  // ---------- swap stones (SwapStone.cc) ----------
+
+  /**
+   * SwapStone::on_impulse: exchange places with the stone in direction dx/dy. Nothing happens
+   * without a stone there, with a moving one or (deviation) with an Oxyd stone, whose place is
+   * fixed in Murmel.
+   */
+  private swapStone(o: GameObject, dx: number, dy: number): boolean {
+    if (o.gone || (o.swapped && this.now - o.swapped.since < SWAP_MS)) return false;
+    const c = o.col + dx;
+    const r = o.row + dy;
+    const other = this.at(c, r).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls));
+    const plain = other ? null : (this.env.staticStone?.(c, r) ?? null);
+    if (other) {
+      if (other.swapped && this.now - other.swapped.since < SWAP_MS) return false;
+      if (other.cls === 'puzzle' && other.puzzle) return false; // PuzzleStone::is_removable
+      if (other.cls === 'boulder' && other.boulder?.phase === 'falling') return false;
+    } else if (!plain || plain === 'st_oxyd' || !this.env.setStaticStone) return false;
+    const [oc, or] = [o.col, o.row];
+    this.unplace(o);
+    if (other) {
+      this.unplace(other);
+      other.col = oc;
+      other.row = or;
+      this.place(other);
+    } else {
+      this.env.setStaticStone!(c, r, null);
+      this.env.setStaticStone!(oc, or, plain);
+    }
+    o.col = c;
+    o.row = r;
+    this.place(o);
+    o.swapped = { since: this.now, dir: STEPS.findIndex(([x, y]) => x === dx && y === dy) };
+    this.events.push({ type: 'sound', name: 'move' });
+    this.updateTriggers(oc, or);
+    this.updateTriggers(c, r);
+    return true;
+  }
+
+  /** Swap stone animation: frame 0 = idle, 1–4 = st_swap_n, _s, _e, _w while moving. */
+  swapFrame(o: GameObject): number {
+    if (!o.swapped || this.now - o.swapped.since >= SWAP_MS) return 0;
+    return [4, 2, 3, 1][o.swapped.dir] ?? 0; // Enigma dir W0 S1 E2 N3
   }
 
   // ---------- boulders (BoulderStone.cc) ----------

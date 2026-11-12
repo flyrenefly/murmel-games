@@ -266,6 +266,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Inventar des aktuellen Spielers. Netzwerk-Levels geben beiden Spielern zu Beginn einen
   Yin-Yang (`AddYinYang`). Hat Spieler 2 keine Leben mehr, bleibt die weiße Murmel liegen
   und die Steuerung geht an Spieler 1 zurück.
+- **st_swap** (`SwapStone.cc`): Ein kräftiger Stoß (oder ein Impuls) lässt ihn mit dem Stein
+  dahinter den Platz tauschen – Objektsteine wie Mauern der Karte; ohne Stein dahinter
+  passiert nichts. 0,1 s Richtungsbild (st_swap_n/s/e/w). Abweichung: Mit Oxyd-Steinen
+  tauscht er in Murmel nicht (deren Platz ist dort fest mit der Paarlogik verbunden).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

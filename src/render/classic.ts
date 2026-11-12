@@ -166,6 +166,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_yinyang') return ['it_yinyang'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
+  if (kind === 'st_swap') return ['st_swap', 'sh_round'];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
@@ -510,6 +511,11 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'swap') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_swap', world.swapFrame(o), px, py);
       return;
     }
     if (o.cls === 'passage') {
