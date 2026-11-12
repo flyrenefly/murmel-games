@@ -279,6 +279,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua-Ergänzungen:** Gruppen sind als Iterator aufrufbar (`for o in group do`); setzt ein
   Rückruf Kacheln, nimmt der Importer die unterstützten Arten aller `ti`-Einträge auf
   (Kacheln in eigenen Tabellen wie `floors[dir]`).
+- **st_redfiber, st_lightglass, st_darkglass** (`GlassStones.cc`): feste Steine; sie lassen
+  nur Laser bzw. unsichtbare Akteure durch, beides gibt es in Murmel nicht.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

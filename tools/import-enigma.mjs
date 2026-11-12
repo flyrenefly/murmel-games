@@ -31,6 +31,8 @@ const STONES = new Set([
   'st_camouflage', 'st_redbrown', 'st_metal', 'st_redrock', 'st_woven', 'st_yellow',
   'st_greenbrown', 'st_brownpyramid', 'st_bluesand', 'st_brick', 'st_rawglass', 'st_panel',
   'st_plaster', 'st_flat', 'st_beads',
+  // GlassStone: block every actor (only invisible ones pass light/dark glass – Murmel has none)
+  'st_redfiber', 'st_lightglass', 'st_darkglass',
 ]);
 // Variants that only differ in edges/decoration: drawn with the base image.
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;

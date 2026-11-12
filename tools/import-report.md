@@ -1,6 +1,6 @@
 # Enigma-Import
 
-189 von 1322 Levels übernommen (15 Pakete).
+194 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -69,7 +69,6 @@
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
-| Stein st_lightglass | 36 | 2 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
@@ -164,8 +163,6 @@
 | Stein st_ice | 14 | 1 |
 | Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
-| Stein st_redfiber | 13 | 3 |
-| Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
@@ -223,7 +220,7 @@
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
-| Stein st_box_hay (verbunden) | 6 | 1 |
+| Stein st_box_hay (verbunden) | 6 | 2 |
 | Stein st_disco_dark | 6 | 0 |
 | Stein st_flat_hollow | 6 | 0 |
 | Gegenstand it_sensor_exit | 5 | 0 |
@@ -234,7 +231,7 @@
 | Lua: :orientate | 5 | 1 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_plaster_hollow | 5 | 0 |
-| Stein st_jamb_black | 5 | 0 |
+| Stein st_jamb_black | 5 | 1 |
 | Gegenstand it_strip_sw | 5 | 0 |
 | Gegenstand it_strip_es | 5 | 0 |
 | Gegenstand it_strip_nw | 5 | 0 |
@@ -243,7 +240,6 @@
 | Lua: st_window | 5 | 0 |
 | Boden fl_scales_platinum | 5 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
-| Lua: st_lightglass | 4 | 0 |
 | Boden fl_bridge_be | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
 | Lua: lib.math | 4 | 0 |
@@ -398,7 +394,6 @@
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |
 | Boden mit Kraft (fl_water) | 1 | 0 |
-| Lua: st_redfiber | 1 | 0 |
 | Lua: it_strip_ew | 1 | 0 |
 | Lua: it_strip_ns | 1 | 0 |
 | Lua: floor() | 1 | 0 |
