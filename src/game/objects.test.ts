@@ -546,6 +546,15 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("st_flat_movable is pushed like a box but vanishes in water or abyss without a bridge (FlatStone)", () => {
+    const floors: Record<string, string> = { "3,0": "fl_water" };
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 2, y: 0, k: "st_flat_movable" }], W, {}, env);
+    expect(w.push(w.objects[0], 1, 0)).toBe(true);
+    expect(w.objects[0].gone).toBe(true);
+    expect(floors["3,0"]).toBe("fl_water");
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

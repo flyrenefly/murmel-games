@@ -1,6 +1,6 @@
 # Enigma-Import
 
-194 von 1322 Levels übernommen (15 Pakete).
+197 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -167,7 +167,6 @@
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
-| Stein st_flat_movable | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Stein st_ghost_purplemarble | 12 | 0 |
@@ -425,6 +424,7 @@
 | Lua: st_portal | 1 | 0 |
 | Lua: st_lightpassenger | 1 | 0 |
 | Boden mit Kraft (fl_rock) | 1 | 0 |
+| Stein st_flat_movable (verbunden) | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |
