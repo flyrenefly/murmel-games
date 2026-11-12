@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3 };
 /** German names of inventory items for the display. */
@@ -157,6 +157,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Springboard: start of its animation (it_springboard_anim). */
+  bounce?: number;
   /** Meditation: the pearl resting in it and since when (-1 = engaged after 1 s). */
   meditatist?: { marble: number; since: number };
   /** ActorImpulseStone: start of the PULSING animation (idle when unset or over). */
@@ -179,6 +181,8 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
+  /** Springboard: marble i jumps ("_jump"). */
+  | { type: 'jump'; marble: number }
   /** A vortex swallowed marble i (BasicBall FALLING_VORTEX). */
   | { type: 'vortexGrab'; marble: number }
   /** A vortex gives marble i out at x/y; cut = scissor (its rubber bands snap); rise = out of a vortex (it jumps). */
@@ -210,6 +214,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_ring' || kind === 'it_spoon') return 'tool';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
+  if (kind === 'it_springboard') return 'springboard';
+  if (/^it_magnet(_on|_off)?$/.test(kind)) return 'magnet';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -710,13 +716,14 @@ export class ObjectWorld {
       fy += k * vy;
     }
     for (const o of this.objects) {
-      if (o.cls !== 'wormhole' || o.state !== 1) continue;
+      if ((o.cls !== 'wormhole' && o.cls !== 'magnet') || o.state !== 1 || o.gone) continue;
       const strength = 0.6 * numAttr(o.attrs.strength, 30);
       const range = numAttr(o.attrs.range, 10);
       const dx = o.col + 0.5 - x;
       const dy = o.row + 0.5 - y;
       const sq = dx * dx + dy * dy;
-      if (sq >= 0.025 && sq < range * range) {
+      // Magnet::globalForce from 0.2, WormHole::globalForce from 0.025
+      if (sq >= (o.cls === 'magnet' ? 0.04 : 0.025) && sq < range * range) {
         fx += (strength / sq) * dx;
         fy += (strength / sq) * dy;
       }
@@ -755,6 +762,14 @@ export class ObjectWorld {
           } else if (!o.meditatist && meditating && !this.objects.some((p) => p.meditatist?.marble === marble)) {
             o.meditatist = { marble, since: this.now };
           }
+        }
+      }
+      // Springboard::actor_hit: an actor on the floor within 0.3 (each axis) of the centre jumps
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.cls !== 'springboard' || o.gone) continue;
+        if (Math.abs(x - (o.col + 0.5)) <= 0.3 && Math.abs(y - (o.row + 0.5)) <= 0.3) {
+          o.bounce = this.now;
+          this.events.push({ type: 'jump', marble });
         }
       }
       // Vortex::actor_hit: an open vortex swallows a marble closer than 0.25; autoopen opens it
@@ -832,6 +847,11 @@ export class ObjectWorld {
   private startGrowing(o: GameObject): void {
     if (o.growing !== undefined || o.gone) return;
     o.growing = this.now;
+  }
+
+  /** it_springboard_anim: ReverseFrames of 2 images à 120 ms (frame 1, then 0). */
+  springboardFrame(o: GameObject): number {
+    return o.bounce !== undefined && this.now - o.bounce < 120 ? 1 : 0;
   }
 
   // ---------- meditation (Meditation.cc, ChangeMeditation) ----------
@@ -1466,8 +1486,8 @@ export class ObjectWorld {
       else o.alarm = undefined;
       return;
     }
-    if (o.cls === 'wormhole') {
-      o.state = s; // on/off switches the pull; teleporting works either way
+    if (o.cls === 'wormhole' || o.cls === 'magnet') {
+      o.state = s; // on/off switches the pull (a wormhole teleports either way)
       return;
     }
     if (o.cls !== 'door' && o.cls !== 'switch') return; // others ignore state writes
@@ -1662,7 +1682,7 @@ function initialState(kind: string, a: Record<string, string>): number {
   }
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
-  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'ot_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' ? 1 : 0;
+  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'ot_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' || kind === 'it_magnet_on' ? 1 : 0;
 }
 
 function numAttr(v: string | undefined, fallback: number): number {

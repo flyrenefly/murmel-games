@@ -332,6 +332,28 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("a magnet pulls like a wormhole while on (from 0.2 on), toggles with messages and is not picked up", () => {
+    const w = world([{ x: 5, y: 0, k: "it_magnet_on", a: { name: "m" } }]);
+    const [fx] = w.fieldForce(3.5, 0.5);
+    expect(fx).toBeCloseTo(((0.6 * 30) / 4) * 2, 5);
+    expect(w.fieldForce(5.6, 0.5)).toEqual([0, 0]); // 0.1 from the centre: no force
+    w.actorStep(5.5, 0.5, 0);
+    expect(w.inventory).toEqual([]);
+    w.message(w.objects[0], "toggle", true);
+    expect(w.fieldForce(3.5, 0.5)).toEqual([0, 0]);
+  });
+
+  it("a springboard makes a marble near its centre jump and animates", () => {
+    const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
+    w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing
+    expect(w.events.some((e) => e.type === "jump")).toBe(false);
+    w.actorStep(3.75, 0.75, 0); // 0.25 off in each axis
+    expect(w.events).toContainEqual({ type: "jump", marble: 0 });
+    expect(w.springboardFrame(w.objects[0])).toBe(1);
+    w.update(130);
+    expect(w.springboardFrame(w.objects[0])).toBe(0);
+  });
+
   it("a switched-off wormhole does not pull but still teleports", () => {
     const w = world([{ x: 5, y: 0, k: "it_wormhole_off", a: { dest: "1.5,1.5", $state: "0" } }]);
     expect(w.fieldForce(3.5, 0.5)).toEqual([0, 0]);

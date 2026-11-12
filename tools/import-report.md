@@ -1,11 +1,11 @@
 # Enigma-Import
 
-374 von 1322 Levels übernommen (17 Pakete).
+389 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Stein st_laser | 225 | 3 |
-| Lua-Rückruf | 163 | 1 |
+| Lua-Rückruf | 161 | 1 |
 | Gegenstand it_sensor | 139 | 5 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
@@ -28,13 +28,13 @@
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
-| Gegenstand it_bomb_black | 56 | 2 |
+| Gegenstand it_bomb_black | 56 | 3 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_mirror_triangle | 55 | 0 |
 | Objekt ot_counter | 54 | 1 |
 | Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 1 |
-| Stein st_mail | 54 | 0 |
+| Stein st_mail | 54 | 1 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 2 |
@@ -48,7 +48,6 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 1 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_springboard | 38 | 6 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -113,7 +112,6 @@
 | Boden fl_scales_bridgewood | 16 | 2 |
 | Stein st_break_boulder | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
-| Gegenstand it_magnet_on | 15 | 6 |
 | Stein st_break_black | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 1 |
@@ -121,14 +119,13 @@
 | Lua: :is | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 1 |
 | Lua: draw_stones() | 14 | 0 |
-| Gegenstand it_magnet_off | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 0 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 0 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
-| Stein st_ice | 14 | 1 |
+| Stein st_ice | 14 | 2 |
 | Stein st_disco_light | 14 | 1 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
@@ -148,7 +145,6 @@
 | Lua: :nearest | 10 | 1 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Lua: :drawRect | 10 | 1 |
-| Stein it_magnet_off | 10 | 0 |
 | Stein st_box_wood (verbunden) | 10 | 1 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
@@ -166,7 +162,7 @@
 | Boden fl_scales_darkgray | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
-| Stein st_monoflop | 8 | 1 |
+| Stein st_monoflop | 8 | 2 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
@@ -244,7 +240,7 @@
 | Stein st_shogun_ml | 2 | 0 |
 | Stein st_shogun_sm | 2 | 0 |
 | Gegenstand it_crack_i | 2 | 0 |
-| Boden fl_fake_trigger | 2 | 0 |
+| Boden fl_fake_trigger | 2 | 1 |
 | Lua: :newMap | 2 | 0 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
@@ -319,6 +315,7 @@
 | Aktion kill | 1 | 0 |
 | Lua: st_lightglass_hollow | 1 | 0 |
 | Lua: fakeoxyd() | 1 | 0 |
+| Aktion onoff | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
@@ -346,7 +343,6 @@
 | Stein st_door_d | 1 | 0 |
 | Lua: it_burnable_oil | 1 | 0 |
 | Lua: gsub() | 1 | 0 |
-| Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
 | Stein st_redbrown_movable (verbunden) | 1 | 1 |
 | Lua: :drawBorder | 1 | 0 |
@@ -368,7 +364,6 @@
 | Lua: it_crack_m | 1 | 0 |
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
-| Lua: it_magnet_on | 1 | 0 |
 | Lua: f() | 1 | 0 |
 | Lua: it_seed_greenbrown | 1 | 0 |
 | Lua: it_pipe | 1 | 0 |

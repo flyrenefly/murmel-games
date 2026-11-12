@@ -511,6 +511,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
+    else if (e.type === 'jump') marbleJumps(e.marble); // Springboard: "_jump"
     else if (e.type === 'vortexGrab') {
       // BasicBall FALLING_VORTEX: grabbed, shown falling into the vortex
       inVortex[e.marble] = performance.now();

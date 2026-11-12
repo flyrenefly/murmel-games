@@ -84,6 +84,8 @@ const OBJECTS = [
   [/^it_ring$/, ['it_ring']],
   [/^it_spoon$/, ['it_spoon']],
   [/^it_flag(_black|_white)?$/, ['it_flag_black', 'it_flag_white']],
+  [/^it_springboard$/, ['it_springboard', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
+  [/^it_magnet(_on|_off)?$/, ['it_magnet_on', 'it_magnet_off']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
@@ -415,6 +417,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (!dest) reject('Wurmloch ohne Ziel');
     else o.a.dest = `${dest[0]},${dest[1]}`;
   }
+  // Magnets: wo["MagnetForce"]/["MagnetRange"] of the level script as their defaults (_updateglobals)
+  for (const o of objs) {
+    if (!o.k.startsWith('it_magnet')) continue;
+    if (o.a.strength === undefined && lua?.world?.MagnetForce !== undefined) o.a.strength = String(lua.world.MagnetForce);
+    if (o.a.range === undefined && lua?.world?.MagnetRange !== undefined) o.a.range = String(lua.world.MagnetRange);
+  }
+  if (lua?.error && /MagnetForce|MagnetRange/.test(lua.code)) reject('Lua-Init (Weltwert)');
   // Vortices: all destinations (Object::getDestinationByIndex) as points; objects by their centre.
   for (const o of objs) {
     if (!o.k.startsWith('it_vortex')) continue;
