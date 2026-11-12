@@ -413,6 +413,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   à 50 ms; Treffer klingen metallisch.
   Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
+- **st_break_* + it_hammer** (`BreakStone.cc`, `Hammer.cc`): Mit dem Hammer in der Hand zerschlägt
+  ein Treffer plain, oxydc und boulder, black/white nur mit einer Kugel dieser Farbe; ein
+  Felsbrocken zerbricht st_break_boulder, Laserlicht alle außer bug. Bruchanimation 10 × 50 ms
+  (laser/bug: st_flat_break 6 × 50 ms), Klang explosion0. Der Hammer ist sonst ein gewöhnlicher
+  Gegenstand. Offen: Hammer im Licht wird zum Schwert, ac_bug.
 - **st_window(_n/e/s/w…)** (`WindowStone.cc`): Scheiben (3/32 dick) an den Seiten aus
   `$connections` bzw. der Endung; sie halten Kugeln von beiden Seiten auf (`blockAt` mit Flag
   `PANES`). Treffer: Impuls = Tempo zur Scheibe × Masse; > 35 zerspringt die Kugel, > 22

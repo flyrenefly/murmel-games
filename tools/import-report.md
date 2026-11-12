@@ -1,6 +1,6 @@
 # Enigma-Import
 
-505 von 1322 Levels übernommen (17 Pakete).
+521 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -14,21 +14,19 @@
 | Gegenstand it_puller_w | 108 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Gegenstand it_hammer | 91 | 1 |
-| Gegenstand it_dynamite | 72 | 2 |
+| Gegenstand it_dynamite | 72 | 3 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_break_oxydc | 62 | 0 |
-| Stein st_knight | 59 | 0 |
+| Stein st_knight | 59 | 1 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
-| Gegenstand it_bomb_black | 56 | 3 |
+| Gegenstand it_bomb_black | 56 | 4 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
-| Gegenstand it_cherry | 43 | 0 |
+| Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Stein st_thief | 41 | 3 |
 | Lua: set_floor() | 39 | 0 |
@@ -57,7 +55,7 @@
 | Gegenstand it_strip_ns | 27 | 1 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
-| Gegenstand it_cross | 26 | 1 |
+| Gegenstand it_cross | 26 | 2 |
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
@@ -72,7 +70,7 @@
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
-| Stein st_dispenser_bombblack | 19 | 1 |
+| Stein st_dispenser_bombblack | 19 | 2 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
@@ -83,13 +81,9 @@
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| Stein st_break_plain | 16 | 0 |
-| Stein st_break_boulder | 15 | 2 |
 | Lua: :is | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
-| Stein st_break_black | 15 | 0 |
-| Stein st_break_white | 15 | 0 |
-| Stein st_barrier | 15 | 1 |
+| Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
 | Lua: :add | 14 | 2 |
 | Stein st_magic_oxydc | 14 | 1 |
@@ -99,7 +93,7 @@
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 4 |
 | Gegenstand it_weight | 14 | 0 |
-| Stein st_flash | 14 | 1 |
+| Stein st_flash | 14 | 2 |
 | Stein st_ice | 14 | 3 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
@@ -126,19 +120,18 @@
 | Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 0 |
 | Lua-Init (Weltwert) | 9 | 1 |
-| Stein st_break_bug | 9 | 0 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Aktion turn | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
-| Stein st_monoflop | 8 | 2 |
+| Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 2 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: :orientate | 7 | 2 |
-| Aktion openclose | 7 | 0 |
+| Aktion openclose | 7 | 1 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 0 |
@@ -177,7 +170,6 @@
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
-| Stein st_break_laser | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
 | Gegenstand it_strip_w | 3 | 0 |
@@ -204,8 +196,6 @@
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
 | Lua: res.autotile | 2 | 0 |
-| Lua: st_break_black | 2 | 0 |
-| Lua: st_break_white | 2 | 0 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
@@ -214,7 +204,7 @@
 | Stein st_shogun_sm | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
-| Puzzle hohl (alter Export) | 2 | 1 |
+| Puzzle hohl (alter Export) | 2 | 2 |
 | mehrere weiße Murmeln | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
@@ -235,7 +225,6 @@
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 0 |
-| Lua: it_hammer | 2 | 0 |
 | Lua: it_pencil | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
@@ -354,7 +343,6 @@
 | Lua: st_turnstilearm_s | 1 | 0 |
 | Lua: st_turnstilearm_w | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
-| Lua: st_break_boulder | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
 | Lua: fl_yinyang_yin | 1 | 0 |
 | Lua: st_mail_n | 1 | 0 |
@@ -364,12 +352,10 @@
 | Lua: it_pipe_sw | 1 | 0 |
 | Lua: it_pipe_nw | 1 | 0 |
 | Lua: it_pipe_ne | 1 | 0 |
-| Lua: st_break_oxydc | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
 | Lua: it_bomb_black | 1 | 0 |
 | Lua: st_dispenser_bombblack | 1 | 0 |
 | Lua: it_bomb_white | 1 | 0 |
-| Lua: st_break_bug | 1 | 0 |
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |
 | Lua: st_charge_zero | 1 | 0 |

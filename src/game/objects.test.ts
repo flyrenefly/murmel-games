@@ -594,6 +594,29 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("the hammer breaks st_break stones; black/white ones only for a marble of their colour", () => {
+    const w = world([
+      { x: 2, y: 1, k: "it_hammer" },
+      { x: 4, y: 1, k: "st_break_plain" },
+      { x: 6, y: 1, k: "st_break_white" },
+    ]);
+    w.hit(4, 1, 0, -1, 0, -3); // without hammer: nothing
+    w.update(600);
+    expect(w.objects[1].gone).toBeFalsy();
+    w.actorStep(2.5, 1.5, 0);
+    w.hit(4, 1, 0, -1, 0, -3);
+    expect(w.breakLook(w.objects[1]).frame).toBe(0);
+    w.update(250);
+    expect(w.breakLook(w.objects[1]).frame).toBe(5);
+    w.hit(6, 1, 0, -1, 0, -3); // black marble at a white one: nothing
+    w.update(300);
+    expect(w.objects[1].gone).toBe(true);
+    expect(w.objects[2].gone).toBeFalsy();
+    w.hit(6, 1, 1, -1, 0, -3);
+    w.update(600);
+    expect(w.objects[2].gone).toBe(true);
+  });
+
   it("a window has panes on its faces; a hard hit breaks one, a very hard one shatters the marble", () => {
     const w = world([{ x: 4, y: 1, k: "st_window_ns", a: { $connections: "5" } }]); // faces N + S
     expect(w.blockAt(4, 1)).toBe(8 | 2 | 16);

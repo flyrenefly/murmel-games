@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -171,6 +171,16 @@ export function windowFaces(o: GameObject): number {
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
 }
 
+/** BreakStone type from the kind (st_break = plain). */
+function breakType(o: GameObject): string {
+  return /^st_break_(\w+)$/.exec(o.kind)?.[1] ?? 'plain';
+}
+
+function breakMs(o: GameObject): number {
+  const t = breakType(o);
+  return t === 'laser' || t === 'bug' ? 6 * 50 : 10 * 50;
+}
+
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
 
@@ -248,6 +258,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** BreakStone: start of BREAKING (removed after the animation). */
+  breaking?: number;
   /** Blocker: stone (solid, shrinking, growing) or item (open, with its lock state). */
   blocker?: { phase: 'solid' | 'shrinking' | 'growing' | 'open'; since: number; lock: 'idle' | 'new' | 'locked' | 'unlocked'; stone?: GameObject | null };
   /** Rotator: start of the current turn, and the neighbours remembered for its impulses. */
@@ -318,7 +330,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench') return 'tool';
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer') return 'tool';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
   if (kind === 'it_springboard') return 'springboard';
@@ -334,6 +346,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_pull') return 'pull';
   if (kind === 'st_laserswitch') return 'laserswitch';
   if (/^st_window(_[nesw]+)?$/.test(kind)) return 'window';
+  if (/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/.test(kind)) return 'breakstone';
   if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
@@ -495,7 +508,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -524,6 +537,13 @@ export class ObjectWorld {
       }
       if (o.cls === 'window') {
         this.hitWindow(o, nx, ny, vn, by);
+        return;
+      }
+      if (o.cls === 'breakstone') {
+        // BreakStone::actor_hit: the hammer breaks plain, oxydc and boulder ones, black/white
+        // only for a marble of that colour
+        const t = breakType(o);
+        if (this.wields('it_hammer') && (t === 'plain' || t === 'oxydc' || t === 'boulder' || (t === 'black' && color === 0) || (t === 'white' && color === 1))) this.breakStone(o);
         return;
       }
       if (o.cls === 'mirror') {
@@ -1116,9 +1136,12 @@ export class ObjectWorld {
           if (o.cls === 'boulder') o.state = (o.state + 2) % 4; // BoulderStone: turn round
           else if (o.cls === 'impulse' && o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
           else if (o.cls === 'rotator') o.state = 1 - o.state; // RotatorStone::lightDirChanged
+          else if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o); // BreakStone::processLight
         }
       }
     }
+    // BreakStone::processLight: any light breaks it (not st_break_bug), also at the start
+    for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && breakType(o) !== 'bug' && lit.has(o.row * W + o.col)) this.breakStone(o);
     // LaserSwitch::lightDirChanged: on with light, off without (the initial state acts not)
     for (const o of this.objects) {
       if (o.cls !== 'laserswitch' || o.gone) continue;
@@ -1150,6 +1173,26 @@ export class ObjectWorld {
   /** st_laser sheet: column N E S W, row 1 off, rows 1..8 animated (100 ms) when on. */
   laserLook(o: GameObject): { col: number; row: number } {
     return { col: 3 - laserDir(o), row: o.state === 1 ? 1 + (Math.floor(this.now / 100) % 8) : 1 };
+  }
+
+  // ---------- breakable stones (BreakStone.cc) ----------
+
+  /** BreakStone::doBreak: BREAKING animation, then the stone is gone (stonedestroy = explosion0). */
+  private breakStone(o: GameObject): void {
+    if (o.breaking !== undefined) return;
+    o.breaking = this.now;
+    this.events.push({ type: 'sound', name: 'explode' });
+  }
+
+  /** Image and frame: st_break_<type> 10 × 50 ms; laser/bug: st_flat / st_break_bug, st_flat_break 6 × 50 ms. */
+  breakLook(o: GameObject): { image: string; frame: number; solid: boolean } {
+    const t = breakType(o);
+    const flat = t === 'laser' || t === 'bug';
+    const age = o.breaking === undefined ? -1 : this.now - o.breaking;
+    const solid = t === 'oxydc' || t === 'boulder' || flat;
+    if (age < 0) return { image: t === 'laser' ? 'st_flat' : `st_break_${t}`, frame: 0, solid };
+    if (flat) return { image: 'st_flat_break', frame: Math.min(5, Math.floor(age / 50)), solid };
+    return { image: `st_break_${t}`, frame: Math.min(9, Math.floor(age / 50)), solid };
   }
 
   // ---------- windows (WindowStone.cc) ----------
@@ -1865,6 +1908,8 @@ export class ObjectWorld {
     const [dx, dy] = STEPS[d];
     // BlockerStone::message("_trigger"): shrinks
     if (raising) for (const b of this.at(o.col + dx, o.row + dy)) if (b.cls === 'blocker' && !b.gone) this.blockerSet(b, 'shrinking');
+    // BreakStone::message("_trigger"): a boulder breaks st_break_boulder
+    if (raising) for (const b of this.at(o.col + dx, o.row + dy)) if (b.cls === 'breakstone' && !b.gone && breakType(b) === 'boulder') this.breakStone(b);
     // MirrorStone::message("_trigger", 1): turns
     if (raising) for (const m of this.at(o.col + dx, o.row + dy)) if (m.cls === 'mirror' && !m.gone) this.turnMirror(m, 1);
     // ActorImpulseStone::message("_trigger", true): sends the boulder back
@@ -2054,6 +2099,7 @@ export class ObjectWorld {
       if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
+      if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };

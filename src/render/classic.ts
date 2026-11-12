@@ -173,7 +173,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind === 'it_extralife') return ['it_extralife'];
   if (kind === 'it_yinyang') return ['it_yinyang'];
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench') return [kind];
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer') return [kind];
   if (kind.startsWith('it_flag')) return ['it_flag_black', 'it_flag_white'];
   if (kind === 'it_springboard') return ['it_springboard', ...JUMP_IMAGES];
   if (kind.startsWith('it_magnet')) return ['it_magnet_on', 'it_magnet_off'];
@@ -193,6 +193,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_rotator')) return ['st_rotator_cw', 'st_rotator_ccw', 'sh_round'];
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
+  if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('st_window')) return ['st_window_blue', 'st_window_green', 'sh_window'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
   if (kind.startsWith('st_actorimpulse')) return ['st_actorimpulse', 'sh_actorimpulse'];
@@ -626,6 +627,12 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'breakstone') {
+      const look = world.breakLook(o);
+      if (pass === 'shadow') this.image(look.solid ? 'sh_solid' : 'sh_round', px, py);
+      else this.frame(look.image, look.frame, px, py);
       return;
     }
     if (o.cls === 'window') {

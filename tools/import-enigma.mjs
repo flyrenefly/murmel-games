@@ -84,6 +84,8 @@ const OBJECTS = [
   [/^it_ring$/, ['it_ring']],
   [/^it_spoon$/, ['it_spoon']],
   [/^it_wrench$/, ['it_wrench']],
+  [/^it_hammer$/, ['it_hammer']],
+  [/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/, ['st_break_plain', 'st_break_black', 'st_break_white', 'st_break_oxydc', 'st_break_boulder', 'st_break_bug', 'st_flat', 'st_flat_break', 'sh_solid', 'sh_round']],
   [/^it_flag(_black|_white)?$/, ['it_flag_black', 'it_flag_white']],
   [/^it_springboard$/, ['it_springboard', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
   [/^it_magnet(_on|_off)?$/, ['it_magnet_on', 'it_magnet_off']],
