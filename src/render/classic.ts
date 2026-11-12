@@ -173,7 +173,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind === 'it_extralife') return ['it_extralife'];
   if (kind === 'it_yinyang') return ['it_yinyang'];
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy') return [kind];
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword') return [kind];
+  if (kind === 'st_knight') return ['st_knight', 'sh_round'];
   if (kind === 'st_floppy') return ['st_floppy_on', 'st_floppy_off', 'sh_round'];
   if (kind.startsWith('it_flag')) return ['it_flag_black', 'it_flag_white'];
   if (kind === 'it_springboard') return ['it_springboard', ...JUMP_IMAGES];
@@ -649,6 +650,11 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'knight') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_knight', Math.min(4, o.state), px, py);
       return;
     }
     if (o.cls === 'shogun') {

@@ -440,6 +440,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   in einen Stapel aus nur größeren Ringen; Kugeln dort zerspringen. Ein Shogun-Punkt ist aktiv, wenn
   genau sein Stapel darauf steht (s; s+m; s+m+l), und meldet Wechsel (der Anfangszustand nicht).
   Bild st_shogun nach Lochbits, Schatten des kleinsten Rings. Offen: Löcher n/t/g/u.
+- **st_knight + it_sword** (`KnightStone.cc`): Ein Treffer ohne Schwert lässt die Kugel zerspringen; mit
+  Schwert in der Hand nimmt der Ritter einen Schaden (Bild st_knight 1–5), nach vier ist er passierbar
+  und lichtdurchlässig (Text „All right, we'll call it a draw“). Das Schwert ist sonst ein gewöhnlicher
+  Gegenstand (Licht verwandelt es in Enigma in einen Hammer – fehlt).
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

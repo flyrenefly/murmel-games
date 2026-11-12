@@ -1,6 +1,6 @@
 # Enigma-Import
 
-633 von 1322 Levels übernommen (17 Pakete).
+642 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -15,11 +15,10 @@
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_knight | 60 | 3 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
-| Gegenstand it_cherry | 43 | 1 |
+| Gegenstand it_cherry | 43 | 2 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_floor() | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -29,8 +28,7 @@
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
-| Gegenstand it_sword | 32 | 0 |
-| Gegenstand it_strip_ew | 31 | 0 |
+| Gegenstand it_strip_ew | 31 | 1 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coffee_drop | 28 | 4 |
@@ -48,7 +46,7 @@
 | Stein st_ghost_break | 23 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_magic_brick | 20 | 2 |
+| Stein st_magic_brick | 20 | 4 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
@@ -68,7 +66,7 @@
 | Stein st_plaster_breakable | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 4 |
 | Lua: draw_stones() | 14 | 0 |
-| Aktion onoff | 14 | 1 |
+| Aktion onoff | 14 | 2 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
@@ -78,7 +76,7 @@
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
-| Gegenstand it_burnable_oil | 13 | 1 |
+| Gegenstand it_burnable_oil | 13 | 2 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 4 |
@@ -101,7 +99,7 @@
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
-| Gegenstand it_seed_greenbrown | 8 | 0 |
+| Gegenstand it_seed_greenbrown | 8 | 1 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 1 |
@@ -137,7 +135,6 @@
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
-| Lua: it_sword | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Gegenstand it_extinguisher_medium | 4 | 0 |
 | Gegenstand it_strip_nsw | 4 | 0 |
@@ -167,7 +164,6 @@
 | Gegenstand it_strip_s | 3 | 0 |
 | Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
-| Lua: st_knight | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
