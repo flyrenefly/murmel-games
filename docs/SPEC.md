@@ -175,6 +175,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Feld wird ersetzt), danach eine normale Holzkiste – auf Abgrund, Wasser und Sumpf eine
   Brücke. Die übrigen Samen (greenbrown, volcano, hay) und die Oxyd-Sonderregel (Samen auf
   Gitter wird Holzboden) fehlen noch.
+- **st_brownie und *_movable** (`StandardStones.cc`, `GlassStones.cc`): einfache Steine mit
+  MOVABLE_STANDARD – geschoben wie eine Holzkiste, versinken aber nicht und bauen keine
+  Brücke (das kann nur `BoxStone`). Gebaut: st_brownie, st_granite/camouflage/redbrown/
+  invisible_movable, st_rawglass/lightglass/darkglass_movable; Schatten nach models-2d.lua
+  (sh_round, sh_rawglass, sonst sh_solid). Offen: flat, plaster, greenbrown, death,
+  stoneimpulse und rotator in der _movable-Form (eigene Sonderregeln).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

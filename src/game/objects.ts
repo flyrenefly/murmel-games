@@ -153,6 +153,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
+  if (MOVABLE_STONE.test(kind)) return 'box'; // pushed like a box, but does not sink
   if (kind === 'st_timer' || kind === 'ot_timer') return 'timer'; // ot_timer: TimerGadget, no cell
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
   if (kind in MEDITATION_STATE) return 'meditation';
@@ -164,6 +165,20 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
   if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow') return 'impulse';
   return null;
+}
+
+/**
+ * Plain stones that move like a wood box (StandardStone/GlassStone with MOVABLE_STANDARD):
+ * st_brownie and the _movable variants. Unlike BoxStone they do not sink or build bridges.
+ */
+export const MOVABLE_STONE = /^st_(brownie|(granite|camouflage|redbrown|invisible|rawglass|lightglass|darkglass)_movable)$/;
+
+/** Image and shadow of a movable plain stone (models-2d.lua); invisible ones draw nothing. */
+export function movableLook(kind: string): { image: string; shadow: string } | null {
+  if (kind === 'st_invisible_movable') return null;
+  if (kind === 'st_brownie') return { image: 'st_brownie', shadow: 'sh_round' };
+  const image = kind.replace(/_movable$/, '');
+  return { image, shadow: /glass$/.test(image) ? 'sh_rawglass' : 'sh_solid' };
 }
 
 /** Messages the objects understand (others need Lua or unsupported objects). */
@@ -343,7 +358,7 @@ export class ObjectWorld {
     // Stone::on_move: a stone moving onto the marble shatters it.
     this.shatterAt(col, row);
     this.stoneHitsItems(col, row);
-    if (SINK_FLOORS.has(this.env.floorAt(col, row))) {
+    if (o.kind.startsWith('st_box') && SINK_FLOORS.has(this.env.floorAt(col, row))) {
       o.gone = true;
       this.unplace(o);
       this.env.setFloor(col, row, bridgeFloor(o.kind));

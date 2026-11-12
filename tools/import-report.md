@@ -1,6 +1,6 @@
 # Enigma-Import
 
-110 von 1322 Levels übernommen (14 Pakete).
+115 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -11,7 +11,7 @@
 | Lua-Rückruf | 169 | 1 |
 | Stein st_passage_black | 152 | 2 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_boulder | 135 | 3 |
+| Stein st_boulder | 135 | 5 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
@@ -34,7 +34,6 @@
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
 | Stein st_key | 90 | 0 |
-| Stein st_brownie | 77 | 5 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
 | Boden fl_slope_ise | 74 | 0 |
@@ -69,7 +68,6 @@
 | Stein st_chess_black | 49 | 2 |
 | Stein st_pull | 48 | 1 |
 | Wurmloch ohne Ziel | 46 | 3 |
-| Stein st_rawglass_movable | 46 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
@@ -79,7 +77,7 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_spring_keep | 38 | 2 |
+| Gegenstand it_spring_keep | 38 | 3 |
 | Gegenstand it_springboard | 38 | 0 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
@@ -117,8 +115,7 @@
 | FallenPuzzle | 27 | 2 |
 | Gegenstand it_cross | 26 | 0 |
 | Stein fl_bridge_gc | 26 | 0 |
-| Stein st_granite_movable | 26 | 0 |
-| Stein st_greenbrown_hollow | 25 | 0 |
+| Stein st_greenbrown_hollow | 25 | 1 |
 | Boden fl_slope_te | 25 | 0 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
@@ -169,7 +166,7 @@
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 0 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Stein st_greenbrown_movable | 14 | 1 |
+| Stein st_greenbrown_movable | 14 | 2 |
 | Lua: :is | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 1 |
 | Stein st_lightglass_hollow | 14 | 0 |
@@ -225,11 +222,9 @@
 | Boden fl_scales_darkgray | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
-| Stein st_redbrown_movable | 8 | 0 |
 | Stein st_monoflop | 8 | 0 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein it_vortex_closed | 8 | 0 |
-| Stein st_camouflage_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 0 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: set_attrib() | 7 | 0 |
@@ -241,7 +236,6 @@
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
-| Stein st_lightglass_movable | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 0 |
 | Stein st_lightpassenger_off | 6 | 0 |
@@ -262,6 +256,7 @@
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
 | Stein st_oxyd_a | 5 | 0 |
+| Stein st_brownie (verbunden) | 5 | 1 |
 | Lua: st_window | 5 | 0 |
 | Boden fl_scales_platinum | 5 | 0 |
 | Stein st_oxyd_b | 4 | 3 |
@@ -314,7 +309,6 @@
 | Stein st_shogun_sl | 2 | 0 |
 | Stein st_shogun_ml | 2 | 0 |
 | Stein st_shogun_sm | 2 | 0 |
-| Stein st_invisible_movable | 2 | 0 |
 | Gegenstand it_crack_i | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 0 |
 | Lua: fl_slope_te | 2 | 0 |
@@ -344,9 +338,9 @@
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Lua: st_boulder_n | 2 | 0 |
-| Lua: st_brownie | 2 | 0 |
 | Boden fl_slope_tsr | 2 | 0 |
 | Boden fl_slope_twr | 2 | 0 |
+| Stein st_rawglass_movable (verbunden) | 2 | 0 |
 | Lua: it_cherry | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
 | Gegenstand it_strip_n | 2 | 0 |
@@ -447,7 +441,7 @@
 | Boden mit Kraft (fl_lawn) | 1 | 0 |
 | Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
-| Stein st_darkglass_movable | 1 | 0 |
+| Stein st_redbrown_movable (verbunden) | 1 | 0 |
 | Lua: :drawBorder | 1 | 0 |
 | Lua: lib.lua | 1 | 0 |
 | Lua: st_knight | 1 | 0 |
@@ -482,7 +476,6 @@
 | Lua: it_coin_l | 1 | 0 |
 | Lua: it_explosion | 1 | 0 |
 | Lua: it_key | 1 | 0 |
-| Lua: st_invisible_movable | 1 | 0 |
 | Lua: st_oxyd_d | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |

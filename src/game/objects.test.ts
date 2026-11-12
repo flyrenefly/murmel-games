@@ -287,6 +287,22 @@ describe('ObjectWorld', () => {
     expect(w.warpTarget(5.5, 0.5)).toEqual({ x: 1.5, y: 1.5 });
   });
 
+  it("st_brownie and *_movable stones are pushed like boxes but do not sink (StandardStone)", () => {
+    const floors: Record<string, string> = { "3,0": "fl_water", "3,1": "fl_water" };
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 2, y: 0, k: "st_brownie" }, { x: 2, y: 1, k: "st_box_wood" }, { x: 5, y: 2, k: "st_rawglass_movable" }], W, {}, env);
+    expect(w.blockAt(2, 0)).toBe(ALL_FACES);
+    expect(w.push(w.objects[0], 1, 0)).toBe(true);
+    expect(w.objects[0]).toMatchObject({ col: 3, row: 0, gone: false });
+    expect(floors["3,0"]).toBe("fl_water");
+    expect(w.blockAt(3, 0)).toBe(ALL_FACES);
+    w.push(w.objects[1], 1, 0); // the wood box sinks and becomes a bridge
+    expect(w.objects[1].gone).toBe(true);
+    expect(floors["3,1"]).toMatch(/^fl_wood_framed/);
+    expect(w.push(w.objects[2], 0, 1)).toBe(true);
+    expect(w.blockAt(5, 3)).toBe(ALL_FACES);
+  });
+
   describe("impulse stones", () => {
     const env: ObjectEnv = { stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5, floorAt: () => "fl_gray", setFloor: () => {} };
     it("a hit starts a chain: neighbours pulse in turn, boxes next to it are pushed away", () => {

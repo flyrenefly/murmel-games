@@ -55,6 +55,11 @@ const OBJECTS = [
   [/^st_stoneimpulse(_hollow)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
+  // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
+  [/^st_brownie$/, ['st_brownie', 'sh_round']],
+  [/^st_(granite|camouflage|redbrown)_movable$/, ['st_granite', 'st_camouflage', 'st_redbrown', 'sh_solid']],
+  [/^st_(rawglass|lightglass|darkglass)_movable$/, ['st_rawglass', 'st_lightglass', 'st_darkglass', 'sh_rawglass']],
+  [/^st_invisible_movable$/, []],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
@@ -302,7 +307,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
         } else if (objectImages(st.k)) {
           // Boxes moved together by wires, or breaking into items, are not built yet.
-          if (/^st_(box|stoneimpulse)/.test(st.k) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
+          if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {

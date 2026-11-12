@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, EAST, type GameObject, meditationImage, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
+import { doorFlavor, EAST, type GameObject, meditationImage, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -144,6 +144,10 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
+  if (MOVABLE_STONE.test(kind)) {
+    const look = movableLook(kind);
+    return look ? [look.image, look.shadow] : [];
+  }
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
@@ -481,6 +485,11 @@ export class ClassicView {
     }
     if (o.cls === 'box') {
       if (o.gone) return;
+      if (MOVABLE_STONE.test(o.kind)) {
+        const look = movableLook(o.kind);
+        if (look) this.image(pass === 'shadow' ? look.shadow : look.image, px, py);
+        return;
+      }
       const age = world.growAge(o);
       if (pass === 'shadow') this.image('sh_round', px, py);
       else if (age >= 0) this.frame('st_box_wood_growing', Math.min(2, Math.floor(age / 130)), px, py);
