@@ -436,6 +436,11 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
+    else if (e.type === 'oxyd') {
+      // a boulder rolled against an Oxyd stone: it opens like on a marble hit
+      const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
+      if (s) handlePairEvents(board.hit(s.index));
+    }
     else if (e.type === 'quake') {
       sfx.quake();
       handlePairEvents(board.closeAll());

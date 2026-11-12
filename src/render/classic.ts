@@ -144,6 +144,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
+  if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
     return look ? [look.image, look.shadow] : [];
@@ -481,6 +482,18 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'boulder') {
+      // st_boulder.png / st_boulder_fall.png: columns n e s w, rows = 3 frames; falling has no shadow
+      const { frame, falling } = world.boulderFrame(o);
+      if (pass === 'shadow') {
+        if (!falling) this.image('sh_round', px, py);
+        return;
+      }
+      const col = [3, 2, 1, 0][o.state & 3]; // Enigma W0 S1 E2 N3 → column of n e s w
+      const im = this.img![falling ? 'st_boulder_fall' : 'st_boulder'];
+      if (im) this.ctx.drawImage(im, col * 32, frame * 32, 32, 32, px, py, 32, 32);
       return;
     }
     if (o.cls === 'box') {

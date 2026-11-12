@@ -303,6 +303,63 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(5, 3)).toBe(ALL_FACES);
   });
 
+  describe("boulders (BoulderStone)", () => {
+    const floors: Record<string, string> = {};
+    const walls = new Set<string>();
+    const env: ObjectEnv = {
+      stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5 || walls.has(`${c},${r}`),
+      floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray",
+      setFloor: () => {},
+    };
+    const BMS = 360;
+
+    it("rolls one cell per animation cycle, waits at an obstacle and triggers it", () => {
+      walls.clear();
+      walls.add("6,2"); // e.g. an Oxyd stone
+      const w = new ObjectWorld([{ x: 2, y: 2, k: "st_boulder_e", a: { orientation: "2" } }], W, {}, env);
+      const b = w.objects[0];
+      w.update(BMS - 10);
+      expect(b.col).toBe(2);
+      w.update(20); // init cycle ends: first move
+      expect(b.col).toBe(3);
+      w.update(BMS);
+      expect(b.col).toBe(4);
+      w.update(BMS); // reaches 5,2: the wall ahead gets a raising trigger
+      expect(b.col).toBe(5);
+      expect(w.events).toContainEqual({ type: "oxyd", col: 6, row: 2 });
+      w.update(BMS * 3);
+      expect(b.col).toBe(5); // blocked: idle
+      walls.delete("6,2");
+      w.update(BMS * 2);
+      expect(b.col).toBeGreaterThan(5);
+    });
+
+    it("falls into an abyss and is gone after the fall animation; turn changes the direction", () => {
+      walls.clear();
+      floors["3,1"] = "fl_abyss";
+      const w = new ObjectWorld(
+        [
+          { x: 2, y: 1, k: "st_boulder_e" },
+          { x: 2, y: 3, k: "st_boulder", a: { name: "b" } },
+          { x: 0, y: 4, k: "it_trigger", a: { target: "b", action: "turn" } },
+        ],
+        W, {}, env,
+      );
+      w.update(BMS + 5);
+      expect(w.objects[0]).toMatchObject({ col: 3, gone: false });
+      expect(w.boulderFrame(w.objects[0]).falling).toBe(true);
+      // the default boulder points north and moved to 2,2; turn → east
+      expect(w.objects[1]).toMatchObject({ col: 2, row: 2, state: 3 });
+      w.marbleAt(1, 4); // first position: no trigger action (level start)
+      w.marbleAt(0, 4);
+      expect(w.objects[1].state).toBe(2);
+      w.update(BMS);
+      expect(w.objects[0].gone).toBe(true);
+      expect(w.objects[1]).toMatchObject({ col: 3, row: 2 });
+      delete floors["3,1"];
+    });
+  });
+
   describe("impulse stones", () => {
     const env: ObjectEnv = { stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5, floorAt: () => "fl_gray", setFloor: () => {} };
     it("a hit starts a chain: neighbours pulse in turn, boxes next to it are pushed away", () => {

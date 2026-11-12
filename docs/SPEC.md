@@ -181,6 +181,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   invisible_movable, st_rawglass/lightglass/darkglass_movable; Schatten nach models-2d.lua
   (sh_round, sh_rawglass, sonst sh_solid). Offen: flat, plaster, greenbrown, death,
   stoneimpulse und rotator in der _movable-Form (eigene Sonderregeln).
+- **st_boulder** (`BoulderStone.cc`): rollt in seine Richtung (Standard Nord), gesteuert vom
+  Ende jedes Animationsdurchlaufs (3 × 120 ms): frei → ein Feld weiter (Murmel im Zielfeld
+  zerspringt), sonst warten. Beim Ankommen und beim Drehen erhält der Stein davor einen
+  Auslöser – ein Oxyd-Stein öffnet sich dann wie bei einem Treffer. Auf einem Abgrund
+  stürzt er ab (Sturzanimation, dann weg), Wasser hält ihn nicht auf. Die Murmel kann ihn
+  nicht schieben; Impulssteine bewegen ihn. Nachrichten turn, turnback, flip
+  (counterclock). Offen: Zauberstab, Licht (Laser), Rotatoren.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

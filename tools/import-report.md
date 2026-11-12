@@ -1,17 +1,16 @@
 # Enigma-Import
 
-115 von 1322 Levels übernommen (14 Pakete).
+120 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 0 |
-| Stein st_laser | 225 | 0 |
+| Stein st_laser | 225 | 1 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
 | Akteur ac_pearl_white | 179 | 3 |
-| Lua-Rückruf | 169 | 1 |
+| Lua-Rückruf | 166 | 1 |
 | Stein st_passage_black | 152 | 2 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_boulder | 135 | 5 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
@@ -28,7 +27,7 @@
 | Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Gegenstand it_magicwand | 101 | 3 |
+| Gegenstand it_magicwand | 101 | 9 |
 | Lua-Init | 98 | 0 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
@@ -61,12 +60,12 @@
 | Boden fl_slope_osw | 53 | 0 |
 | Boden fl_slope_one | 52 | 0 |
 | Boden fl_slope_onw | 52 | 0 |
-| Stein st_rotator_ccw | 52 | 0 |
+| Stein st_rotator_ccw | 52 | 1 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
 | Stein st_chess_black | 49 | 2 |
-| Stein st_pull | 48 | 1 |
+| Stein st_pull | 48 | 2 |
 | Wurmloch ohne Ziel | 46 | 3 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -128,7 +127,7 @@
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Gegenstand it_spring_drop | 22 | 0 |
-| Stein st_chameleon | 22 | 0 |
+| Stein st_chameleon | 22 | 1 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
@@ -158,7 +157,7 @@
 | mehrere weiße Murmeln | 16 | 0 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 0 |
-| Stein st_break_boulder | 15 | 1 |
+| Stein st_break_boulder | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Gegenstand it_magnet_on | 15 | 0 |
 | Stein st_break_black | 15 | 0 |
@@ -337,7 +336,6 @@
 | Lua: laser() | 2 | 0 |
 | Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Lua: st_boulder_n | 2 | 0 |
 | Boden fl_slope_tsr | 2 | 0 |
 | Boden fl_slope_twr | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
@@ -377,7 +375,6 @@
 | Lua: getkey() | 1 | 0 |
 | Lua: :encode | 1 | 0 |
 | Lua: test() | 1 | 0 |
-| Lua: st_boulder | 1 | 0 |
 | Lua: close() | 1 | 0 |
 | Lua: hollow() | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
@@ -392,6 +389,7 @@
 | Lua: fl_bridge_bw | 1 | 0 |
 | Lua: it_trap | 1 | 0 |
 | Lua: st_greenbrown_hollow | 1 | 0 |
+| Aktion turnback | 1 | 0 |
 | Aktion trigger | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
 | Lua: st_darkglass_hollow | 1 | 0 |
@@ -403,8 +401,6 @@
 | Lua: fakeoxyd() | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
-| Lua: st_boulder_e | 1 | 0 |
-| Lua: st_boulder_w | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
 | Lua: hammer() | 1 | 0 |
 | Stein st_oxyd_c | 1 | 0 |
@@ -421,7 +417,6 @@
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |
 | Boden mit Kraft (fl_water) | 1 | 0 |
-| Lua: st_boulder_s | 1 | 0 |
 | Lua: st_redfiber | 1 | 0 |
 | Lua: it_strip_ew | 1 | 0 |
 | Lua: it_strip_ns | 1 | 0 |

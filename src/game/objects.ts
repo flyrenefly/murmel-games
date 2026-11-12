@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed']);
@@ -84,6 +84,8 @@ const STEPS: [number, number, number][] = [
   [1, 0, 4],
   [0, -1, 8],
 ];
+/** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
+export const BOULDER_MS = 3 * 120;
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
 export const PUSH_SPEED = 4;
 /** Floors a box sinks into, becoming a floor itself (BoxStone::maybe_fall_or_stopfire). */
@@ -134,6 +136,8 @@ export interface GameObject {
   impulse?: { phase: 'expanding' | 'shrinking'; incoming: number };
   /** Landmine: exploding since this time (it_explosion_hollow). */
   exploding?: number;
+  /** Boulder (BoulderStone): phase and start of the current animation cycle. */
+  boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
   /** Seed: growing since this time; box: grown from a seed, growing since this time. */
   growing?: number;
 }
@@ -144,6 +148,8 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
+  /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
+  | { type: 'oxyd'; col: number; row: number }
   | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' };
 
 export function objectClass(kind: string): ObjectClass | null {
@@ -158,6 +164,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
   if (kind in MEDITATION_STATE) return 'meditation';
   if (kind === 'it_landmine') return 'landmine';
+  if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
@@ -278,7 +285,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PuzzleStone::collision_response: exploding stones let the marble pass.
       if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding') return ALL_FACES;
@@ -539,6 +546,7 @@ export class ObjectWorld {
       if (o.gone) continue;
       if (o.cls === 'impulse') this.startImpulse(o, d);
       else if (o.cls === 'box') this.push(o, dx, dy);
+      else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
     }
   }
@@ -638,6 +646,59 @@ export class ObjectWorld {
   private startGrowing(o: GameObject): void {
     if (o.growing !== undefined || o.gone) return;
     o.growing = this.now;
+  }
+
+  // ---------- boulders (BoulderStone.cc) ----------
+
+  /** BoulderStone::haveObstacle: a stone in the next cell. */
+  private boulderBlocked(o: GameObject, d: number): boolean {
+    const [dx, dy] = STEPS[d];
+    return this.stoneAt(o.col + dx, o.row + dy);
+  }
+
+  /** BoulderStone::triggerObstacle: only Oxyd stones react (tryOpen on a raising trigger). */
+  private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
+    const [dx, dy] = STEPS[d];
+    if (raising) this.events.push({ type: 'oxyd', col: o.col + dx, row: o.row + dy });
+  }
+
+  /** Stone::move_stone + BoulderStone::on_move; on an abyss the boulder falls (on_floor_change). */
+  private boulderMove(o: GameObject, d: number): boolean {
+    const [dx, dy] = STEPS[d];
+    if (!this.push(o, dx, dy)) return false;
+    o.boulder = { phase: 'active', since: this.now };
+    this.boulderTrigger(o, o.state, true);
+    if (this.env.floorAt(o.col, o.row) === 'fl_abyss') o.boulder = { phase: 'falling', since: this.now };
+    return true;
+  }
+
+  /** BoulderStone::setDir (messages turn, turnback, flip). */
+  private boulderTurn(o: GameObject, d: number): void {
+    if (d === o.state || o.boulder?.phase === 'falling') return;
+    o.state = d;
+    o.boulder = { phase: 'active', since: this.now };
+    this.boulderTrigger(o, d, true);
+  }
+
+  /** BoulderStone::animcb at the end of every animation cycle. */
+  private boulderCycle(o: GameObject): void {
+    const b = o.boulder!;
+    const d = o.state;
+    if (b.phase === 'falling') {
+      o.gone = true;
+      this.unplace(o);
+      this.updateTriggers(o.col, o.row);
+      return;
+    }
+    if (b.phase === 'init') {
+      b.phase = 'idle';
+      if (!this.boulderBlocked(o, d)) this.boulderMove(o, d);
+    } else if (b.phase === 'idle') {
+      if (!this.boulderBlocked(o, d)) b.phase = 'active';
+    } else {
+      this.boulderTrigger(o, d, false);
+      if (!this.boulderMove(o, d)) b.phase = 'idle';
+    }
   }
 
   /** Landmine::explode → it_explosion_hollow. */
@@ -751,6 +812,15 @@ export class ObjectWorld {
   update(ms: number): void {
     this.now += ms;
     for (const o of this.objects) {
+      if (o.cls === 'boulder' && !o.gone) {
+        o.boulder ??= { phase: 'init', since: 0 };
+        // one decision per finished cycle; a move restarts the cycle (init_model)
+        while (!o.gone && this.now - o.boulder.since >= BOULDER_MS) {
+          const before = o.boulder;
+          before.since += BOULDER_MS;
+          this.boulderCycle(o);
+        }
+      }
       // Explosion::animcb: a hollow remains unless the floor cannot be dug.
       if (o.exploding !== undefined && this.now - o.exploding >= EXPLOSION_MS) {
         o.exploding = undefined;
@@ -870,6 +940,12 @@ export class ObjectWorld {
     this.updateTriggers(o.col, o.row);
   }
 
+  /** Boulder animation: frame 0–2 of the current cycle and whether it is falling. */
+  boulderFrame(o: GameObject): { frame: number; falling: boolean } {
+    const b = o.boulder ?? { phase: 'init', since: 0 };
+    return { frame: Math.min(2, Math.floor(Math.max(0, this.now - b.since) / 120)), falling: b.phase === 'falling' };
+  }
+
   /** Milliseconds since a seed or grown box started growing (-1 = not growing). */
   growAge(o: GameObject): number {
     return o.growing === undefined ? -1 : this.now - o.growing;
@@ -938,6 +1014,16 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'boulder') {
+      // BoulderStone::message: turn (clockwise), turnback, flip; counterclock swaps turn directions
+      const ccw = truthy(o.attrs.counterclock);
+      const cw = (d: number) => (d + 3) % 4; // W→N→E→S→W in Enigma numbering (W0 S1 E2 N3)
+      const acw = (d: number) => (d + 1) % 4;
+      if (msg === 'turn') this.boulderTurn(o, ccw ? acw(o.state) : cw(o.state));
+      else if (msg === 'turnback') this.boulderTurn(o, ccw ? cw(o.state) : acw(o.state));
+      else if (msg === 'flip') this.boulderTurn(o, (o.state + 2) % 4);
+      return;
+    }
     if (o.cls === 'seed') {
       // SeedItem::message: grow or signal (any value) starts growing.
       if (msg === 'grow' || msg === 'signal') this.startGrowing(o);
@@ -1015,6 +1101,8 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // Boulder: direction from orientation or kind suffix, default north ($state is internal)
+  if (/^st_boulder/.test(kind)) return onewayDir(kind, { orientation: a.orientation ?? '' });
   if (kind in MEDITATION_STATE) {
     const s = Number(a.$state);
     return a.$state && Number.isInteger(s) && s !== 0 && Math.abs(s) <= 3 ? s : MEDITATION_STATE[kind];
