@@ -318,6 +318,32 @@ function convertLevel(pack, meta, xml, exp) {
       /* scissor cuts rubber bands; Murmel has none, so it changes nothing */
     }
   }
+  // "@pattern" in a target is the nearest matching object (Value::finalizeNearestObjectReference,
+  // World::get_group: ties go to the one further south, then east); "@@pattern" and "@name" drop the @.
+  const named = [...allCells(w)].filter((c) => c.o.name);
+  for (const o of objs) {
+    for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
+      if (!o.a[key].includes('@')) continue;
+      o.a[key] = tokens(o.a[key])
+        .map((t) => {
+          if (!t.startsWith('@')) return t;
+          if (t.startsWith('@@') || !/[*?]/.test(t)) return t.replace(/^@@?/, '');
+          const re = new RegExp('^' + t.slice(1).replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+          let best = null;
+          let bestD = Infinity;
+          for (const c of named) {
+            if (!re.test(c.o.name)) continue;
+            const d = (c.x - o.x) ** 2 + (c.y - o.y) ** 2;
+            if (d < bestD || (d === bestD && (c.y > best.y || (c.y === best.y && c.x > best.x)))) {
+              best = c;
+              bestD = d;
+            }
+          }
+          return best ? best.o.name : t;
+        })
+        .join(',');
+    }
+  }
   // Every action must be a supported message to a supported object (no Lua callbacks).
   for (const o of objs) {
     for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {

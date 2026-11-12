@@ -1,17 +1,17 @@
 # Enigma-Import
 
-103 von 1322 Levels übernommen (13 Pakete).
+104 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 360 | 31 |
+| Lua-Rückruf | 347 | 29 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
-| Akteur ac_pearl_white | 179 | 1 |
+| Akteur ac_pearl_white | 179 | 3 |
 | Stein st_passage_black | 152 | 2 |
 | Gegenstand it_sensor | 139 | 3 |
-| Stein st_boulder | 135 | 2 |
+| Stein st_boulder | 135 | 3 |
 | Stein st_passage_white | 134 | 0 |
 | Stein st_fourswitch | 131 | 2 |
 | Boden fl_slope_ps | 119 | 0 |
@@ -228,7 +228,9 @@
 | Gegenstand it_strip_es | 5 | 0 |
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
+| Stein st_oxyd_a | 5 | 0 |
 | Boden fl_scales_platinum | 5 | 0 |
+| Stein st_oxyd_b | 4 | 3 |
 | Gegenstand it_strip_e | 4 | 0 |
 | Boden fl_bridge_be | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
@@ -238,12 +240,10 @@
 | Gegenstand it_strip_nsw | 4 | 0 |
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
-| Stein st_oxyd_a | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Boden fl_bridge_bs | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
-| Stein st_oxyd_b | 3 | 2 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
@@ -292,6 +292,7 @@
 | Stein st_oxyd_c | 1 | 0 |
 | Boden mit Kraft (fl_himalaya) | 1 | 0 |
 | Boden mit Kraft (fl_dark) | 1 | 0 |
+| Stein fl_concrete | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |
 | Boden mit Kraft (fl_water) | 1 | 0 |
