@@ -21,6 +21,8 @@ const SAMPLES = [
   'st-fakeoxyd',
   'explosion2',
   'boink',
+  'st-mirrorturn',
+  'st-laser',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -115,6 +117,16 @@ export class Sfx {
 
   quake(): void {
     this.play('quake');
+  }
+
+  /** A mirror turns (sound-defaults.lua: mirrorturn = enigma/st-mirrorturn). */
+  mirror(): void {
+    this.play('st-mirrorturn');
+  }
+
+  /** A laser beam appears (laseron = enigma/st-laser). */
+  laser(): void {
+    this.play('st-laser', 0.6);
   }
 
   /** A fake stone (st_fake_quake) is hit. */

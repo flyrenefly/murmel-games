@@ -8,7 +8,7 @@
 //
 // Usage: node tools/import-enigma.mjs <exportDir> <enigma>/data
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { allTileKinds, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
@@ -89,6 +89,8 @@ const OBJECTS = [
   [/^it_sensor(_inverse|_exit|_filter[01])?$/, ['it_sensor', 'it_sensor_exit']],
   [/^it_key$/, ['it_key']],
   [/^st_key$/, ['st_key_on', 'st_key_off', 'sh_round']],
+  [/^st_laser(_[nesw])?$/, ['st_laser', 'sh_rounded', 'it_laser']],
+  [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
@@ -110,7 +112,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -216,6 +218,8 @@ function finish(level) {
   blockers = null;
   if (b.length === 0) return level;
   for (const why of b) reasons.set(why, (reasons.get(why) ?? 0) + 1);
+  // BLOCKERS=<file>: one line per rejected level with all its blockers (to plan the next objects)
+  if (process.env.BLOCKERS) appendFileSync(process.env.BLOCKERS, `${current}\t${b.join('\t')}\n`);
   if (b.length === 1) only.set(b[0], (only.get(b[0]) ?? 0) + 1);
   if (b.length === 1 && process.env.ONLY && b[0].includes(process.env.ONLY)) console.log(`nur ${b[0]}: ${current}`);
   return null;
@@ -326,7 +330,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     let row = '';
     for (let x = 0; x < w.w; x++) {
       const [fl, st, it] = w.cells[y * w.w + x];
-      if (it) {
+      // it_laserbeam: Enigma's beams of the initial world – Murmel calculates them itself
+      if (it && it.k !== 'it_laserbeam') {
         const im = objectImages(it.k);
         if (im) {
           objs.push(objectDef(x, y, it));

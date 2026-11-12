@@ -153,6 +153,11 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       }
     },
     staticStone: (c, r) => cellAt(lv, c, r)?.stone ?? null,
+    // Stone::is_transparent: hollow stones and glass except dark glass and beads
+    transparentAt: (c, r) => {
+      const cell = cellAt(lv, c, r);
+      return !!cell?.stone && (!!cell.hollow || /^st_(rawglass|lightglass|redfiber)/.test(cell.stone));
+    },
     setStaticStone: (c, r, kind) => {
       const cell = cellAt(lv, c, r);
       if (!cell) return;
@@ -510,6 +515,11 @@ function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'items') updateItems();
+    else if (e.type === 'laserhit') {
+      // BasicBall "_laserhit": shatters (not while jumping, falling or in a vortex)
+      const m = physics?.marbles[e.marble];
+      if (m && m.active && m.jump <= 0 && falling[e.marble] < 0) marbleDies(e.marble, true);
+    }
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
     else if (e.type === 'jump') marbleJumps(e.marble); // Springboard: "_jump"
@@ -558,6 +568,8 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'explode') sfx.explode();
     else if (e.name === 'fakeoxyd') sfx.fakeOxyd();
     else if (e.name === 'landmine') sfx.landmine();
+    else if (e.name === 'mirror') sfx.mirror();
+    else if (e.name === 'laser') sfx.laser();
   }
 }
 

@@ -394,6 +394,65 @@ describe('ObjectWorld', () => {
     expect(w.objects[3].state).toBe(0);
   });
 
+  describe("lasers and mirrors (laser.cc, MirrorStone.cc)", () => {
+    // a 10 × 6 room: walls only at the border rows/columns given here
+    const lworld = (defs: ObjectDef[], statics: Record<string, string> = {}) => {
+      const env: ObjectEnv = {
+        stoneAt: (c, r) => r < 0 || r > 5 || `${c},${r}` in statics,
+        floorAt: () => "fl_gray",
+        setFloor: () => {},
+        staticStone: (c, r) => statics[`${c},${r}`] ?? null,
+        transparentAt: (c, r) => statics[`${c},${r}`] === "st_rawglass",
+      };
+      const w = new ObjectWorld(defs, W, {}, env);
+      w.marbleAt(0, 5);
+      w.update(10);
+      return w;
+    };
+    const beam = (w: ObjectWorld, c: number, r: number) => w.beams.get(r * W + c) ?? 0;
+
+    it("a laser that is on shoots east until a stone; glass lets it through", () => {
+      const w = lworld([{ x: 1, y: 1, k: "st_laser", a: { $state: "1" } }], { "4,1": "st_rawglass", "7,1": "st_granite" });
+      expect(beam(w, 2, 1)).toBe(4); // EAST bit
+      expect(beam(w, 4, 1)).toBe(4); // under the glass
+      expect(beam(w, 6, 1)).toBe(4);
+      expect(beam(w, 7, 1)).toBe(0);
+      expect(beam(w, 8, 1)).toBe(0);
+    });
+
+    it("a planar mirror turns the beam; a hit turns the mirror", () => {
+      // st_mirror_slab_n is '|'?  Enigma: state NORTH → table entry 3 ('|'): east → west back
+      const w = lworld([
+        { x: 1, y: 2, k: "st_laser_e", a: { $state: "1" } },
+        { x: 4, y: 2, k: "st_mirror_slab", a: { orientation: "0" } }, // WEST = '\': east → south
+      ]);
+      expect(beam(w, 3, 2)).toBe(4);
+      expect(beam(w, 4, 3)).toBe(2); // SOUTH bit below the mirror
+      expect(beam(w, 4, 4)).toBe(2);
+      w.hit(4, 2, 0, -1, 0, -5); // rotate clockwise: WEST → NORTH ('|'): the beam goes back west
+      w.update(10);
+      expect(beam(w, 4, 3)).toBe(0);
+      expect(beam(w, 2, 2)).toBe(4 | 1);
+    });
+
+    it("an item stops the beam, a marble in it is hit, light opens an Oxyd stone", () => {
+      const w = lworld([
+        { x: 1, y: 1, k: "st_laser", a: { $state: "0", name: "l" } },
+        { x: 5, y: 1, k: "it_magicwand" },
+        { x: 1, y: 3, k: "st_laser", a: { $state: "0", name: "l2" } },
+      ], { "8,3": "st_oxyd" });
+      w.sendMessage(w.objects[0], "on", true);
+      w.sendMessage(w.objects[2], "on", true);
+      w.update(10);
+      expect(beam(w, 4, 1)).toBe(4);
+      expect(beam(w, 5, 1)).toBe(0);
+      expect(w.events).toContainEqual({ type: "oxyd", col: 8, row: 3 });
+      w.actorStep(3.5, 1.6, 0);
+      expect(w.events).toContainEqual({ type: "laserhit", marble: 0 });
+      expect(w.canDropAt(3.5, 1.5)).toBe(false);
+    });
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

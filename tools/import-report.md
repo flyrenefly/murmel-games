@@ -1,20 +1,17 @@
 # Enigma-Import
 
-395 von 1322 Levels übernommen (17 Pakete).
+419 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Stein st_laser | 225 | 3 |
-| Lua-Rückruf | 171 | 1 |
+| Lua-Rückruf | 157 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
-| Stein st_mirror_slab | 112 | 0 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Lua-Init | 105 | 2 |
-| Gegenstand it_laserbeam | 104 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
@@ -27,7 +24,6 @@
 | Stein st_coinslot | 58 | 0 |
 | Gegenstand it_bomb_black | 56 | 3 |
 | Gegenstand it_coin_s | 55 | 0 |
-| Stein st_mirror_triangle | 55 | 0 |
 | Objekt ot_counter | 54 | 1 |
 | Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 1 |
@@ -41,18 +37,18 @@
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 1 |
+| Stein st_thief | 41 | 2 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 3 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
-| Stein st_laserswitch | 36 | 0 |
+| Stein st_laserswitch | 36 | 5 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 2 |
+| Stein st_plop | 34 | 3 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Gegenstand it_wrench | 33 | 0 |
 | Lua: set_actor() | 32 | 0 |
@@ -61,7 +57,7 @@
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 0 |
+| Stein st_lightpassenger_on | 31 | 1 |
 | Lua: oxyd() | 30 | 0 |
 | Stein fl_bridge_gc | 29 | 0 |
 | Gegenstand it_death | 29 | 0 |
@@ -79,7 +75,7 @@
 | Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
-| Boden fl_yinyang_yin | 23 | 0 |
+| Boden fl_yinyang_yin | 23 | 1 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Stein st_ghost_break | 22 | 0 |
@@ -90,14 +86,14 @@
 | Stein st_stoneimpulse_movable | 20 | 0 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
-| Stein st_magic_brick | 19 | 0 |
+| Stein st_magic_brick | 19 | 2 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Boden fl_scales_concrete | 19 | 2 |
 | Akteure: nicht genau eine schwarze Murmel | 18 | 3 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
-| Akteur ac_bug | 18 | 2 |
+| Akteur ac_bug | 18 | 3 |
 | Gegenstand it_spade | 17 | 0 |
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 1 |
@@ -108,7 +104,7 @@
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 2 |
 | Stein st_break_boulder | 15 | 2 |
-| Lua: :is | 15 | 0 |
+| Lua: :is | 15 | 1 |
 | Stein st_portal_horse | 15 | 0 |
 | Stein st_break_black | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
@@ -123,24 +119,25 @@
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 2 |
-| Stein st_disco_light | 14 | 1 |
+| Stein st_disco_light | 14 | 2 |
 | Lua: :add | 13 | 1 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
-| Stein st_polarswitch | 13 | 0 |
+| Stein st_polarswitch | 13 | 1 |
 | Gegenstand it_burnable_oil | 13 | 0 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 2 |
 | Lua: :drawRect | 12 | 1 |
+| Aktion onoff | 12 | 1 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_crack_s | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
-| Objekt ot_timer (Lua-Init) | 11 | 0 |
+| Objekt ot_timer (Lua-Init) | 11 | 1 |
 | Stein st_brake | 11 | 0 |
-| Lua: :nearest | 10 | 1 |
+| Lua: :nearest | 10 | 3 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Stein st_box_wood (verbunden) | 10 | 1 |
 | Gegenstand it_pencil | 10 | 0 |
@@ -150,20 +147,20 @@
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 0 |
-| Stein st_mirror_sheets | 9 | 0 |
 | Boden fl_bridge_bn | 9 | 0 |
 | Stein st_break_bug | 9 | 0 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Boden fl_scales_darkgray | 8 | 0 |
+| Aktion turn | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 2 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
-| Lua: :orientate | 7 | 1 |
+| Lua: :orientate | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
 | Stein fl_bridge_bw | 7 | 0 |
@@ -223,7 +220,6 @@
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
 | Stein st_flat_burnable | 3 | 0 |
-| Lua: st_mirror | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Lua: it_cross | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
@@ -250,7 +246,7 @@
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
-| Stein st_portal_pearl | 2 | 0 |
+| Stein st_portal_pearl | 2 | 1 |
 | Gegenstand it_extinguisher_empty | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
@@ -318,7 +314,6 @@
 | Aktion kill | 1 | 0 |
 | Lua: st_lightglass_hollow | 1 | 0 |
 | Lua: fakeoxyd() | 1 | 0 |
-| Aktion onoff | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
@@ -402,10 +397,8 @@
 | Lua: it_pipe_sw | 1 | 0 |
 | Lua: it_pipe_nw | 1 | 0 |
 | Lua: it_pipe_ne | 1 | 0 |
-| Lua: st_mirror_slab | 1 | 0 |
 | Lua: st_break_oxydc | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
-| Lua: st_laser_n | 1 | 0 |
 | Lua: it_bomb_black | 1 | 0 |
 | Lua: fl_bridge_bn | 1 | 0 |
 | Lua: st_dispenser_bombblack | 1 | 0 |
@@ -415,7 +408,6 @@
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |
 | Lua: st_charge_zero | 1 | 0 |
-| Lua: st_laser_w | 1 | 0 |
 | Lua: it_surprise | 1 | 0 |
 | Boden fl_scales_brick | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
@@ -427,7 +419,6 @@
 | Lua: st_window_w | 1 | 0 |
 | Lua: st_window_s | 1 | 0 |
 | Lua: st_window_n | 1 | 0 |
-| Aktion turn | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
 | Lua: it_bottle_broken | 1 | 0 |
 | Gegenstand it_pipe_w | 1 | 0 |

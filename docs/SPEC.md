@@ -353,6 +353,19 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
+- **Laser** (`laser.cc`, `LaserStone.cc`, `MirrorStone.cc`): `st_laser(_n/e/s/w)` strahlt
+  eingeschaltet in seine Richtung (Standard Ost; on/off/toggle/signal, orientate/turn/turnback).
+  Alle 10 ms (Enigmas Tick) werden die Strahlen neu berechnet: feldweise, Steine halten auf
+  (durchsichtig: hohle Steine, Glas außer dunklem Glas und Perlen, Gitter, Durchlass-Steine,
+  offene Türen, hohle Puzzles, bewegliches Roh-/Hellglas), jeder Gegenstand stoppt den Strahl.
+  Spiegel (`st_mirror_slab/triangle/sheets` mit Richtung, `t` durchscheinend, `m` beweglich,
+  `c` gegen den Uhrzeigersinn) lenken nach Enigmas Tabelle `emissionDirections` um; ein Treffer
+  dreht sie (bewegliche werden vorher geschoben), Felsbrocken-Auslöser und `signal` 1 auch.
+  Eine Kugel näher als 0,21 an der Strahlachse zerspringt (`_laserhit`). Neues Licht öffnet
+  Oxyd-Steine, dreht Felsbrocken um und startet Impulssteine; die erste Berechnung löst nichts
+  aus. Auf Strahlfelder kann nichts abgelegt werden. Klänge st-laser, st-mirrorturn.
+  Offen: Laserschalter, Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
+  zeichnet keine Strahlen.
 - **st_key + it_key** (`KeySwitch.cc`, `SimpleItems.cc` Key): Ist der Schalter aus und liegt
   der Schlüssel mit gleichem `code` vorn im Inventar des Besitzers der Kugel, nimmt ein Treffer
   ihn und schaltet ein (Aktion mit true); eingeschaltet gibt ein Treffer den Schlüssel zurück

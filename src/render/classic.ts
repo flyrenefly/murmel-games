@@ -180,6 +180,8 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_sensor')) return ['it_sensor', 'it_sensor_exit'];
   if (kind.startsWith('it_key')) return ['it_key'];
   if (kind === 'st_key') return ['st_key_on', 'st_key_off', 'sh_round'];
+  if (kind.startsWith('st_laser')) return ['st_laser', 'sh_rounded', 'it_laser'];
+  if (kind.startsWith('st_mirror')) return ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
@@ -424,6 +426,18 @@ export class ClassicView {
       const py = oy + o.row * T;
       return px > -2 * T && py > -2 * T && px < VIEW_W + T && py < SCREEN_H * T + T;
     };
+    // it_laserbeam: it_laser_h, _v, _hv
+    if (img.it_laser)
+      for (const [k, b] of world.beams) {
+        const col = k % world.width;
+        const row = Math.floor(k / world.width);
+        const bx = ox + col * T;
+        const by = oy + row * T;
+        if (bx < -T || by < -T || bx > VIEW_W || by > SCREEN_H * T) continue;
+        const h = (b & 5) !== 0;
+        const v = (b & 10) !== 0;
+        this.frame('it_laser', h && v ? 2 : h ? 0 : 1, bx, by);
+      }
     for (const o of world.objects) {
       if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
       const px = ox + o.col * T;
@@ -555,6 +569,16 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'laser' || o.cls === 'mirror') {
+      if (pass === 'shadow') {
+        this.image('sh_rounded', px, py);
+        return;
+      }
+      const look = o.cls === 'laser' ? { image: 'st_laser', ...world.laserLook(o) } : world.mirrorLook(o);
+      const im = this.img![look.image];
+      if (im) this.ctx.drawImage(im, look.col * T, look.row * T, T, T, px, py, T, T);
       return;
     }
     if (o.cls === 'keyswitch') {

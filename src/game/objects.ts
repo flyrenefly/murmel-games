@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key']);
@@ -90,6 +90,65 @@ const STEPS: [number, number, number][] = [
 ];
 /** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
 export const BOULDER_MS = 3 * 120;
+/** Enigma directions for light: WEST 0, SOUTH 1, EAST 2, NORTH 3 (bits 1 << d). */
+const L_DX = [-1, 0, 1, 0];
+const L_DY = [0, 1, 0, -1];
+const L_W = 1;
+const L_S = 2;
+const L_E = 4;
+const L_N = 8;
+const DIR_LETTER: Record<string, number> = { w: 0, s: 1, e: 2, n: 3 };
+
+/** LaserStone orientation: attribute (Enigma direction) or kind suffix, default east. */
+function laserDir(o: GameObject): number {
+  const v = Number(o.attrs.orientation);
+  if (o.attrs.orientation !== undefined && o.attrs.orientation !== '' && v >= 0 && v <= 3) return v;
+  return DIR_LETTER[/^st_laser_([nesw])$/.exec(o.kind)?.[1] ?? 'e'];
+}
+
+const MIRROR_KIND = /^st_mirror(?:_(slab|triangle|sheets))?(?:_([nesw])(t?)(m?)(c?))?$/;
+
+/** MirrorStone flags from kind and attributes (flavor, transparent, movable, counterclock). */
+function mirrorFlags(o: GameObject): { triangle: boolean; pane: boolean; side: boolean; movable: boolean; counterclock: boolean } {
+  const m = MIRROR_KIND.exec(o.kind);
+  const flavor = o.attrs.flavor || m?.[1] || 'slab';
+  const side = flavor === 'sheets';
+  const flag = (a: string, def: boolean) => (o.attrs[a] !== undefined && o.attrs[a] !== '' ? truthy(o.attrs[a]) : def);
+  return {
+    triangle: flavor === 'triangle',
+    side,
+    pane: side || flag('transparent', m?.[3] === 't'),
+    movable: flag('movable', m?.[4] === 'm'),
+    counterclock: flag('counterclock', m?.[5] === 'c'),
+  };
+}
+
+/** MirrorStone::emissionDirections: outgoing beams for the incoming beam directions. */
+const MIRROR_OUT = (() => {
+  const W = 1, S = 2, E = 4, N = 8;
+  const e = (n: number, ea: number, s: number, w: number) => (n << 12) | (ea << 8) | (s << 4) | w;
+  return [
+    e(W, S, E, N), e(S, 0, N, 0), e(E, N, W, S), e(0, W, 0, E),
+    e(W, N | S, W, E), e(W | E, S, N, S), e(E, W, E, N | S), e(S, N, W | E, N),
+    e(W | N, S | E, E | S, N | W), e(S | N, 0, N | S, 0), e(E | N, N | E, W | S, S | W), e(0, W | E, 0, E | W),
+    e(W | N, N | S | E, W | S, E | W), e(W | E | N, S | E, N | S, S | W), e(E | N, W | E, E | S, N | S | W), e(S | N, N | E, W | E | S, N | W),
+    0, 0, 0, 0, 0, 0, 0, 0,
+    e(W | N, S | E, E | S, N | W), e(S | N, E, N | S, W), e(E | N, N | E, W | S, S | W), e(N, W | E, S, E | W),
+    0, 0, 0, 0,
+  ];
+})();
+
+function mirrorOut(o: GameObject, incoming: number): number {
+  const f = mirrorFlags(o);
+  const cand = MIRROR_OUT[(f.side ? 16 : 0) | (f.pane ? 8 : 0) | (f.triangle ? 4 : 0) | o.state];
+  let out = 0;
+  if (incoming & L_N) out |= (cand >> 12) & 15;
+  if (incoming & L_E) out |= (cand >> 8) & 15;
+  if (incoming & L_S) out |= (cand >> 4) & 15;
+  if (incoming & L_W) out |= cand & 15;
+  return out;
+}
+
 /** FlagItem colour: it_flag / it_flag_black 0, it_flag_white 1. */
 function flagColor(kind: string): number {
   return kind === 'it_flag_white' ? 1 : 0;
@@ -118,6 +177,8 @@ export interface ObjectEnv {
   staticStone?(col: number, row: number): string | null;
   /** Change the plain stone of a cell (st_swap exchanging places with a wall). */
   setStaticStone?(col: number, row: number, kind: string | null): void;
+  /** The plain stone of a cell lets laser light through (Stone::is_transparent: glass, hollow). */
+  transparentAt?(col: number, row: number): boolean;
 }
 
 const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
@@ -181,6 +242,8 @@ export type ObjectEvent =
   | { type: 'text'; text: string }
   /** An inventory changed outside a pick-up (key switch). */
   | { type: 'items' }
+  /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
+  | { type: 'laserhit'; marble: number }
   /** marble: index of the marble that shatters. */
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
@@ -195,7 +258,7 @@ export type ObjectEvent =
   | { type: 'oxydMsg'; col: number; row: number; msg: string; value: boolean }
   /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
   | { type: 'oxyd'; col: number; row: number }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' | 'mirror' | 'laser' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -223,6 +286,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_sensor(_inverse|_exit|_filter[01])?$/.test(kind)) return 'sensor';
   if (/^it_key(_\d+)?$/.test(kind)) return 'key';
   if (kind === 'st_key') return 'keyswitch';
+  if (/^st_laser(_[nesw])?$/.test(kind)) return 'laser';
+  if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -307,7 +372,7 @@ export class ObjectWorld {
 
   constructor(
     defs: readonly ObjectDef[],
-    private readonly width: number,
+    readonly width: number,
     /** Localised texts of documents (key → text). */
     private readonly texts: Record<string, string> = {},
     private readonly env: ObjectEnv = NO_ENV,
@@ -380,7 +445,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -404,6 +469,13 @@ export class ObjectWorld {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'keyswitch') {
         this.hitKeySwitch(o, by);
+        return;
+      }
+      if (o.cls === 'mirror') {
+        // MirrorStone::actor_hit: a movable one is pushed first; then it turns (wrench: back)
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (mirrorFlags(o).movable && face && vn < -PUSH_SPEED) this.push(o, -nx, -ny);
+        this.turnMirror(o, this.wields('it_wrench') ? -1 : 1);
         return;
       }
       if (o.cls === 'fourswitch') {
@@ -775,6 +847,13 @@ export class ObjectWorld {
           }
         }
       }
+      // LaserBeam::actor_hit: closer than 0.21 to the beam's axis → "_laserhit"
+      const beam = this.beams.get(Math.floor(y) * this.width + Math.floor(x)) ?? 0;
+      if (beam) {
+        const dx = Math.abs(x - Math.floor(x) - 0.5);
+        const dy = Math.abs(y - Math.floor(y) - 0.5);
+        if ((beam & (L_W | L_E) && dy < 0.21) || (beam & (L_N | L_S) && dx < 0.21)) this.events.push({ type: 'laserhit', marble });
+      }
       // Springboard::actor_hit: an actor on the floor within 0.3 (each axis) of the centre jumps
       for (const o of this.at(Math.floor(x), Math.floor(y))) {
         if (o.cls !== 'springboard' || o.gone) continue;
@@ -824,6 +903,7 @@ export class ObjectWorld {
     const col = Math.floor(x);
     const row = Math.floor(y);
     if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && ITEM_CLASSES.has(o.cls))) return false;
+    if (this.beams.has(row * this.width + col)) return false;
     if (col < 0 || row < 0 || col >= this.width) return false;
     const kind = this.inventory.shift()!;
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
@@ -834,6 +914,7 @@ export class ObjectWorld {
 
   /** Item::can_drop_at: no item in the cell. */
   canDropAt(x: number, y: number): boolean {
+    if (this.beams.has(Math.floor(y) * this.width + Math.floor(x))) return false; // the beam is an item (it_laserbeam)
     return !this.at(Math.floor(x), Math.floor(y)).some((o) => !o.gone && ITEM_CLASSES.has(o.cls));
   }
 
@@ -863,6 +944,120 @@ export class ObjectWorld {
   /** it_springboard_anim: ReverseFrames of 2 images à 120 ms (frame 1, then 0). */
   springboardFrame(o: GameObject): number {
     return o.bounce !== undefined && this.now - o.bounce < 120 ? 1 : 0;
+  }
+
+  // ---------- lasers and mirrors (laser.cc, LaserStone.cc, MirrorStone.cc) ----------
+
+  /** Laser beams per cell (it_laserbeam: direction bits W 1, S 2, E 4, N 8). */
+  readonly beams = new Map<number, number>();
+  /** Light arriving at stones and items per cell (GridObject light bits, for photo reactions). */
+  private lit = new Map<number, number>();
+  private lightDone = false;
+  private lightClock = 0;
+
+  /** Called every update: like Enigma's RecalcLight at the end of each 10 ms tick. */
+  private lightStep(dt: number): void {
+    this.lightClock += dt;
+    if (this.lightDone && this.lightClock < 10) return;
+    this.lightClock = 0;
+    this.recalcLight();
+  }
+
+  private transparentObject(o: GameObject): boolean {
+    if (o.cls === 'passage' || o.cls === 'grate') return true;
+    if (o.cls === 'door') return o.state === 1 && !o.moving;
+    if (o.cls === 'puzzle') return isHollow(o);
+    if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
+    return false;
+  }
+
+  /** PerformRecalcLight: emit from every laser that is on; afterwards photo objects react. */
+  private recalcLight(): void {
+    const beams = new Map<number, number>();
+    const lit = new Map<number, number>();
+    const mirrorIn = new Map<GameObject, number>();
+    const W = this.width;
+    const stack: [number, number, number][] = [];
+    for (const o of this.objects) if (o.cls === 'laser' && !o.gone && o.state === 1) stack.push([o.col, o.row, laserDir(o)]);
+    const light = (c: number, r: number, bit: number) => lit.set(r * W + c, (lit.get(r * W + c) ?? 0) | bit);
+    while (stack.length) {
+      const [c0, r0, d] = stack.pop()!;
+      const c = c0 + L_DX[d];
+      const r = r0 + L_DY[d];
+      if (c < 0 || r < 0 || c >= W) continue;
+      const bit = 1 << d;
+      const st = this.at(c, r).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.cls !== 'oxydref');
+      let pass = true;
+      if (st) {
+        if (st.cls === 'mirror') {
+          // MirrorStone::processLight: emit into the directions that the new light adds
+          const before = mirrorIn.get(st) ?? 0;
+          if (before & bit) continue;
+          mirrorIn.set(st, before | bit);
+          const add = mirrorOut(st, before | bit) & ~mirrorOut(st, before);
+          for (let nd = 0; nd < 4; nd++) if (add & (1 << nd)) stack.push([c, r, nd]);
+          continue;
+        }
+        light(c, r, bit);
+        pass = this.transparentObject(st);
+      } else if (this.env.stoneAt(c, r)) {
+        light(c, r, bit);
+        pass = this.env.staticStone?.(c, r) != null && (this.env.transparentAt?.(c, r) ?? false);
+      }
+      if (!pass) continue;
+      // an item stops the beam (Item::processLight)
+      if (this.at(c, r).some((x) => !x.gone && ITEM_CLASSES.has(x.cls))) {
+        light(c, r, bit);
+        continue;
+      }
+      const b = beams.get(r * W + c) ?? 0;
+      if (b & bit) continue;
+      beams.set(r * W + c, b | bit);
+      stack.push([c, r, d]);
+    }
+    // GridObject::postLaserRecalc (not on the initial calculation)
+    if (this.lightDone) {
+      let newBeam = false;
+      for (const [k, b] of beams) if ((b & ~(this.beams.get(k) ?? 0)) !== 0) newBeam = true;
+      if (newBeam) this.events.push({ type: 'sound', name: 'laser' });
+      for (const [k, now] of lit) {
+        const old = this.lit.get(k) ?? 0;
+        const added = now & ~old;
+        if (!added) continue;
+        const c = k % W;
+        const r = Math.floor(k / W);
+        // OxydStone::lightDirChanged: light where there was none → tryOpen
+        if (old === 0 && this.env.staticStone?.(c, r) === 'st_oxyd') this.events.push({ type: 'oxyd', col: c, row: r });
+        for (const o of this.at(c, r)) {
+          if (o.gone) continue;
+          if (o.cls === 'boulder') o.state = (o.state + 2) % 4; // BoulderStone: turn round
+          else if (o.cls === 'impulse' && o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
+        }
+      }
+    }
+    this.beams.clear();
+    for (const [k, b] of beams) this.beams.set(k, b);
+    this.lit = lit;
+    this.lightDone = true;
+  }
+
+  /** MirrorStone::toggleState (dir 1) / the wrench (-1): turn by 90°, counterclock reverses. */
+  private turnMirror(o: GameObject, dir: number): void {
+    const ccw = mirrorFlags(o).counterclock ? -dir : dir;
+    o.state = ccw > 0 ? (o.state + 3) % 4 : (o.state + 1) % 4; // rotate_cw: N→E→S→W
+    this.events.push({ type: 'sound', name: 'mirror' });
+  }
+
+  /** st_mirror_static/_movable sheet: column (triangle, triangle t, planar, planar t, sheets), row N E S W. */
+  mirrorLook(o: GameObject): { image: string; col: number; row: number } {
+    const f = mirrorFlags(o);
+    const col = f.triangle ? (f.pane ? 1 : 0) : f.side ? 4 : f.pane ? 3 : 2;
+    return { image: f.movable ? 'st_mirror_movable' : 'st_mirror_static', col, row: 3 - o.state };
+  }
+
+  /** st_laser sheet: column N E S W, row 1 off, rows 1..8 animated (100 ms) when on. */
+  laserLook(o: GameObject): { col: number; row: number } {
+    return { col: 3 - laserDir(o), row: o.state === 1 ? 1 + (Math.floor(this.now / 100) % 8) : 1 };
   }
 
   // ---------- key switches (KeySwitch.cc) ----------
@@ -1243,6 +1438,8 @@ export class ObjectWorld {
   /** BoulderStone::triggerObstacle: only Oxyd stones react (tryOpen on a raising trigger). */
   private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
     const [dx, dy] = STEPS[d];
+    // MirrorStone::message("_trigger", 1): turns
+    if (raising) for (const m of this.at(o.col + dx, o.row + dy)) if (m.cls === 'mirror' && !m.gone) this.turnMirror(m, 1);
     // ActorImpulseStone::message("_trigger", true): sends the boulder back
     if (raising)
       for (const b of this.at(o.col + dx, o.row + dy))
@@ -1418,6 +1615,7 @@ export class ObjectWorld {
   /** Advance animations by ms milliseconds. */
   update(ms: number): void {
     this.now += ms;
+    this.lightStep(ms);
     for (const o of this.objects) {
       if (o.cls === 'chess' && !o.gone) this.chessStep(o);
       if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
@@ -1634,6 +1832,25 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'laser') {
+      // LaserStone::message / setState: on, off, toggle, signal; orientate, turn, turnback
+      if (msg === 'orientate' && num !== undefined) o.attrs = { ...o.attrs, orientation: String(num) };
+      else if (msg === 'turn' || msg === 'turnback') {
+        const cw = (msg === 'turn') !== truthy(o.attrs.counterclock);
+        o.attrs = { ...o.attrs, orientation: String(cw ? (laserDir(o) + 3) % 4 : (laserDir(o) + 1) % 4) };
+      } else if (msg === 'on' || msg === 'off' || msg === 'toggle' || msg === 'signal') {
+        o.state = msg === 'on' ? 1 : msg === 'off' ? 0 : msg === 'toggle' ? 1 - o.state : value ? 1 : 0;
+      }
+      return;
+    }
+    if (o.cls === 'mirror') {
+      // MirrorStone::message: orientate, turn/turnback, signal 1 and _trigger toggle
+      if (msg === 'orientate' && num !== undefined && num >= 0 && num <= 3) o.state = num;
+      else if (msg === 'turn') this.turnMirror(o, 1);
+      else if (msg === 'turnback') this.turnMirror(o, -1);
+      else if ((msg === 'signal' || msg === 'toggle') && (num ?? (value ? 1 : 0)) === 1) this.turnMirror(o, 1);
+      return;
+    }
     if (o.cls === 'keyswitch') {
       // StateObject messages → KeySwitch::setState (performs its action on a change)
       const to = msg === 'toggle' ? 1 - o.state : msg === 'on' ? 1 : msg === 'off' ? 0 : msg === 'signal' ? (value ? 1 : 0) : o.state;
@@ -1766,6 +1983,12 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   // Vortex: 1 open, 0 closed
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
+  // MirrorStone: state = orientation (Enigma direction W 0, S 1, E 2, N 3), default north
+  if (MIRROR_KIND.test(kind)) {
+    const v = Number(a.orientation);
+    if (a.orientation !== undefined && a.orientation !== '' && v >= 0 && v <= 3) return v;
+    return DIR_LETTER[MIRROR_KIND.exec(kind)?.[2] ?? 'n'];
+  }
   // BlurStone: 0 straight, 1 cross, 2 magic
   if (/^st_blur/.test(kind)) {
     const f = a.flavor || a.$flavor || /^st_blur_(\w+)$/.exec(kind)?.[1] || 'straight';
