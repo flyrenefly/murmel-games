@@ -20,6 +20,7 @@ const SAMPLES = [
   'swamped',
   'st-fakeoxyd',
   'explosion2',
+  'boink',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -119,6 +120,11 @@ export class Sfx {
   /** A fake stone (st_fake_quake) is hit. */
   fakeOxyd(): void {
     this.play('st-fakeoxyd');
+  }
+
+  /** The marble jumps (sound-defaults.lua: jump = enigma/boink). */
+  jump(): void {
+    this.play('boink', 0.8);
   }
 
   /** A landmine explodes (sound-defaults.lua: landmine = explosion2). */

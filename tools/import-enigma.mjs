@@ -57,6 +57,7 @@ const OBJECTS = [
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
   [/^it_magicwand$/, ['it_magicwand']],
+  [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
   [/^st_boulder(_[nesw])?$/, ['st_boulder', 'st_boulder_fall', 'sh_round']],
   [/^st_brownie$/, ['st_brownie', 'sh_round']],
   [/^st_(granite|camouflage|redbrown)_movable$/, ['st_granite', 'st_camouflage', 'st_redbrown', 'sh_solid']],

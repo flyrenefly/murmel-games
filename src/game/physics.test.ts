@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseLevel } from './level';
 import { NORTH, SOUTH } from "./objects";
-import { DEFAULT_MOUSE_SPEED, floorProps, MARBLE_RADIUS, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
+import { DEFAULT_MOUSE_SPEED, floorProps, JUMP_SECONDS, MARBLE_RADIUS, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
 
 const level = parseLevel({
   id: 't',
@@ -35,6 +35,21 @@ describe('PhysicsWorld (Enigma model)', () => {
     const v = w.velocity.x;
     run(w, 0.05);
     expect(w.velocity.x).toBeLessThan(v);
+  });
+
+  it('a jump (it_spring) lasts 0.56 s without friction or mouse force, then the marble lands', () => {
+    const w = new PhysicsWorld(level);
+    w.setVelocity(1, 0);
+    expect(w.jump()).toBe(true);
+    expect(w.jump()).toBe(false); // no second jump in the air
+    w.addMouseForce(DEFAULT_MOUSE_SPEED * 50, 0);
+    run(w, 0.3);
+    expect(w.velocity.x).toBeCloseTo(1, 6); // neither mouse nor friction act
+    expect(w.marbles[0].jump).toBeGreaterThan(0);
+    run(w, JUMP_SECONDS - 0.3 + 0.02);
+    expect(w.marbles[0].jump).toBe(0);
+    run(w, 0.2);
+    expect(w.velocity.x).toBeLessThan(1); // friction again
   });
 
   it('friction slows the marble down to a stop', () => {

@@ -72,7 +72,12 @@ export interface Marble extends Body {
   active: boolean;
   /** BasicBall::sinkDepth: 0 = on the floor, SINK_DEPTH = sunk. */
   sink: number;
+  /** JUMPING: seconds of the jump left (0 = on the floor). */
+  jump: number;
 }
+
+/** ac_marble-jump: PingPong of 4 frames à 70 ms (models-2d.lua). */
+export const JUMP_SECONDS = 8 * 0.07;
 
 /** Swamp (Swamp::get_sink_speed, server::SwampSinkSpeed): sinks at 4, rises above speed 6. */
 const SWAMP_SINK_SPEED = 4;
@@ -89,6 +94,7 @@ function makeMarble(color: number, x: number, y: number): Marble {
     color,
     active: true,
     sink: 0,
+    jump: 0,
     normals: [],
     touching: new Set(),
     nowTouching: new Set(),
@@ -133,7 +139,8 @@ export class PhysicsWorld {
   private mouseTime = 0;
   private readonly axisForce = { x: 0, y: 0 };
   /** Global forces (wormholes): added unscaled, like Enigma's force fields. */
-  private field: ((x: number, y: number) => [number, number]) | null = null;
+  /** Force field at x/y; flying = a jumping marble (only global forces act on it). */
+  private field: ((x: number, y: number, flying: boolean) => [number, number]) | null = null;
   readonly mass = 1;
 
   constructor(
@@ -201,7 +208,16 @@ export class PhysicsWorld {
     this.solid[i] = solid ? -2 : -1;
   }
 
-  setForceField(field: ((x: number, y: number) => [number, number]) | null): void {
+  /** BasicBall "_jump" (it_spring): only a marble on the floor can jump. */
+  jump(i = this.cur): boolean {
+    const m = this.marbles[i];
+    if (!m || !m.active || m.jump > 0) return false;
+    m.jump = JUMP_SECONDS;
+    m.sink = 0; // change_state resets the sink depth
+    return true;
+  }
+
+  setForceField(field: ((x: number, y: number, flying: boolean) => [number, number]) | null): void {
     this.field = field;
   }
 
@@ -233,9 +249,9 @@ export class PhysicsWorld {
 
     // 1. Forces of every moving body (World::move_actors).
     const forces = new Map<Body, BodyForce & { friction: number }>();
-    const add = (b: Body, fx: number, fy: number, friction: number) => {
+    const add = (b: Body, fx: number, fy: number, friction: number, flying = false) => {
       if (this.field) {
-        const [gx, gy] = this.field(b.pos.x, b.pos.y);
+        const [gx, gy] = this.field(b.pos.x, b.pos.y, flying);
         fx += gx;
         fy += gy;
       }
@@ -243,6 +259,11 @@ export class PhysicsWorld {
     };
     this.marbles.forEach((m, i) => {
       if (!m.active) return;
+      // World::get_local_force: a jumping marble feels no mouse, floor, item or friction.
+      if (m.jump > 0) {
+        add(m, 0, 0, 0, true);
+        return;
+      }
       const { friction, adhesion } = this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce).
       const k = i === this.cur ? adhesion : 0;
@@ -269,7 +290,8 @@ export class PhysicsWorld {
       if (!f) return;
       this.advance(m, f);
       this.collide(m, onContact, { by: i, color: m.color });
-      this.sinkStep(m, i, onContact);
+      if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
+      else this.sinkStep(m, i, onContact);
     });
     for (const e of this.enemies) {
       this.advance(e, forces.get(e)!);
@@ -346,7 +368,8 @@ export class PhysicsWorld {
    * elastically (restitution 1, reduced mass); the marble shatters on another actor.
    */
   private actorContacts(onContact: (c: Contact) => void): void {
-    const marbles = this.marbles.filter((m) => m.active);
+    // World::handle_actor_contact: actors rebound only when both are on the floor (or both fly).
+    const marbles = this.marbles.filter((m) => m.active && m.jump <= 0);
     const bodies: Body[] = [...marbles, ...this.enemies];
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {

@@ -1,12 +1,12 @@
 # Enigma-Import
 
-139 von 1322 Levels übernommen (14 Pakete).
+144 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 1 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 1 |
 | Akteur ac_pearl_white | 179 | 3 |
 | Lua-Rückruf | 166 | 1 |
 | Stein st_passage_black | 152 | 2 |
@@ -30,7 +30,7 @@
 | Lua-Init | 98 | 0 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
-| Gegenstand it_extralife | 90 | 2 |
+| Gegenstand it_extralife | 90 | 3 |
 | Stein st_key | 90 | 0 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -74,7 +74,6 @@
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_spring_keep | 38 | 3 |
 | Gegenstand it_springboard | 38 | 0 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
@@ -84,7 +83,7 @@
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 1 |
+| Stein st_plop | 34 | 2 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Gegenstand it_wrench | 33 | 0 |
 | Lua: set_actor() | 32 | 0 |
@@ -123,8 +122,7 @@
 | Boden fl_slope_tw | 23 | 0 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Gegenstand it_spring_drop | 22 | 0 |
-| Stein st_chameleon | 22 | 2 |
+| Stein st_chameleon | 22 | 3 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |

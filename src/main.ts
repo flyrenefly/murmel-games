@@ -4,7 +4,7 @@ import { Input } from './input';
 import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
 import { ITEM_NAMES, ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
-import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
+import { DEFAULT_MOUSE_SPEED, JUMP_SECONDS, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
 import { applyWorld, makeLuaHost } from './game/luahost';
 import { LEVELS } from './levels';
@@ -142,8 +142,8 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   const force = (globalForce = { x: 0, y: 0 });
   const world = { ...lv.world };
   applyWorld(physics, world, force);
-  physics.setForceField((x, y) => {
-    const [fx, fy] = objects.fieldForce(x, y);
+  physics.setForceField((x, y, flying) => {
+    const [fx, fy] = objects.fieldForce(x, y, flying);
     return [fx + force.x, fy + force.y];
   });
   lua = null;
@@ -247,8 +247,8 @@ const twoMarbles = () => (physics?.marbles.length ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
-    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}`
-    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
+    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
+    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
 function showStart(): void {
@@ -502,6 +502,8 @@ function frame(now: number): void {
         const to = objects.warpTarget(m.pos.x, m.pos.y);
         // WarpActor without keeping the velocity.
         if (to) ph.respawn(to.x, to.y, i);
+        // A jumping marble touches no items and presses no triggers (is_flying).
+        if (m.jump > 0) return;
         objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
         objects.actorStep(m.pos.x, m.pos.y, i, m.radius);
       });
@@ -510,7 +512,7 @@ function frame(now: number): void {
       handleObjectEvents(objects.events);
       ph.marbles.forEach((m, i) => {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
-        if (falling[i] < 0 && under && isDeadly(under.floor)) marbleDies(i, false);
+        if (falling[i] < 0 && m.jump <= 0 && under && isDeadly(under.floor)) marbleDies(i, false);
       });
       acc -= PHYSICS_DT;
     }
@@ -536,10 +538,11 @@ function frame(now: number): void {
     // Sunk: invisible until the respawn (ac_marble-sunk).
     fall: deathKind[i] === 'sink' && falling[i] >= 0 ? -1 : (fallen[i] ?? -1),
     sink: deathKind[i] === 'sink' && falling[i] >= 0 ? SINK_DEPTH : m.sink,
+    jump: m.jump > 0 ? 1 - m.jump / JUMP_SECONDS : -1,
     x: m.prev.x + (m.pos.x - m.prev.x) * a,
     y: m.prev.y + (m.pos.y - m.prev.y) * a,
   }));
-  const me = marbles[ci] ?? { kind: 'marble' as const, color: 0, fall: -1, sink: 0, x: 0, y: 0 };
+  const me = marbles[ci] ?? { kind: 'marble' as const, color: 0, fall: -1, sink: 0, jump: -1, x: 0, y: 0 };
   const { x, y } = me;
   const fall = me.fall;
   const actors: ActorSprite[] = (physics?.enemies ?? []).map((e) => ({
@@ -556,7 +559,7 @@ function frame(now: number): void {
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
-    classic.updateMarble(x, y, fall, me.color, me.sink);
+    classic.updateMarble(x, y, fall, me.color, me.sink, me.jump);
     classic.updateActors(actors);
     classic.updateRubbers(bands);
     classic.render(dt);
@@ -612,9 +615,34 @@ function dropItem(): boolean {
   const i = ph.current;
   const m = ph.marbles[i];
   if (!m.active || falling[i] >= 0) return true; // BasicBall::can_drop_items
+  const first = objects.inventory[0];
+  // Spring::activate: it_spring(_keep) makes the marble jump and stays; it_spring_drop is
+  // dropped (only where no item lies) and makes it jump.
+  if (first === 'it_spring' || first === 'it_spring_keep') {
+    marbleJumps(i);
+    return true;
+  }
+  if (first === 'it_spring_drop') {
+    if (objects.canDropAt(m.pos.x, m.pos.y) && m.jump <= 0) {
+      objects.dropItem(m.pos.x, m.pos.y);
+      marbleJumps(i);
+      updateItems();
+    }
+    return true;
+  }
   objects.dropItem(m.pos.x, m.pos.y);
   updateItems();
   return true;
+}
+/** BasicBall "_jump": JUMPING for the jump animation; triggers under it are released. */
+function marbleJumps(i: number): void {
+  if (!physics?.jump(i)) return;
+  sfx.jump();
+  objects.marbleGone(i);
+}
+/** The level has a spring to pick up. */
+function hasSpring(): boolean {
+  return objects.objects.some((o) => o.cls === 'spring');
 }
 /** The level has a magic wand to pick up. */
 function hasWand(): boolean {
@@ -724,7 +752,7 @@ requestAnimationFrame((t) => {
 
 // Expose a tiny hook for automated browser tests.
 (window as unknown as { murmel: unknown }).murmel = {
-  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m) => ({ ...m.pos, active: m.active })) }),
+  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
   swap: swapMarble,
   drop: dropItem,
   luaError: () => lua?.lastError ?? null,

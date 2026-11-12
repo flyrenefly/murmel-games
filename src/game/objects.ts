@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)' };
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -171,6 +171,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
+  if (/^it_spring(_keep|_drop)?$/.test(kind)) return 'spring';
   // A named Oxyd stone as message target; the stone itself is part of the level map.
   if (kind === 'st_oxyd_ref') return 'oxydref';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
@@ -582,11 +583,12 @@ export class ObjectWorld {
   // ---------- wormholes (WormHole.cc) ----------
 
   /** Sum of the wormhole pulls on the marble at x/y (WormHole::globalForce, not scaled by the floor). */
-  fieldForce(x: number, y: number): [number, number] {
+  fieldForce(x: number, y: number, flying = false): [number, number] {
     let fx = 0;
     let fy = 0;
     // Meditation::add_force: dents pull towards the centre, hills push away (volcano: crater inside).
-    for (const o of this.at(Math.floor(x), Math.floor(y))) {
+    // Item forces act only on the floor (World::get_local_force); wormholes pull as a global force.
+    for (const o of flying ? [] : this.at(Math.floor(x), Math.floor(y))) {
       if (o.cls !== 'meditation' || o.gone) continue;
       const vx = x - (o.col + 0.5);
       const vy = y - (o.row + 0.5);
@@ -662,6 +664,11 @@ export class ObjectWorld {
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
     if (o.cls === 'seed') this.startGrowing(o);
     return true;
+  }
+
+  /** Item::can_drop_at: no item in the cell. */
+  canDropAt(x: number, y: number): boolean {
+    return !this.at(Math.floor(x), Math.floor(y)).some((o) => !o.gone && ITEM_CLASSES.has(o.cls));
   }
 
   /** Right click: player::RotateInventory(+1) → Inventory::rotate_left (the first item goes last). */

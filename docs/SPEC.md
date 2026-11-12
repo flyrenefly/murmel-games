@@ -211,6 +211,14 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Farben aller geschlossenen Steine neu (gleichverteilt; Enigmas Mischregeln aus
   `wo:shuffleOxyd` bleiben unberücksichtigt). `oxydcolor` „%3“ gilt wie in `Value::toInt`
   als 3.
+- **it_spring / it_spring_keep / it_spring_drop** (`SimpleItems.cc` Spring, `Balls.cc`
+  JUMPING): aufhebbar (Radius 0,3). Klick/Leertaste mit der Feder vorn: Die Murmel springt
+  (`keep` bleibt im Inventar, `drop` wird abgelegt – nur wo kein Gegenstand liegt). Ein
+  Sprung dauert so lange wie die Animation (Ping-Pong aus 4 Bildern à 70 ms = 0,56 s). Im
+  Flug (`World::get_local_force`, `Actor::think`): keine Maus-, Boden- oder Gegenstandskraft,
+  keine Reibung, kein Bodenkontakt (Abgrund, Wasser, Sumpf wirken erst nach der Landung),
+  keine Auslöser, Minen oder Aufheben, keine Zusammenstöße mit Gegnern; globale Kräfte,
+  Wurmlöcher und Steine wirken weiter. Klang `boink`.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

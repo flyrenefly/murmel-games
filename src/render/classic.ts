@@ -13,6 +13,8 @@ export interface ActorSprite {
   fall?: number;
   /** Marbles: sink depth 0..7 (swamp). */
   sink?: number;
+  /** Marbles: jump progress 0..1, -1 = on the floor. */
+  jump?: number;
 }
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -47,6 +49,8 @@ const BASE_IMAGES = [
 const MEDITATION_IMAGES = ['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`);
 /** Swamp levels: sinking marbles (models-2d.lua, 7 frames). */
 const SINK_IMAGES = ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink'];
+/** Jumping marbles (models-2d.lua: 4 frames, ping-pong à 70 ms). */
+const JUMP_IMAGES = ['ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump'];
 type Images = Record<string, HTMLImageElement>;
 
 export type ClassicSet = 'gfx32' | 'gfx32-retro';
@@ -145,6 +149,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion'];
   if (kind === 'it_magicwand') return ['it_magicwand'];
+  if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
@@ -167,7 +172,7 @@ export class ClassicView {
   private objects: ObjectWorld | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
-  private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0 };
+  private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0, jump: -1 };
   private actors: ActorSprite[] = [];
   private rubbers: number[] = [];
   private now = 0;
@@ -216,8 +221,9 @@ export class ClassicView {
   }
 
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
-  updateMarble(x: number, y: number, fall: number, color = 0, sink = 0): void {
+  updateMarble(x: number, y: number, fall: number, color = 0, sink = 0, jump = -1): void {
     this.marble.sink = sink;
+    this.marble.jump = jump;
     this.marble.x = x;
     this.marble.y = y;
     this.marble.fall = fall;
@@ -382,6 +388,7 @@ export class ClassicView {
       else if (o.cls === 'meditation' && !o.gone) this.image(meditationImage(o.state), px, py);
       else if (o.cls === 'landmine' && !o.gone) this.image(o.exploding !== undefined ? 'it_explosion' : 'it_landmine', px, py);
       else if (o.cls === 'wand') this.image('it_magicwand', px, py);
+      else if (o.cls === 'spring') this.image('it_spring', px, py);
       else if (o.cls === 'seed' && !o.gone) {
         const age = world.growAge(o);
         this.frame('it_seed', age < 0 ? 0 : SEED_GROW_FRAMES[Math.min(SEED_GROW_FRAMES.length - 1, Math.floor(age / 120))], px, py);
@@ -389,7 +396,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
@@ -564,7 +571,7 @@ export class ClassicView {
       if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
       const s = 0.4 * SPRITE;
       if (a.kind === 'marble') {
-        this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0 });
+        this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0, jump: a.jump ?? -1 });
         continue;
       }
       if (a.kind === 'killer') {
@@ -581,7 +588,7 @@ export class ClassicView {
     }
   }
 
-  private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number; sink: number }): void {
+  private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number; sink: number; jump?: number }): void {
     const { ctx } = this;
     const img = this.img!;
     const name = m.color === 1 && img.ac_marble_white ? 'ac_marble_white' : 'ac_marble_black';
@@ -596,6 +603,14 @@ export class ClassicView {
       return;
     }
     if (m.sink >= 7) return; // sunk: invisible
+    if ((m.jump ?? -1) >= 0 && img[`${name}_jump`] && img.sh_marble_jump) {
+      // ac_marble-jump: frames 1 2 3 4 4 3 2 1 à 70 ms; the shadow sits further off (0.4).
+      const k = Math.min(7, Math.floor((m.jump ?? 0) * 8));
+      const f = k < 4 ? k : 7 - k;
+      ctx.drawImage(img.sh_marble_jump, 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE * 0.4, cy - SPRITE * 0.4, SPRITE, SPRITE);
+      ctx.drawImage(img[`${name}_jump`], 0, f * SPRITE, SPRITE, SPRITE, cx - SPRITE / 2, cy - SPRITE / 2, SPRITE, SPRITE);
+      return;
+    }
     if (m.sink > 0 && img[`${name}_sink`] && img.sh_marble_sink) {
       // BasicBall::set_sink_model: frame = depth rounded down.
       const f = Math.floor(m.sink);
