@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -223,6 +223,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Scales: checked once (the initial state acts not). */
+  scales?: boolean;
   /** Crack: start of DISSOLVING (the floor breaks away after 5 × 120 ms). */
   dissolving?: number;
   /** Springboard: start of its animation (it_springboard_anim). */
@@ -293,6 +295,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_key') return 'keyswitch';
   if (/^st_laser(_[nesw])?$/.test(kind)) return 'laser';
   if (/^it_crack(_[isml])?(_water)?$/.test(kind)) return 'crack';
+  if (kind === 'fl_scales') return 'scales';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -416,7 +419,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref') return; // other objects (ot_timer) have no cell; Oxyd stones are map cells
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -424,7 +427,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref') return;
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -1107,6 +1110,30 @@ export class ObjectWorld {
     return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
   }
 
+  // ---------- scales (ScalesFloor.cc) ----------
+
+  /**
+   * ScalesFloor::updateIState: pressed by a stone (not hollow; puzzles always) or by the mass of the
+   * actors in the cell (marbles 1, pearls 0.7; not jumping) reaching min (1.8). The first check acts not.
+   */
+  private scalesStep(o: GameObject): void {
+    const stone = this.env.stoneAt(o.col, o.row) || this.at(o.col, o.row).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.kind !== 'st_stoneimpulse_hollow');
+    let mass = 0;
+    this.marbles.forEach((m, i) => {
+      if (m.init && m.col === o.col && m.row === o.row) mass += this.isPearl(i) ? 0.7 : 1;
+    });
+    const on = stone || mass >= numAttr(o.attrs.min, 1.8) ? 1 : 0;
+    if (o.scales === undefined) {
+      o.scales = true;
+      o.state = on;
+      return;
+    }
+    if (on === o.state) return;
+    o.state = on;
+    this.events.push({ type: 'sound', name: on ? 'triggerdown' : 'triggerup' });
+    this.performAction(o, on === 1);
+  }
+
   // ---------- cracks (Crack.cc) ----------
 
   private crackWater(o: GameObject): boolean {
@@ -1688,6 +1715,7 @@ export class ObjectWorld {
     for (const o of this.objects) {
       if (o.cls === 'chess' && !o.gone) this.chessStep(o);
       if (o.cls === 'vortex' && !o.gone) this.vortexStep(o);
+      if (o.cls === 'scales' && !o.gone) this.scalesStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };

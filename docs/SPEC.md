@@ -353,6 +353,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
+- **fl_scales_*** (`ScalesFloor.cc`): Der Konverter legt den Grundboden des Geschmacks
+  (brick, bridgewood, concrete, darkgray, gray, platinum) und ein Objekt `fl_scales` an, das nicht
+  im Zellraster steht (weder Stein noch Gegenstand). Gedrückt, wenn ein nicht hohler Stein darauf
+  liegt oder die Masse der Kugeln im Feld (Murmel 1, Perle 0,7, nicht im Sprung) `min`
+  (Standard 1,8) erreicht – eine Murmel allein reicht nicht. Wechsel: Aktion true/false und
+  Klang wie beim Auslöser; der Anfangszustand löst nichts aus. Bild `fl_scales` 0/1 über dem
+  Grundboden. Offen: Gegner und Gegenstandsmasse (it_weight).
 - **it_crack_i/s/m/l(_water)** (`Crack.cc`): Betritt eine Kugel (nicht im Sprung) das Feld,
   wächst der Riss mit Wahrscheinlichkeit `fragility` (Standard `wo["Fragility"]` 1; unsichtbare
   auch mit `spreading`) eine Stufe; bis „groß“ bekommen die vier Nachbarböden (nicht Abgrund,

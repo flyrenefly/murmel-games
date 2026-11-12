@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(bridge|forward|scales|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
+const SPECIAL_FLOORS = /^fl_(bridge|forward|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -91,6 +91,7 @@ const OBJECTS = [
   [/^st_key$/, ['st_key_on', 'st_key_off', 'sh_round']],
   [/^st_laser(_[nesw])?$/, ['st_laser', 'sh_rounded', 'it_laser']],
   [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
+  [/^fl_scales$/, ['fl_scales']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
@@ -113,7 +114,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -348,6 +349,19 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
       // Sinking marbles (models-2d.lua) for the renderer.
       if (fl.k === 'fl_swamp') for (const i of ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink']) imgs.add(i);
+      // ScalesFloor: the base floor of its flavor, plus an object fl_scales that acts like a trigger
+      const scales = /^fl_scales(?:_(\w+))?$/.exec(fl.k);
+      if (scales) {
+        const flavor = fl.flavor || scales[1] || 'darkgray';
+        const base = { brick: 'fl_brick', bridgewood: 'fl_bridge_bw_closed', concrete: 'fl_concrete', darkgray: 'fl_darkgray', gray: 'fl_gray', platinum: 'fl_platinum' }[flavor];
+        if (!base || !imageFor(base)) reject(`Boden ${fl.k}`);
+        else {
+          const def = objectDef(x, y, fl);
+          objs.push({ ...def, k: 'fl_scales' });
+          imgs.add('fl_scales');
+          fl.k = base;
+        }
+      }
       const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
       if (!flImg) {
         reject(`Boden ohne Bild ${fl.k}`);

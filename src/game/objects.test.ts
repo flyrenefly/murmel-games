@@ -471,6 +471,34 @@ describe('ObjectWorld', () => {
     expect(w.objects[0].gone).toBe(true);
   });
 
+  it("scales are pressed by a stone or by 1.8 mass of actors, not by one marble", () => {
+    const w = world([
+      door(8),
+      { x: 3, y: 1, k: "fl_scales", a: { target: "door1", action: "toggle" } },
+      { x: 4, y: 1, k: "st_box" },
+    ]);
+    w.isPearl = (i) => i === 2;
+    w.update(10); // initial state: no action
+    w.marbleAt(3, 1, 0);
+    w.update(10);
+    expect(w.objects[1].state).toBe(0);
+    w.marbleAt(3, 1, 2); // + a pearl: 1.7 < 1.8
+    w.update(10);
+    expect(w.objects[1].state).toBe(0);
+    w.marbleAt(3, 1, 1); // two marbles and a pearl
+    w.update(10);
+    expect(w.objects[1].state).toBe(1);
+    w.marbleAt(5, 1, 1);
+    w.marbleAt(5, 1, 2);
+    w.update(10);
+    expect(w.objects[1].state).toBe(0);
+    w.hit(4, 1, 0, 1, 0, -6); // push the box west onto the scales
+    w.update(10);
+    expect(w.objects[1].state).toBe(1);
+    w.update(500);
+    expect(w.blockAt(8, 0)).toBe(0); // toggled open twice and closed once → open
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

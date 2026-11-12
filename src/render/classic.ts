@@ -182,6 +182,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_key') return ['st_key_on', 'st_key_off', 'sh_round'];
   if (kind.startsWith('st_laser')) return ['st_laser', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_crack')) return ['it_crack_abyss', 'it_crack_water'];
+  if (kind === 'fl_scales') return ['fl_scales'];
   if (kind.startsWith('st_mirror')) return ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
@@ -439,8 +440,10 @@ export class ClassicView {
         const v = (b & 10) !== 0;
         this.frame('it_laser', h && v ? 2 : h ? 0 : 1, bx, by);
       }
+    // fl_scales: overlay on the base floor, released 0 / pressed 1 (models-2d.lua)
+    for (const o of world.objects) if (o.cls === 'scales' && !o.gone && visible(o)) this.frame('fl_scales', o.state, ox + o.col * T, oy + o.row * T);
     for (const o of world.objects) {
-      if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
+      if (o.gone || o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
       const px = ox + o.col * T;
       const py = oy + o.row * T;
       if (o.cls === 'trigger' && o.attrs.invisible !== 'true') this.frame('it_trigger', o.state ? 1 : 0, px, py);
@@ -478,7 +481,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
