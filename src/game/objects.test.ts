@@ -594,6 +594,16 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("a dispenser hands out its items; an explosion breaks it", () => {
+    const w = world([{ x: 4, y: 1, k: "st_dispenser_bombblack", a: { stock: "1" } }, { x: 5, y: 2, k: "it_bomb_white" }]);
+    w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0);
+    w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0); // stock used up
+    expect(w.inventory).toEqual(["it_bomb_black"]);
+    w.sendMessage(w.objects[1], "explode", true); // white bomb: all eight neighbours
+    w.update(400);
+    expect(w.objects[0].gone).toBe(true);
+  });
+
   it("a thief steals an item on touch; a knight capturing it leaves the bag with the loot", () => {
     const w = new ObjectWorld([
       { x: 2, y: 1, k: "it_hammer" },

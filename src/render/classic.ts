@@ -196,6 +196,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
+  if (kind.startsWith('st_dispenser')) return [kind === 'st_dispenser' ? 'st_dispenser_bombblack' : kind, 'sh_round', 'it_bomb', 'it_dynamite', 'it_dynamite_burning', 'it_extralife', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
   if (kind === 'st_thief') return ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag'];
   if (kind.startsWith('it_coin')) return ['it_coin_s', 'it_coin_m', 'it_coin_l'];
   if (kind.startsWith('st_coinslot')) return ['st_coinslot', 'st_coinslot_insert', 'sh_solid'];
@@ -641,6 +642,12 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'dispenser') {
+      const name = o.kind === 'st_dispenser' ? 'st_dispenser_bombblack' : o.kind;
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame(name, world.dispenserFrame(o), px, py);
       return;
     }
     if (o.cls === 'thief') {

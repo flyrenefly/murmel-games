@@ -86,6 +86,7 @@ const OBJECTS = [
   [/^it_wrench$/, ['it_wrench']],
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
+  [/^st_dispenser(_bombblack|_bombwhite|_dynamite|_extralife)?$/, ['st_dispenser_bombblack', 'st_dispenser_bombwhite', 'st_dispenser_dynamite', 'st_dispenser_extralife', 'sh_round', 'it_bomb', 'it_dynamite', 'it_dynamite_burning', 'it_extralife', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
   [/^st_thief$/, ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag']],
   [/^st_floppy$/, ['st_floppy_on', 'st_floppy_off', 'sh_round']],
   [/^it_coin(_s|_m|_l)?$/, ['it_coin_s', 'it_coin_m', 'it_coin_l']],
@@ -131,7 +132,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');

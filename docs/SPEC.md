@@ -415,6 +415,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   zeichnet keine Strahlen.
 - **fl_fake / fl_fake_abyss** (`SimpleFloors.cc` FakeFloor): sieht aus wie Abgrund, trägt aber
   (Reibung 3, Haftung 2). Die 3D-Ansicht zeigt ihn als normalen Boden. fl_fake_trigger fehlt.
+- **st_dispenser_bombblack/_bombwhite/_dynamite/_extralife** (`DispenserStone.cc`): ein Treffer legt
+  einen Gegenstand ins Inventar (Vorrat `stock`, Standard 1000). Eine Explosion zerbricht ihn
+  (7 × 50 ms); danach zerbrechen benachbarte Spender, der Gegenstand im Feld wird gezündet, sonst
+  bleibt eine leere Explosion. Axt-Spender fehlt.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

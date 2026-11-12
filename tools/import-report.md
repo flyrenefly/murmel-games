@@ -1,6 +1,6 @@
 # Enigma-Import
 
-570 von 1322 Levels übernommen (17 Pakete).
+575 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -38,18 +38,18 @@
 | Gegenstand it_strip_ew | 31 | 0 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
-| Gegenstand it_coffee_drop | 28 | 3 |
+| Gegenstand it_coffee_drop | 28 | 4 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein st_turnstile_red | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 2 |
 | Gegenstand it_glasses | 27 | 0 |
-| Gegenstand it_cross | 26 | 2 |
+| Gegenstand it_cross | 26 | 3 |
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
-| Gegenstand it_squashed | 24 | 0 |
+| Gegenstand it_squashed | 24 | 1 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_ghost_break | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
@@ -60,7 +60,6 @@
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
-| Stein st_dispenser_bombblack | 19 | 5 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Stein st_shogun_l | 18 | 0 |
 | Akteur ac_bug | 18 | 3 |
@@ -82,7 +81,7 @@
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
-| Gegenstand it_seed_hay | 14 | 4 |
+| Gegenstand it_seed_hay | 14 | 5 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
 | Stein st_ice | 14 | 4 |
@@ -93,7 +92,7 @@
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 3 |
-| Lua: :drawRect | 12 | 1 |
+| Lua: :drawRect | 12 | 2 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
@@ -107,7 +106,7 @@
 | Gegenstand it_drop | 10 | 0 |
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
-| Flut | 9 | 1 |
+| Flut | 9 | 2 |
 | Lua-Init (Weltwert) | 9 | 1 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
@@ -118,9 +117,8 @@
 | Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 2 |
-| Stein st_dispenser_extralife | 8 | 0 |
 | Lua: :orientate | 7 | 2 |
-| Aktion openclose | 7 | 1 |
+| Aktion openclose | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 0 |
@@ -161,7 +159,6 @@
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
-| Stein st_dispenser_dynamite | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
@@ -335,7 +332,6 @@
 | Lua: it_pipe_nw | 1 | 0 |
 | Lua: it_pipe_ne | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
-| Lua: st_dispenser_bombblack | 1 | 0 |
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |
 | Lua: st_charge_zero | 1 | 0 |
@@ -359,5 +355,4 @@
 | Lua: it_burnable_invisible | 1 | 0 |
 | Lua: st_barrier | 1 | 0 |
 | Lua: it_bottle | 1 | 0 |
-| Stein st_dispenser_bombwhite | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |
