@@ -105,6 +105,8 @@ let falling: number[] = [-1];
 let deathKind: ('fall' | 'shatter' | 'sink')[] = [];
 /** Per marble: where it respawns. */
 let startPos: { x: number; y: number }[] = [];
+/** Respawn here once instead of the start (BasicBall inplaceRespawn, it_spoon). */
+let respawnAt: ({ x: number; y: number } | undefined)[] = [];
 let startTime = 0;
 let playSeconds = 0;
 
@@ -201,6 +203,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   falling = physics.marbles.map(() => -1);
   deathKind = physics.marbles.map(() => 'fall' as const);
   startPos = physics.marbles.map((m) => ({ ...m.pos }));
+  respawnAt = [];
   btnSwap.hidden = physics.steerable < 2;
   startTime = 0;
   playSeconds = 0;
@@ -610,7 +613,9 @@ function frame(now: number): void {
       })();
       return -1;
     }
-    physics.respawn(startPos[i].x, startPos[i].y, i);
+    const at = respawnAt[i] ?? startPos[i];
+    respawnAt[i] = undefined;
+    physics.respawn(at.x, at.y, i);
     return -1;
   });
 
@@ -720,6 +725,33 @@ function dropItem(): boolean {
       objects.dropItem(m.pos.x, m.pos.y);
       marbleJumps(i);
       updateItems();
+    }
+    return true;
+  }
+  // Ring::activate: swap places with the other marble, else back to the start (RespawnActor);
+  // Spoon::activate: "_suicide" (shatter, respawn in place). Both are then dropped (ITEM_DROP).
+  if (first === 'it_ring' || first === 'it_spoon') {
+    const { x, y } = m.pos;
+    if (objects.canDropAt(x, y)) objects.dropItem(x, y);
+    updateItems();
+    if (first === 'it_spoon') {
+      if (m.jump <= 0) {
+        respawnAt[i] = { x, y };
+        marbleDies(i, true);
+      }
+    } else {
+      const other = ph.marbles.findIndex((o, k) => k !== i && !o.pearl && o.color === 1 - m.color);
+      if (other >= 0) {
+        const p = { ...ph.marbles[other].pos };
+        ph.marbles[other].pos.x = x;
+        ph.marbles[other].pos.y = y;
+        ph.marbles[other].prev.x = x;
+        ph.marbles[other].prev.y = y;
+        m.pos.x = m.prev.x = p.x;
+        m.pos.y = m.prev.y = p.y;
+        sfx.menu();
+      } else ph.respawn(startPos[i].x, startPos[i].y, i);
+      objects.marbleGone(i);
     }
     return true;
   }

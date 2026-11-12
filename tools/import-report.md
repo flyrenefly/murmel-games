@@ -1,6 +1,6 @@
 # Enigma-Import
 
-210 von 1322 Levels übernommen (15 Pakete).
+215 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -121,12 +121,10 @@
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Boden fl_scales_concrete | 19 | 2 |
-| Gegenstand it_spoon | 18 | 2 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 1 |
 | Gegenstand it_spade | 17 | 0 |
-| Gegenstand it_ring | 17 | 3 |
 | Gegenstand it_burnable_ignited | 17 | 0 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
@@ -316,7 +314,6 @@
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 0 |
-| Lua: it_spoon | 2 | 0 |
 | Lua: st_blocker | 2 | 0 |
 | Stein fl_bridge_be | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |

@@ -303,6 +303,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   open/close/toggle/signal schalten. `scissor` (Standard ab Kompatibilität 1.10) zerschneidet
   die Gummibänder der Murmel; das Wurmloch schneidet nur mit `scissor=true`. Der Strudel
   deckt den Boden bis 0,25 um seine Mitte ab (`covers_floor`).
+- **it_ring** (`SimpleItems.cc` Ring): Benutzen tauscht die Plätze mit der Murmel der anderen
+  Farbe (`ExchangeMarbles`), sonst geht die Murmel zurück an den Start (`RespawnActor`; Fahnen
+  fehlen noch). **it_spoon**: Benutzen lässt die Murmel zerspringen (`_suicide`), sie kommt an
+  derselben Stelle wieder (`inplaceRespawn`) und kostet nach Enigma-Regel ein Leben. Beide
+  werden danach abgelegt, wenn dort kein Gegenstand liegt (`ITEM_DROP`).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

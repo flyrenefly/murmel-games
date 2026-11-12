@@ -530,6 +530,15 @@ describe('ObjectWorld', () => {
     expect(w.inventory).toEqual(["it_yinyang"]);
   });
 
+  it("ring and spoon are picked up and dropped again like plain items", () => {
+    const w = world([{ x: 3, y: 0, k: "it_ring" }, { x: 5, y: 0, k: "it_spoon" }]);
+    w.actorStep(3.5, 0.5, 0);
+    w.actorStep(5.5, 0.5, 0);
+    expect(w.inventory).toEqual(["it_spoon", "it_ring"]);
+    expect(w.dropItem(7.5, 0.5)).toBe(true);
+    expect(w.objects.find((o) => o.col === 7)?.cls).toBe("tool");
+  });
+
   it("st_swap exchanges places with the stone behind it: an object or a wall, not an Oxyd stone", () => {
     const walls: Record<string, string | null> = { "5,0": "st_greenbrown", "3,2": "st_oxyd" };
     const env: ObjectEnv = {

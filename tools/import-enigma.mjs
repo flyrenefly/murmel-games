@@ -61,6 +61,8 @@ const OBJECTS = [
   [/^it_magicwand$/, ['it_magicwand']],
   [/^it_extralife$/, ['it_extralife']],
   [/^it_yinyang$/, ['it_yinyang']],
+  [/^it_ring$/, ['it_ring']],
+  [/^it_spoon$/, ['it_spoon']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
