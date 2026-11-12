@@ -45,9 +45,16 @@ describe('parseLevel', () => {
     }
   });
 
-  it('rejects an odd number of "?" Oxyd stones', () => {
+  it('an odd number of "?" Oxyd stones leaves one fake stone', () => {
     const file: LevelFile = { ...base(['#####', '#@QQQ', '#####']), legend: { Q: { stone: 'st_oxyd', symbol: '?' } } };
-    expect(() => parseLevel(file)).toThrow(/ungerade/);
+    const syms = parseLevel(file).signals.map((x) => x.symbol).sort();
+    expect(syms.filter((x) => x === '-').length).toBe(1);
+    expect(syms.filter((x) => x !== '-')[0]).toBe(syms.filter((x) => x !== '-')[1]);
+  });
+
+  it('"?" stones first complete a fixed colour that has no partner', () => {
+    const file: LevelFile = { ...base(['#####', '#@AQQ', '#####']), legend: { A: { stone: 'st_oxyd', symbol: 'A' }, Q: { stone: 'st_oxyd', symbol: '?' } } };
+    expect(parseLevel(file).signals.map((x) => x.symbol).sort()).toEqual(['-', 'A', 'A']);
   });
 
   it('uses an exact start position when given', () => {

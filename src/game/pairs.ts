@@ -12,6 +12,9 @@ export type PairEvent =
   | { type: 'closed'; indices: number[] }
   | { type: 'complete' };
 
+/** Symbol of a fake Oxyd stone (OxydStone FAKE). */
+const FAKE = '-';
+
 export class PairBoard {
   readonly states: StoneState[];
   private single: number | null = null;
@@ -55,11 +58,12 @@ export class PairBoard {
   }
 
   get totalPairs(): number {
-    return this.symbols.length / 2;
+    return Math.floor(this.symbols.filter((s) => s !== FAKE).length / 2);
   }
 
+  /** All real stones are solved (a fake one never opens). */
   get complete(): boolean {
-    return this.states.every((s) => s === 'solved');
+    return this.states.every((s, i) => s === 'solved' || this.symbols[i] === FAKE);
   }
 
   /** OxydStone::closeAllStandardOxyds (st_quake): every open stone closes, solved pairs too. */
@@ -74,6 +78,13 @@ export class PairBoard {
     if (this.states[index] !== 'closed') return [];
 
     const first = this.single;
+    // OxydStone::tryOpen with FAKE: a single open stone closes, the fake one stays closed
+    if (this.symbols[index] === FAKE) {
+      if (first === null) return [];
+      this.states[first] = 'closed';
+      this.single = null;
+      return [{ type: 'closed', indices: [first] }];
+    }
     if (first === null) {
       this.states[index] = 'open';
       this.single = index;

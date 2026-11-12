@@ -653,7 +653,19 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)
   const meditation = w.actors.some((a) => /^ac_pearl/.test(a.o.k)) && objs.some((o) => o.k.startsWith('it_meditation'));
   if (oxyds === 0 && !meditation) reject('keine Oxyd-Steine');
-  else if (oxyds % 2) reject('ungerade Zahl Oxyd-Steine');
+  else {
+    // OxydStone::initColors: random ('?') stones complete odd fixed colours; an odd one left becomes a fake
+    const fixed = new Map();
+    let auto = 0;
+    for (const row of rows) for (const ch of row) {
+      const d = legend[ch];
+      if (d?.stone !== 'st_oxyd') continue;
+      if (d.symbol === '?') auto++;
+      else fixed.set(d.symbol, (fixed.get(d.symbol) ?? 0) + 1);
+    }
+    const unpaired = [...fixed.values()].filter((n) => n % 2).length;
+    if (unpaired > auto) reject('ungerade Zahl Oxyd-Steine');
+  }
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
   const a = w.actors.find((x) => x.o.k === 'ac_marble_black') ?? w.actors.find((x) => /^ac_pearl/.test(x.o.k));

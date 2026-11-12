@@ -181,7 +181,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const counts = new Map<string, number>();
   for (const s of signals) counts.set(s.symbol, (counts.get(s.symbol) ?? 0) + 1);
   for (const [symbol, n] of counts) {
-    if (n % 2 !== 0) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
+    if (n % 2 !== 0 && symbol !== FAKE_OXYD) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
   }
 
   // Other objects (ot_timer) have no cell.
@@ -207,18 +207,33 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   };
 }
 
-/** Gives '?' stones random colours in pairs, using colours not taken by fixed stones. */
+/** Symbol of a fake Oxyd stone (OxydStone FAKE): never opens, closes a single open stone. */
+export const FAKE_OXYD = '-';
+
+/**
+ * OxydStone::initColors: '?' stones first complete fixed colours that occur an odd number of
+ * times, then get random colours in pairs (colours not taken by fixed stones); an odd one left
+ * over becomes a fake Oxyd stone.
+ */
 function assignRandomSymbols(id: string, signals: SignalStone[], random: () => number): void {
   const auto = signals.filter((s) => s.symbol === '?');
-  if (auto.length === 0) return;
-  if (auto.length % 2 !== 0) throw new LevelError(`${id}: ungerade Zahl zufälliger Oxyd-Steine`);
-  const taken = new Set(signals.filter((s) => s.symbol !== '?').map((s) => s.symbol));
-  const free = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].filter((c) => !taken.has(c));
+  const count = new Map<string, number>();
+  for (const s of signals) if (s.symbol !== '?') count.set(s.symbol, (count.get(s.symbol) ?? 0) + 1);
   const pool: string[] = [];
-  for (let i = 0; i < auto.length / 2; i++) {
+  for (const [sym, n] of count) {
+    if (n % 2 === 0) continue;
+    if (pool.length >= auto.length) throw new LevelError(`${id}: Oxyd-Farbe ${sym} ohne Partner`);
+    pool.push(sym);
+  }
+  if (auto.length === 0) return;
+  const taken = new Set(count.keys());
+  const free = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].filter((c) => !taken.has(c));
+  const rest = auto.length - pool.length;
+  for (let i = 0; i < Math.floor(rest / 2); i++) {
     const sym = free[i % free.length];
     pool.push(sym, sym);
   }
+  if (rest % 2) pool.push(FAKE_OXYD);
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];

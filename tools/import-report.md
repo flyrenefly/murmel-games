@@ -1,6 +1,6 @@
 # Enigma-Import
 
-695 von 1322 Levels übernommen (17 Pakete).
+699 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -51,7 +51,7 @@
 | Lua: :add | 16 | 3 |
 | Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 2 |
-| Stein st_portal_horse | 15 | 1 |
+| Stein st_portal_horse | 15 | 2 |
 | Stein st_polarswitch | 15 | 2 |
 | Stein st_barrier | 15 | 4 |
 | Stein st_plaster_breakable | 14 | 0 |
@@ -67,7 +67,6 @@
 | Gegenstand it_bag | 13 | 2 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| ungerade Zahl Oxyd-Steine | 12 | 5 |
 | Lua: :drawRect | 12 | 3 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Stein st_charge_minus | 11 | 0 |
@@ -100,6 +99,7 @@
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
 | Stein st_disco_dark | 6 | 0 |
+| ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |

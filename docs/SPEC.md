@@ -524,6 +524,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (voll 13, halb 5 Felder) macht Feuer zu Schaum und legt Schaum auf freie Felder; leer fällt er ab.
   Abweichungen: kein Nicht-Enigma-Modus; Türen blocken nur geschlossen; `initfire` wird beim Import
   als brennender Gegenstand gesetzt; Lua-Bodennachrichten (setfire, stopfire, heat) fehlen.
+- **Ungerade Zahl Oxyd-Steine** (`OxydStone::initColors`): Zufallssteine ("?") ergänzen zuerst feste
+  Farben ohne Partner, dann paarweise freie Farben; ein übriger wird ein Schein-Oxyd (FAKE): Er geht
+  nie auf, schließt einen einzeln offenen Stein und zählt nicht zu den Paaren.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

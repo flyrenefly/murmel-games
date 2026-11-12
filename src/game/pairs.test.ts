@@ -64,3 +64,15 @@ describe('PairBoard (Enigma rules)', () => {
     expect([2, 3, 4, 5].map((i) => b.symbolOf(i)).sort()).toEqual(["B", "B", "C", "C"]);
   });
 });
+
+describe('fake Oxyd stone', () => {
+  it('never opens, closes a single open stone and does not count for completion', () => {
+    const b = new PairBoard(['A', '-', 'A']);
+    expect(b.totalPairs).toBe(1);
+    b.hit(0);
+    expect(b.hit(1)).toEqual([{ type: 'closed', indices: [0] }]);
+    expect(b.states).toEqual(['closed', 'closed', 'closed']);
+    b.hit(0);
+    expect(b.hit(2).some((e) => e.type === 'complete')).toBe(true);
+  });
+});
