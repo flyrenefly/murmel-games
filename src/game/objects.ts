@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring']);
@@ -171,6 +171,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
+  // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
+  if (kind === 'st_chameleon') return 'chameleon';
   if (/^it_spring(_keep|_drop)?$/.test(kind)) return 'spring';
   // A named Oxyd stone as message target; the stone itself is part of the level map.
   if (kind === 'st_oxyd_ref') return 'oxydref';

@@ -219,6 +219,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   keine Reibung, kein Bodenkontakt (Abgrund, Wasser, Sumpf wirken erst nach der Landung),
   keine Auslöser, Minen oder Aufheben, keine Zusammenstöße mit Gegnern; globale Kräfte,
   Wurmlöcher und Steine wirken weiter. Klang `boink`.
+- **st_chameleon** (`ChameleonStone.cc`): zeigt das Bild des Bodens darunter (verdeckt
+  Gegenstände dort), Akteure rollen hindurch (`STONE_PASS`), andere Steine können nicht
+  hinein.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

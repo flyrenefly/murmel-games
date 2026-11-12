@@ -1,6 +1,6 @@
 # Enigma-Import
 
-144 von 1322 Levels übernommen (14 Pakete).
+146 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -122,7 +122,6 @@
 | Boden fl_slope_tw | 23 | 0 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_chameleon | 22 | 3 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
@@ -148,7 +147,7 @@
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
-| Gegenstand it_seed_volcano | 16 | 0 |
+| Gegenstand it_seed_volcano | 16 | 1 |
 | mehrere weiße Murmeln | 16 | 0 |
 | Stein st_break_plain | 16 | 0 |
 | Boden fl_scales_bridgewood | 16 | 0 |
@@ -297,6 +296,7 @@
 | Lua: :set | 2 | 0 |
 | Lua: it_death | 2 | 0 |
 | Lua: st_break_white | 2 | 0 |
+| Gummiband an bewegtem oder unbekanntem Anker | 2 | 2 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
@@ -354,7 +354,6 @@
 | Lua: func() | 1 | 0 |
 | Lua: :closeall | 1 | 0 |
 | Lua: get_map_size() | 1 | 0 |
-| Gummiband an bewegtem oder unbekanntem Anker | 1 | 1 |
 | Lua: kill_stone() | 1 | 0 |
 | Lua: add_multicell() | 1 | 0 |
 | Lua: render_puzzles() | 1 | 0 |

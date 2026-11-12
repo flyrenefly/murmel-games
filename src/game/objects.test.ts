@@ -448,6 +448,12 @@ describe('ObjectWorld', () => {
     expect(w.events).toContainEqual({ type: "oxydMsg", col: 5, row: 0, msg: "open", value: true });
   });
 
+  it("st_chameleon lets the marble pass but stops boxes (ChameleonStone)", () => {
+    const w = world([{ x: 4, y: 0, k: "st_chameleon" }, { x: 3, y: 0, k: "st_box_wood" }]);
+    expect(w.blockAt(4, 0)).toBe(0);
+    expect(w.push(w.objects[1], 1, 0)).toBe(false);
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

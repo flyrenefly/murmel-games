@@ -494,6 +494,18 @@ export class ClassicView {
       else this.frame('st_timer', f, px, py);
       return;
     }
+    if (o.cls === 'chameleon') {
+      // ChameleonStone::init_model: the model of the floor below (it covers items there)
+      if (pass === 'stone' && this.level) {
+        const floor = this.level.cells[o.row * this.level.width + o.col]?.floor ?? 'fl_gray';
+        const [name, fixed] = floorImage(floor, this.img!);
+        const im = this.img![name] ?? this.img!.fl_gray;
+        const variants = Math.max(1, Math.floor(im.height / T));
+        const v = fixed ?? Math.floor(hash(o.col, o.row) * variants);
+        this.ctx.drawImage(im, 0, v * T, T, T, px, py, T, T);
+      }
+      return;
+    }
     if (o.cls === 'boulder') {
       // st_boulder.png / st_boulder_fall.png: columns n e s w, rows = 3 frames; falling has no shadow
       const { frame, falling } = world.boulderFrame(o);
