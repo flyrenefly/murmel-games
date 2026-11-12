@@ -252,7 +252,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // Not built yet: other floors for fallen puzzles.
   // Hollow stones come as $hollow since the export of 12.11. (enigma-web 0d6063b4); older exports lack it.
   if (/hollow\s*=\s*true/.test(xml) && !exp.world.cells.some((c) => c.some((o) => o && o.$hollow === 'true'))) reject('Puzzle hohl (alter Export)');
-  if (/FallenPuzzle/.test(xml)) reject('FallenPuzzle');
+  // wo["FallenPuzzle"]: the floor under a sunk puzzle stone (see below, after the Lua init)
   if (/el:single="false"/.test(xml)) {
     blockers = null;
     return reject('nur Netzwerkspiel');
@@ -436,6 +436,20 @@ function convertLevel(pack, meta, xml, exp, lua) {
       });
     }
   }
+  // PuzzleStone: a cluster sinking into water/abyss leaves server::FallenPuzzle (default fl_gray):
+  // a floor kind, or "=key" = the tile ti[key]; items there (it_strip, it_pipe) are not built.
+  let fallenFloor = null;
+  if (/FallenPuzzle/.test(xml)) {
+    const v = lua?.world?.FallenPuzzle;
+    const kinds = v === undefined ? null : v.startsWith('=') ? lua.fallenTile : [v];
+    const floor = kinds && kinds.length === 1 && kinds[0].startsWith('fl_') ? kinds[0] : null;
+    const img = floor && !SPECIAL_FLOORS.test(floor) ? (DEADLY.has(floor) ? floor : imageFor(floor)) : null;
+    if (!img) reject('FallenPuzzle');
+    else {
+      fallenFloor = img;
+      imgs.add(img);
+    }
+  }
   // Other objects (ot_timer, ot_counter …) are not in the export; rubber bands and wires are.
   // The level script's init recorded its wo:add calls: timers become objects without a cell.
   for (const m of (lua?.code ?? '').matchAll(/"(ot_\w+)"/g)) if (!/^ot_(rubberband|wire|timer)$/.test(m[1])) reject(`Objekt ${m[1]}`);
@@ -530,7 +544,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     ...(others.length ? { actors: others } : {}),
     ...(rubbers.length ? { rubbers } : {}),
     ...(compat < 1.1 ? { compat } : {}),
-    ...(Object.keys(world).length ? { world } : {}),
+    ...(fallenFloor ? { world: { ...world, FallenPuzzle: fallenFloor } } : Object.keys(world).length ? { world } : {}),
     ...(luaPart ? { lua: luaPart } : {}),
     ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };

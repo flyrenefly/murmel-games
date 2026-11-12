@@ -147,6 +147,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       if (cell) cell.floor = kind;
     },
   }, Math.random, lv.compat);
+  if (lv.world.FallenPuzzle) objects.fallenPuzzle = lv.world.FallenPuzzle;
   physics = new PhysicsWorld(level, objects);
   // wo["GlobalForce"] (server::ConstantForce) acts on every actor, like the item forces.
   const force = (globalForce = { x: 0, y: 0 });

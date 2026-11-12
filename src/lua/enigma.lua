@@ -555,6 +555,13 @@ function __endinit()
   INIT = false
 end
 
+-- For the importer: the declarations of ti[key] (wo["FallenPuzzle"] = "=key" → enigma.settile)
+function __describetile(key)
+  local t = rawget(ti, key)
+  if not t then return end
+  for _, d in ipairs(t) do M.add("tile:" .. tostring(d[1]), table.unpack(declargs(d))) end
+end
+
 -- Object::performAction → lua::CallFunc(name, value, sender)
 function __callback(name, value, ref)
   local f = _G[name]

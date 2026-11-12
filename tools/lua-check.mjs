@@ -118,5 +118,12 @@ export async function luaInit(code, w) {
     add: (kind, attrs) => void adds.push({ kind, attrs }),
   };
   const lua = await LuaLevel.create(code, host, SHIM, await import('fengari'));
-  return { world, adds, error: lua.lastError };
+  // wo["FallenPuzzle"] = "=key": the kinds of tile ti[key]
+  let fallenTile = null;
+  if (typeof world.FallenPuzzle === 'string' && world.FallenPuzzle.startsWith('=')) {
+    const before = adds.length;
+    lua.describeTile(world.FallenPuzzle.slice(1));
+    fallenTile = adds.splice(before).filter((a) => a.kind.startsWith('tile:')).map((a) => a.kind.slice(5));
+  }
+  return { world, adds, fallenTile, error: lua.lastError };
 }

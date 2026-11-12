@@ -70,6 +70,11 @@ export class LuaLevel {
     this.callGlobal('__callback', [name, value, senderRef]);
   }
 
+  /** Importer: report the declarations of ti[key] through host.add("tile:<kind>", attrs). */
+  describeTile(key: string): void {
+    this.callGlobal('__describetile', [key]);
+  }
+
   private str(s: string): Uint8Array {
     return this.f.to_luastring(s);
   }

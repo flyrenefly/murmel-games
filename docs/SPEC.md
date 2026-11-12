@@ -254,6 +254,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Farbe, open/on → weiß, close/off → schwarz. Form (square, slash, cross, frame,
   backslash) liefert der Export seit enigma-web 701939f7 als `$flavor` (Lauf 43234502499;
   neuer Export = neue Zufallsvarianten). `blockAt` kennt dafür die Farbe des Akteurs.
+- **wo["FallenPuzzle"]** (`PuzzleStone.cc`, `server::FallenPuzzle`): Boden, den ein in Wasser
+  oder Abgrund versunkener Puzzlestein hinterlässt (Standard fl_gray). Ein Bodenname gilt
+  direkt; „=key“ heißt `enigma.settile(ti[key])` – der Importer löst die Kachel über die
+  Lua-Schicht auf (`__describetile`). Gegenstände dort (it_strip, it_pipe) fehlen noch.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

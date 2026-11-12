@@ -125,6 +125,7 @@ function levelImages(level: Level): string[] {
   for (const o of level.objects) names.push(...objectImages(o.k));
   for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
   if (level.cells.some((c) => c.floor === 'fl_swamp')) names.push(...SINK_IMAGES);
+  if (level.world.FallenPuzzle) names.push(level.world.FallenPuzzle);
   // Kinds Lua callbacks may place.
   for (const [k, v] of Object.entries(level.lua?.kinds ?? {})) {
     if (v === 'object') names.push(...objectImages(k));

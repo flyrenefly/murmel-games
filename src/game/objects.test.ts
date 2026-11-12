@@ -265,6 +265,14 @@ describe('ObjectWorld', () => {
       expect(floors.get("3,4")).toBe("fl_gray");
     });
 
+    it("wo[\"FallenPuzzle\"] chooses the floor a sunk fragment leaves", () => {
+      const w = pw([B(2, 1, 0)]);
+      w.fallenPuzzle = "fl_ice";
+      floors.set("2,2", "fl_water");
+      w.hit(2, 1, 0, 0, -1, -6);
+      expect(floors.get("2,2")).toBe("fl_ice");
+    });
+
     it("a blue fragment does not move into another stone", () => {
       const w = pw([B(2, 1, 4), B(3, 1, 1), B(2, 2, 0)]);
       w.hit(2, 1, 0, 0, -1, -6);

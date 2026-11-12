@@ -78,7 +78,7 @@ export const PUZZLE_EXPLODE_MS = 50;
 export const IMPULSE_EXPAND_MS = 4 * 55;
 export const IMPULSE_SHRINK_MS = 5 * 55;
 /** Bridge floor of a fallen puzzle (server::FallenPuzzle default). */
-const FALLEN_PUZZLE = 'fl_gray';
+export const FALLEN_PUZZLE = 'fl_gray';
 /** Steps in face-bit order with their bit: W, S, E, N. */
 const STEPS: [number, number, number][] = [
   [-1, 0, 1],
@@ -227,6 +227,8 @@ export class ObjectWorld {
   private now = 0;
   /** Lua function as action target (Object::performAction → lua::CallFunc). */
   onCallback: ((fn: string, value: boolean, sender: GameObject) => void) | null = null;
+  /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves. */
+  fallenPuzzle = FALLEN_PUZZLE;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
   readonly inventory: string[] = [];
   private nextId = 0;
@@ -566,7 +568,7 @@ export class ObjectWorld {
       for (const p of list) {
         p.gone = true;
         this.unplace(p);
-        this.env.setFloor(p.col, p.row, FALLEN_PUZZLE);
+        this.env.setFloor(p.col, p.row, this.fallenPuzzle);
         this.events.push({ type: 'floor', col: p.col, row: p.row });
       }
     }
