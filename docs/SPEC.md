@@ -292,6 +292,17 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_blur_straight / _cross / _magic** (`SimpleStones.cc` BlurStone): Ein Treffer einer Murmel
   macht ihn zum Durchlass-Stein – „straight“ in ihrer Farbe, „cross“ in der anderen; „magic“
   (sieht aus wie cross) nur mit dem Zauberstab (Pinsel fehlt noch).
+- **it_vortex_open / _closed** (`Vortex.cc`): Ein offener Strudel verschluckt eine Murmel,
+  deren Mitte näher als 0,25 an seiner Mitte ist, und gibt sie nach 0,4 s aus. Ziele
+  (`destination`, alle Einträge) löst der Konverter in Punkte auf: Ziel ist ein Strudel unter
+  einem Stein → nach 0,8 s das nächste Ziel; offener Strudel → dort heraus; geschlossener →
+  er öffnet sich (4 × 100 ms), dann heraus; belegter oder kein (weiteres) Ziel → zurück aus
+  dem eigenen Strudel; kein Strudel am Ziel → die Murmel erscheint dort. Aus einem Strudel
+  springt die Murmel heraus (RISING_VORTEX → JUMPING) und wird daher nicht sofort wieder
+  verschluckt. `autoopen` öffnet bei Annäherung, `autoclose` schließt nach dem Durchgang;
+  open/close/toggle/signal schalten. `scissor` (Standard ab Kompatibilität 1.10) zerschneidet
+  die Gummibänder der Murmel; das Wurmloch schneidet nur mit `scissor=true`. Der Strudel
+  deckt den Boden bis 0,25 um seine Mitte ab (`covers_floor`).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
