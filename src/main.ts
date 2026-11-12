@@ -46,6 +46,8 @@ const btnTheme = $<HTMLButtonElement>('btn-theme');
 const btnRestart = $<HTMLButtonElement>('btn-restart');
 const btnLevels = $<HTMLButtonElement>('btn-levels');
 const btnSwap = $<HTMLButtonElement>('btn-swap');
+const btnDrop = $<HTMLButtonElement>('btn-drop');
+const hudItems = $('hud-items');
 const overlay = $('overlay');
 const ovTitle = $('ov-title');
 const ovText = $('ov-text');
@@ -130,6 +132,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   }, Math.random, lv.compat);
   physics = new PhysicsWorld(level, objects);
   physics.setForceField((x, y) => objects.fieldForce(x, y));
+  updateItems();
   acc = 0;
   falls = 0;
   falling = physics.marbles.map(() => -1);
@@ -219,8 +222,8 @@ const twoMarbles = () => (physics?.marbles.length ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
-    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}`
-    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
+    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}`
+    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
 function showStart(): void {
@@ -416,7 +419,10 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'switch') sfx.switchOn();
     else if (e.name === 'triggerdown') sfx.trigger(true);
     else if (e.name === 'triggerup') sfx.trigger(false);
-    else if (e.name === 'pickup') sfx.pickup();
+    else if (e.name === 'pickup') {
+      sfx.pickup();
+      updateItems();
+    }
     else if (e.name === 'move') sfx.move();
     else if (e.name === 'explode') sfx.explode();
     else if (e.name === 'fakeoxyd') sfx.fakeOxyd();
@@ -453,7 +459,7 @@ function frame(now: number): void {
         // WarpActor without keeping the velocity.
         if (to) ph.respawn(to.x, to.y, i);
         objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
-        objects.actorStep(m.pos.x, m.pos.y, i);
+        objects.actorStep(m.pos.x, m.pos.y, i, m.radius);
       });
       for (const e of ph.enemies) objects.actorStep(e.pos.x, e.pos.y, -1);
       objects.update(PHYSICS_DT * 1000);
@@ -555,9 +561,39 @@ btnSwap.addEventListener('click', (e) => {
   e.stopPropagation();
   swapMarble();
 });
+/** player::ActivateFirstItem: drop the first item (a seed) where the current marble is. */
+function dropItem(): boolean {
+  const ph = physics;
+  if (mode !== 'play' || !ph || objects.inventory.length === 0) return false;
+  const i = ph.current;
+  const m = ph.marbles[i];
+  if (!m.active || falling[i] >= 0) return true; // BasicBall::can_drop_items
+  objects.dropItem(m.pos.x, m.pos.y);
+  updateItems();
+  return true;
+}
+/** The level has seeds to pick up. */
+function hasSeeds(): boolean {
+  return objects.objects.some((o) => o.cls === 'seed');
+}
+/** Inventory display: number of seeds. */
+function updateItems(): void {
+  const n = objects.inventory.length;
+  hudItems.hidden = n === 0;
+  btnDrop.hidden = n === 0;
+  hudItems.textContent = n ? `Samen ${n}` : '';
+}
+/** Left click / Space: use the first inventory item; without items the yin-yang swaps marbles. */
+function useItem(): void {
+  if (!dropItem()) swapMarble();
+}
+btnDrop.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropItem();
+});
 window.addEventListener('mousedown', (e) => {
-  // Enigma: a left click uses the first inventory item, here the yin-yang.
-  if (e.button === 0 && mode === 'play' && input.locked && twoMarbles()) swapMarble();
+  // Enigma: a left click uses the first inventory item (seeds, then the yin-yang).
+  if (e.button === 0 && mode === 'play' && input.locked) useItem();
 });
 btnLevels.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -579,7 +615,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'Space' && mode === 'play') {
     e.preventDefault();
-    swapMarble();
+    useItem();
     return;
   }
   if (e.code === 'KeyT') cycleStyle();
@@ -617,6 +653,8 @@ requestAnimationFrame((t) => {
 (window as unknown as { murmel: unknown }).murmel = {
   state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m) => ({ ...m.pos, active: m.active })) }),
   swap: swapMarble,
+  drop: dropItem,
+  inventory: () => [...objects.inventory],
   push: (x: number, y: number) => {
     if (!physics) return;
     const v = physics.velocity;

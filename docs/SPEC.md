@@ -164,7 +164,19 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   kommt oder ein Stein daraufgeschoben wird (Klang explosion2). Die Explosion (50 ms)
   zerschmettert Murmeln im Feld und hinterlässt eine Mulde (it_meditation_hollow), außer
   auf Abgrund, Wasser und Sumpf.
-- Gegenstände (Auslöser, Zettel, Wurmloch, Mulde, Mine) halten Steine nicht mehr auf.
+- Gegenstände (Auslöser, Zettel, Wurmloch, Mulde, Mine, Samen) halten Steine nicht mehr auf.
+- **it_seed_wood** (`SeedItem.cc`) und **Inventar** (`player.cc`, `Inventory`): Die Murmel
+  hebt einen ruhenden Samen auf, wenn ihre Mitte näher als 0,2 an der Feldmitte ist (höchstens
+  12 Gegenstände, neue vorn). Linksklick oder Leertaste legt den ersten Gegenstand in das Feld
+  der Murmel, wenn dort kein Gegenstand liegt; ohne Gegenstände wechselt der Klick wie bisher
+  die Murmel (Yin-Yang). Auf Touchgeräten gibt es den Knopf „Ablegen“. Ein abgelegter Samen,
+  ein daraufgeschobener Stein oder die Nachricht grow/signal lässt ihn wachsen: 13 Bilder à
+  120 ms, dann st_box_wood_growing (3 × 130 ms; berührte Murmeln zerspringen, ein Stein im
+  Feld wird ersetzt), danach eine normale Holzkiste – auf Abgrund, Wasser und Sumpf eine
+  Brücke. Die übrigen Samen (greenbrown, volcano, hay) und die Oxyd-Sonderregel (Samen auf
+  Gitter wird Holzboden) fehlen noch.
+- **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
+  Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf.
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`

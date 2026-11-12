@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, EAST, type GameObject, meditationImage, type ObjectWorld, WEST } from '../game/objects';
+import { doorFlavor, EAST, type GameObject, meditationImage, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -135,6 +135,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
+  if (kind === 'it_seed' || kind === 'it_seed_wood') return ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed'];
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
@@ -369,10 +370,14 @@ export class ClassicView {
       else if (o.cls === 'wormhole') this.frame('it_wormhole', o.state ? Math.floor(this.now / 100) % 2 : 0, px, py);
       else if (o.cls === 'meditation' && !o.gone) this.image(meditationImage(o.state), px, py);
       else if (o.cls === 'landmine' && !o.gone) this.image(o.exploding !== undefined ? 'it_explosion' : 'it_landmine', px, py);
+      else if (o.cls === 'seed' && !o.gone) {
+        const age = world.growAge(o);
+        this.frame('it_seed', age < 0 ? 0 : SEED_GROW_FRAMES[Math.min(SEED_GROW_FRAMES.length - 1, Math.floor(age / 120))], px, py);
+      }
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine') continue;
+        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
@@ -471,7 +476,9 @@ export class ClassicView {
     }
     if (o.cls === 'box') {
       if (o.gone) return;
+      const age = world.growAge(o);
       if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (age >= 0) this.frame('st_box_wood_growing', Math.min(2, Math.floor(age / 130)), px, py);
       else if (o.kind.startsWith('st_box_wood')) this.frame('st_box_wood', o.kind.endsWith('_v') ? 1 : 0, px, py);
       else this.image(o.kind, px, py);
       return;

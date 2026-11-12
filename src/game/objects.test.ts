@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_FACES, NORTH, ObjectWorld, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
+import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
 
 const W = 10;
 
@@ -347,6 +347,60 @@ describe('ObjectWorld', () => {
       expect(w.objects[1].exploding).toBeDefined();
       w.push(w.objects[2], 1, 0);
       expect(w.objects[3].gone).toBe(true); // dent (-1) shovelled to 0 = gone
+    });
+  });
+
+  describe("wood seeds", () => {
+    it("the marble picks a seed up near its centre and drops it; it grows into a wood box", () => {
+      const w = world([{ x: 3, y: 0, k: "it_seed_wood" }]);
+      w.actorStep(3.3, 0.5, 0); // 0.3 from the centre: radius is 0.2
+      expect(w.inventory).toEqual([]);
+      w.actorStep(3.6, 0.5, 0);
+      expect(w.inventory).toEqual(["it_seed_wood"]);
+      expect(w.events).toContainEqual({ type: "sound", name: "pickup" });
+      w.events.length = 0;
+      expect(w.dropItem(6.5, 0.5)).toBe(true);
+      expect(w.inventory).toEqual([]);
+      w.actorStep(6.5, 0.5, 0); // a growing seed is not picked up again
+      expect(w.inventory).toEqual([]);
+      w.update(SEED_GROW_MS - 10);
+      expect(w.blockAt(6, 0)).toBe(0);
+      w.update(20);
+      expect(w.blockAt(6, 0)).toBe(ALL_FACES);
+      const box = w.objects.find((o) => o.cls === "box")!;
+      expect(box.growing).toBeDefined();
+      w.actorStep(5.7, 0.5, 0, 0.375); // touching the growing box
+      expect(w.events).toContainEqual({ type: "shatter", marble: 0 });
+      w.update(BOX_GROW_MS);
+      expect(box.growing).toBeUndefined();
+      w.events.length = 0;
+      w.actorStep(5.7, 0.5, 0, 0.375); // a grown box is harmless
+      expect(w.events).toEqual([]);
+    });
+
+    it("cannot drop where an item lies; a box pushed onto a seed or a signal makes it grow", () => {
+      const w = world([{ x: 2, y: 0, k: "it_trigger" }, { x: 3, y: 1, k: "st_box_wood" }, { x: 4, y: 1, k: "it_seed_wood" }, { x: 5, y: 2, k: "it_seed", a: { name: "s" } }, { x: 1, y: 2, k: "it_trigger", a: { target: "s", action: "grow" } }]);
+      w.inventory.push("it_seed_wood");
+      expect(w.dropItem(2.5, 0.5)).toBe(false);
+      w.push(w.objects[1], 1, 0);
+      expect(w.objects[2].growing).toBeDefined();
+      w.marbleAt(1, 2);
+      expect(w.objects[3].growing).toBeDefined();
+      w.update(SEED_GROW_MS);
+      expect(w.objects[1].gone).toBe(true); // replaced by the grown box
+      expect(w.blockAt(4, 1)).toBe(ALL_FACES);
+    });
+
+    it("a box grown on water becomes a bridge", () => {
+      const floors: Record<string, string> = { "4,0": "fl_water" };
+      const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+      const w = new ObjectWorld([], W, {}, env, () => 0);
+      w.inventory.push("it_seed_wood");
+      w.dropItem(4.5, 0.5);
+      w.update(SEED_GROW_MS);
+      w.update(BOX_GROW_MS);
+      expect(floors["4,0"]).toBe("fl_wood_framed_h");
+      expect(w.blockAt(4, 0)).toBe(0);
     });
   });
 

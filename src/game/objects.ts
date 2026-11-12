@@ -16,10 +16,20 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed']);
+
+/** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
+export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
+export const SEED_GROW_MS = SEED_GROW_FRAMES.length * 120;
+/** st_box_wood_growing: 3 frames à 130 ms; touching marbles shatter meanwhile (BoxStone). */
+export const BOX_GROW_MS = 3 * 130;
+/** Inventory::max_items. */
+export const MAX_ITEMS = 12;
+/** SeedItem traits: pick-up radius 0.2. */
+const SEED_RADIUS = 0.2;
 
 /** Meditation states (Meditation.cc): negative = dents that pull, positive = hills that push. */
 const MEDITATION_STATE: Record<string, number> = {
@@ -124,6 +134,8 @@ export interface GameObject {
   impulse?: { phase: 'expanding' | 'shrinking'; incoming: number };
   /** Landmine: exploding since this time (it_explosion_hollow). */
   exploding?: number;
+  /** Seed: growing since this time; box: grown from a seed, growing since this time. */
+  growing?: number;
 }
 
 export type ObjectEvent =
@@ -145,6 +157,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
   if (kind in MEDITATION_STATE) return 'meditation';
   if (kind === 'it_landmine') return 'landmine';
+  if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
@@ -154,7 +167,7 @@ export function objectClass(kind: string): ObjectClass | null {
 }
 
 /** Messages the objects understand (others need Lua or unsupported objects). */
-export const SUPPORTED_ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop']);
+export const SUPPORTED_ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'grow']);
 
 const truthy = (v: string | undefined): boolean => v === 'true' || (v !== undefined && v !== '' && v !== 'false' && v !== '0');
 
@@ -167,6 +180,9 @@ export class ObjectWorld {
   readonly events: ObjectEvent[] = [];
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
+  /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
+  readonly inventory: string[] = [];
+  private nextId = 0;
   /** Cell of each marble's centre (-1 = gone); init = false until its first marbleAt. */
   private marbles: { col: number; row: number; init: boolean }[] = [];
 
@@ -176,7 +192,7 @@ export class ObjectWorld {
     /** Localised texts of documents (key → text). */
     private readonly texts: Record<string, string> = {},
     private readonly env: ObjectEnv = NO_ENV,
-    random: () => number = Math.random,
+    private readonly random: () => number = Math.random,
     /** Enigma compatibility version of the level (API 1 below 1.10). */
     private readonly compat = 1.1,
   ) {
@@ -197,7 +213,7 @@ export class ObjectWorld {
         gone: false,
       };
       // Enigma clones a wood box as one of two grain directions (BoxStone::clone).
-      if (o.kind === 'st_box_wood') o.kind = random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v';
+      if (o.kind === 'st_box_wood') o.kind = this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v';
       this.objects.push(o);
       this.place(o);
       if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
@@ -546,7 +562,28 @@ export class ObjectWorld {
    * Landmine::actor_hit: closer than 0.3 to the centre it explodes; the explosion shatters
    * marbles in its cell (Explosion::actor_hit).
    */
-  actorStep(x: number, y: number, marble: number): void {
+  actorStep(x: number, y: number, marble: number, radius = 19 / 64): void {
+    if (marble >= 0) {
+      // BoxStone::actor_inside / actor_contact: a growing box shatters the marble.
+      for (let dc = -1; dc <= 1; dc++)
+        for (let dr = -1; dr <= 1; dr++) {
+          const c = Math.floor(x) + dc;
+          const r = Math.floor(y) + dr;
+          if (!this.at(c, r).some((o) => o.cls === 'box' && !o.gone && o.growing !== undefined)) continue;
+          const nx = Math.min(Math.max(x, c), c + 1);
+          const ny = Math.min(Math.max(y, r), r + 1);
+          if (Math.hypot(x - nx, y - ny) < radius + 0.01) this.events.push({ type: 'shatter', marble });
+        }
+      // Item::actor_hit (SeedItem: radius 0.2, not while growing) → Player::pick_up.
+      for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
+        if (o.cls !== 'seed' || o.gone || o.growing !== undefined || this.inventory.length >= MAX_ITEMS) continue;
+        if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= SEED_RADIUS) continue;
+        o.gone = true;
+        this.unplace(o);
+        this.inventory.unshift(o.kind);
+        this.events.push({ type: 'sound', name: 'pickup' });
+      }
+    }
     for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
       if (o.cls !== 'landmine' || o.gone) continue;
       if (o.exploding === undefined) {
@@ -554,6 +591,34 @@ export class ObjectWorld {
       }
       if (o.exploding !== undefined && marble >= 0) this.events.push({ type: 'shatter', marble });
     }
+  }
+
+  /**
+   * player::ActivateFirstItem: drop the first inventory item into the marble's cell if no item
+   * lies there (Item::can_drop_at). A dropped seed starts growing (SeedItem::on_drop).
+   */
+  dropItem(x: number, y: number): boolean {
+    const col = Math.floor(x);
+    const row = Math.floor(y);
+    if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && ITEM_CLASSES.has(o.cls))) return false;
+    if (col < 0 || row < 0 || col >= this.width) return false;
+    const kind = this.inventory.shift()!;
+    const o = this.add(kind, 'seed', col, row);
+    this.startGrowing(o);
+    return true;
+  }
+
+  private add(kind: string, cls: ObjectClass, col: number, row: number): GameObject {
+    const o: GameObject = { id: `new${this.nextId++}`, name: '', kind, cls, col, row, state: 0, moving: null, attrs: {}, gone: false };
+    this.objects.push(o);
+    this.place(o);
+    return o;
+  }
+
+  /** SeedItem::startGrowing. */
+  private startGrowing(o: GameObject): void {
+    if (o.growing !== undefined || o.gone) return;
+    o.growing = this.now;
   }
 
   /** Landmine::explode → it_explosion_hollow. */
@@ -567,6 +632,7 @@ export class ObjectWorld {
   private stoneHitsItems(col: number, row: number): void {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'landmine' && !o.gone) this.explode(o);
+      else if (o.cls === 'seed' && !o.gone) this.startGrowing(o);
       else if (o.cls === 'meditation' && !o.gone) this.shovel(o);
     }
   }
@@ -678,6 +744,31 @@ export class ObjectWorld {
           o.state = -2;
         }
       }
+      // SeedItem::animcb: the seed becomes st_box_wood_growing, replacing any stone there.
+      if (o.cls === 'seed' && !o.gone && o.growing !== undefined && this.now - o.growing >= SEED_GROW_MS) {
+        o.gone = true;
+        this.unplace(o);
+        for (const s of this.at(o.col, o.row)) {
+          if (s.cls === 'box' && !s.gone) {
+            s.gone = true;
+            this.unplace(s);
+          }
+        }
+        const box = this.add(this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v', 'box', o.col, o.row);
+        box.growing = this.now;
+        this.shatterAt(o.col, o.row);
+        this.updateTriggers(o.col, o.row);
+      }
+      // BoxStone::animcb: grown; on abyss, water or swamp it becomes a bridge.
+      if (o.cls === 'box' && !o.gone && o.growing !== undefined && this.now - o.growing >= BOX_GROW_MS) {
+        o.growing = undefined;
+        if (SINK_FLOORS.has(this.env.floorAt(o.col, o.row))) {
+          o.gone = true;
+          this.unplace(o);
+          this.env.setFloor(o.col, o.row, bridgeFloor(o.kind));
+          this.events.push({ type: 'floor', col: o.col, row: o.row });
+        }
+      }
     }
     for (const o of this.objects) {
       const imp = o.impulse;
@@ -724,6 +815,11 @@ export class ObjectWorld {
   }
 
   /** Animation progress 0..1 towards the target state (1 when not moving). */
+  /** Milliseconds since a seed or grown box started growing (-1 = not growing). */
+  growAge(o: GameObject): number {
+    return o.growing === undefined ? -1 : this.now - o.growing;
+  }
+
   progress(o: GameObject): number {
     return o.moving ? Math.min(1, (this.now - o.moving.since) / o.moving.dur) : 1;
   }
@@ -787,6 +883,11 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'seed') {
+      // SeedItem::message: grow or signal (any value) starts growing.
+      if (msg === 'grow' || msg === 'signal') this.startGrowing(o);
+      return;
+    }
     if (o.cls === 'oneway') {
       // OneWayStone::message: signal and flip reverse the direction.
       if (msg === 'signal' || msg === 'flip' || msg === 'toggle') o.state = (o.state + 2) % 4;

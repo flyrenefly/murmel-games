@@ -1,6 +1,6 @@
 # Enigma-Import
 
-99 von 1322 Levels übernommen (13 Pakete).
+103 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -26,7 +26,6 @@
 | Boden fl_slope_pw | 107 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 1 |
-| Gegenstand it_seed_wood | 96 | 4 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
@@ -51,7 +50,7 @@
 | Gegenstand it_coin_s | 55 | 0 |
 | Boden fl_slope_ose | 55 | 0 |
 | Stein st_mirror_triangle | 55 | 0 |
-| Gegenstand it_crack_l | 54 | 1 |
+| Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 0 |
 | Stein st_mail | 54 | 0 |
 | Boden fl_slope_osw | 53 | 0 |
