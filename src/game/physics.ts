@@ -51,7 +51,7 @@ export type Contact =
   | ({ kind: 'signal'; index: number; speed: number } & Toucher)
   | ({ kind: 'wall'; speed: number } & Toucher)
   /** nx/ny: contact normal (stone → actor), vn: speed along it before the bounce (< 0). */
-  | ({ kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean } & Toucher)
+  | ({ kind: 'object'; col: number; row: number; speed: number; nx: number; ny: number; vn: number; hit: boolean; vx: number; vy: number } & Toucher)
   /** A marble collided with another actor (rotor, top, killer). */
   | { kind: 'actor'; actor: EnemyKind; marble: number; speed: number }
   /** A marble sank in the swamp. */
@@ -513,7 +513,7 @@ export class PhysicsWorld {
       const { by, color } = who;
       if (isNew && kind === -3 && (by >= 0 || speed >= HIT_SPEED)) {
         // Marbles also feel soft touches (death stones); hit = above the hit threshold.
-        onContact({ kind: 'object', col, row, speed, nx, ny, vn, hit: speed >= HIT_SPEED, by, color });
+        onContact({ kind: 'object', col, row, speed, nx, ny, vn, hit: speed >= HIT_SPEED, by, color, vx: vel.x, vy: vel.y });
       } else if (isNew && kind !== -3 && speed >= HIT_SPEED) {
         onContact(kind >= 0 ? { kind: 'signal', index: kind, speed, by, color } : { kind: 'wall', speed, by, color });
       }

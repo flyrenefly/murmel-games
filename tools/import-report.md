@@ -1,12 +1,12 @@
 # Enigma-Import
 
-197 von 1322 Levels übernommen (15 Pakete).
+203 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 294 | 2 |
 | Stein st_laser | 225 | 2 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 2 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 3 |
 | Lua-Rückruf | 165 | 1 |
 | Gegenstand it_sensor | 139 | 3 |
 | Boden fl_slope_ps | 119 | 0 |
@@ -55,7 +55,6 @@
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 0 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_chess_black | 49 | 3 |
 | Stein st_pull | 48 | 2 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -83,7 +82,6 @@
 | Gegenstand it_flag_black | 32 | 2 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_chess_white | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
 | Lua: oxyd() | 30 | 0 |
 | Stein st_granite_hollow | 29 | 2 |
@@ -125,8 +123,8 @@
 | Stein st_magic_brick | 19 | 0 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Boden fl_scales_concrete | 19 | 0 |
-| Gegenstand it_spoon | 18 | 1 |
+| Boden fl_scales_concrete | 19 | 1 |
+| Gegenstand it_spoon | 18 | 2 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 1 |
@@ -388,7 +386,6 @@
 | Lua: it_burnable | 1 | 0 |
 | Stein st_oxyd_b | 1 | 0 |
 | Boden mit Kraft (fl_dark) | 1 | 0 |
-| Lua: st_chess | 1 | 0 |
 | Stein fl_concrete | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Boden mit Kraft (fl_sahara) | 1 | 0 |

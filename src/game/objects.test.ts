@@ -555,6 +555,30 @@ describe('ObjectWorld', () => {
     expect(floors["3,0"]).toBe("fl_water");
   });
 
+  it("st_chess jumps like a knight when its colour hits it rolling sideways, and captures (ChessStone)", () => {
+    const floors: Record<string, string> = { "6,2": "fl_abyss" };
+    const env: ObjectEnv = { stoneAt: (c, r) => c < 0 || r < 0 || c >= W || r >= 5, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: () => {} };
+    const w = new ObjectWorld([{ x: 2, y: 1, k: "st_chess_black" }, { x: 4, y: 2, k: "st_chess_white" }], W, {}, env);
+    w.hit(2, 1, 1, -1, 0, -6, 0, 3); // white marble: wrong colour, nothing
+    expect(w.objects[0].chess).toBeUndefined();
+    w.hit(2, 1, 0, -1, 0, -6, 0, 0); // no sideways speed: nothing
+    expect(w.objects[0].chess).toBeUndefined();
+    w.hit(2, 1, 0, -1, 0, -6, 0, 3); // east and south: two east, one south → (4, 2) is the white one
+    expect(w.objects[1].chess?.phase).toBe("captured");
+    const run = (ms: number) => {
+      for (let t = 0; t < ms; t += 50) w.update(50);
+    };
+    run(650); // the captured stone is gone
+    expect(w.objects[1].gone).toBe(true);
+    run(800); // the black one disappears and moves
+    expect(w.objects[0]).toMatchObject({ col: 4, row: 2 });
+    run(700);
+    expect(w.objects[0].chess?.phase).toBe("idle");
+    w.hit(4, 2, 0, -1, 0, -6, 0, -3); // east and north: (6, 1)
+    run(1400);
+    expect(w.objects[0]).toMatchObject({ col: 6, row: 1 });
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

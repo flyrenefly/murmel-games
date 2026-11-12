@@ -168,6 +168,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
   if (kind === 'st_swap') return ['st_swap', 'sh_round'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
+  if (kind.startsWith('st_chess')) return ['st_chess_black', 'st_chess_white', 'sh_round'];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
     const look = movableLook(kind);
@@ -512,6 +513,11 @@ export class ClassicView {
       const f = o.state ? seq[Math.floor(this.now / 120) % seq.length] : 2;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_timer', f, px, py);
+      return;
+    }
+    if (o.cls === 'chess') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame(o.state === 1 ? 'st_chess_white' : 'st_chess_black', world.chessFrame(o), px, py);
       return;
     }
     if (o.cls === 'fourswitch') {

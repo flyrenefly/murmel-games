@@ -283,6 +283,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   nur Laser bzw. unsichtbare Akteure durch, beides gibt es in Murmel nicht.
 - **st_flat_movable** (`FlatStone.cc`): wie eine Kiste geschoben; auf Abgrund, Wasser oder Sumpf
   verschwindet er ohne Brücke (on_floor_change).
+- **st_chess_black / st_chess_white** (`ChessStone.cc`): Eine Murmel seiner Farbe, die eine Seite
+  kräftig trifft (GetPushDirection) und dabei quer schneller als 1,5 rollt, lässt ihn wie einen
+  Springer ziehen (2 in Stoß-, 1 in Querrichtung; 5 × 120 ms Verschwinden/Erscheinen). Ein
+  Schachstein der anderen Farbe am Ziel wird geschlagen (20 Versuche à 0,1 s), andere Steine
+  blockieren. Abgrund: fällt, Sumpf: versinkt (5 × 500 ms). Zauberstab, flip und signal
+  wechseln die Farbe. Die Physik gibt dafür die Geschwindigkeit der Murmel weiter.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
@@ -88,6 +88,9 @@ const STEPS: [number, number, number][] = [
 ];
 /** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
 export const BOULDER_MS = 3 * 120;
+/** ChessStone: knight move when rolling sideways faster than this; animations 5 × 120 ms. */
+const CHESS_HIT = 1.5;
+const CHESS_ANIM_MS = 5 * 120;
 /** SwapStone: GameTimer alarm after 0.1 s ends the exchange. */
 export const SWAP_MS = 100;
 /** World::GetPushDirection: speed into a stone face needed to push it (tiles/s). */
@@ -146,6 +149,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Chess stone (ChessStone): phase, its start and the knight's destination. */
+  chess?: { phase: 'idle' | 'disappearing' | 'appearing' | 'capturing' | 'captured' | 'falling' | 'sinking'; since: number; dest?: [number, number] };
   /** Four switch: has turned before (FourSwitch::m_inactive_so_far is false). */
   turned?: boolean;
   /** Swap stone: moved at this time in this Enigma direction (0.1 s animation). */
@@ -185,6 +190,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_yinyang') return 'yinyang';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
+  if (/^st_chess(_black|_white)?$/.test(kind)) return 'chess';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
   if (PASSAGE.test(kind)) return 'passage';
@@ -331,7 +337,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -351,11 +357,15 @@ export class ObjectWorld {
    * The marble hit the stone in this cell. color: 0 = black marble, 1 = white.
    * nx/ny: contact normal (stone → marble), vn: marble speed along it (negative = into the stone).
    */
-  hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0): void {
+  hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0): void {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'fourswitch') {
         this.turnFourswitch(o); // FourSwitch::actor_hit
         continue;
+      }
+      if (o.cls === 'chess') {
+        this.hitChess(o, color, nx, ny, vn, vx, vy);
+        return;
       }
       if (o.cls === 'swap') {
         // Stone::actor_hit → impulse in the push direction (SwapStone::on_impulse)
@@ -752,6 +762,89 @@ export class ObjectWorld {
     o.growing = this.now;
   }
 
+  // ---------- chess stones (ChessStone.cc) ----------
+
+  /**
+   * ChessStone::actor_hit: the wand flips the colour; a marble of the stone's colour pushing a
+   * face (GetPushDirection) while rolling sideways faster than 1.5 moves it like a knight.
+   */
+  private hitChess(o: GameObject, color: number, nx: number, ny: number, vn: number, vx: number, vy: number): void {
+    if (this.wields('it_magicwand')) {
+      o.state = 1 - o.state;
+      return;
+    }
+    if (color !== o.state) return;
+    const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+    if (!face || vn >= -PUSH_SPEED) return;
+    const d1: [number, number] = [-nx, -ny];
+    let d2: [number, number] | null = null;
+    if (d1[0] === 0) d2 = vx > CHESS_HIT ? [1, 0] : vx < -CHESS_HIT ? [-1, 0] : null;
+    else d2 = vy > CHESS_HIT ? [0, 1] : vy < -CHESS_HIT ? [0, -1] : null;
+    if (d2) this.chessMove(o, d1, d2);
+  }
+
+  /** ChessStone::maybe_move_to: two cells in d1, one in d2; capture a chess stone of the other colour. */
+  private chessMove(o: GameObject, d1: [number, number], d2: [number, number]): void {
+    if ((o.chess?.phase ?? 'idle') !== 'idle') return;
+    const dest: [number, number] = [o.col + 2 * d1[0] + d2[0], o.row + 2 * d1[1] + d2[1]];
+    if (dest[0] < 0 || dest[1] < 0 || dest[0] >= this.width || this.env.floorAt(dest[0], dest[1]) === undefined) return;
+    const other = this.at(dest[0], dest[1]).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls));
+    if (!other && !this.stoneAt(dest[0], dest[1])) {
+      o.chess = { phase: 'disappearing', since: this.now, dest };
+      return;
+    }
+    // _capture: only an idle chess stone of the other colour gives way
+    if (other?.cls === 'chess' && other.state !== o.state && (other.chess?.phase ?? 'idle') === 'idle') {
+      other.chess = { phase: 'captured', since: this.now };
+      o.chess = { phase: 'capturing', since: this.now, dest };
+    }
+  }
+
+  /** ChessStone::animcb / alarm, and on_floor_change after a move. */
+  private chessStep(o: GameObject): void {
+    const c = o.chess;
+    if (!c) return;
+    const age = this.now - c.since;
+    if (c.phase === 'captured' && age >= CHESS_ANIM_MS) this.remove(o);
+    else if (c.phase === 'falling' && age >= CHESS_ANIM_MS) this.remove(o);
+    else if (c.phase === 'sinking' && age >= 5 * 500) this.remove(o);
+    else if (c.phase === 'capturing' && age >= 100) {
+      // ChessStone::alarm: the captured stone is gone (or never goes): move or give up
+      const [dc, dr] = c.dest!;
+      if (!this.stoneAt(dc, dr)) o.chess = { phase: 'disappearing', since: this.now, dest: c.dest };
+      else if (age >= 100 * 21) o.chess = { phase: 'idle', since: this.now }; // max_capture_retry = 20
+    } else if (c.phase === 'disappearing' && age >= CHESS_ANIM_MS) {
+      const [dc, dr] = c.dest!;
+      if (!this.stoneAt(dc, dr)) {
+        const [oc, or] = [o.col, o.row];
+        this.unplace(o);
+        o.col = dc;
+        o.row = dr;
+        this.place(o);
+        this.events.push({ type: 'sound', name: 'move' });
+        this.shatterAt(dc, dr); // Stone::on_move
+        this.stoneHitsItems(dc, dr);
+        this.updateTriggers(oc, or);
+        this.updateTriggers(dc, dr);
+      }
+      o.chess = { phase: 'appearing', since: this.now };
+    } else if (c.phase === 'appearing' && age >= CHESS_ANIM_MS) {
+      // on_floor_change remembered until IDLE: abyss → fall, swamp → sink
+      const floor = this.env.floorAt(o.col, o.row);
+      o.chess = { phase: floor === 'fl_abyss' ? 'falling' : floor === 'fl_swamp' ? 'sinking' : 'idle', since: this.now };
+    }
+  }
+
+  /** st_chess_<colour>: 5 frames; idle 0, (dis)appearing 120 ms each, sinking 500 ms each. */
+  chessFrame(o: GameObject): number {
+    const c = o.chess;
+    if (!c || c.phase === 'idle') return 0;
+    const age = this.now - c.since;
+    if (c.phase === 'sinking') return Math.min(4, Math.floor(age / 500));
+    const f = Math.min(4, Math.floor(age / 120));
+    return c.phase === 'appearing' ? 4 - f : c.phase === 'capturing' ? 0 : f;
+  }
+
   // ---------- four switches (FourSwitch.cc) ----------
 
   /**
@@ -990,6 +1083,7 @@ export class ObjectWorld {
   update(ms: number): void {
     this.now += ms;
     for (const o of this.objects) {
+      if (o.cls === 'chess' && !o.gone) this.chessStep(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
         // one decision per finished cycle; a move restarts the cycle (init_model)
@@ -1203,6 +1297,12 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'chess') {
+      // ChessStone::message: signal sets the colour, flip toggles it
+      if (msg === 'signal') o.state = (num ?? (value ? 1 : 0)) === 1 ? 1 : 0;
+      else if (msg === 'flip') o.state = 1 - o.state;
+      return;
+    }
     if (o.cls === 'fourswitch') {
       // FourSwitch::message: signal with an odd value (or any in API 1) and a falling _trigger turn it
       if (msg === 'toggle' || (msg === 'signal' && ((num ?? (value ? 1 : 0)) % 2 === 1 || this.compat < 1.1))) this.turnFourswitch(o);
@@ -1303,6 +1403,8 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // ChessStone: state = colour (0 black, 1 white)
+  if (/^st_chess/.test(kind)) return a.color !== undefined && a.color !== '' ? (Number(a.color) === 1 ? 1 : 0) : kind.endsWith('_white') ? 1 : 0;
   // FourSwitch: state = direction (default north)
   if (kind === 'st_fourswitch') return Number.isInteger(Number(a.$state)) && a.$state !== '' && a.$state !== undefined ? Number(a.$state) & 3 : 3;
   // PassageStone: state = colour (0 black, 1 white)

@@ -445,7 +445,7 @@ function onContact(c: Contact): void {
     // Switches sound metallic (Switch::collision_sound), doors like stone.
     if (objects.objects.some((o) => o.cls === 'switch' && o.col === c.col && o.row === c.row)) sfx.metal(c.speed);
     else sfx.stone(c.speed);
-    objects.hit(c.col, c.row, c.color, c.nx, c.ny, c.vn);
+    objects.hit(c.col, c.row, c.color, c.nx, c.ny, c.vn, c.vx, c.vy);
     return;
   }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
