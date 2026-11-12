@@ -447,6 +447,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (wenn Platz ist) und schaltet aus. `secure` (ab 1.10): nichts, solange die Kugel auf einem
   Zielfeld steht. Schlüssel mit Code heißen im Inventar `it_key_<code>`; Bilder `st_key_on/off`
   (Bild = Code 1–8, außer `invisible`), am Boden immer `it_key`.
+  **st_floppy + it_floppy** (`FloppySwitch.cc`): derselbe Ablauf mit der Diskette (ohne Code);
+  Bilder st_floppy_on/off.
 - **it_sensor / _inverse / _exit / _filter0 / _filter1** (`Sensor.cc`): Betritt eine Kugel
   sein Feld, führt er seine Aktion mit `true` aus (inverse: `false`); der Ausgangssensor beim
   Verlassen. Ein Sprung auf derselben Stelle und der Tod lösen nichts aus. Bild 2 × 300 ms,

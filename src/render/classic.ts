@@ -173,7 +173,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind === 'it_extralife') return ['it_extralife'];
   if (kind === 'it_yinyang') return ['it_yinyang'];
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer') return [kind];
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy') return [kind];
+  if (kind === 'st_floppy') return ['st_floppy_on', 'st_floppy_off', 'sh_round'];
   if (kind.startsWith('it_flag')) return ['it_flag_black', 'it_flag_white'];
   if (kind === 'it_springboard') return ['it_springboard', ...JUMP_IMAGES];
   if (kind.startsWith('it_magnet')) return ['it_magnet_on', 'it_magnet_off'];
@@ -615,6 +616,7 @@ export class ClassicView {
     }
     if (o.cls === 'keyswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.kind === 'st_floppy') this.image(o.state === 1 ? 'st_floppy_on' : 'st_floppy_off', px, py);
       else this.frame(o.state === 1 ? 'st_key_on' : 'st_key_off', world.keySwitchFrame(o), px, py);
       return;
     }

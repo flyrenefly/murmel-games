@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -344,14 +344,14 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
-  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer') return 'tool';
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy') return 'tool';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
   if (kind === 'it_springboard') return 'springboard';
   if (/^it_magnet(_on|_off)?$/.test(kind)) return 'magnet';
   if (/^it_sensor(_inverse|_exit|_filter[01])?$/.test(kind)) return 'sensor';
   if (/^it_key(_\d+)?$/.test(kind)) return 'key';
-  if (kind === 'st_key') return 'keyswitch';
+  if (kind === 'st_key' || kind === 'st_floppy') return 'keyswitch';
   if (/^st_laser(_[nesw])?$/.test(kind)) return 'laser';
   if (/^it_crack(_[isml])?(_water)?$/.test(kind)) return 'crack';
   if (kind === 'fl_scales') return 'scales';
@@ -1505,7 +1505,11 @@ export class ObjectWorld {
     const code = this.keyCode(o);
     if (o.state === 1) {
       if (inv.length >= MAX_ITEMS) return;
-      inv.unshift(code ? `it_key_${code}` : 'it_key');
+      inv.unshift(o.kind === 'st_floppy' ? 'it_floppy' : code ? `it_key_${code}` : 'it_key');
+    } else if (o.kind === 'st_floppy') {
+      // FloppySwitch::actor_hit: the floppy in hand goes in
+      if (inv[0] !== 'it_floppy') return;
+      inv.shift();
     } else {
       if (!inv[0] || this.objectClassOf(inv[0]) !== 'key' || this.keyCode(inv[0]) !== code) return;
       inv.shift();

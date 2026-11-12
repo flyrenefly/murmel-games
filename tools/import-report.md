@@ -1,30 +1,28 @@
 # Enigma-Import
 
-540 von 1322 Levels übernommen (17 Pakete).
+551 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | keine Oxyd-Steine | 119 | 0 |
+| Lua-Rückruf | 119 | 1 |
 | Lua: :drawMap | 118 | 2 |
-| Lua-Rückruf | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
-| Lua-Init | 109 | 2 |
+| Lua-Init | 110 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
-| Lua: :shuffleOxyd | 104 | 0 |
+| Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
 | Stein st_knight | 59 | 2 |
-| Gegenstand it_floppy | 58 | 0 |
-| Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 6 |
+| Stein st_thief | 41 | 9 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -40,7 +38,7 @@
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 5 |
+| Stein st_lightpassenger_on | 31 | 6 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coffee_drop | 28 | 3 |
@@ -74,9 +72,9 @@
 | Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 1 |
+| Lua: :add | 16 | 2 |
 | Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| Lua: :add | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
@@ -87,7 +85,7 @@
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_seed_hay | 14 | 4 |
-| Gegenstand it_weight | 14 | 0 |
+| Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
 | Stein st_ice | 14 | 4 |
 | Stein st_disco_light | 14 | 4 |
@@ -167,6 +165,7 @@
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
+| Lua: :closeall | 3 | 1 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Gummiband an bewegtem oder unbekanntem Anker | 3 | 3 |
@@ -191,7 +190,6 @@
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
 | Lua: res.autotile | 2 | 0 |
-| Lua: :closeall | 2 | 1 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
