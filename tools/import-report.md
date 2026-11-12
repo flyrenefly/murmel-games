@@ -1,6 +1,6 @@
 # Enigma-Import
 
-497 von 1322 Levels übernommen (17 Pakete).
+501 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -15,7 +15,7 @@
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
-| Gegenstand it_dynamite | 72 | 1 |
+| Gegenstand it_dynamite | 72 | 2 |
 | Lua: API 1 | 69 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
@@ -47,7 +47,7 @@
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 3 |
+| Stein st_lightpassenger_on | 31 | 4 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
@@ -70,7 +70,6 @@
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_stoneimpulse_movable | 20 | 4 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |

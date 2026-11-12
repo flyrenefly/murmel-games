@@ -147,6 +147,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   schalten. Bilder: aus `it_magnet_off`, an 5 × 100 ms Schleife. Wird nicht aufgehoben.
 - **it_springboard** (`SimpleItems.cc` Springboard): Eine Murmel am Boden höchstens 0,3 (je
   Achse) von der Mitte entfernt springt („_jump“, wie die Feder); Bild 2 → 1 je 120 ms.
+- **st_stoneimpulse_movable** (`StoneImpulse.cc` OBJBIT_MOVABLE): ein Stoß auf eine Seite schiebt
+  ihn und lässt ihn in Stoßrichtung pulsieren, eine leichte Berührung pulst nur; ein Impuls von
+  einem Nachbarn verschiebt ihn ebenfalls. Offen: Zauberstab-Ausnahme, verzögerte Weitergabe.
 - **st_stoneimpulse** (`StoneImpulse.cc`): schon ein leichter Treffer oder `signal` true startet
   ihn: 220 ms Ausdehnen, dann Impuls an alle vier Nachbarn (Impulssteine pulsieren weiter,
   Kisten werden geschoben, blaue/gelbe Puzzle-Fragmente verschoben), 275 ms Zusammenziehen

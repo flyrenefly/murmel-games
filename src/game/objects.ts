@@ -342,7 +342,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
   if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
-  if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow') return 'impulse';
+  if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow' || kind === 'st_stoneimpulse_movable') return 'impulse';
   return null;
 }
 
@@ -570,6 +570,14 @@ export class ObjectWorld {
       }
       if (o.cls === 'impulse') {
         // StoneImpulse::actor_hit: the slightest hit starts it (hollow ones are passed through).
+        // StoneImpulse movable: a push on a face moves it (and it pulses with that direction)
+        if (o.kind === 'st_stoneimpulse_movable') {
+          const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+          if (face && vn < -PUSH_SPEED && !o.impulse && this.push(o, -nx, -ny)) {
+            this.startImpulse(o, STEPS.findIndex(([x, y]) => x === -nx && y === -ny));
+            continue;
+          }
+        }
         if (o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
         continue;
       }
@@ -825,7 +833,11 @@ export class ObjectWorld {
     const [dx, dy] = STEPS[d];
     for (const o of [...this.at(col, row)]) {
       if (o.gone) continue;
-      if (o.cls === 'impulse') this.startImpulse(o, d);
+      if (o.cls === 'impulse') {
+        // StoneImpulse::on_impulse: a movable one moves first
+        if (o.kind === 'st_stoneimpulse_movable') this.push(o, dx, dy);
+        this.startImpulse(o, d);
+      }
       else if (o.cls === 'box') this.push(o, dx, dy);
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
