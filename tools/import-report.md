@@ -1,70 +1,68 @@
 # Enigma-Import
 
-560 von 1322 Levels übernommen (17 Pakete).
+570 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| keine Oxyd-Steine | 119 | 0 |
-| Lua-Rückruf | 119 | 1 |
-| Lua: :drawMap | 118 | 2 |
+| Lua: :drawMap | 119 | 2 |
+| Lua-Rückruf | 118 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
+| keine Oxyd-Steine | 111 | 0 |
 | Lua-Init | 110 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_knight | 59 | 2 |
+| Stein st_knight | 60 | 2 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
+| Stein st_shogun | 40 | 0 |
 | Lua: set_floor() | 39 | 0 |
-| Stein st_shogun | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
-| Boden fl_fake_abyss | 35 | 0 |
-| Boden ohne Bild fl_fake_abyss | 35 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
+| Stein st_lightpassenger_on | 33 | 6 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
-| Stein st_lightpassenger_on | 31 | 6 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coffee_drop | 28 | 3 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
+| Stein st_turnstile_red | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
-| Gegenstand it_strip_ns | 27 | 1 |
+| Gegenstand it_strip_ns | 27 | 2 |
 | Gegenstand it_glasses | 27 | 0 |
-| Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 2 |
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 1 |
+| Stein st_ghost_break | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
-| Stein st_ghost_break | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
+| Stein st_magic_brick | 20 | 2 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
-| Stein st_magic_brick | 19 | 2 |
+| Stein st_rubberband | 19 | 1 |
 | Stein st_dispenser_bombblack | 19 | 5 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Stein st_shogun_l | 18 | 0 |
-| Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 3 |
 | Gegenstand it_spade | 17 | 1 |
 | Lua: fill_floor() | 17 | 0 |
@@ -75,9 +73,10 @@
 | Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 1 |
 | Stein st_portal_horse | 15 | 0 |
+| Stein st_polarswitch | 15 | 1 |
 | Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Stein st_magic_oxydc | 14 | 1 |
+| Stein st_magic_oxydc | 14 | 2 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
@@ -90,7 +89,6 @@
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
-| Stein st_polarswitch | 13 | 1 |
 | Gegenstand it_burnable_oil | 13 | 1 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
@@ -140,6 +138,7 @@
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
+| Stein st_death_movable | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
 | Gegenstand it_strip_sw | 5 | 0 |
 | Gegenstand it_strip_es | 5 | 0 |
@@ -155,7 +154,6 @@
 | Lua: it_sword | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Gegenstand it_extinguisher_medium | 4 | 0 |
-| Stein st_death_movable | 4 | 0 |
 | Gegenstand it_strip_nsw | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: it_cross | 4 | 0 |
@@ -208,7 +206,6 @@
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Stein st_door_d | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
 | Gegenstand it_strip_esw | 2 | 0 |
 | Gegenstand it_strip_n | 2 | 0 |
@@ -277,7 +274,6 @@
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | Lua: it_burnable | 1 | 0 |
-| Stein st_oxyd_b | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 0 |
 | Lua: draw_items() | 1 | 0 |
@@ -354,6 +350,7 @@
 | Gegenstand it_pipe_s | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Lua: ac_rotor | 1 | 0 |
+| Stein st_door_d | 1 | 0 |
 | Boden fl_forward_darkgray | 1 | 0 |
 | Lua: :can_go_west | 1 | 0 |
 | Lua: :can_go_north | 1 | 0 |

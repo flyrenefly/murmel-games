@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|thief|yinyang|fake|adhesionless|ice_heating|swamp_heating|water_source)/;
+const SPECIAL_FLOORS = /^fl_(forward|thief|yinyang|fake_trigger|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -391,7 +391,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
           fl.k = base;
         }
       }
-      const flImg = DEADLY.has(fl.k) ? fl.k : imageFor(fl.k);
+      // FakeFloor: looks like abyss (DefAlias fl_fake_abyss = fl_abyss) but carries the marble
+      if (fl.k === 'fl_fake' || fl.k === 'fl_fake_abyss') {
+        fl.k = 'fl_fake_abyss';
+        imgs.add('fl_abyss');
+      }
+      const flImg = DEADLY.has(fl.k) ? fl.k : fl.k === 'fl_fake_abyss' ? fl.k : imageFor(fl.k);
       if (!flImg) {
         reject(`Boden ohne Bild ${fl.k}`);
         continue;

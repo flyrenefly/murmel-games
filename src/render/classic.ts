@@ -122,7 +122,7 @@ async function loadImages(set: ClassicSet, names: Iterable<string>): Promise<Ima
 function levelImages(level: Level): string[] {
   const names: string[] = [];
   for (const c of level.cells) {
-    names.push(c.floor.startsWith('fl_slope') ? 'fl_slope' : c.floor);
+    names.push(c.floor.startsWith('fl_slope') ? 'fl_slope' : c.floor === 'fl_fake_abyss' ? 'fl_abyss' : c.floor);
     if (c.stone && c.stone !== 'st_oxyd') names.push(c.stone);
   }
   for (const s of level.signals) {
@@ -940,6 +940,7 @@ function floorImage(kind: string, img: Images): [string, number | undefined, num
     return ['fl_slope', n % 4, Math.floor(n / 4)];
   }
   if (kind === 'fl_wood_framed_h') return ['fl_wood_framed', 0];
+  if (kind === 'fl_fake_abyss') return ['fl_abyss', undefined]; // FakeFloor
   if (kind === 'fl_wood_framed_v') return ['fl_wood_framed', 1];
   if (img[kind]) return [kind, undefined];
   let k = kind;
