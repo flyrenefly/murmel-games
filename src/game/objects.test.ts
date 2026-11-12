@@ -629,6 +629,26 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(3, 1)).toBe(15);
   });
 
+  it("shogun pieces move innermost first and nest into bigger ones; the dot wants its exact stack", () => {
+    const w = world([
+      door(8),
+      { x: 3, y: 1, k: "st_shogun_sm" },
+      { x: 5, y: 1, k: "st_shogun_l" },
+      { x: 5, y: 1, k: "it_shogun_l", a: { target: "door1", action: "open" } },
+    ]);
+    w.update(10);
+    w.hit(3, 1, 0, -1, 0, -6); // the small one moves east
+    expect(w.objects.filter((o) => o.cls === "shogun" && !o.gone).map((o) => [o.col, o.state])).toEqual([[3, 8], [5, 16], [4, 4]]);
+    w.hit(3, 1, 0, -1, 0, -6); // the medium one: into the large stack? no – (4,1) holds the small one (smaller) → blocked
+    expect(w.objects[1].col).toBe(3);
+    w.hit(4, 1, 0, -1, 0, -6); // small into the large
+    w.hit(3, 1, 0, -1, 0, -6); // medium to (4,1)
+    w.hit(4, 1, 0, -1, 0, -6); // medium into the l+s stack? s is smaller → blocked
+    expect(w.objects.find((o) => o.col === 5 && o.cls === "shogun")!.state).toBe(20);
+    w.update(10);
+    expect(w.objects[3].state).toBe(0);
+  });
+
   it("a dispenser hands out its items; an explosion breaks it", () => {
     const w = world([{ x: 4, y: 1, k: "st_dispenser_bombblack", a: { stock: "1" } }, { x: 5, y: 2, k: "it_bomb_white" }]);
     w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0);

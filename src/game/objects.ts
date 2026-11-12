@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3 };
 /** German names of inventory items for the display. */
@@ -295,7 +295,7 @@ export interface GameObject {
   rotor?: { since: number; alarm?: number; neighbors?: (GameObject | null)[] };
   /** Bridge floor: phase, its start and whether it was closed explicitly (OBJBIT_EXPLICIT). */
   bridge?: { phase: 'open' | 'closed' | 'opening' | 'closing'; since: number; explicit: boolean };
-  /** Scales: checked once (the initial state acts not). */
+  /** Scales and shogun dots: checked once (the initial state acts not). */
   scales?: boolean;
   /** Crack: start of DISSOLVING (the floor breaks away after 5 × 120 ms). */
   dissolving?: number;
@@ -387,6 +387,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
   if (kind === 'st_ice') return 'ice';
+  if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
+  if (/^it_shogun(_s|_m|_l)?$/.test(kind)) return 'shogundot';
   if (/^st_turnstile(_red|_green)?$/.test(kind)) return 'turnstile';
   if (/^st_turnstilearm(_[nesw])?$/.test(kind)) return 'turnstilearm';
   if (/^st_lightpassenger(_on|_off)?$/.test(kind)) return 'lightpassenger';
@@ -554,7 +556,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || o.cls === 'turnstile' || o.cls === 'turnstilearm' || o.cls === 'ice' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || o.cls === 'turnstile' || o.cls === 'turnstilearm' || o.cls === 'ice' || o.cls === 'shogun' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -587,6 +589,12 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot') {
         this.hitCoinslot(o, by);
+        return;
+      }
+      if (o.cls === 'shogun') {
+        // Stone::actor_hit → impulse: the innermost piece moves
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED) this.shogunMove(o, -nx, -ny);
         return;
       }
       if (o.cls === 'ice') {
@@ -966,6 +974,7 @@ export class ObjectWorld {
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
       else if (o.cls === 'turnstilearm') this.armImpulse(o, d, -1);
       else if (o.cls === 'ice' && o.breaking === undefined) this.push(o, dx, dy);
+      else if (o.cls === 'shogun') this.shogunMove(o, dx, dy);
       else if (o.cls === 'lightpassenger' && (o.state === 0 || !this.lit.has(o.row * this.width + o.col))) this.push(o, dx, dy);
       else if ((o.cls === 'rotator' && rotatorMovable(o)) || (o.cls === 'mirror' && mirrorFlags(o).movable)) this.push(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
@@ -1440,6 +1449,57 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  // ---------- shoguns (ShogunStone.cc, ShogunDot.cc) ----------
+
+  /**
+   * ShogunStone::on_impulse: the innermost (smallest) piece of the stack moves – onto a free cell or
+   * into a stack whose pieces are all bigger; actors there shatter.
+   */
+  private shogunMove(o: GameObject, dx: number, dy: number): void {
+    if (o.gone || !o.state) return;
+    const piece = o.state & -o.state;
+    const c = o.col + dx;
+    const r = o.row + dy;
+    if (c < 0 || r < 0 || c >= this.width) return;
+    const target = this.at(c, r).find((x) => x.cls === 'shogun' && !x.gone);
+    if (target) {
+      if ((target.state & (2 * piece - 1)) !== 0) return;
+    } else if (this.stoneAt(c, r)) return;
+    o.state &= ~piece;
+    if (!o.state) this.remove(o);
+    if (target) target.state |= piece;
+    else {
+      const n = this.add('st_shogun', 'shogun', c, r);
+      n.state = piece;
+    }
+    this.events.push({ type: 'sound', name: 'move' });
+    this.shatterAt(c, r);
+    this.updateTriggers(o.col, o.row);
+    this.updateTriggers(c, r);
+  }
+
+  /** ShogunDot: active while exactly its stack stands on it (s; s+m; s+m+l); acts on changes. */
+  private shogunDotStep(o: GameObject): void {
+    const holes = /^it_shogun_l$/.test(o.kind) ? 16 : o.kind === 'it_shogun_m' ? 8 : 4;
+    const required = ((holes / 4) * 2 - 1) * 4;
+    const st = this.at(o.col, o.row).find((x) => x.cls === 'shogun' && !x.gone);
+    const on = st && st.state === required ? 1 : 0;
+    if (o.scales === undefined) {
+      o.scales = true; // first check: no action
+      o.state = on;
+      return;
+    }
+    if (on === o.state) return;
+    o.state = on;
+    this.performAction(o, on === 1);
+  }
+
+  /** st_shogun: frame = holes / 4 − 1; shadow of the smallest piece. */
+  shogunLook(o: GameObject): { frame: number; shadow: string } {
+    const m = o.state & 28;
+    return { frame: Math.max(0, Math.min(6, m / 4 - 1)), shadow: m & 4 ? 'sh_shogun_s' : m & 8 ? 'sh_shogun_m' : 'sh_shogun_l' };
   }
 
   // ---------- turnstiles (Turnstile.cc) ----------
@@ -2663,6 +2723,7 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
+      if (o.cls === 'shogundot' && !o.gone) this.shogunDotStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
       if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
@@ -3096,6 +3157,11 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
   // RotatorStone: 0 clockwise, 1 counterclockwise
   if (/^st_rotator/.test(kind)) return a.counterclock !== undefined && a.counterclock !== '' ? (truthy(a.counterclock) ? 1 : 0) : kind.includes('_ccw') ? 1 : 0;
+  // ShogunStone: state = hole bits (s 4, m 8, l 16) from flavor or kind
+  if (/^st_shogun/.test(kind)) {
+    const f = a.flavor || /^st_shogun_(\w+)$/.exec(kind)?.[1] || 's';
+    return (f.includes('s') ? 4 : 0) | (f.includes('m') ? 8 : 0) | (f.includes('l') ? 16 : 0) || 4;
+  }
   // TurnstileArm: state = side of the pivot it sits on (W 0, S 1, E 2, N 3), default north
   if (/^st_turnstilearm/.test(kind)) {
     const v = Number(a.orientation ?? a.$state);

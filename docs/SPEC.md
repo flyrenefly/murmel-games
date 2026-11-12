@@ -435,6 +435,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   zu Eis und der Block bleibt stehen. Explosion/Zünden: Bruch (5 × 50 ms), dann Eisboden im Kreuz
   (nicht auf Abgrund; Risse und Mulden dort verschwinden). Offen: Mitnehmen gefrorener Gegenstände,
   Schmelzen durch Hitze.
+- **st_shogun_* + it_shogun_s/m/l** (`ShogunStone.cc`, `ShogunDot.cc`): Ein Stapel ist ein Objekt mit
+  Lochbits (s 4, m 8, l 16). Ein Stoß bewegt den innersten (kleinsten) Ring auf ein freies Feld oder
+  in einen Stapel aus nur größeren Ringen; Kugeln dort zerspringen. Ein Shogun-Punkt ist aktiv, wenn
+  genau sein Stapel darauf steht (s; s+m; s+m+l), und meldet Wechsel (der Anfangszustand nicht).
+  Bild st_shogun nach Lochbits, Schatten des kleinsten Rings. Offen: Löcher n/t/g/u.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

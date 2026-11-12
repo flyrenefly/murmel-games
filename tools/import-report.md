@@ -1,6 +1,6 @@
 # Enigma-Import
 
-600 von 1322 Levels übernommen (17 Pakete).
+633 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -15,13 +15,12 @@
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_knight | 60 | 2 |
+| Stein st_knight | 60 | 3 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_shogun | 40 | 0 |
 | Lua: set_floor() | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
@@ -29,9 +28,7 @@
 | Lua: strsub() | 35 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
-| Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
-| Gegenstand it_shogun_l | 32 | 0 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
 | Lua: oxyd() | 30 | 0 |
@@ -41,7 +38,7 @@
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 2 |
-| Gegenstand it_glasses | 27 | 1 |
+| Gegenstand it_glasses | 27 | 2 |
 | Gegenstand it_cross | 26 | 3 |
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
@@ -49,7 +46,6 @@
 | Gegenstand it_squashed | 24 | 1 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_ghost_break | 23 | 0 |
-| Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Stein st_magic_brick | 20 | 2 |
@@ -57,7 +53,6 @@
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Stein st_shogun_l | 18 | 0 |
 | Akteur ac_bug | 18 | 3 |
 | Gegenstand it_spade | 17 | 1 |
 | Lua: fill_floor() | 17 | 0 |
@@ -77,7 +72,7 @@
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
-| Gegenstand it_seed_hay | 14 | 5 |
+| Gegenstand it_seed_hay | 14 | 6 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
 | Stein st_disco_light | 14 | 4 |
@@ -101,7 +96,6 @@
 | Gegenstand it_rubberband | 10 | 2 |
 | Gegenstand it_drop | 10 | 0 |
 | Stein st_spitter | 9 | 1 |
-| Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 2 |
 | Lua-Init (Weltwert) | 9 | 1 |
 | Gegenstand it_burnable_burning | 9 | 0 |
@@ -110,8 +104,8 @@
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
-| Stein st_plaster_movable | 8 | 0 |
-| Stein st_box_rock (verbunden) | 8 | 2 |
+| Stein st_plaster_movable | 8 | 1 |
+| Stein st_box_rock (verbunden) | 8 | 3 |
 | Lua: :orientate | 7 | 2 |
 | Aktion openclose | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
@@ -181,9 +175,6 @@
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
-| Stein st_shogun_sl | 2 | 0 |
-| Stein st_shogun_ml | 2 | 0 |
-| Stein st_shogun_sm | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
