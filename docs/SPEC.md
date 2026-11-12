@@ -323,7 +323,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_redfiber, st_lightglass, st_darkglass** (`GlassStones.cc`): feste Steine; sie lassen
   nur Laser bzw. unsichtbare Akteure durch, beides gibt es in Murmel nicht.
 - **st_flat_movable** (`FlatStone.cc`): wie eine Kiste geschoben; auf Abgrund, Wasser oder Sumpf
-  verschwindet er ohne Brücke (on_floor_change).
+  verschwindet er ohne Brücke (on_floor_change). **st_plop** (`SimpleStones.cc` PlopStone,
+  Bild st_plop_slate) ebenso.
 - **st_chess_black / st_chess_white** (`ChessStone.cc`): Eine Murmel seiner Farbe, die eine Seite
   kräftig trifft (GetPushDirection) und dabei quer schneller als 1,5 rollt, lässt ihn wie einen
   Springer ziehen (2 in Stoß-, 1 in Querrichtung; 5 × 120 ms Verschwinden/Erscheinen). Ein

@@ -111,6 +111,7 @@ const OBJECTS = [
   [/^st_boulder(_[nesw])?$/, ['st_boulder', 'st_boulder_fall', 'sh_round']],
   [/^st_brownie$/, ['st_brownie', 'sh_round']],
   [/^st_(granite|camouflage|redbrown|greenbrown|flat)_movable$/, ['st_granite', 'st_camouflage', 'st_redbrown', 'st_greenbrown', 'st_flat', 'sh_solid']],
+  [/^st_plop$/, ['st_plop_slate', 'sh_solid']],
   [/^st_(rawglass|lightglass|darkglass)_movable$/, ['st_rawglass', 'st_lightglass', 'st_darkglass', 'sh_rawglass']],
   [/^st_invisible_movable$/, []],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],

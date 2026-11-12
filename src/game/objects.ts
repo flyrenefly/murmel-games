@@ -350,12 +350,13 @@ export function objectClass(kind: string): ObjectClass | null {
  * Plain stones that move like a wood box (StandardStone/GlassStone with MOVABLE_STANDARD):
  * st_brownie and the _movable variants. Unlike BoxStone they do not sink or build bridges.
  */
-export const MOVABLE_STONE = /^st_(brownie|(granite|camouflage|redbrown|greenbrown|invisible|rawglass|lightglass|darkglass|flat)_movable)$/;
+export const MOVABLE_STONE = /^st_(brownie|plop|(granite|camouflage|redbrown|greenbrown|invisible|rawglass|lightglass|darkglass|flat)_movable)$/;
 
 /** Image and shadow of a movable plain stone (models-2d.lua); invisible ones draw nothing. */
 export function movableLook(kind: string): { image: string; shadow: string } | null {
   if (kind === 'st_invisible_movable') return null;
   if (kind === 'st_brownie') return { image: 'st_brownie', shadow: 'sh_round' };
+  if (kind === 'st_plop') return { image: 'st_plop_slate', shadow: 'sh_solid' }; // DefStone st_plop_slate
   const image = kind.replace(/_movable$/, '');
   return { image, shadow: /glass$/.test(image) ? 'sh_rawglass' : 'sh_solid' };
 }
@@ -633,7 +634,8 @@ export class ObjectWorld {
     this.shatterAt(col, row);
     this.stoneHitsItems(col, row);
     // FlatStone::on_floor_change: a movable flat stone falls into the abyss or drowns – no bridge
-    if (o.kind === 'st_flat_movable' && SINK_FLOORS.has(this.env.floorAt(col, row))) {
+    // PlopStone::on_floor_change likewise drowns
+    if ((o.kind === 'st_flat_movable' || o.kind === 'st_plop') && SINK_FLOORS.has(this.env.floorAt(col, row))) {
       o.gone = true;
       this.unplace(o);
       this.events.push({ type: 'sound', name: 'explode' });

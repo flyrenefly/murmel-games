@@ -1,6 +1,6 @@
 # Enigma-Import
 
-484 von 1322 Levels übernommen (17 Pakete).
+489 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -40,7 +40,6 @@
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 5 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
@@ -218,7 +217,7 @@
 | Stein st_shogun_sm | 2 | 0 |
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
-| Puzzle hohl (alter Export) | 2 | 0 |
+| Puzzle hohl (alter Export) | 2 | 1 |
 | mehrere weiße Murmeln | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
