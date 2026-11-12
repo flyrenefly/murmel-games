@@ -50,7 +50,7 @@
  {
   "pack": "enigma_vii",
   "title": "Enigma VII",
-  "count": 23,
+  "count": 25,
   "of": 100
  },
  {
@@ -62,19 +62,19 @@
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 14,
+  "count": 22,
   "of": 100
  },
  {
   "pack": "enigma_x",
   "title": "Enigma X",
-  "count": 13,
+  "count": 18,
   "of": 100
  },
  {
   "pack": "enigma_xi",
   "title": "Enigma XI",
-  "count": 9,
+  "count": 10,
   "of": 100
  },
  {
@@ -94,5 +94,11 @@
   "title": "Labyrinths",
   "count": 4,
   "of": 6
+ },
+ {
+  "pack": "opal_dance",
+  "title": "Opal Dance",
+  "count": 24,
+  "of": 24
  }
 ]

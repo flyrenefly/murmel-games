@@ -69,6 +69,8 @@ const OXYD_ANIM: Record<string, { frames: number; ms: number; shadow: string }> 
   b: { frames: 14, ms: 25, shadow: 'sh_round' },
   c: { frames: 5, ms: 70, shadow: 'sh_solid' },
   d: { frames: 10, ms: 35, shadow: 'sh_solid' },
+  // models-2d.lua: flavor e uses b's images and animations
+  e: { frames: 14, ms: 25, shadow: 'sh_round' },
 };
 const FALL_MS = [70, 65, 60, 55, 50, 50, 50, 50, 50, 50];
 export const CLASSIC_FALL_SECONDS = FALL_MS.reduce((a, b) => a + b, 0) / 1000;
@@ -77,6 +79,8 @@ interface StoneAnim {
   state: StoneState;
   prev: StoneState;
   since: number;
+  /** Has been open once (flavor e then shows its colour through the peephole when closed). */
+  opened?: boolean;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -121,7 +125,11 @@ function levelImages(level: Level): string[] {
     names.push(c.floor.startsWith('fl_slope') ? 'fl_slope' : c.floor);
     if (c.stone && c.stone !== 'st_oxyd') names.push(c.stone);
   }
-  for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
+  for (const s of level.signals) {
+    const f = s.flavor === 'e' ? 'b' : s.flavor;
+    names.push(`st_oxyd${f}`, `st_oxyd${f}_open`, `st_oxyd${f}_opening`);
+    if (s.flavor === 'e') names.push('st_oxyde');
+  }
   for (const o of level.objects) names.push(...objectImages(o.k));
   for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
   if (level.mainPearl) names.push(...actorImages(level.mainPearl.k, level.mainPearl.a?.color));
@@ -243,6 +251,7 @@ export class ClassicView {
     s.prev = s.state;
     s.state = state;
     s.since = this.now;
+    if (state !== 'closed') s.opened = true;
   }
 
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
@@ -360,6 +369,8 @@ export class ClassicView {
     const t = this.now - s.since;
     const color = (symbol.charCodeAt(0) - 65) % 12;
     const anim = OXYD_ANIM[flavor] ?? OXYD_ANIM.a;
+    const peep = flavor === 'e'; // OxydStone::setClosedModel: st_oxyde<color> after the first opening
+    if (peep) flavor = 'b';
     const closedImg = img[`st_oxyd${flavor}`] ?? img.st_oxyda;
     const openImg = img[`st_oxyd${flavor}_open`] ?? img.st_oxyda_open;
     const openingImg = img[`st_oxyd${flavor}_opening`] ?? img.st_oxyda_opening;
@@ -375,6 +386,9 @@ export class ClassicView {
         // Closing: opening frames in reverse (open → closed) over the open stone.
         base();
         frame(anim.frames - 1 - Math.min(anim.frames - 1, Math.floor(t / anim.ms)));
+      } else if (peep && s.opened) {
+        base();
+        if (img.st_oxyde) ctx.drawImage(img.st_oxyde, px, py);
       } else if (closedImg) ctx.drawImage(closedImg, px, py);
       return;
     }

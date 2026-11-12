@@ -36,8 +36,8 @@ const STONES = new Set([
 ]);
 // Variants that only differ in edges/decoration: drawn with the base image.
 const STONE_BASE = /^(st_(?:bluesand|brick|panel|rawglass))(_[nesw]+|_quad)?$/;
-const FAKE_OXYD = /^st_fake_oxyd([abcd])$/;
-const OXYD = /^st_oxyd(_([abcd]))?$/;
+const FAKE_OXYD = /^st_fake_oxyd([abcde])$/;
+const OXYD = /^st_oxyd(_([abcde]))?$/;
 /** SlopeFloor.cc: shape → slope direction (xforce/yforce index; -1 = none). */
 const SLOPE_DIR = { '': -1, pw: 0, ps: 1, pe: 2, pn: 3, inw: 4, isw: 5, ise: 6, ine: 7, onw: 4, osw: 5, ose: 6, one: 7, tw: 0, ts: 1, te: 2, tn: 3, twl: 4, tsl: 5, tel: 6, tnl: 7, twr: 5, tsr: 6, ter: 7, tnr: 4 };
 const SLOPE_X = [-1, 0, 1, 0, -1, -1, 1, 1];
@@ -359,14 +359,16 @@ function convertLevel(pack, meta, xml, exp, lua) {
           // named Oxyd stones can receive messages (open, close, shuffle …)
           // ($id: Lua's named list skips it, so no group holds the stone twice)
           if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name } });
-          for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
+          // flavor e: b's images plus the peephole mask st_oxyde (models-2d.lua)
+          for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor === 'e' ? 'b' : flavor}${s}`);
+          if (flavor === 'e') imgs.add('st_oxyde');
         } else if (objectImages(st.k)) {
           // Boxes moved together by wires, or breaking into items, are not built yet.
           if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {
-          def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1]}`;
+          def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1].replace('e', 'b')}`;
           imgs.add(def.stone);
         } else if (st.k === 'st_invisible') {
           def.stone = 'st_invisible'; // solid, not drawn

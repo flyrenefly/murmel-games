@@ -1,13 +1,13 @@
 # Enigma-Import
 
-334 von 1322 Levels übernommen (16 Pakete).
+374 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Stein st_laser | 225 | 3 |
-| keine Oxyd-Steine | 167 | 0 |
 | Lua-Rückruf | 163 | 1 |
 | Gegenstand it_sensor | 139 | 5 |
+| keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
@@ -23,7 +23,6 @@
 | Stein st_key | 90 | 0 |
 | Gegenstand it_dynamite | 72 | 1 |
 | Boden fl_bridge_gc | 69 | 1 |
-| Stein st_oxyd | 68 | 9 |
 | Lua: API 1 | 65 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
@@ -32,13 +31,13 @@
 | Gegenstand it_bomb_black | 56 | 2 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_mirror_triangle | 55 | 0 |
-| Objekt ot_counter | 54 | 0 |
+| Objekt ot_counter | 54 | 1 |
 | Gegenstand it_crack_l | 54 | 2 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 0 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
-| Stein st_blocker | 50 | 1 |
+| Stein st_blocker | 50 | 2 |
 | Stein st_rotator_cw | 50 | 0 |
 | Stein st_pull | 48 | 4 |
 | Stein st_turnstilearm | 43 | 0 |
@@ -130,16 +129,16 @@
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 1 |
-| Stein st_disco_light | 14 | 0 |
+| Stein st_disco_light | 14 | 1 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
+| ungerade Zahl Oxyd-Steine | 12 | 2 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Lua: :add | 11 | 1 |
-| ungerade Zahl Oxyd-Steine | 11 | 1 |
 | Gegenstand it_crack_s | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |

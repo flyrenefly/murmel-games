@@ -214,6 +214,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   `$hollow` (das Flag steht in Enigma nicht in der Attributliste). Hinweis: Jeder Export hält
   Enigmas Zufall eines Ladevorgangs fest (Oxyd-Farben, Zufallsstarts, gemischte Puzzles); ein
   neuer Export ändert diese Varianten.
+- **st_oxyd_e** (`OxydStone.cc` setClosedModel, models-2d.lua): Geschmack „e“ benutzt Bilder,
+  Animationen und Schatten von „b“; geschlossen sieht er zuerst aus wie „b“, nach dem ersten
+  Öffnen zeigt er seine Farbe durch ein Guckloch (b-offen + Farbpunkt + Maske `st_oxyde`).
+  `st_fake_oxyde` wird wie `st_fake_oxydb` gezeichnet.
 - **Nachrichten an Oxyd-Steine** (`OxydStone.cc`, `StateObject.cc`): Benannte Oxyd-Steine
   bekommen einen unsichtbaren Stellvertreter `st_oxyd_ref` (Ziel für Auslöser, Schalter,
   Lua). open/on/signal 1 öffnen wie ein Treffer (`tryOpen`), close/off/signal 0 schließen
