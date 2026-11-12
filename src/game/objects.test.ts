@@ -452,6 +452,12 @@ describe('ObjectWorld', () => {
       expect(w.canDropAt(3.5, 1.5)).toBe(false);
     });
 
+    it("a light passenger skates along the beam until a stone stops it", () => {
+      const w = lworld([{ x: 1, y: 2, k: "st_laser", a: { $state: "1" } }, { x: 3, y: 2, k: "st_lightpassenger" }], { "7,2": "st_granite" });
+      for (let i = 0; i < 40; i++) w.update(10);
+      expect([w.objects[1].col, w.objects[1].row]).toEqual([6, 2]);
+    });
+
     it("a laser switch turns on with light and off without it", () => {
       const w = lworld([
         door(8),

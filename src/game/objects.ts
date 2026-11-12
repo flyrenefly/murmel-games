@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag']);
@@ -277,6 +277,8 @@ export interface GameObject {
   blast?: number;
   /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
   igniteAt?: number;
+  /** Light passenger: next move time, skate direction (-1 none), blocked, blinking, breaking start. */
+  pass?: { next: number; dir: number; blocked: boolean; blink: boolean; breaking?: number };
   /** Thief: phase (none = idle), its start, the marble robbed and the loot in its bag. */
   thief?: { phase?: 'emerge' | 'retreat' | 'capture'; since?: number; victim?: number; loot: string[] };
   /** Bag (it_bag): the items it holds. */
@@ -380,6 +382,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
+  if (/^st_lightpassenger(_on|_off)?$/.test(kind)) return 'lightpassenger';
   if (/^st_dispenser(_bombblack|_bombwhite|_dynamite|_extralife)?$/.test(kind)) return 'dispenser';
   if (kind === 'it_bag') return 'bag';
   if (kind === 'st_coinslot' || kind === 'st_coinslot_instant') return 'coinslot';
@@ -544,7 +547,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -577,6 +580,15 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot') {
         this.hitCoinslot(o, by);
+        return;
+      }
+      if (o.cls === 'lightpassenger') {
+        // LightPassengerStone::actor_hit: a blinking one breaks with the hammer
+        const p = o.pass;
+        if (p?.blink && p.breaking === undefined && this.wields('it_hammer')) {
+          p.breaking = this.now;
+          this.events.push({ type: 'sound', name: 'explode' });
+        }
         return;
       }
       if (o.cls === 'dispenser') {
@@ -929,6 +941,7 @@ export class ObjectWorld {
       else if (o.cls === 'box') this.push(o, dx, dy);
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
+      else if (o.cls === 'lightpassenger' && (o.state === 0 || !this.lit.has(o.row * this.width + o.col))) this.push(o, dx, dy);
       else if ((o.cls === 'rotator' && rotatorMovable(o)) || (o.cls === 'mirror' && mirrorFlags(o).movable)) this.push(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
@@ -1401,6 +1414,61 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  // ---------- light passengers (LightPassengerStone.cc) ----------
+
+  /**
+   * LightPassengerStone::alarm: while lit and on, every interval (0.05 s) it skates along the light;
+   * blocked, it pushes the stone ahead the next time; with light from both axes it keeps its way.
+   */
+  private passengerStep(o: GameObject): void {
+    o.pass ??= { next: this.now, dir: -1, blocked: false, blink: false };
+    const p = o.pass;
+    if (p.breaking !== undefined) {
+      if (this.now - p.breaking >= 7 * 50) this.remove(o);
+      return;
+    }
+    const light = this.lit.get(o.row * this.width + o.col) ?? 0;
+    if (o.state !== 1 || !light) {
+      p.blink = false;
+      p.next = this.now + numAttr(o.attrs.interval, 0.05) * 1000;
+      return;
+    }
+    if (this.now < p.next) return;
+    p.next = this.now + Math.max(20, numAttr(o.attrs.interval, 0.05) * 1000);
+    if (p.blocked && p.dir >= 0) {
+      this.sendImpulse(o.col + L_DX[p.dir], o.row + L_DY[p.dir], p.dir);
+      p.blocked = false;
+    }
+    let toSouth = (light & L_N ? -1 : 0) + (light & L_S ? 1 : 0);
+    let toWest = (light & L_E ? -1 : 0) + (light & L_W ? 1 : 0);
+    if (toSouth * toWest !== 0) {
+      if (p.dir === 3 || p.dir === 1) toSouth = 0;
+      if (p.dir === 2 || p.dir === 0) toWest = 0;
+      if (p.dir === -1) {
+        toSouth = this.random() < 0.5 ? 0 : toSouth;
+        toWest = toSouth ? 0 : toWest;
+      }
+    }
+    // Enigma directions W 0, S 1, E 2, N 3: it skates the way the light travels
+    p.dir = toSouth === 1 ? 1 : toSouth === -1 ? 3 : toWest === 1 ? 0 : toWest === -1 ? 2 : -1;
+    if (p.dir === -1) {
+      p.blink = true;
+      return;
+    }
+    p.blink = false;
+    if (this.stoneAt(o.col + L_DX[p.dir], o.row + L_DY[p.dir])) p.blocked = true;
+    else this.push(o, L_DX[p.dir], L_DY[p.dir]);
+  }
+
+  /** st_lightpassenger (on), _off, blinking (frames 1..6 PingPong à 75 ms), breaking 7 × 50 ms. */
+  passengerLook(o: GameObject): { image: string; frame: number } {
+    const p = o.pass;
+    if (p?.breaking !== undefined) return { image: 'st_lightpassenger_break', frame: Math.min(6, Math.floor((this.now - p.breaking) / 50)) };
+    if (o.state !== 1) return { image: 'st_lightpassenger_off', frame: 0 };
+    if (p?.blink) return { image: 'st_lightpassenger', frame: [1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1][Math.floor(this.now / 75) % 12] };
+    return { image: 'st_lightpassenger', frame: 0 };
   }
 
   // ---------- thieves (ThiefStone.cc) ----------
@@ -2461,6 +2529,7 @@ export class ObjectWorld {
         else this.addExplosion(o.col, o.row, 0);
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
+      if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
       if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
@@ -2691,6 +2760,13 @@ export class ObjectWorld {
       }
       return;
     }
+    if (o.cls === 'lightpassenger') {
+      // on/off/toggle/signal; a boulder's _trigger toggles
+      if (msg === 'on' || (msg === 'signal' && value)) o.state = 1;
+      else if (msg === 'off' || (msg === 'signal' && !value)) o.state = 0;
+      else if (msg === 'toggle') o.state = 1 - o.state;
+      return;
+    }
     if (o.cls === 'dynamite' || o.cls === 'bomb') {
       // ignite / explode (Dynamite/Bomb::message), signal 1 = burning
       if (msg === 'ignite' || (msg === 'signal' && value) || msg === 'on') this.burn(o);
@@ -2876,6 +2952,8 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
   // RotatorStone: 0 clockwise, 1 counterclockwise
   if (/^st_rotator/.test(kind)) return a.counterclock !== undefined && a.counterclock !== '' ? (truthy(a.counterclock) ? 1 : 0) : kind.includes('_ccw') ? 1 : 0;
+  // LightPassengerStone: on unless _off
+  if (/^st_lightpassenger/.test(kind)) return a.$state !== undefined && a.$state !== '' ? (Number(a.$state) ? 1 : 0) : kind.endsWith('_off') ? 0 : 1;
   // CoinSlot: always off at the start
   if (kind === 'st_coinslot' || kind === 'st_coinslot_instant') return 0;
   // CounterGadget: any whole number

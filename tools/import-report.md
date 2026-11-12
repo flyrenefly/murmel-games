@@ -1,6 +1,6 @@
 # Enigma-Import
 
-575 von 1322 Levels übernommen (17 Pakete).
+581 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -29,7 +29,6 @@
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
-| Stein st_lightpassenger_on | 33 | 6 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
@@ -44,7 +43,7 @@
 | Stein st_turnstile_red | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 2 |
-| Gegenstand it_glasses | 27 | 0 |
+| Gegenstand it_glasses | 27 | 1 |
 | Gegenstand it_cross | 26 | 3 |
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
@@ -75,7 +74,7 @@
 | Stein st_polarswitch | 15 | 1 |
 | Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Stein st_magic_oxydc | 14 | 2 |
+| Stein st_magic_oxydc | 14 | 3 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
@@ -127,10 +126,9 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
-| Akteure: nicht genau eine schwarze Murmel | 6 | 0 |
+| Akteure: nicht genau eine schwarze Murmel | 6 | 1 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
-| Stein st_lightpassenger_off | 6 | 0 |
 | Stein st_box_hay (verbunden) | 6 | 3 |
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
@@ -299,7 +297,6 @@
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
-| Lua: st_lightpassenger | 1 | 0 |
 | Stein st_flat_movable (verbunden) | 1 | 1 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |

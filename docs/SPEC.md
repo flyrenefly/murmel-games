@@ -411,7 +411,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   **st_laserswitch** (`LaserSwitch.cc`): an, solange Licht auf ihn fällt (Aktion true), sonst
   aus (false); der Anfangszustand löst nichts aus. Bild aus = st_oxydb, an = st_quake pendelnd
   à 50 ms; Treffer klingen metallisch.
-  Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
+  **st_lightpassenger(_on/_off)** (`LightPassengerStone.cc`): eingeschaltet und beleuchtet rutscht er
+  alle `interval` (0,05 s) ein Feld in Laufrichtung des Lichts; blockiert stößt er beim nächsten Mal
+  den Stein davor an; bei Licht aus beiden Achsen bleibt er bei seiner Richtung, ohne Richtung
+  blinkt er – dann zerschlägt ihn der Hammer. Unbeleuchtet oder aus nimmt er Impulse an.
+  on/off/toggle/signal. Offen: Kreuz (it_cross), Pinsel, friction/gradient.
+  Offen: Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
 - **fl_fake / fl_fake_abyss** (`SimpleFloors.cc` FakeFloor): sieht aus wie Abgrund, trägt aber
   (Reibung 3, Haftung 2). Die 3D-Ansicht zeigt ihn als normalen Boden. fl_fake_trigger fehlt.

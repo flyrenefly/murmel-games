@@ -87,6 +87,7 @@ const OBJECTS = [
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
   [/^st_dispenser(_bombblack|_bombwhite|_dynamite|_extralife)?$/, ['st_dispenser_bombblack', 'st_dispenser_bombwhite', 'st_dispenser_dynamite', 'st_dispenser_extralife', 'sh_round', 'it_bomb', 'it_dynamite', 'it_dynamite_burning', 'it_extralife', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
+  [/^st_lightpassenger(_on|_off)?$/, ['st_lightpassenger', 'st_lightpassenger_off', 'st_lightpassenger_break', 'sh_rawglass']],
   [/^st_thief$/, ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag']],
   [/^st_floppy$/, ['st_floppy_on', 'st_floppy_off', 'sh_round']],
   [/^it_coin(_s|_m|_l)?$/, ['it_coin_s', 'it_coin_m', 'it_coin_l']],
