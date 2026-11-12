@@ -62,6 +62,9 @@ const SPECIAL_FLOORS = /^fl_(forward|thief|yinyang|fake_trigger|adhesionless|ice
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
+/** Fire: burnable items, extinguisher, transformed floors, heating animations. */
+const FIRE_IMAGES = ['it_burnable_oil', 'it_burnable_ignite', 'it_burnable_burning', 'it_burnable_ash', 'it_burnable_fireproof', 'it_extinguisher', 'fl_abyss', 'fl_dunes', 'fl_swamp', 'fl_water', 'fl_ice_heating', 'fl_water_heating', 'fl_swamp_heating', 'it_crack_abyss', 'it_crack_water'];
+
 const OBJECTS = [
   [/^st_door(_[abcd])?(_ew)?(_open)?$/, ['st_oxyda', 'st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed', 'st_flat', 'st_door_b', 'st_door_d_ns', 'st_door_d_ew', 'sh_doorh', 'sh_doorv', 'sh_round', 'sh_solid']],
   [/^st_switch(_black|_white)?(_instant)?$/, ['st_switch', 'st_switch_black', 'st_switch_white', 'sh_round']],
@@ -89,6 +92,8 @@ const OBJECTS = [
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
   [/^it_sword$/, ['it_sword']],
+  [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],
+  [/^it_extinguisher(_full|_medium|_empty)?$/, FIRE_IMAGES],
   [/^it_umbrella$/, ['it_umbrella']],
   [/^it_death$/, ['it_death']],
   [/^it_strip(_[nesw]+)?$/, ['it_strip']],
@@ -418,6 +423,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       imgs.add(flImg);
       const def = { floor: DEADLY.has(fl.k) ? fl.k : fl.k.startsWith('fl_slope') ? fl.k : flImg };
+      // Floor fire attributes; initfire: the floor starts burning (Floor "_init" → force_fire)
+      const fire = {};
+      for (const a of ['burnable', 'ignitable', 'secure', 'eternal', 'noash', 'fastfire']) if (fl[a] !== undefined && fl[a] !== '') fire[a] = String(fl[a]);
+      if (Object.keys(fire).length) def.fire = fire;
+      if (fl.initfire === true || fl.initfire === 'true') {
+        objs.push({ x, y, k: 'it_burnable_ignited', a: {} });
+        FIRE_IMAGES.forEach((i) => imgs.add(i));
+      }
       const force = floorForce(fl, slopeForce);
       if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
       if (st) {

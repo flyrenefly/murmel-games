@@ -25,6 +25,8 @@ export interface CellDef {
   force?: [number, number];
   /** Hollow stone (OBJBIT_HOLLOW): drawn like the stone, but actors pass (STONE_PASS). */
   hollow?: boolean;
+  /** Fire attributes of the floor (burnable, secure, eternal, noash, fastfire, ignitable). */
+  fire?: Record<string, string>;
 }
 
 export interface LevelFile {
@@ -74,6 +76,8 @@ export interface Cell {
   force?: [number, number];
   /** The stone is hollow: actors pass through it. */
   hollow?: boolean;
+  /** Fire attributes of the floor (cleared when the floor changes). */
+  fire?: Record<string, string>;
 }
 
 export interface SignalStone {
@@ -160,6 +164,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
       }
       const cell: Cell = { floor, stone };
       if (def.force) cell.force = def.force;
+      if (def.fire) cell.fire = { ...def.fire };
       if (def.hollow && stone) cell.hollow = true;
       cells.push(cell);
     }

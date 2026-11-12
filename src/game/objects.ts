@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -203,6 +203,37 @@ export function stripConnections(o: GameObject): number {
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
 }
 
+/** it_burnable_ignited / _burning: 8 frames à 100 ms (models-2d.lua), then Floor::on_burnable_animcb. */
+const FIRE_MS = 8 * 100;
+/** Floor heating animation (fl_ice/fl_water/fl_swamp_heating): 8 frames à 240 ms. */
+const HEATING_MS = 8 * 240;
+/** Floors that burn by default (objects.xml: burnable default true). */
+const BURNABLE_FLOORS = /^fl_(adhesionless|aquamarine|bast|bluegray|bluegreen|blueslab|hay|ivory|lawn|plank|platinum|red|redslab|rough|samba|tigris|wood|bridge_bw)/;
+/** Floors that leave no ash (objects.xml: noash default true). */
+const NOASH_FLOORS = /^fl_(abyss|bridge|ice|swamp|water)/;
+/** $firetransform: the floor after it burnt. */
+function fireTransform(floor: string): string {
+  if (/^fl_(bast|bridge|plank|samba|wood)/.test(floor)) return 'fl_abyss';
+  if (/^fl_(lawn|swamp)/.test(floor)) return 'fl_dunes';
+  if (floor.startsWith('fl_ice')) return 'fl_water';
+  if (floor.startsWith('fl_water')) return 'fl_swamp';
+  return '';
+}
+/** $heattransform: the floor after fire next to it (heating animation). */
+function heatTransform(floor: string): string {
+  if (floor.startsWith('fl_ice')) return 'fl_water';
+  if (floor.startsWith('fl_water')) return 'fl_swamp';
+  if (floor.startsWith('fl_swamp')) return 'fl_dunes';
+  return '';
+}
+/** BurnableItem state from the kind (it_burnable = invisible). */
+export function burnState(o: GameObject): string {
+  return /^it_burnable_(\w+)$/.exec(o.kind)?.[1] ?? 'invisible';
+}
+/** Items with itf_fireproof (fire does not replace them). */
+const FIREPROOF_CLASSES = new Set<ObjectClass>(['dynamite', 'bomb', 'crack', 'meditation', 'debris', 'explosion', 'vortex']);
+type FireFlags = { message: boolean; first: boolean; last: boolean };
+
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
 
@@ -239,6 +270,8 @@ export interface ObjectEnv {
   setStaticStone?(col: number, row: number, kind: string | null): void;
   /** The plain stone of a cell lets laser light through (Stone::is_transparent: glass, hollow). */
   transparentAt?(col: number, row: number): boolean;
+  /** A fire attribute of the cell's floor (burnable, secure, eternal, noash, fastfire, ignitable), if set. */
+  floorAttr?(col: number, row: number, key: string): string | undefined;
 }
 
 const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
@@ -372,6 +405,8 @@ export function objectClass(kind: string): ObjectClass | null {
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
   if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return 'tool';
   if (kind === 'it_death') return 'deathitem';
+  if (/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/.test(kind)) return 'burnable';
+  if (/^it_extinguisher(_full|_medium|_empty)?$/.test(kind)) return 'tool';
   if (/^it_strip(_[nesw]+)?$/.test(kind)) return 'strip';
   if (/^it_puller(_[nesw])?$/.test(kind)) return 'puller';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
@@ -1118,6 +1153,10 @@ export class ObjectWorld {
         this.events.push({ type: 'shatter', marble });
         if (o.blast === undefined || this.now - o.blast >= 400) o.blast = this.now;
       }
+      // BurnableItem::actor_hit: fire (ignited, burning) shatters
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.cls === 'burnable' && !o.gone && (burnState(o) === 'ignited' || burnState(o) === 'burning')) this.events.push({ type: 'shatter', marble });
+      }
       // Explosion::actor_hit shatters, Debris::actor_hit lets fall
       for (const o of this.at(Math.floor(x), Math.floor(y))) {
         if (o.gone) continue;
@@ -1417,6 +1456,7 @@ export class ObjectWorld {
       else if (o.cls === 'ice') this.breakStone(o);
       else if (o.cls === 'dynamite' || o.cls === 'bomb') this.burn(o);
       else if (o.cls === 'crack') this.crack(o);
+      else if (o.cls === 'burnable') this.floorIgnite(c, r);
     }
   }
 
@@ -1462,6 +1502,11 @@ export class ObjectWorld {
       }
       if (item.cls === 'landmine') {
         this.explode(item);
+        return;
+      }
+      if (item.cls === 'burnable') {
+        // BurnableItem "_explosion": the floor gets "ignite"
+        this.floorIgnite(c, r);
         return;
       }
       if (INDESTRUCTIBLE.has(item.cls)) return;
@@ -1528,6 +1573,230 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  // ---------- fire (floors.cc fire system, BurnableItem.cc, Extinguisher.cc) ----------
+
+  /** Floor::fire_countdown per cell (default 1). */
+  private fireCountdown = new Map<number, number>();
+  /** Floors in their heating animation: start and the floor they become. */
+  private heating = new Map<number, { since: number; to: string; from: string }>();
+
+  /** Floor::has_firetype: burnable items decide burnable/ignitable, else the floor (attribute or default). */
+  private fireType(c: number, r: number, key: 'burnable' | 'ignitable' | 'secure' | 'eternal' | 'noash' | 'fastfire'): boolean {
+    const it = this.itemAt(c, r);
+    if (it?.cls === 'burnable' && (key === 'burnable' || key === 'ignitable')) {
+      const s = burnState(it);
+      if (s === 'invisible' || s === 'oil') return true;
+      return false;
+    }
+    const v = this.env.floorAttr?.(c, r, key);
+    if (v !== undefined && v !== '') return truthy(v);
+    const floor = this.env.floorAt(c, r);
+    if (key === 'burnable') return BURNABLE_FLOORS.test(floor);
+    if (key === 'noash') return NOASH_FLOORS.test(floor);
+    return false;
+  }
+
+  private fireproof(it: GameObject): boolean {
+    if (it.cls === 'burnable') return burnState(it) !== 'invisible' && burnState(it) !== 'oil';
+    return FIREPROOF_CLASSES.has(it.cls) || /^it_extinguisher(_full|_medium)?$/.test(it.kind) || it.kind === 'it_trap';
+  }
+
+  /** Stone::allowsSpreading (dir in Enigma order, -1 = none): floating stones, open doors, window faces. */
+  private allowsSpreading(st: GameObject, dir: number): boolean {
+    if (st.cls === 'door') return st.state === 1 || !!st.moving;
+    if (st.cls === 'window') return dir < 0 || !(windowFaces(st) & (1 << dir));
+    if (st.cls === 'puzzle') return st.kind.includes('hollow') || truthy(st.attrs.hollow);
+    if (st.cls === 'chameleon') return true;
+    return false;
+  }
+
+  private movableStone(st: GameObject): boolean {
+    return st.cls === 'box' || st.cls === 'ice' || st.kind.endsWith('_movable');
+  }
+
+  /** Floor::force_fire: it_burnable_ignited replaces the item here. */
+  private forceFire(c: number, r: number): boolean {
+    for (const it of [...this.at(c, r)]) if (!it.gone && isItem(it)) this.remove(it);
+    const f = this.add('it_burnable_ignited', 'burnable', c, r);
+    f.blast = this.now;
+    this.fireCountdown.set(r * this.width + c, 0);
+    return true;
+  }
+
+  /** Floor "ignite" (from the burnable item): only if the floor is ignitable. */
+  private floorIgnite(c: number, r: number): void {
+    if (this.fireType(c, r, 'ignitable')) this.tryIgnite(c, r, -1, { message: true, first: false, last: false });
+  }
+
+  /** Floor::try_ignite (Enigma mode). */
+  private tryIgnite(c: number, r: number, src: number, f: FireFlags): boolean {
+    if (c < 0 || r < 0 || c >= this.width) return false;
+    const idx = r * this.width + c;
+    if (this.heating.has(idx)) return false;
+    const st = this.stoneObjectAt(c, r);
+    if (st) {
+      if (!this.movableStone(st) && !this.allowsSpreading(st, src)) return false;
+    } else if (this.env.staticStone?.(c, r)) return false;
+    if (!this.fireType(c, r, 'burnable')) return false;
+    const it = this.itemAt(c, r);
+    if (it) return this.fireproof(it) ? false : this.forceFire(c, r);
+    const it2 = this.at(c, r).find((o) => o.cls === 'burnable' && !o.gone);
+    const cd = it2 && (burnState(it2) === 'invisible' || burnState(it2) === 'oil') ? 0 : (this.fireCountdown.get(idx) ?? 1);
+    if (cd === 0 || f.message || this.fireType(c, r, 'fastfire') || (f.last && this.fireType(c, r, 'secure'))) return this.forceFire(c, r);
+    this.fireCountdown.set(idx, Math.max(cd - 1, 0));
+    return false;
+  }
+
+  /** Item "heat": dynamite and bombs start burning, cracks break (caught: no fire). */
+  private heatItem(it: GameObject): boolean {
+    if (it.cls === 'dynamite' || it.cls === 'bomb') {
+      this.burn(it);
+      return true;
+    }
+    if (it.cls === 'crack') {
+      this.remove(it);
+      const d = this.add(this.crackWater(it) ? 'it_debris_water' : 'it_debris', 'debris', it.col, it.row);
+      d.blast = this.now;
+      return true;
+    }
+    return false;
+  }
+
+  /** Stone "heat": st_box_rock blocks the fire. */
+  private heatStone(st: GameObject): boolean {
+    return st.kind === 'st_box_rock';
+  }
+
+  /** Floor::on_heattransform: ice, water and swamp start their heating animation. */
+  private heatFloor(c: number, r: number, f: FireFlags): boolean {
+    const floor = this.env.floorAt(c, r);
+    const to = heatTransform(floor);
+    if (!(f.message || f.first) || !to) return false;
+    const idx = r * this.width + c;
+    if (!this.heating.has(idx)) this.heating.set(idx, { since: this.now, to, from: floor.startsWith('fl_ice') ? 'fl_ice' : floor.startsWith('fl_water') ? 'fl_water' : 'fl_swamp' });
+    return true;
+  }
+
+  /** Floor::try_heating. */
+  private tryHeating(c: number, r: number, src: number, f: FireFlags): boolean {
+    if (c < 0 || r < 0 || c >= this.width) return false;
+    const secure = f.last && this.fireType(c, r, 'secure');
+    const doItem = f.message || secure || this.random() > 0.3;
+    let reaction = false;
+    if (doItem) {
+      const it = this.itemAt(c, r);
+      if (it && this.heatItem(it)) reaction = true;
+    }
+    reaction = this.heatFloor(c, r, f) || reaction;
+    if (doItem) {
+      const st = this.stoneObjectAt(c, r);
+      if (st && this.heatStone(st)) reaction = true;
+    }
+    if (doItem && !reaction) return this.tryIgnite(c, r, src, f);
+    return reaction;
+  }
+
+  /** Floor::stop_fire: the item goes, the floor may transform, ash unless the new floor is noash. */
+  private stopFire(c: number, r: number): void {
+    for (const it of [...this.at(c, r)]) if (!it.gone && isItem(it)) this.remove(it);
+    this.fireCountdown.delete(r * this.width + c);
+    const to = fireTransform(this.env.floorAt(c, r));
+    if (to) {
+      this.env.setFloor(c, r, to);
+      this.events.push({ type: 'floor', col: c, row: r });
+    }
+    if (!this.fireType(c, r, 'noash')) this.add('it_burnable_ash', 'burnable', c, r);
+  }
+
+  /** Floor::on_burnable_animcb: burn the stone here, heat the neighbours, burn on or stop. */
+  private burnableStep(o: GameObject): void {
+    const s = burnState(o);
+    if (s !== 'ignited' && s !== 'burning') return;
+    // fire placed in the level burns from the start (blast unset = 0)
+    if (this.now - (o.blast ?? 0) < FIRE_MS) return;
+    const { col: c, row: r } = o;
+    const justIgnited = s === 'ignited';
+    // stone "_fire": wood and hay boxes burn away
+    const here = this.stoneObjectAt(c, r);
+    if (here && /^st_box_(wood|hay)/.test(here.kind)) this.remove(here);
+    const cont = justIgnited || this.fireType(c, r, 'eternal') || this.random() < 0.7;
+    const f: FireFlags = { message: false, first: justIgnited, last: !cont };
+    const st = this.stoneObjectAt(c, r);
+    const fixed = !st && !!this.env.staticStone?.(c, r);
+    for (const d of [3, 2, 1, 0]) {
+      if (fixed || (st && !this.allowsSpreading(st, d))) continue;
+      this.tryHeating(c + L_DX[d], r + L_DY[d], (d + 2) % 4, f);
+    }
+    if (o.gone) return;
+    if (cont) {
+      this.remove(o);
+      const n = this.add('it_burnable_burning', 'burnable', c, r);
+      n.blast = this.now;
+    } else this.stopFire(c, r);
+  }
+
+  /** Floor::animcb: the heating animation ended – the floor transforms. */
+  private heatingStep(): void {
+    for (const [idx, h] of this.heating) {
+      if (this.now - h.since < HEATING_MS) continue;
+      this.heating.delete(idx);
+      const c = idx % this.width;
+      const r = Math.floor(idx / this.width);
+      this.env.setFloor(c, r, h.to);
+      this.events.push({ type: 'floor', col: c, row: r });
+    }
+  }
+
+  /** Heating floors for the renderer: cell, animation image and frame. */
+  heatingCells(): { col: number; row: number; image: string; frame: number }[] {
+    return [...this.heating].map(([idx, h]) => ({
+      col: idx % this.width,
+      row: Math.floor(idx / this.width),
+      image: `${h.from}_heating`,
+      frame: Math.min(7, Math.floor((this.now - h.since) / 240)),
+    }));
+  }
+
+  /** it_burnable look: image and frame (null = invisible). */
+  burnableLook(o: GameObject): { image: string; frame: number } | null {
+    const s = burnState(o);
+    const age = o.blast === undefined ? 0 : Math.max(0, this.now - o.blast);
+    if (s === 'oil') return { image: 'it_burnable_oil', frame: (o.col * 7 + o.row * 3) % 4 };
+    if (s === 'ignited') return { image: 'it_burnable_ignite', frame: Math.min(7, Math.floor(age / 100)) };
+    if (s === 'burning') return { image: 'it_burnable_burning', frame: Math.min(7, Math.floor(age / 100)) };
+    if (s === 'ash' || s === 'fireproof') return { image: `it_burnable_${s}`, frame: -1 };
+    return null;
+  }
+
+  /** Extinguisher::extinguish: burnable items become fireproof; free cells get foam. */
+  private extinguish(c: number, r: number): void {
+    if (c < 0 || r < 0 || c >= this.width || this.env.floorAt(c, r) === 'fl_abyss' && this.env.stoneAt(c, r)) return;
+    const it = this.itemAt(c, r);
+    if (it) {
+      if (it.cls === 'burnable') {
+        it.kind = 'it_burnable_fireproof';
+        it.blast = undefined;
+      }
+    } else this.add('it_burnable_fireproof', 'burnable', c, r);
+  }
+
+  /**
+   * Extinguisher::activate with the first inventory item: full (13 cells) or medium (5 cells),
+   * then one step emptier. False: empty – the caller drops it (ITEM_DROP).
+   */
+  useExtinguisher(x: number, y: number): boolean {
+    const k = this.inventory[0] ?? '';
+    const state = k === 'it_extinguisher_empty' ? 0 : k === 'it_extinguisher_medium' ? 1 : 2;
+    if (state < 1) return false;
+    const c = Math.floor(x);
+    const r = Math.floor(y);
+    const cells = [[0, 0], [0, -1], [0, 1], [1, 0], [-1, 0]];
+    if (state === 2) cells.push([0, -2], [1, -1], [0, 2], [-1, 1], [2, 0], [1, 1], [-2, 0], [-1, -1]);
+    for (const [dx, dy] of cells) this.extinguish(c + dx, r + dy);
+    this.inventory[0] = state === 2 ? 'it_extinguisher_medium' : 'it_extinguisher_empty';
+    return true;
   }
 
   // ---------- shoguns (ShogunStone.cc, ShogunDot.cc) ----------
@@ -2816,6 +3085,7 @@ export class ObjectWorld {
         else this.addExplosion(o.col, o.row, 0);
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
+      if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
       if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
       if (o.cls === 'shogundot' && !o.gone) this.shogunDotStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
@@ -2876,6 +3146,7 @@ export class ObjectWorld {
         }
       }
     }
+    this.heatingStep();
     for (const o of this.objects) {
       const imp = o.impulse;
       if (imp && o.moving && this.now - o.moving.since >= o.moving.dur) {

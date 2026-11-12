@@ -1314,3 +1314,49 @@ describe('ObjectWorld', () => {
     });
   });
 });
+
+describe('fire', () => {
+  function fireWorld(defs: ObjectDef[], floors: Record<string, string>, rnd: number) {
+    const fl = { ...floors };
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => fl[c + ',' + r] ?? 'fl_metal', setFloor: (c, r, k) => (fl[c + ',' + r] = k) };
+    const w = new ObjectWorld(defs, W, {}, env, () => rnd);
+    w.marbleAt(9, 9);
+    return { w, fl };
+  }
+  const fire = (w: ObjectWorld) => w.objects.filter((o) => !o.gone && o.cls === 'burnable').map((o) => [o.col, o.kind]);
+
+  it('fire spreads over burnable floor after the countdown', () => {
+    const { w } = fireWorld([{ x: 1, y: 0, k: 'it_burnable_ignited' }], { '1,0': 'fl_wood', '2,0': 'fl_wood' }, 0.5);
+    w.update(800);
+    expect(fire(w)).toEqual([[1, 'it_burnable_burning']]); // neighbour: countdown 1 → 0
+    w.update(800);
+    expect(fire(w)).toEqual([[2, 'it_burnable_ignited'], [1, 'it_burnable_burning']]);
+  });
+
+  it('burnt-out wood becomes abyss; burnable oil catches at once; ash on other floors', () => {
+    const { w, fl } = fireWorld([{ x: 1, y: 0, k: 'it_burnable_burning' }, { x: 2, y: 0, k: 'it_burnable_oil' }], { '1,0': 'fl_wood' }, 0.9);
+    w.update(800);
+    expect(fl['1,0']).toBe('fl_abyss');
+    expect(fire(w)).toEqual([[2, 'it_burnable_ignited']]);
+    w.update(800); // ignited always burns on
+    w.update(800); // stops: fl_metal keeps ash
+    expect(fire(w)).toEqual([[2, 'it_burnable_ash']]);
+  });
+
+  it('fire heats neighbouring ice into water and ignites dynamite', () => {
+    const { w, fl } = fireWorld([{ x: 1, y: 0, k: 'it_burnable_ignited' }, { x: 1, y: 1, k: 'it_dynamite' }], { '0,0': 'fl_ice' }, 0.5);
+    w.update(800);
+    expect(w.objects[1].blast).toBeDefined();
+    w.update(2000);
+    expect(fl['0,0']).toBe('fl_water');
+  });
+
+  it('a full extinguisher puts out fire and leaves foam, then it is medium', () => {
+    const { w } = fireWorld([{ x: 3, y: 3, k: 'it_burnable_burning' }], {}, 0.5);
+    w.inventory.push('it_extinguisher_full');
+    expect(w.useExtinguisher(3.5, 4.5)).toBe(true);
+    expect(w.inventory).toEqual(['it_extinguisher_medium']);
+    const kinds = w.objects.filter((o) => !o.gone).map((o) => o.kind);
+    expect(kinds.filter((k) => k === 'it_burnable_fireproof').length).toBe(13);
+  });
+});

@@ -1,11 +1,11 @@
 # Enigma-Import
 
-680 von 1322 Levels übernommen (17 Pakete).
+695 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 2 |
-| Lua-Rückruf | 118 | 3 |
+| Lua-Rückruf | 117 | 3 |
 | keine Oxyd-Steine | 111 | 0 |
 | Lua-Init | 110 | 3 |
 | Lua: :shuffleOxyd | 105 | 0 |
@@ -18,7 +18,7 @@
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_floor() | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
-| Gegenstand it_brush | 37 | 0 |
+| Gegenstand it_brush | 37 | 1 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
@@ -46,20 +46,18 @@
 | Akteur ac_bug | 18 | 3 |
 | Gegenstand it_spade | 17 | 2 |
 | Lua: fill_floor() | 17 | 0 |
-| Gegenstand it_burnable_ignited | 17 | 2 |
 | Gegenstand it_banana | 17 | 0 |
-| Stein st_flat_breakable | 17 | 4 |
+| Stein st_flat_breakable | 17 | 5 |
 | Lua: :add | 16 | 3 |
 | Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 2 |
-| Stein st_portal_horse | 15 | 0 |
-| Stein st_polarswitch | 15 | 1 |
-| Stein st_barrier | 15 | 2 |
+| Stein st_portal_horse | 15 | 1 |
+| Stein st_polarswitch | 15 | 2 |
+| Stein st_barrier | 15 | 4 |
 | Stein st_plaster_breakable | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 4 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
-| Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_weight | 14 | 1 |
@@ -67,26 +65,22 @@
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 2 |
-| Gegenstand it_burnable_oil | 13 | 2 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | ungerade Zahl Oxyd-Steine | 12 | 5 |
 | Lua: :drawRect | 12 | 3 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Gegenstand it_burnable_fireproof | 11 | 6 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
-| Gegenstand it_burnable_invisible | 10 | 0 |
 | Aktion turn | 10 | 3 |
-| Gegenstand it_pencil | 10 | 0 |
+| Gegenstand it_pencil | 10 | 1 |
 | Gegenstand it_pin | 10 | 1 |
 | Gegenstand it_rubberband | 10 | 2 |
-| Gegenstand it_drop | 10 | 0 |
+| Gegenstand it_drop | 10 | 1 |
 | Stein st_spitter | 9 | 1 |
-| Flut | 9 | 3 |
+| Flut | 9 | 4 |
 | Lua-Init (Weltwert) | 9 | 1 |
-| Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
@@ -111,14 +105,11 @@
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
-| Gegenstand it_burnable_ash | 5 | 0 |
 | Gummiband an bewegtem oder unbekanntem Anker | 4 | 4 |
-| Lua: it_burnable_burning | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
-| Gegenstand it_extinguisher_medium | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: it_cross | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
@@ -135,7 +126,7 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Stein st_flat_burnable | 3 | 0 |
+| Stein st_flat_burnable | 3 | 1 |
 | Stein st_flat_cracked | 3 | 0 |
 | Lua: it_cherry | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
@@ -154,7 +145,6 @@
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
 | Stein st_portal_pearl | 2 | 1 |
-| Gegenstand it_extinguisher_empty | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
@@ -193,6 +183,7 @@
 | Lua: hollow() | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Lua: st_spitter | 1 | 0 |
+| Aktion ignite | 1 | 0 |
 | Lua: it_brush | 1 | 0 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
@@ -221,7 +212,6 @@
 | Lua: strchar() | 1 | 0 |
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
-| Lua: it_burnable | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 0 |
 | Lua: draw_items() | 1 | 0 |
@@ -235,7 +225,6 @@
 | Lua: lib.maze | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
-| Lua: it_burnable_oil | 1 | 0 |
 | Lua: gsub() | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
 | Lua: :drawBorder | 1 | 0 |
@@ -256,7 +245,6 @@
 | Lua: it_pipe | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Lua: it_burnable_ignited | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_rubberband | 1 | 0 |
@@ -291,7 +279,6 @@
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
 | Lua: wo["ConserveLevel"] | 1 | 0 |
-| Lua: it_burnable_invisible | 1 | 0 |
 | Lua: st_barrier | 1 | 0 |
 | Lua: it_bottle | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |

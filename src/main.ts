@@ -152,9 +152,11 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       if (cell) {
         cell.floor = kind;
         delete cell.force;
+        delete cell.fire;
       }
     },
     staticStone: (c, r) => cellAt(lv, c, r)?.stone ?? null,
+    floorAttr: (c, r, key) => cellAt(lv, c, r)?.fire?.[key],
     // Stone::is_transparent: hollow stones and glass except dark glass and beads
     transparentAt: (c, r) => {
       const cell = cellAt(lv, c, r);
@@ -829,6 +831,12 @@ function dropItem(): boolean {
       marbleJumps(i);
       updateItems();
     }
+    return true;
+  }
+  // Extinguisher::activate: foam around the marble (ITEM_KEEP); empty, it is dropped (ITEM_DROP)
+  if (first.startsWith('it_extinguisher')) {
+    if (!objects.useExtinguisher(m.pos.x, m.pos.y) && objects.canDropAt(m.pos.x, m.pos.y)) objects.dropItem(m.pos.x, m.pos.y);
+    updateItems();
     return true;
   }
   // Umbrella::activate: "_shield" for every marble of the owner, 10 s more each; the item is used up

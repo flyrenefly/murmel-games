@@ -161,6 +161,9 @@ export function actorImages(kind: string, color?: string): string[] {
 }
 
 /** Images an interactive object needs (models-2d.lua). */
+/** Fire: the burnable items, the extinguisher, transformed floors and heating animations. */
+const FIRE_IMAGES = ['it_burnable_oil', 'it_burnable_ignite', 'it_burnable_burning', 'it_burnable_ash', 'it_burnable_fireproof', 'it_extinguisher', 'fl_abyss', 'fl_dunes', 'fl_swamp', 'fl_water', 'fl_ice_heating', 'fl_water_heating', 'fl_swamp_heating', 'it_crack_abyss', 'it_crack_water'];
+
 export function objectImages(kind: string): string[] {
   if (kind === 'it_trigger') return ['it_trigger'];
   if (kind === 'it_document') return ['it_document'];
@@ -181,6 +184,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_yinyang') return ['it_yinyang'];
   if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return [kind];
   if (kind === 'it_death') return ['it_death'];
+  if (kind.startsWith('it_burnable') || kind.startsWith('it_extinguisher')) return FIRE_IMAGES;
   if (kind.startsWith('it_strip')) return ['it_strip'];
   if (kind.startsWith('it_puller')) return ['it_puller', 'it_explosion'];
   if (kind === 'st_knight') return ['st_knight', 'sh_round'];
@@ -496,6 +500,8 @@ export class ClassicView {
         const v = (b & 10) !== 0;
         this.frame('it_laser', h && v ? 2 : h ? 0 : 1, bx, by);
       }
+    // Floor heating animation (fl_ice/water/swamp_heating)
+    for (const h of world.heatingCells()) if (img[h.image]) this.frame(h.image, h.frame, ox + h.col * T, oy + h.row * T);
     // fl_scales: overlay on the base floor, released 0 / pressed 1 (models-2d.lua)
     for (const o of world.objects) if (o.cls === 'scales' && !o.gone && visible(o)) this.frame('fl_scales', o.state, ox + o.col * T, oy + o.row * T);
     // fl_bridge opening/closing animation over the floor
@@ -518,7 +524,13 @@ export class ClassicView {
       else if (o.cls === 'spring') this.image('it_spring', px, py);
       else if (o.cls === 'extralife') this.image('it_extralife', px, py);
       else if (o.cls === 'yinyang') this.frame('it_yinyang', 0, px, py); // DefTiles: it_yinyang, it_yangyin
+      else if (o.cls === 'tool' && o.kind.startsWith('it_extinguisher')) this.frame('it_extinguisher', o.kind === 'it_extinguisher_empty' ? 2 : o.kind === 'it_extinguisher_medium' ? 1 : 0, px, py);
       else if (o.cls === 'tool') this.image(o.kind, px, py);
+      else if (o.cls === 'burnable') {
+        const look = world.burnableLook(o);
+        if (look && look.frame < 0) this.image(look.image, px, py);
+        else if (look) this.frame(look.image, look.frame, px, py);
+      }
       else if (o.cls === 'springboard') this.frame('it_springboard', world.springboardFrame(o), px, py);
       else if (o.cls === 'key') this.frame('it_key', 0, px, py); // Item model it_key (codes only in the inventory)
       else if (o.cls === 'coin') this.image(o.kind === 'it_coin' ? 'it_coin_s' : o.kind, px, py);
@@ -563,7 +575,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

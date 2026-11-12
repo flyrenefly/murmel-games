@@ -512,6 +512,18 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **ot_wire / `fellows`** (`Wire.cc`, `Stone::propagateImpulse`): Verdrahtete Steine bekommen
   denselben Stoß, nachdem der gestoßene Stein sich bewegt hat; weitergereicht wird er nicht.
   Gezeichnet als lila Linien (Wire::postAddition). `selection` (Überraschung) fehlt noch.
+- **Feuer: it_burnable_* , it_extinguisher** (`floors.cc` Fire Handling, `BurnableItem.cc`,
+  `Extinguisher.cc`, Enigma-Modus): Feuer (ignited, dann burning, je 8 × 100 ms) lässt Steine darauf
+  brennen (Holz-/Heukisten), erhitzt die vier Nachbarn (mit 70 % Gegenstand/Stein, Dynamit und Bomben
+  zünden, Risse brechen, st_box_rock blockt; Eis → Wasser → Sumpf → Dünen mit 8 × 240 ms
+  Heizanimation) und zündet brennbare Böden (Holz, Heu, Rasen, Samba, Planke … oder it_burnable/Öl,
+  Bodenattribut `burnable`) nach dem Feuerzähler. Danach brennt es mit 70 % weiter (`eternal`: immer),
+  sonst wird der Boden umgewandelt (Holz/Bast/Planke/Samba/Brücke → Abgrund, Rasen → Dünen) und Asche
+  bleibt (nicht auf noash-Böden). Feuer zerschmettert Kugeln. Feuerfeste Gegenstände (Asche, Schaum,
+  Dynamit, Bomben, Risse, Mulden, Strudel, Falle) verbrennen nicht, andere werden ersetzt. Der Löscher
+  (voll 13, halb 5 Felder) macht Feuer zu Schaum und legt Schaum auf freie Felder; leer fällt er ab.
+  Abweichungen: kein Nicht-Enigma-Modus; Türen blocken nur geschlossen; `initfire` wird beim Import
+  als brennender Gegenstand gesetzt; Lua-Bodennachrichten (setfire, stopfire, heat) fehlen.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
