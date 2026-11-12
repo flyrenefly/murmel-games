@@ -293,6 +293,14 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   dahinter den Platz tauschen – Objektsteine wie Mauern der Karte; ohne Stein dahinter
   passiert nichts. 0,1 s Richtungsbild (st_swap_n/s/e/w). Abweichung: Mit Oxyd-Steinen
   tauscht er in Murmel nicht (deren Platz ist dort fest mit der Paarlogik verbunden).
+- **st_blocker / it_blocker** (`BlockerStone.cc`, `BlockerItem.cc`): eine Objektklasse mit
+  Phasen. Als Stein (fest; beim Wachsen blockiert er, Kugeln darin zerspringen außer mit
+  `autoclose`) schrumpft er auf open/signal 1/Felsbrocken-Auslöser in 3 × 60 ms zum Gegenstand
+  (Aktion true), als Gegenstand wächst er auf close/signal 0 wieder (Aktion false). Der
+  Gegenstand merkt sich Steine darauf: Ein Felsbrocken auf einem frisch geschrumpften Blocker
+  (0,5 s) sperrt ihn (bleibt offen), auf einem ruhenden entsperrt er ihn (wächst, sobald der
+  Felsbrocken weg ist); andere Steine sperren. `autoclose` schließt hinter einer Kugel.
+  `isItem()` zählt offene Blocker als Gegenstand, sonst als Stein.
 - **st_rotator_cw/_ccw(_movable)** (`RotatorStone.cc`): dreht sich ständig (8 Bilder à 70 ms);
   nach jeder Umdrehung merkt er sich die vier Nachbarsteine und stößt 0,1 s später jeden, der noch
   dort liegt, um sich herum (im Uhrzeigersinn: West → Nord …; gegen: umgekehrt) – mit Stone

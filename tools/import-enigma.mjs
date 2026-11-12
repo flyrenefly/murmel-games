@@ -98,6 +98,7 @@ const OBJECTS = [
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_pull$/, ['st_pull', 'sh_rawglass', 'sh_pull']],
   [/^st_rotator(_cw|_ccw)?(_movable)?$/, ['st_rotator_cw', 'st_rotator_ccw', 'sh_round']],
+  [/^(st|it)_blocker(_new)?$/, ['st_blocker', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
   [/^st_chess(_black|_white)?$/, ['st_chess_black', 'st_chess_white', 'sh_round']],
   [/^st_actorimpulse(_invisible)?$/, ['st_actorimpulse', 'sh_actorimpulse']],

@@ -558,6 +558,25 @@ describe('ObjectWorld', () => {
     expect(w.rotatorLook(w.objects[0]).image).toBe("st_rotator_cw");
   });
 
+  it("a blocker shrinks into an item on open, grows back on close and blocks only as a stone", () => {
+    const w = world([door(8), { x: 4, y: 1, k: "st_blocker", a: { name: "b", target: "door1", action: "toggle" } }]);
+    const b = w.objects[1];
+    expect(w.blockAt(4, 1)).toBe(ALL_FACES);
+    w.sendMessage(b, "open", true);
+    expect(w.blockAt(4, 1)).toBe(0); // shrinking: passable
+    w.update(200);
+    expect(b.kind).toBe("it_blocker");
+    expect(w.blockerLook(b)).toEqual({ frame: 3, stone: false });
+    w.update(400);
+    expect(w.blockAt(8, 0)).toBe(0); // performAction(true) opened the door
+    w.sendMessage(b, "close", true);
+    expect(w.blockAt(4, 1)).toBe(ALL_FACES); // growing
+    w.update(200);
+    expect(b.kind).toBe("st_blocker");
+    w.update(400);
+    expect(w.blockAt(8, 0)).toBe(ALL_FACES);
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

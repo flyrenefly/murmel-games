@@ -1,13 +1,13 @@
 # Enigma-Import
 
-462 von 1322 Levels übernommen (17 Pakete).
+471 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 123 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 2 |
 | Gegenstand it_puller_n | 115 | 0 |
+| Lua-Rückruf | 115 | 1 |
 | Gegenstand it_puller_s | 114 | 0 |
 | Lua-Init | 108 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
@@ -26,7 +26,6 @@
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
-| Stein st_blocker | 50 | 6 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -44,7 +43,7 @@
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
 | Stein st_plop | 34 | 4 |
 | Gegenstand it_pipe_ew | 34 | 0 |
-| Gegenstand it_wrench | 33 | 2 |
+| Gegenstand it_wrench | 33 | 4 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
@@ -63,8 +62,7 @@
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 1 |
-| Gegenstand it_blocker | 25 | 1 |
-| Gegenstand it_umbrella | 24 | 2 |
+| Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 0 |
@@ -75,7 +73,7 @@
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_stoneimpulse_movable | 20 | 2 |
+| Stein st_stoneimpulse_movable | 20 | 3 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
@@ -105,7 +103,7 @@
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 0 |
 | Gegenstand it_trap | 14 | 0 |
-| Gegenstand it_seed_hay | 14 | 2 |
+| Gegenstand it_seed_hay | 14 | 3 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 2 |
@@ -127,7 +125,7 @@
 | Stein st_brake | 11 | 0 |
 | Lua: :nearest | 10 | 4 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
-| Stein st_box_wood (verbunden) | 10 | 1 |
+| Stein st_box_wood (verbunden) | 10 | 2 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 2 |
@@ -150,7 +148,7 @@
 | Lua: :orientate | 7 | 2 |
 | Aktion openclose | 7 | 0 |
 | Lua: set_attrib() | 7 | 0 |
-| Gegenstand it_surprise | 7 | 0 |
+| Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 0 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -232,7 +230,6 @@
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
-| Stein it_blocker | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_door_d | 2 | 0 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
@@ -246,7 +243,6 @@
 | Lua: :peepall | 2 | 0 |
 | Lua: it_hammer | 2 | 0 |
 | Lua: it_pencil | 2 | 0 |
-| Lua: st_blocker | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
@@ -337,7 +333,7 @@
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
 | Lua: st_lightpassenger | 1 | 0 |
-| Stein st_flat_movable (verbunden) | 1 | 0 |
+| Stein st_flat_movable (verbunden) | 1 | 1 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |

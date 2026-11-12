@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -154,6 +154,14 @@ function flagColor(kind: string): number {
   return kind === 'it_flag_white' ? 1 : 0;
 }
 
+/** Items, and blockers while open (it_blocker); everything else in a cell is a stone. */
+function isItem(o: GameObject): boolean {
+  return ITEM_CLASSES.has(o.cls) || (o.cls === 'blocker' && o.blocker?.phase === 'open') || (o.cls === 'blocker' && o.blocker === undefined && o.kind.startsWith('it_'));
+}
+
+/** BlockerStone shrinking/growing: 3 frames à 60 ms. */
+const BLOCKER_MS = 3 * 60;
+
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
 
@@ -231,6 +239,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Blocker: stone (solid, shrinking, growing) or item (open, with its lock state). */
+  blocker?: { phase: 'solid' | 'shrinking' | 'growing' | 'open'; since: number; lock: 'idle' | 'new' | 'locked' | 'unlocked'; stone?: GameObject | null };
   /** Rotator: start of the current turn, and the neighbours remembered for its impulses. */
   rotor?: { since: number; alarm?: number; neighbors?: (GameObject | null)[] };
   /** Bridge floor: phase, its start and whether it was closed explicitly (OBJBIT_EXPLICIT). */
@@ -313,6 +323,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'fl_bridge') return 'bridge';
   if (kind === 'ot_counter') return 'counter';
   if (kind === 'st_pull') return 'pull';
+  if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
@@ -455,7 +466,7 @@ export class ObjectWorld {
   /** A stone (fixed or object) occupies the cell. */
   private stoneAt(col: number, row: number): boolean {
     if (this.env.stoneAt(col, row)) return true;
-    return this.at(col, row).some((o) => !o.gone && !ITEM_CLASSES.has(o.cls));
+    return this.at(col, row).some((o) => !o.gone && !isItem(o));
   }
 
   private at(col: number, row: number): GameObject[] {
@@ -472,7 +483,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -762,7 +773,7 @@ export class ObjectWorld {
       const c = p.col + dx;
       const r = p.row + dy;
       if (this.env.stoneAt(c, r)) return;
-      if (this.at(c, r).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && !members.has(x))) return;
+      if (this.at(c, r).some((x) => !x.gone && !isItem(x) && !members.has(x))) return;
     }
     // Pushed by the marble (waterSink): water always takes the cluster, abyss only a complete one.
     const bridge = cluster.every((p) => {
@@ -944,7 +955,7 @@ export class ObjectWorld {
   dropItem(x: number, y: number): boolean {
     const col = Math.floor(x);
     const row = Math.floor(y);
-    if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && ITEM_CLASSES.has(o.cls))) return false;
+    if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && isItem(o))) return false;
     if (this.beams.has(row * this.width + col)) return false;
     if (col < 0 || row < 0 || col >= this.width) return false;
     const kind = this.inventory.shift()!;
@@ -957,7 +968,7 @@ export class ObjectWorld {
   /** Item::can_drop_at: no item in the cell. */
   canDropAt(x: number, y: number): boolean {
     if (this.beams.has(Math.floor(y) * this.width + Math.floor(x))) return false; // the beam is an item (it_laserbeam)
-    return !this.at(Math.floor(x), Math.floor(y)).some((o) => !o.gone && ITEM_CLASSES.has(o.cls));
+    return !this.at(Math.floor(x), Math.floor(y)).some((o) => !o.gone && isItem(o));
   }
 
   /** Right click: player::RotateInventory(+1) → Inventory::rotate_left (the first item goes last). */
@@ -1028,7 +1039,7 @@ export class ObjectWorld {
       const r = r0 + L_DY[d];
       if (c < 0 || r < 0 || c >= W) continue;
       const bit = 1 << d;
-      const st = this.at(c, r).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.cls !== 'oxydref');
+      const st = this.at(c, r).find((x) => !x.gone && !isItem(x) && x.cls !== 'oxydref');
       let pass = true;
       if (st) {
         if (st.cls === 'mirror') {
@@ -1048,7 +1059,7 @@ export class ObjectWorld {
       }
       if (!pass) continue;
       // an item stops the beam (Item::processLight)
-      if (this.at(c, r).some((x) => !x.gone && ITEM_CLASSES.has(x.cls))) {
+      if (this.at(c, r).some((x) => !x.gone && isItem(x))) {
         light(c, r, bit);
         continue;
       }
@@ -1144,6 +1155,101 @@ export class ObjectWorld {
     return !truthy(o.attrs.invisible) && c >= 1 && c <= 8 ? c : 0;
   }
 
+  // ---------- blockers (BlockerStone.cc, BlockerItem.cc) ----------
+
+  private blockerOf(o: GameObject): NonNullable<GameObject['blocker']> {
+    o.blocker ??= { phase: o.kind.startsWith('it_') ? 'open' : o.kind === 'st_blocker_new' ? 'growing' : 'solid', since: this.now, lock: 'idle' };
+    return o.blocker;
+  }
+
+  /** BlockerStone::setIState: a running animation reverses from where it is. */
+  private blockerSet(o: GameObject, phase: 'shrinking' | 'growing'): void {
+    const b = this.blockerOf(o);
+    if (b.phase === 'open' || b.phase === phase) return;
+    const running = b.phase === 'shrinking' || b.phase === 'growing';
+    const done = running ? Math.min(BLOCKER_MS, this.now - b.since) : BLOCKER_MS;
+    o.blocker = { ...b, phase, since: running ? this.now - (BLOCKER_MS - done) : this.now };
+  }
+
+  /** BlockerItem::grow: the item becomes a growing stone. */
+  private blockerGrow(o: GameObject): void {
+    o.blocker = { phase: 'growing', since: this.now, lock: 'idle' };
+    o.kind = 'st_blocker';
+    this.events.push({ type: 'sound', name: 'move' });
+  }
+
+  /** The stone (not this blocker) in the blocker's cell. */
+  private blockerStoneOn(o: GameObject): GameObject | null {
+    return this.at(o.col, o.row).find((x) => x !== o && !x.gone && !isItem(x)) ?? null;
+  }
+
+  private blockerStep(o: GameObject): void {
+    const b = this.blockerOf(o);
+    const age = this.now - b.since;
+    if (b.phase === 'shrinking' && age >= BLOCKER_MS) {
+      // BlockerStone::animcb: becomes it_blocker (NEW: a boulder is awaited for 0.5 s)
+      o.blocker = { phase: 'open', since: this.now, lock: 'new', stone: null };
+      o.kind = 'it_blocker';
+      this.performAction(o, true);
+      return;
+    }
+    if (b.phase === 'growing') {
+      // actors inside a growing blocker shatter (not with autoclose)
+      if (!truthy(o.attrs.autoclose)) this.shatterAt(o.col, o.row);
+      if (age >= BLOCKER_MS) {
+        o.blocker = { phase: 'solid', since: this.now, lock: 'idle' };
+        o.kind = 'st_blocker';
+        this.performAction(o, false);
+      }
+      return;
+    }
+    if (b.phase !== 'open') return;
+    if (b.lock === 'new' && age >= 500) b.lock = 'idle'; // BlockerItem::alarm
+    // BlockerItem::stone_change
+    const st = this.blockerStoneOn(o);
+    if (st !== (b.stone ?? null)) {
+      b.stone = st;
+      if (st) {
+        if (st.cls === 'boulder') b.lock = b.lock === 'idle' ? 'unlocked' : b.lock === 'new' ? 'locked' : b.lock;
+        else if (b.lock !== 'unlocked') b.lock = 'locked';
+      } else if (b.lock === 'locked') b.lock = 'idle';
+      else if (b.lock === 'unlocked') this.blockerGrow(o);
+    }
+  }
+
+  /** BlockerItem::actor_leave: autoclose closes the open blocker behind an actor. */
+  private blockerLeave(col: number, row: number): void {
+    for (const o of this.at(col, row)) if (o.cls === 'blocker' && !o.gone && o.blocker?.phase === 'open' && truthy(o.attrs.autoclose)) this.blockerClose(o);
+  }
+
+  /** BlockerItem::setState(0): close (locked: when the stone leaves; idle/new: grow now). */
+  private blockerClose(o: GameObject): void {
+    const b = this.blockerOf(o);
+    if (b.phase !== 'open') {
+      if (b.phase === 'shrinking') this.blockerSet(o, 'growing');
+      return;
+    }
+    if (b.lock === 'locked') b.lock = 'unlocked';
+    else if (b.lock === 'idle' || b.lock === 'new') this.blockerGrow(o);
+  }
+
+  /** BlockerItem::setState(1) / BlockerStone open: shrink, or revoke a pending close. */
+  private blockerOpen(o: GameObject): void {
+    const b = this.blockerOf(o);
+    if (b.phase === 'open') {
+      if (b.lock === 'unlocked') b.lock = 'locked';
+    } else this.blockerSet(o, 'shrinking');
+  }
+
+  /** st_blocker sheet: 0 solid, 3 item; shrinking 1→3, growing 3→1 (3 × 60 ms). */
+  blockerLook(o: GameObject): { frame: number; stone: boolean } {
+    const b = this.blockerOf(o);
+    const f = Math.min(2, Math.floor((this.now - b.since) / 60));
+    if (b.phase === 'solid') return { frame: 0, stone: true };
+    if (b.phase === 'open') return { frame: 3, stone: false };
+    return { frame: b.phase === 'shrinking' ? 1 + f : 3 - f, stone: true };
+  }
+
   // ---------- rotators (RotatorStone.cc) ----------
 
   /**
@@ -1165,7 +1271,7 @@ export class ObjectWorld {
     }
     if (this.now - r.since >= ROTATOR_TURN_MS) {
       r.since = this.now;
-      r.neighbors = [0, 1, 2, 3].map((d) => this.at(o.col + L_DX[d], o.row + L_DY[d]).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls)) ?? null);
+      r.neighbors = [0, 1, 2, 3].map((d) => this.at(o.col + L_DX[d], o.row + L_DY[d]).find((x) => !x.gone && !isItem(x)) ?? null);
       r.alarm = this.now + 100;
     }
   }
@@ -1189,7 +1295,7 @@ export class ObjectWorld {
 
   /** A stone that is not floating (hollow) lies on the bridge. */
   private bridgeStone(o: GameObject): boolean {
-    return this.at(o.col, o.row).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.kind !== 'st_stoneimpulse_hollow' && !isHollow(x));
+    return this.at(o.col, o.row).some((x) => !x.gone && !isItem(x) && x.kind !== 'st_stoneimpulse_hollow' && !isHollow(x));
   }
 
   private bridgeImage(o: GameObject): string {
@@ -1264,7 +1370,7 @@ export class ObjectWorld {
    * actors in the cell (marbles 1, pearls 0.7; not jumping) reaching min (1.8). The first check acts not.
    */
   private scalesStep(o: GameObject): void {
-    const stone = this.env.stoneAt(o.col, o.row) || this.at(o.col, o.row).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && x.kind !== 'st_stoneimpulse_hollow');
+    const stone = this.env.stoneAt(o.col, o.row) || this.at(o.col, o.row).some((x) => !x.gone && !isItem(x) && x.kind !== 'st_stoneimpulse_hollow');
     let mass = 0;
     this.marbles.forEach((m, i) => {
       if (m.init && m.col === o.col && m.row === o.row) mass += this.isPearl(i) ? 0.7 : 1;
@@ -1316,7 +1422,7 @@ export class ObjectWorld {
         const r = row + dy;
         if (c < 0 || r < 0 || c >= this.width || !this.destructible(c, r)) continue;
         if (water && this.env.floorAt(c, r) === 'fl_space') continue;
-        const item = this.at(c, r).find((x) => !x.gone && ITEM_CLASSES.has(x.cls));
+        const item = this.at(c, r).find((x) => !x.gone && isItem(x));
         if (item) {
           if (!water && item.cls === 'crack') this.crack(item); // message "crack"
         } else if (this.random() < numAttr(o.attrs.spreading, 0.5)) {
@@ -1542,7 +1648,7 @@ export class ObjectWorld {
     if ((o.chess?.phase ?? 'idle') !== 'idle') return;
     const dest: [number, number] = [o.col + 2 * d1[0] + d2[0], o.row + 2 * d1[1] + d2[1]];
     if (dest[0] < 0 || dest[1] < 0 || dest[0] >= this.width || this.env.floorAt(dest[0], dest[1]) === undefined) return;
-    const other = this.at(dest[0], dest[1]).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls));
+    const other = this.at(dest[0], dest[1]).find((x) => !x.gone && !isItem(x));
     if (!other && !this.stoneAt(dest[0], dest[1])) {
       o.chess = { phase: 'disappearing', since: this.now, dest };
       return;
@@ -1640,7 +1746,7 @@ export class ObjectWorld {
     const c = o.col + dx;
     const r = o.row + dy;
     if (c < 0 || r < 0 || c >= this.width) return false;
-    const other = this.at(c, r).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls));
+    const other = this.at(c, r).find((x) => !x.gone && !isItem(x));
     const plain = other ? null : (this.env.staticStone?.(c, r) ?? null);
     if (other) {
       if (other.swapped && this.now - other.swapped.since < SWAP_MS) return false;
@@ -1688,6 +1794,8 @@ export class ObjectWorld {
   /** BoulderStone::triggerObstacle: only Oxyd stones react (tryOpen on a raising trigger). */
   private boulderTrigger(o: GameObject, d: number, raising: boolean): void {
     const [dx, dy] = STEPS[d];
+    // BlockerStone::message("_trigger"): shrinks
+    if (raising) for (const b of this.at(o.col + dx, o.row + dy)) if (b.cls === 'blocker' && !b.gone) this.blockerSet(b, 'shrinking');
     // MirrorStone::message("_trigger", 1): turns
     if (raising) for (const m of this.at(o.col + dx, o.row + dy)) if (m.cls === 'mirror' && !m.gone) this.turnMirror(m, 1);
     // ActorImpulseStone::message("_trigger", true): sends the boulder back
@@ -1824,7 +1932,10 @@ export class ObjectWorld {
     }
     // Sensor::actor_enter / actor_leave: a real change of the grid cell (not jumping or dying)
     if (col >= 0 && (col !== m.realCol || row !== m.realRow)) {
-      if (m.realCol !== undefined && m.realCol >= 0) this.sensorStep(m.realCol, m.realRow!, true);
+      if (m.realCol !== undefined && m.realCol >= 0) {
+        this.sensorStep(m.realCol, m.realRow!, true);
+        this.blockerLeave(m.realCol, m.realRow!);
+      }
       this.sensorStep(col, row, false);
       this.crackEnter(col, row);
       m.realCol = col;
@@ -1873,6 +1984,7 @@ export class ObjectWorld {
       if (o.cls === 'scales' && !o.gone) this.scalesStep(o);
       if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
+      if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
@@ -1973,12 +2085,12 @@ export class ObjectWorld {
 
   /** The stone (non-item) object in a cell. */
   stoneObjectAt(col: number, row: number): GameObject | null {
-    return this.at(col, row).find((o) => !o.gone && !ITEM_CLASSES.has(o.cls)) ?? null;
+    return this.at(col, row).find((o) => !o.gone && !isItem(o)) ?? null;
   }
 
   /** The item object in a cell. */
   itemAt(col: number, row: number): GameObject | null {
-    return this.at(col, row).find((o) => !o.gone && ITEM_CLASSES.has(o.cls)) ?? null;
+    return this.at(col, row).find((o) => !o.gone && isItem(o)) ?? null;
   }
 
   /** wo[pos] = {kind, …} from a Lua callback: a new object (null if Murmel has no such object). */
@@ -2085,6 +2197,20 @@ export class ObjectWorld {
     }
     if (o.cls === 'oxydref') {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
+      return;
+    }
+    if (o.cls === 'blocker') {
+      // BlockerStone/BlockerItem messages: open = shrink, close = grow, toggle, signal
+      const b = this.blockerOf(o);
+      if (msg === 'open' || msg === 'on' || (msg === 'signal' && value)) this.blockerOpen(o);
+      else if (msg === 'close' || msg === 'off' || (msg === 'signal' && !value)) this.blockerClose(o);
+      else if (msg === 'toggle') {
+        if (b.phase === 'open') {
+          if (b.lock === 'unlocked') b.lock = 'locked';
+          else this.blockerClose(o);
+        } else if (b.phase === 'shrinking') this.blockerSet(o, 'growing');
+        else this.blockerSet(o, 'shrinking');
+      }
       return;
     }
     if (o.cls === 'counter') {
