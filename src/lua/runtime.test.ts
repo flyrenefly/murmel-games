@@ -64,6 +64,19 @@ end`;
     expect(w.force()).toBe("80,40");
   });
 
+  it('group:nearest picks the closest member, ties go south, then east', async () => {
+    const w = fakeHost([
+      { ref: 'a', l: 'st', x: 2, y: 2, a: { name: 'd#1' } },
+      { ref: 'b', l: 'st', x: 6, y: 2, a: { name: 'd#2' } },
+      { ref: 'c', l: 'st', x: 4, y: 4, a: { name: 'd#3' } },
+      { ref: 's', l: 'it', x: 4, y: 2, a: { name: 'src' } },
+    ]);
+    const lua = await startLua(`function f(v, s) no["d#*"]:nearest(s):toggle() end`, w.host);
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    expect(w.sent).toEqual(['c toggle null']); // all three 2 away: the southern one wins
+  });
+
   it('groups: floors of named objects, intersection, toggle; positions next to the sender', async () => {
     const w = fakeHost([
       { ref: 'd1', l: 'st', x: 3, y: 2, a: { name: 'doors#1' } },

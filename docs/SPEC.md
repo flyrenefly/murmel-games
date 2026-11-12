@@ -466,7 +466,7 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Paket `fengari` hält den Vite-Entwicklungsserver wegen dessen `process`-Objekt für Node),
   in Node (Importer, Tests) `fengari`. Wird nur in Lua-Levels nachgeladen (ca. 68 KB gzip).
 - **API-Schicht `src/lua/enigma.lua`:** Teil von Enigmas API 2 – `po`, Positionslisten,
-  `no[]`, `st/it/fl`, Gruppen (`+ - *`, `g[obj]`, `g[-1]`, `:sub`, `:sort`, `:shuffle`,
+  `no[]`, `st/it/fl`, Gruppen (`+ - *`, `g[obj]`, `g[-1]`, `:sub`, `:sort`, `:shuffle`, `:nearest`,
   Nachrichten an alle), Objekte (Attribute, `:open/:close/:toggle/:message/:kill/:exists`),
   `ti`, `wo[pos] = Kachel`, `wo["GlobalForce"]`, `wo["FrictionStrength"]`, `cond`,
   Konstanten aus `api2init.lua`. Lua-5.1-Ausgleich (`unpack`, `table.getn` …; ganze

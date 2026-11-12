@@ -1,6 +1,6 @@
 # Enigma-Import
 
-493 von 1322 Levels übernommen (17 Pakete).
+497 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -70,7 +70,7 @@
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_stoneimpulse_movable | 20 | 3 |
+| Stein st_stoneimpulse_movable | 20 | 4 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
@@ -118,7 +118,6 @@
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
-| Lua: :nearest | 10 | 4 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Stein st_box_wood (verbunden) | 10 | 3 |
 | Gegenstand it_pencil | 10 | 0 |

@@ -287,6 +287,22 @@ function gmethods.sub(self, n)
   end
   return newgroup(l)
 end
+-- lua.cc nearestGroup: the member closest to the object; ties go to the one further south, then east
+function gmethods.nearest(self, center)
+  local c = topos(center)
+  if not c then error("Error: reference object is no longer existing") end
+  local best, bd
+  for _, o in ipairs(self) do
+    local p = topos(o)
+    if p then
+      local d = (p.x - c.x) ^ 2 + (p.y - c.y) ^ 2
+      if not best or d < bd or (d == bd and (p.y > topos(best).y or (p.y == topos(best).y and p.x > topos(best).x))) then
+        best, bd = o, d
+      end
+    end
+  end
+  return best
+end
 -- lua.cc shuffleGroup: Fisher-Yates
 function gmethods.shuffle(self)
   local l = {table.unpack(self)}
