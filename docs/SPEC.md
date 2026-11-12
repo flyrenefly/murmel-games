@@ -155,6 +155,16 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   wechselt wie in Enigma je nach Pixelposition zwischen zwei Glanzbildern.
 - **fl_hay** (und die anderen FloodStream-Böden): gewöhnlicher Boden. Levels mit
   flutendem Wasser (Zustand FLOODING, `fl_water_source`) bleiben draußen.
+- **it_meditation_*** (`Meditation.cc`): Mulden (caldera −3, hollow −2, dent −1) ziehen,
+  Hügel (bump 1, hill 2, volcano 3) stoßen ab: Kraft 90 · (Akteur − Feldmitte) im Radius
+  0,5 (dent/bump 0,3), der Vulkan hat innen (< 0,3) einen Krater. Gilt für alle Akteure.
+  Nachrichten flip, signal, toggle, shovel; ein daraufgeschobener Stein schaufelt sie eine
+  Stufe flacher. Perlen und das Meditieren gibt es noch nicht.
+- **it_landmine** (`Landmine.cc`): explodiert, wenn ein Akteur näher als 0,3 an die Mitte
+  kommt oder ein Stein daraufgeschoben wird (Klang explosion2). Die Explosion (50 ms)
+  zerschmettert Murmeln im Feld und hinterlässt eine Mulde (it_meditation_hollow), außer
+  auf Abgrund, Wasser und Sumpf.
+- Gegenstände (Auslöser, Zettel, Wurmloch, Mulde, Mine) halten Steine nicht mehr auf.
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`

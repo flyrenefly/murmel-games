@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, EAST, type GameObject, type ObjectWorld, WEST } from '../game/objects';
+import { doorFlavor, EAST, type GameObject, meditationImage, type ObjectWorld, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -44,6 +44,7 @@ const BASE_IMAGES = [
   'ac_marble_black_fall',
   'sh_marble_fall',
 ];
+const MEDITATION_IMAGES = ['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`);
 /** Swamp levels: sinking marbles (models-2d.lua, 7 frames). */
 const SINK_IMAGES = ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink'];
 type Images = Record<string, HTMLImageElement>;
@@ -134,6 +135,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_death')) return ['st_death', 'sh_round'];
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
+  if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
   if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
@@ -365,10 +367,12 @@ export class ClassicView {
       else if (o.cls === 'document' && !o.gone && img.it_document) ctx.drawImage(img.it_document, px, py);
       // it_wormhole: 2 frames à 100 ms while on, frame 1 when off.
       else if (o.cls === 'wormhole') this.frame('it_wormhole', o.state ? Math.floor(this.now / 100) % 2 : 0, px, py);
+      else if (o.cls === 'meditation' && !o.gone) this.image(meditationImage(o.state), px, py);
+      else if (o.cls === 'landmine' && !o.gone) this.image(o.exploding !== undefined ? 'it_explosion' : 'it_landmine', px, py);
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole') continue;
+        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

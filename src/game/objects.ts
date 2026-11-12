@@ -16,7 +16,28 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine';
+
+/** Items (it_*): they lie on the floor, stones can move onto them. */
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine']);
+
+/** Meditation states (Meditation.cc): negative = dents that pull, positive = hills that push. */
+const MEDITATION_STATE: Record<string, number> = {
+  it_meditation: -2,
+  it_meditation_caldera: -3,
+  it_meditation_hollow: -2,
+  it_meditation_dent: -1,
+  it_meditation_bump: 1,
+  it_meditation_hill: 2,
+  it_meditation_volcano: 3,
+};
+const MEDITATION_KIND = ['it_meditation_caldera', 'it_meditation_hollow', 'it_meditation_dent', '', 'it_meditation_bump', 'it_meditation_hill', 'it_meditation_volcano'];
+/** Image of a meditation item in state s (−3 … 3). */
+export const meditationImage = (s: number): string => MEDITATION_KIND[s + 3] || 'it_meditation_hollow';
+/** it_explosion: one frame of 50 ms (models-2d.lua). */
+export const EXPLOSION_MS = 50;
+/** Floors an explosion cannot dig into (flf_indestructible). */
+const HARD_FLOORS = new Set(['fl_abyss', 'fl_water', 'fl_swamp']);
 
 /** Face bits as in Enigma's DirectionBits. */
 export const WEST = 1;
@@ -101,6 +122,8 @@ export interface GameObject {
   engagedUntil?: number;
   /** Impulse stone: phase and the Enigma direction the impulse came from (-1 = none). */
   impulse?: { phase: 'expanding' | 'shrinking'; incoming: number };
+  /** Landmine: exploding since this time (it_explosion_hollow). */
+  exploding?: number;
 }
 
 export type ObjectEvent =
@@ -109,7 +132,7 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -120,6 +143,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
   if (kind === 'st_timer') return 'timer';
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
+  if (kind in MEDITATION_STATE) return 'meditation';
+  if (kind === 'it_landmine') return 'landmine';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
@@ -201,7 +226,7 @@ export class ObjectWorld {
   /** A stone (fixed or object) occupies the cell. */
   private stoneAt(col: number, row: number): boolean {
     if (this.env.stoneAt(col, row)) return true;
-    return this.at(col, row).some((o) => !o.gone && o.cls !== 'trigger' && o.cls !== 'document');
+    return this.at(col, row).some((o) => !o.gone && !ITEM_CLASSES.has(o.cls));
   }
 
   private at(col: number, row: number): GameObject[] {
@@ -297,6 +322,7 @@ export class ObjectWorld {
     this.events.push({ type: 'sound', name: 'move' });
     // Stone::on_move: a stone moving onto the marble shatters it.
     this.shatterAt(col, row);
+    this.stoneHitsItems(col, row);
     if (SINK_FLOORS.has(this.env.floorAt(col, row))) {
       o.gone = true;
       this.unplace(o);
@@ -414,6 +440,7 @@ export class ObjectWorld {
       p.col = c;
       p.row = r;
       this.place(p);
+      this.stoneHitsItems(c, r);
     });
     this.events.push({ type: 'sound', name: 'move' });
   }
@@ -426,7 +453,7 @@ export class ObjectWorld {
       const c = p.col + dx;
       const r = p.row + dy;
       if (this.env.stoneAt(c, r)) return;
-      if (this.at(c, r).some((x) => !x.gone && x.cls !== 'trigger' && x.cls !== 'document' && !members.has(x))) return;
+      if (this.at(c, r).some((x) => !x.gone && !ITEM_CLASSES.has(x.cls) && !members.has(x))) return;
     }
     // Pushed by the marble (waterSink): water always takes the cluster, abyss only a complete one.
     const bridge = cluster.every((p) => {
@@ -444,6 +471,7 @@ export class ObjectWorld {
       p.row += dy;
       this.place(p);
       this.shatterAt(p.col, p.row);
+      this.stoneHitsItems(p.col, p.row);
     }
     this.events.push({ type: 'sound', name: 'move' });
     if (bridge) {
@@ -486,6 +514,18 @@ export class ObjectWorld {
   fieldForce(x: number, y: number): [number, number] {
     let fx = 0;
     let fy = 0;
+    // Meditation::add_force: dents pull towards the centre, hills push away (volcano: crater inside).
+    for (const o of this.at(Math.floor(x), Math.floor(y))) {
+      if (o.cls !== 'meditation' || o.gone) continue;
+      const vx = x - (o.col + 0.5);
+      const vy = y - (o.row + 0.5);
+      const dist = Math.hypot(vx, vy);
+      const s = o.state;
+      if (dist > (Math.abs(s) > 1 ? 0.5 : 0.3)) continue;
+      const k = (s < 0 ? -1 : 1) * (Math.abs(s) === 3 && dist < 0.3 ? -1 : 1) * 90; // server::HoleForce = 1
+      fx += k * vx;
+      fy += k * vy;
+    }
     for (const o of this.objects) {
       if (o.cls !== 'wormhole' || o.state !== 1) continue;
       const strength = 0.6 * numAttr(o.attrs.strength, 30);
@@ -499,6 +539,45 @@ export class ObjectWorld {
       }
     }
     return [fx, fy];
+  }
+
+  /**
+   * An actor (marble index, or -1 for another actor) is at x/y; call after every physics step.
+   * Landmine::actor_hit: closer than 0.3 to the centre it explodes; the explosion shatters
+   * marbles in its cell (Explosion::actor_hit).
+   */
+  actorStep(x: number, y: number, marble: number): void {
+    for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
+      if (o.cls !== 'landmine' || o.gone) continue;
+      if (o.exploding === undefined) {
+        if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) < 0.3) this.explode(o);
+      }
+      if (o.exploding !== undefined && marble >= 0) this.events.push({ type: 'shatter', marble });
+    }
+  }
+
+  /** Landmine::explode → it_explosion_hollow. */
+  private explode(o: GameObject): void {
+    if (o.exploding !== undefined) return;
+    o.exploding = this.now;
+    this.events.push({ type: 'sound', name: 'landmine' });
+  }
+
+  /** Stone::on_stonehit of the items under a stone that just moved here. */
+  private stoneHitsItems(col: number, row: number): void {
+    for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'landmine' && !o.gone) this.explode(o);
+      else if (o.cls === 'meditation' && !o.gone) this.shovel(o);
+    }
+  }
+
+  /** Meditation::shovel: one step flatter; a flat one disappears. */
+  private shovel(o: GameObject): void {
+    const s = o.state > 0 ? o.state - 1 : o.state + 1;
+    if (s === 0) {
+      o.gone = true;
+      this.unplace(o);
+    } else o.state = s;
   }
 
   /** WormHole::actor_hit: marble centre within 0.125 of a wormhole centre → its destination. */
@@ -586,6 +665,20 @@ export class ObjectWorld {
   /** Advance animations by ms milliseconds. */
   update(ms: number): void {
     this.now += ms;
+    for (const o of this.objects) {
+      // Explosion::animcb: a hollow remains unless the floor cannot be dug.
+      if (o.exploding !== undefined && this.now - o.exploding >= EXPLOSION_MS) {
+        o.exploding = undefined;
+        if (HARD_FLOORS.has(this.env.floorAt(o.col, o.row))) {
+          o.gone = true;
+          this.unplace(o);
+        } else {
+          o.kind = 'it_meditation_hollow';
+          o.cls = 'meditation';
+          o.state = -2;
+        }
+      }
+    }
     for (const o of this.objects) {
       const imp = o.impulse;
       if (imp && o.moving && this.now - o.moving.since >= o.moving.dur) {
@@ -684,6 +777,16 @@ export class ObjectWorld {
       if (msg === 'signal' && value) this.startImpulse(o, -1);
       return;
     }
+    if (o.cls === 'meditation') {
+      // Meditation::message / toggleState
+      const s = o.state;
+      if (msg === 'flip') o.state = -s;
+      else if (msg === 'signal') o.state = value ? Math.abs(s) : -Math.abs(s);
+      else if (msg === 'shovel') this.shovel(o);
+      else if (msg === 'toggle') o.state = { [-3]: 2, [-2]: 3, [-1]: 1, 1: -1, 2: -3, 3: -2 }[s] ?? s;
+      return;
+    }
+    if (o.cls === 'landmine') return;
     if (o.cls === 'oneway') {
       // OneWayStone::message: signal and flip reverse the direction.
       if (msg === 'signal' || msg === 'flip' || msg === 'toggle') o.state = (o.state + 2) % 4;
@@ -753,6 +856,10 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  if (kind in MEDITATION_STATE) {
+    const s = Number(a.$state);
+    return a.$state && Number.isInteger(s) && s !== 0 && Math.abs(s) <= 3 ? s : MEDITATION_STATE[kind];
+  }
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
   return kind.endsWith('_open') || kind === 'st_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' ? 1 : 0;

@@ -49,13 +49,14 @@ const OBJECTS = [
   [/^st_(fake_)?quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
   [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
+  [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.

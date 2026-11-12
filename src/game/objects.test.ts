@@ -318,6 +318,38 @@ describe('ObjectWorld', () => {
     });
   });
 
+  describe("meditation and landmine", () => {
+    it("a hollow pulls the marble towards its centre, a hill pushes; flip turns one into the other", () => {
+      const w = world([{ x: 3, y: 0, k: "it_meditation_hollow", a: { name: "m" } }, { x: 1, y: 0, k: "it_trigger", a: { target: "m", action: "flip" } }]);
+      const [fx] = w.fieldForce(3.8, 0.5);
+      expect(fx).toBeCloseTo(-90 * 0.3);
+      expect(w.fieldForce(3.5 + 0.55, 0.5)).toEqual([0, 0]); // outside the radius 0.5
+      w.marbleAt(1, 0);
+      expect(w.objects[0].state).toBe(2);
+      expect(w.fieldForce(3.8, 0.5)[0]).toBeCloseTo(90 * 0.3);
+    });
+
+    it("a landmine explodes near its centre, shatters the marble and leaves a hollow", () => {
+      const w = world([{ x: 3, y: 0, k: "it_landmine" }]);
+      w.actorStep(3.1, 0.5, 0); // 0.4 from the centre: nothing
+      expect(w.events).toEqual([]);
+      w.actorStep(3.3, 0.5, 0);
+      expect(w.events).toContainEqual({ type: "sound", name: "landmine" });
+      expect(w.events).toContainEqual({ type: "shatter", marble: 0 });
+      w.update(60);
+      expect(w.objects[0]).toMatchObject({ kind: "it_meditation_hollow", cls: "meditation", state: -2 });
+      expect(w.fieldForce(3.8, 0.5)[0]).toBeLessThan(0);
+    });
+
+    it("a box pushed onto a landmine sets it off, onto a hollow it shovels it flatter", () => {
+      const w = world([{ x: 2, y: 0, k: "st_box_wood" }, { x: 3, y: 0, k: "it_landmine" }, { x: 2, y: 1, k: "st_box_wood" }, { x: 3, y: 1, k: "it_meditation_dent" }]);
+      w.push(w.objects[0], 1, 0);
+      expect(w.objects[1].exploding).toBeDefined();
+      w.push(w.objects[2], 1, 0);
+      expect(w.objects[3].gone).toBe(true); // dent (-1) shovelled to 0 = gone
+    });
+  });
+
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 

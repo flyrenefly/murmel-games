@@ -420,6 +420,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'move') sfx.move();
     else if (e.name === 'explode') sfx.explode();
     else if (e.name === 'fakeoxyd') sfx.fakeOxyd();
+    else if (e.name === 'landmine') sfx.landmine();
   }
 }
 
@@ -452,7 +453,9 @@ function frame(now: number): void {
         // WarpActor without keeping the velocity.
         if (to) ph.respawn(to.x, to.y, i);
         objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
+        objects.actorStep(m.pos.x, m.pos.y, i);
       });
+      for (const e of ph.enemies) objects.actorStep(e.pos.x, e.pos.y, -1);
       objects.update(PHYSICS_DT * 1000);
       handleObjectEvents(objects.events);
       ph.marbles.forEach((m, i) => {

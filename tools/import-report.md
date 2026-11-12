@@ -1,16 +1,15 @@
 # Enigma-Import
 
-93 von 1322 Levels übernommen (13 Pakete).
+99 von 1322 Levels übernommen (13 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 361 | 31 |
+| Lua-Rückruf | 360 | 31 |
 | keine Oxyd-Steine | 294 | 0 |
 | Stein st_laser | 225 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 0 |
 | Akteur ac_pearl_white | 179 | 1 |
 | Stein st_passage_black | 152 | 2 |
-| Gegenstand it_meditation_hollow | 143 | 2 |
 | Gegenstand it_sensor | 139 | 3 |
 | Stein st_boulder | 135 | 2 |
 | Stein st_passage_white | 134 | 0 |
@@ -27,7 +26,7 @@
 | Boden fl_slope_pw | 107 | 0 |
 | Gegenstand it_laserbeam | 104 | 0 |
 | Gegenstand it_magicwand | 101 | 1 |
-| Gegenstand it_seed_wood | 96 | 2 |
+| Gegenstand it_seed_wood | 96 | 4 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
 | Gegenstand it_extralife | 90 | 1 |
@@ -108,8 +107,6 @@
 | Stein st_granite_movable | 26 | 0 |
 | Stein st_greenbrown_hollow | 25 | 0 |
 | Boden fl_slope_te | 25 | 0 |
-| Gegenstand it_meditation_dent | 25 | 0 |
-| Gegenstand it_meditation_hill | 25 | 0 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 0 |
@@ -128,7 +125,6 @@
 | Boden fl_slope_ts | 21 | 0 |
 | Boden fl_slope_tn | 21 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
-| Gegenstand it_meditation_bump | 20 | 0 |
 | Stein st_stoneimpulse_movable | 20 | 0 |
 | Gegenstand it_bottle_idle | 20 | 0 |
 | Gegenstand it_pipe_es | 20 | 0 |
@@ -174,7 +170,6 @@
 | Stein st_redfiber | 13 | 2 |
 | Stein st_darkglass | 13 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_landmine | 13 | 3 |
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
@@ -242,7 +237,6 @@
 | Gegenstand it_extinguisher_medium | 4 | 0 |
 | Stein st_death_movable | 4 | 0 |
 | Gegenstand it_strip_nsw | 4 | 0 |
-| Gegenstand it_meditation_volcano | 4 | 0 |
 | Gegenstand it_strip_nes | 4 | 0 |
 | Gegenstand it_strip_ne | 4 | 0 |
 | Stein st_oxyd_a | 4 | 0 |
@@ -295,7 +289,6 @@
 | Stein fl_bridge_be | 2 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Aktion trigger | 1 | 0 |
-| Stein it_meditation_hill | 1 | 0 |
 | Aktion kill | 1 | 0 |
 | Stein st_oxyd_c | 1 | 0 |
 | Boden mit Kraft (fl_himalaya) | 1 | 0 |
@@ -312,7 +305,6 @@
 | Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
 | Stein st_darkglass_movable | 1 | 0 |
-| Stein it_meditation_bump | 1 | 0 |
 | Boden mit Kraft (fl_rock) | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
@@ -327,7 +319,6 @@
 | Gegenstand it_pipe_w | 1 | 0 |
 | Gegenstand it_pipe_n | 1 | 0 |
 | Gegenstand it_pipe_s | 1 | 0 |
-| Stein it_meditation_hollow | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Boden fl_forward_darkgray | 1 | 0 |
 | Stein st_dispenser_bombwhite | 1 | 0 |
