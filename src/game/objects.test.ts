@@ -547,6 +547,22 @@ describe('ObjectWorld', () => {
     expect(w.actorimpulseVisible(w.objects[1])).toBe(true);
   });
 
+  it("a dropped flag sets the respawn position of its colour, picking it up clears it", () => {
+    const w = world([{ x: 3, y: 0, k: "it_flag_white" }, { x: 5, y: 0, k: "it_flag" }]);
+    expect(w.flagRespawn).toEqual([undefined, undefined]); // placed flags do nothing (no on_drop)
+    w.actorStep(5.5, 0.5, 0);
+    expect(w.dropItem(7.2, 1.9)).toBe(true);
+    expect(w.flagRespawn).toEqual([{ x: 7.5, y: 1.5 }, undefined]);
+    w.actorStep(7.5, 1.5, 0);
+    expect(w.flagRespawn).toEqual([undefined, undefined]);
+    w.actorStep(3.5, 0.5, 0);
+    w.rotateInventory();
+    w.rotateInventory();
+    expect(w.inventory[0]).toBe("it_flag_white");
+    w.dropItem(1.5, 1.5);
+    expect(w.flagRespawn).toEqual([undefined, { x: 1.5, y: 1.5 }]);
+  });
+
   it("ring and spoon are picked up and dropped again like plain items", () => {
     const w = world([{ x: 3, y: 0, k: "it_ring" }, { x: 5, y: 0, k: "it_spoon" }]);
     w.actorStep(3.5, 0.5, 0);

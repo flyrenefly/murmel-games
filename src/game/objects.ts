@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne' };
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -88,6 +88,11 @@ const STEPS: [number, number, number][] = [
 ];
 /** st_boulder<dir>a: 3 frames à 120 ms (models-2d.lua); each cycle end decides (BoulderStone::animcb). */
 export const BOULDER_MS = 3 * 120;
+/** FlagItem colour: it_flag / it_flag_black 0, it_flag_white 1. */
+function flagColor(kind: string): number {
+  return kind === 'it_flag_white' ? 1 : 0;
+}
+
 /** server::BumperForce and the PingPong frames of st_actorimpulse_anim. */
 const BUMPER_FORCE = 200;
 const BUMPER_FRAMES = [0, 1, 2, 2, 1, 0];
@@ -202,6 +207,7 @@ export function objectClass(kind: string): ObjectClass | null {
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
   if (kind === 'it_ring' || kind === 'it_spoon') return 'tool';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
+  if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -257,6 +263,10 @@ export function splitTokens(v: string | undefined): string[] {
 
 export class ObjectWorld {
   readonly objects: GameObject[] = [];
+  /** player::InhibitPickup: while a mouse button (or the drop key) is held, the current player picks up nothing. */
+  inhibitPickup = false;
+  /** Respawn position set by a dropped flag, per marble colour (black 0, white 1). */
+  readonly flagRespawn: ({ x: number; y: number } | undefined)[] = [undefined, undefined];
   readonly events: ObjectEvent[] = [];
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
@@ -742,10 +752,12 @@ export class ObjectWorld {
         const radius = PICKUP_RADIUS[o.cls];
         const inv = this.inventories[this.ownerOf(marble)] ?? this.inventory;
         if (radius === undefined || o.gone || o.growing !== undefined || inv.length >= MAX_ITEMS) continue;
+        if (this.inhibitPickup && this.ownerOf(marble) === this.player) continue;
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
         this.unplace(o);
         inv.unshift(o.kind);
+        if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
         this.events.push({ type: 'sound', name: 'pickup' });
       }
     }
@@ -770,6 +782,7 @@ export class ObjectWorld {
     const kind = this.inventory.shift()!;
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
     if (o.cls === 'seed') this.startGrowing(o);
+    if (o.cls === 'flag') this.flagRespawn[flagColor(kind)] = { x: col + 0.5, y: row + 0.5 };
     return true;
   }
 

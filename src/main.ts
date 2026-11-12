@@ -105,8 +105,6 @@ let falling: number[] = [-1];
 let deathKind: ('fall' | 'shatter' | 'sink')[] = [];
 /** Per marble: where it respawns. */
 let startPos: { x: number; y: number }[] = [];
-/** Respawn here once instead of the start (BasicBall inplaceRespawn, it_spoon). */
-let respawnAt: ({ x: number; y: number } | undefined)[] = [];
 let startTime = 0;
 let playSeconds = 0;
 
@@ -206,7 +204,6 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   falling = physics.marbles.map(() => -1);
   deathKind = physics.marbles.map(() => 'fall' as const);
   startPos = physics.marbles.map((m) => ({ ...m.pos }));
-  respawnAt = [];
   btnSwap.hidden = physics.steerable < 2;
   startTime = 0;
   playSeconds = 0;
@@ -622,8 +619,7 @@ function frame(now: number): void {
       })();
       return -1;
     }
-    const at = respawnAt[i] ?? startPos[i];
-    respawnAt[i] = undefined;
+    const at = respawnPos(i);
     physics.respawn(at.x, at.y, i);
     return -1;
   });
@@ -710,6 +706,14 @@ btnSwap.addEventListener('click', (e) => {
   e.stopPropagation();
   swapMarble();
 });
+/**
+ * Actor::respawn: at the dropped flag of the marble's colour (centre of its cell, also for
+ * the spoon's inplaceRespawn), else at the start.
+ */
+function respawnPos(i: number): { x: number; y: number } {
+  const m = physics!.marbles[i];
+  return (!m.pearl && (m.color === 0 || m.color === 1) ? objects.flagRespawn[m.color] : undefined) ?? startPos[i];
+}
 /** player::ActivateFirstItem: drop the first item (a seed) where the current marble is. */
 function dropItem(): boolean {
   const ph = physics;
@@ -744,10 +748,7 @@ function dropItem(): boolean {
     if (objects.canDropAt(x, y)) objects.dropItem(x, y);
     updateItems();
     if (first === 'it_spoon') {
-      if (m.jump <= 0) {
-        respawnAt[i] = { x, y };
-        marbleDies(i, true);
-      }
+      if (m.jump <= 0) marbleDies(i, true);
     } else {
       const other = ph.marbles.findIndex((o, k) => k !== i && !o.pearl && o.color === 1 - m.color);
       if (other >= 0) {
@@ -759,7 +760,10 @@ function dropItem(): boolean {
         m.pos.x = m.prev.x = p.x;
         m.pos.y = m.prev.y = p.y;
         sfx.menu();
-      } else ph.respawn(startPos[i].x, startPos[i].y, i);
+      } else {
+        const at = respawnPos(i);
+        ph.respawn(at.x, at.y, i);
+      }
       objects.marbleGone(i);
     }
     return true;
@@ -820,7 +824,17 @@ btnDrop.addEventListener('click', (e) => {
   e.stopPropagation();
   dropItem();
 });
+// client.cc: player::InhibitPickup while the left or right mouse button is held (here also the
+// drop key and the drop button), so a dropped item is not picked up again at once.
+btnDrop.addEventListener('pointerdown', () => (objects.inhibitPickup = true));
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) btnDrop.addEventListener(ev, () => (objects.inhibitPickup = false));
+window.addEventListener('mouseup', () => (objects.inhibitPickup = false));
+window.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') objects.inhibitPickup = false;
+});
+window.addEventListener('blur', () => (objects.inhibitPickup = false));
 window.addEventListener('mousedown', (e) => {
+  if (e.button === 0 || e.button === 2) objects.inhibitPickup = true;
   // Enigma: a left click uses the first inventory item (seeds, then the yin-yang).
   if (e.button === 0 && mode === 'play' && input.locked) useItem();
   else if (e.button === 2 && mode === 'play') rotateItems();
@@ -850,6 +864,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'Space' && mode === 'play') {
     e.preventDefault();
+    objects.inhibitPickup = true;
     useItem();
     return;
   }
@@ -889,6 +904,8 @@ requestAnimationFrame((t) => {
   state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
   swap: swapMarble,
   drop: dropItem,
+  /** Test helper: hold or release the drop button (player::InhibitPickup). */
+  hold: (on: boolean) => (objects.inhibitPickup = on),
   luaError: () => lua?.lastError ?? null,
   /** Test helper: call a Lua function of the level like a callback. */
   luaCall: (fn: string, sender = '') => lua?.callback(fn, true, sender),

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-256 von 1322 Levels übernommen (15 Pakete).
+260 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -65,7 +65,6 @@
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_shogun_l | 32 | 0 |
-| Gegenstand it_flag_black | 32 | 3 |
 | Gegenstand it_sword | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
@@ -119,7 +118,6 @@
 | Stein st_portal_horse | 15 | 0 |
 | Gegenstand it_magnet_on | 15 | 2 |
 | Stein st_break_black | 15 | 0 |
-| Gegenstand it_flag_white | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 1 |
 | Stein st_plaster_breakable | 14 | 0 |

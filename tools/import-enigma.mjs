@@ -83,6 +83,7 @@ const OBJECTS = [
   [/^it_yinyang$/, ['it_yinyang']],
   [/^it_ring$/, ['it_ring']],
   [/^it_spoon$/, ['it_spoon']],
+  [/^it_flag(_black|_white)?$/, ['it_flag_black', 'it_flag_white']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
