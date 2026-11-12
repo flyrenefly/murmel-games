@@ -547,6 +547,34 @@ describe('ObjectWorld', () => {
     expect(w.actorimpulseVisible(w.objects[1])).toBe(true);
   });
 
+  it("meditation: every pearl resting 1 s in its own hollow finishes the level; essential hollows must be engaged", () => {
+    const w = world([
+      { x: 2, y: 1, k: "it_meditation_hollow" },
+      { x: 5, y: 1, k: "it_meditation_hollow" },
+      { x: 8, y: 1, k: "it_meditation_hollow", a: { essential: "1" } },
+    ]);
+    w.isPearl = (i) => i >= 1;
+    w.actorStep(2.5, 1.5, 0); // the marble is no meditatist
+    w.actorStep(2.6, 1.5, 1);
+    w.actorStep(5.5, 1.5, 2);
+    w.update(500);
+    w.actorStep(2.6, 1.5, 1);
+    w.actorStep(5.5, 1.5, 2);
+    expect(w.meditationCount().engaged).toBe(0); // not yet 1 s
+    w.update(600);
+    w.actorStep(2.6, 1.5, 1);
+    w.actorStep(5.5, 1.5, 2);
+    expect(w.meditationCount()).toEqual({ engaged: 2, essential: 1, essentialEngaged: 0 });
+    expect(w.meditationDone(2)).toBe(false); // the essential hollow is empty
+    w.actorStep(5.95, 1.5, 2); // 0.45 from the centre: left the hollow
+    w.actorStep(8.5, 1.5, 2);
+    w.update(1100);
+    w.actorStep(8.5, 1.5, 2);
+    expect(w.meditationDone(2)).toBe(true);
+    w.marbleGone(1); // pearl 1 jumps away
+    expect(w.meditationDone(2)).toBe(false);
+  });
+
   it("a dropped flag sets the respawn position of its colour, picking it up clears it", () => {
     const w = world([{ x: 3, y: 0, k: "it_flag_white" }, { x: 5, y: 0, k: "it_flag" }]);
     expect(w.flagRespawn).toEqual([undefined, undefined]); // placed flags do nothing (no on_drop)

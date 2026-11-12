@@ -163,7 +163,9 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
 
   if (startCells > 1) throw new LevelError(`${file.id}: mehr als ein Startpunkt`);
   if (!start) throw new LevelError(`${file.id}: kein Startpunkt '@'`);
-  if (signals.length === 0) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
+  // Meditation levels (Enigma ChangeMeditation): pearls and hollows instead of Oxyd stones
+  const meditation = (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k)) && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
+  if (signals.length === 0 && !meditation) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
 
   assignRandomSymbols(file.id, signals, random);
 

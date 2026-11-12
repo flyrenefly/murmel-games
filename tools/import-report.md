@@ -1,12 +1,12 @@
 # Enigma-Import
 
-270 von 1322 Levels übernommen (15 Pakete).
+275 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| keine Oxyd-Steine | 294 | 5 |
 | Stein st_laser | 225 | 3 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 6 |
+| Akteure: nicht genau eine schwarze Murmel | 198 | 62 |
+| keine Oxyd-Steine | 167 | 0 |
 | Lua-Rückruf | 163 | 1 |
 | Gegenstand it_sensor | 139 | 5 |
 | Lua: :drawMap | 117 | 1 |

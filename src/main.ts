@@ -176,6 +176,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   pendingRestart = null;
   // Each player has an inventory (player.cc); player 2 owns the white marble.
   objects.ownerOf = ownerOf;
+  objects.isPearl = (i) => physics?.marbles[i]?.pearl === true;
   if (enigmaRules()) {
     const lives = carryLives ?? (lv.world.ProvideExtralifes === 'false' ? 0 : 2);
     for (let k = 0; k < lives; k++) objects.inventories[0].push('it_extralife');
@@ -217,7 +218,7 @@ function styleLabel(): string {
 
 function updateHud(): void {
   hudTitle.textContent = `${levelIndex + 1}. ${level.title}`;
-  hudPairs.textContent = `Paare ${board.solvedPairs}/${board.totalPairs}`;
+  hudPairs.textContent = pairsText();
   hudFalls.textContent = falls ? `Abstürze ${falls}` : '';
   btnTheme.textContent = `Stil: ${styleLabel()}`;
 }
@@ -381,6 +382,13 @@ async function restart(): Promise<void> {
 function formatTime(secs: number): string {
   const s = Math.floor(secs);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Status: Oxyd pairs, or for meditation levels without Oxyd stones the engaged hollows. */
+function pairsText(): string {
+  if (board.totalPairs > 0) return `Paare ${board.solvedPairs}/${board.totalPairs}`;
+  const pearls = physics?.marbles.filter((m) => m.pearl).length ?? 0;
+  return `Perlen ${objects.meditationCount().engaged}/${pearls}`;
 }
 
 function onWin(): void {
@@ -591,6 +599,8 @@ function frame(now: number): void {
       for (const e of ph.enemies) objects.actorStep(e.pos.x, e.pos.y, -1);
       objects.update(PHYSICS_DT * 1000);
       handleObjectEvents(objects.events);
+      // ChangeMeditation → server::FinishLevel: all pearls rest in hollows
+      if (mode === 'play' && objects.meditationDone(ph.marbles.filter((m) => m.pearl).length)) onWin();
       ph.marbles.forEach((m, i) => {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
         if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y)) marbleDies(i, false);
@@ -654,7 +664,7 @@ function frame(now: number): void {
   for (const r of physics?.rubbers ?? []) bands.push(...lerp(r.a1), ...(r.a2 ? lerp(r.a2) : [r.end.x, r.end.y]));
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
-    classic.status.right = `Paare ${board.solvedPairs}/${board.totalPairs}${falls ? ` · Abstürze ${falls}` : ''}`;
+    classic.status.right = `${pairsText()}${falls ? ` · Abstürze ${falls}` : ''}`;
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump);
     classic.updateActors(actors);
     classic.updateRubbers(bands);
@@ -922,5 +932,5 @@ requestAnimationFrame((t) => {
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
   cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),
   /** Test helper: put the marble at x/y (tile units). */
-  teleport: (x: number, y: number) => physics?.respawn(x, y),
+  teleport: (x: number, y: number, i?: number) => physics?.respawn(x, y, i),
 };

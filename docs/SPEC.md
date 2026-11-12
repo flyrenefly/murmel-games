@@ -161,7 +161,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Hügel (bump 1, hill 2, volcano 3) stoßen ab: Kraft 90 · (Akteur − Feldmitte) im Radius
   0,5 (dent/bump 0,3), der Vulkan hat innen (< 0,3) einen Krater. Gilt für alle Akteure.
   Nachrichten flip, signal, toggle, shovel; ein daraufgeschobener Stein schaufelt sie eine
-  Stufe flacher. Perlen und das Meditieren gibt es noch nicht.
+  Stufe flacher. **Meditieren** (`Meditation::actor_hit`, `ChangeMeditation`): Eine Perle
+  (ac_pearl_*), die näher als 0,24 an der Mitte liegt (bei Mulden/Kalderen und Hügeln/Vulkanen
+  0,4), belegt die Mulde; nach 1 s gilt sie als eingenommen. Sie verlässt sie beim Wegrollen,
+  Springen, Sterben oder Versetzen. Sind alle Perlen eingenommen und alle Mulden mit
+  `essential=1` belegt, ist das Level gelöst – auch in Levels mit Oxyd-Steinen. Levels ohne
+  Oxyd-Steine sind erlaubt, wenn sie Perlen und Mulden haben; die Statuszeile zeigt dann
+  „Perlen eingenommen/gesamt“.
 - **it_landmine** (`Landmine.cc`): explodiert, wenn ein Akteur näher als 0,3 an die Mitte
   kommt oder ein Stein daraufgeschoben wird (Klang explosion2). Die Explosion (50 ms)
   zerschmettert Murmeln im Feld und hinterlässt eine Mulde (it_meditation_hollow), außer

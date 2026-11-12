@@ -157,6 +157,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Meditation: the pearl resting in it and since when (-1 = engaged after 1 s). */
+  meditatist?: { marble: number; since: number };
   /** ActorImpulseStone: start of the PULSING animation (idle when unset or over). */
   pulse?: number;
   /** Vortex: phase, its start, the swallowed marble, destination index and target vortex. */
@@ -280,6 +282,8 @@ export class ObjectWorld {
   player = 0;
   /** Owner of a marble (actor owner attribute): items it picks up go to that inventory. */
   ownerOf: (marble: number) => number = () => 0;
+  /** Marble i is a pearl (ac_pearl_*): a meditatist for the meditation hollows. */
+  isPearl: (marble: number) => boolean = () => false;
   /** The current player's inventory. */
   get inventory(): string[] {
     return this.inventories[this.player];
@@ -737,6 +741,22 @@ export class ObjectWorld {
           const ny = Math.min(Math.max(y, r), r + 1);
           if (Math.hypot(x - nx, y - ny) < radius + 0.01) this.events.push({ type: 'shatter', marble });
         }
+      // Meditation::actor_hit: a pearl resting near the centre for 1 s engages the hollow
+      if (this.isPearl(marble)) {
+        for (const o of this.objects) {
+          if (o.cls !== 'meditation' || o.gone) continue;
+          const here = o.col === Math.floor(x) && o.row === Math.floor(y);
+          const d = Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5));
+          // Meditation::isMeditating: closer than 0.24, or 0.4 for hollows/calderas and hills/volcanos
+          const meditating = here && (d < 0.24 || ((o.state <= -2 || o.state >= 2) && d < 0.4));
+          if (o.meditatist?.marble === marble) {
+            if (!meditating) o.meditatist = undefined; // left the hollow (actor_leave)
+            else if (o.meditatist.since !== -1 && this.now - o.meditatist.since >= 1000) o.meditatist = { marble, since: -1 };
+          } else if (!o.meditatist && meditating && !this.objects.some((p) => p.meditatist?.marble === marble)) {
+            o.meditatist = { marble, since: this.now };
+          }
+        }
+      }
       // Vortex::actor_hit: an open vortex swallows a marble closer than 0.25; autoopen opens it
       for (const o of this.at(Math.floor(x), Math.floor(y))) {
         if (o.cls !== 'vortex' || o.gone) continue;
@@ -812,6 +832,31 @@ export class ObjectWorld {
   private startGrowing(o: GameObject): void {
     if (o.growing !== undefined || o.gone) return;
     o.growing = this.now;
+  }
+
+  // ---------- meditation (Meditation.cc, ChangeMeditation) ----------
+
+  /** Engaged hollows (a pearl rested there 1 s) and how many essential ones exist. */
+  meditationCount(): { engaged: number; essential: number; essentialEngaged: number } {
+    let engaged = 0;
+    let essential = 0;
+    let essentialEngaged = 0;
+    for (const o of this.objects) {
+      if (o.cls !== 'meditation' || o.gone) continue;
+      const on = o.meditatist?.since === -1;
+      const ess = o.attrs.essential === '1';
+      if (on) engaged++;
+      if (ess) essential++;
+      if (ess && on) essentialEngaged++;
+    }
+    return { engaged, essential, essentialEngaged };
+  }
+
+  /** ChangeMeditation: every pearl engaged in a hollow and every essential hollow engaged. */
+  meditationDone(pearls: number): boolean {
+    if (pearls <= 0) return false;
+    const c = this.meditationCount();
+    return c.essential === c.essentialEngaged && c.engaged === pearls;
   }
 
   // ---------- actor impulse stones (ActorImpulseStone.cc) ----------
@@ -1238,6 +1283,8 @@ export class ObjectWorld {
 
   /** Marble i is gone (fell, shattered): triggers under it are released. */
   marbleGone(i = 0): void {
+    // flying, dying or warped: a pearl leaves its hollow
+    for (const o of this.objects) if (o.meditatist?.marble === i) o.meditatist = undefined;
     if (!this.slot(i).init) return;
     this.marbleAt(-1, -1, i);
   }
