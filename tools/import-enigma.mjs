@@ -73,6 +73,8 @@ const OBJECTS = [
   [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
   [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
   [/^it_seed(_wood)?$/, ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed']],
+  [/^it_seed_hay$/, ['it_seed', 'st_box_hay', 'sh_round', 'fl_hay']],
+  [/^it_seed_greenbrown$/, ['it_seed', 'st_greenbrown', 'sh_round']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow|_movable)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],

@@ -444,6 +444,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Schwert in der Hand nimmt der Ritter einen Schaden (Bild st_knight 1–5), nach vier ist er passierbar
   und lichtdurchlässig (Text „All right, we'll call it a draw“). Das Schwert ist sonst ein gewöhnlicher
   Gegenstand (Licht verwandelt es in Enigma in einen Hammer – fehlt).
+- **it_seed_hay / it_seed_greenbrown** (`SeedItem.cc`): wachsen wie Holzsamen zu einer Heukiste bzw.
+  einem festen Grünbraunstein (Wachstumsbilder 4, 3, 2 ihres Bogens à 130 ms). Heukisten werden jetzt
+  mit dem ersten Bild ihres Bogens gezeichnet (vorher der ganze Bogen). it_seed_volcano fehlt.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

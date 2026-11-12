@@ -1,6 +1,6 @@
 # Enigma-Import
 
-642 von 1322 Levels übernommen (17 Pakete).
+649 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -30,7 +30,7 @@
 | Lua: SendMessage() | 32 | 0 |
 | Gegenstand it_strip_ew | 31 | 1 |
 | Lua: oxyd() | 30 | 0 |
-| Gegenstand it_death | 29 | 0 |
+| Gegenstand it_death | 29 | 1 |
 | Gegenstand it_coffee_drop | 28 | 4 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
@@ -41,7 +41,7 @@
 | Gegenstand it_umbrella | 24 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
-| Gegenstand it_squashed | 24 | 1 |
+| Gegenstand it_squashed | 24 | 2 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_ghost_break | 23 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
@@ -56,10 +56,10 @@
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
-| Stein st_flat_breakable | 17 | 1 |
+| Stein st_flat_breakable | 17 | 3 |
 | Lua: :add | 16 | 2 |
 | Lua: :is | 16 | 2 |
-| Gegenstand it_seed_volcano | 16 | 1 |
+| Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Stein st_polarswitch | 15 | 1 |
 | Stein st_barrier | 15 | 2 |
@@ -70,12 +70,11 @@
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
-| Gegenstand it_seed_hay | 14 | 6 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_bag | 13 | 1 |
+| Gegenstand it_bag | 13 | 2 |
 | Gegenstand it_burnable_oil | 13 | 2 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
@@ -99,7 +98,6 @@
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
-| Gegenstand it_seed_greenbrown | 8 | 1 |
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 1 |
@@ -287,7 +285,6 @@
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 0 |
-| Lua: it_seed_greenbrown | 1 | 0 |
 | Lua: it_pipe | 1 | 0 |
 | Lua: it_strip | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |

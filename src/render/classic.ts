@@ -167,6 +167,8 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_oneway')) return ['st_oneway'];
   if (kind.startsWith('it_wormhole')) return ['it_wormhole'];
   if (kind === 'it_seed' || kind === 'it_seed_wood') return ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed'];
+  if (kind === 'it_seed_hay') return ['it_seed', 'st_box_hay', 'sh_round', 'fl_hay'];
+  if (kind === 'it_seed_greenbrown') return ['it_seed', 'st_greenbrown', 'sh_round'];
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion'];
@@ -809,8 +811,13 @@ export class ClassicView {
       }
       const age = world.growAge(o);
       if (pass === 'shadow') this.image('sh_round', px, py);
-      else if (age >= 0) this.frame('st_box_wood_growing', Math.min(2, Math.floor(age / 130)), px, py);
-      else if (o.kind.startsWith('st_box_wood')) this.frame('st_box_wood', o.kind.endsWith('_v') ? 1 : 0, px, py);
+      else if (age >= 0) {
+        // hay box and greenbrown: frames 4, 3, 2 of their sheet (ReverseFrames), 130 ms each
+        const f = Math.min(2, Math.floor(age / 130));
+        if (o.kind === 'st_box_hay' || o.kind === 'st_greenbrown') this.frame(o.kind, 3 - f, px, py);
+        else this.frame('st_box_wood_growing', f, px, py);
+      } else if (o.kind.startsWith('st_box_wood')) this.frame('st_box_wood', o.kind.endsWith('_v') ? 1 : 0, px, py);
+      else if (o.kind === 'st_box_hay' || o.kind === 'st_greenbrown') this.frame(o.kind, 0, px, py);
       else this.image(o.kind, px, py);
       return;
     }

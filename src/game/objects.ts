@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -358,7 +358,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind in MEDITATION_STATE) return 'meditation';
   if (kind === 'it_landmine') return 'landmine';
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
-  if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
+  if (kind === 'it_seed' || kind === 'it_seed_wood' || kind === 'it_seed_hay' || kind === 'it_seed_greenbrown') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
@@ -2769,7 +2769,9 @@ export class ObjectWorld {
             this.unplace(s);
           }
         }
-        const box = this.add(this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v', 'box', o.col, o.row);
+        // SeedItem::animcb: wood → st_box_wood, hay → st_box_hay, greenbrown → st_greenbrown (fixed)
+        const grown = o.kind === 'it_seed_hay' ? 'st_box_hay' : o.kind === 'it_seed_greenbrown' ? 'st_greenbrown' : this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v';
+        const box = this.add(grown, 'box', o.col, o.row);
         box.growing = this.now;
         this.shatterAt(o.col, o.row);
         this.updateTriggers(o.col, o.row);
@@ -2777,6 +2779,12 @@ export class ObjectWorld {
       // BoxStone::animcb: grown; on abyss, water or swamp it becomes a bridge.
       if (o.cls === 'box' && !o.gone && o.growing !== undefined && this.now - o.growing >= BOX_GROW_MS) {
         o.growing = undefined;
+        if (o.kind === 'st_greenbrown' && this.env.setStaticStone) {
+          // GreenBrownStone: a plain fixed stone
+          this.remove(o);
+          this.env.setStaticStone(o.col, o.row, 'st_greenbrown');
+          continue;
+        }
         if (SINK_FLOORS.has(this.env.floorAt(o.col, o.row))) {
           o.gone = true;
           this.unplace(o);
