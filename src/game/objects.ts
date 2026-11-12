@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -251,6 +251,8 @@ export type ObjectEvent =
   | { type: 'text'; text: string }
   /** An inventory changed outside a pick-up (key switch). */
   | { type: 'items' }
+  /** PullStone: actors in the stone's new cell are warped into its old cell. */
+  | { type: 'pullWarp'; fromCol: number; fromRow: number; toCol: number; toRow: number }
   /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
   | { type: 'laserhit'; marble: number }
   /** marble: index of the marble that shatters. */
@@ -300,6 +302,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'fl_scales') return 'scales';
   if (kind === 'fl_bridge') return 'bridge';
   if (kind === 'ot_counter') return 'counter';
+  if (kind === 'st_pull') return 'pull';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -458,7 +461,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -516,6 +519,12 @@ export class ObjectWorld {
         // Stone::actor_hit → impulse in the push direction (SwapStone::on_impulse)
         const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
         if (face && vn < -PUSH_SPEED) this.swapStone(o, -nx, -ny);
+        return;
+      }
+      if (o.cls === 'pull') {
+        // PullStone::on_impulse: moves against the impulse, towards the marble
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED) this.swapStone(o, nx, ny, true);
         return;
       }
       if (o.cls === 'box') {
@@ -787,6 +796,7 @@ export class ObjectWorld {
       if (o.cls === 'impulse') this.startImpulse(o, d);
       else if (o.cls === 'box') this.push(o, dx, dy);
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
+      else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
     }
@@ -977,7 +987,7 @@ export class ObjectWorld {
   }
 
   private transparentObject(o: GameObject): boolean {
-    if (o.cls === 'passage' || o.cls === 'grate') return true;
+    if (o.cls === 'passage' || o.cls === 'grate' || o.cls === 'pull') return true;
     if (o.cls === 'door') return o.state === 1 && !o.moving;
     if (o.cls === 'puzzle') return isHollow(o);
     if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
@@ -1569,16 +1579,23 @@ export class ObjectWorld {
    * without a stone there, with a moving one or (deviation) with an Oxyd stone, whose place is
    * fixed in Murmel.
    */
-  private swapStone(o: GameObject, dx: number, dy: number): boolean {
+  /**
+   * SwapStone::on_impulse: exchange places with the stone in direction dx/dy. pull (PullStone):
+   * may also move onto a free floor, and actors in the destination are put into the old cell.
+   */
+  private swapStone(o: GameObject, dx: number, dy: number, pull = false): boolean {
     if (o.gone || (o.swapped && this.now - o.swapped.since < SWAP_MS)) return false;
     const c = o.col + dx;
     const r = o.row + dy;
+    if (c < 0 || r < 0 || c >= this.width) return false;
     const other = this.at(c, r).find((x) => !x.gone && !ITEM_CLASSES.has(x.cls));
     const plain = other ? null : (this.env.staticStone?.(c, r) ?? null);
     if (other) {
       if (other.swapped && this.now - other.swapped.since < SWAP_MS) return false;
       if (other.cls === 'puzzle' && other.puzzle) return false; // PuzzleStone::is_removable
       if (other.cls === 'boulder' && other.boulder?.phase === 'falling') return false;
+    } else if (pull && !plain) {
+      if (this.env.stoneAt(c, r)) return false; // outside the level
     } else if (!plain || plain === 'st_oxyd' || !this.env.setStaticStone) return false;
     const [oc, or] = [o.col, o.row];
     this.unplace(o);
@@ -1587,10 +1604,11 @@ export class ObjectWorld {
       other.col = oc;
       other.row = or;
       this.place(other);
-    } else {
+    } else if (plain) {
       this.env.setStaticStone!(c, r, null);
       this.env.setStaticStone!(oc, or, plain);
     }
+    if (pull) this.events.push({ type: 'pullWarp', fromCol: c, fromRow: r, toCol: oc, toRow: or });
     o.col = c;
     o.row = r;
     this.place(o);

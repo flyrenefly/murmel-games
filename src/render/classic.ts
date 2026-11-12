@@ -189,6 +189,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
   if (kind === 'st_swap') return ['st_swap', 'sh_round'];
+  if (kind === 'st_pull') return ['st_pull', 'sh_rawglass', 'sh_pull'];
   if (kind === 'st_fourswitch') return ['st_fourswitch', 'sh_round'];
   if (kind.startsWith('st_actorimpulse')) return ['st_actorimpulse', 'sh_actorimpulse'];
   if (kind.startsWith('st_blur')) return ['st_blur_straight', 'st_blur_cross', 'sh_round', ...PASSAGE_IMAGES];
@@ -620,6 +621,15 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'pull') {
+      // st_pull: sh_rawglass idle, sh_pull1..4 while moving n s e w
+      const f = world.swapFrame(o);
+      if (pass === 'shadow') {
+        if (f === 0) this.image('sh_rawglass', px, py);
+        else shadowFrame('sh_pull', f - 1, true);
+      } else this.frame('st_pull', f, px, py);
       return;
     }
     if (o.cls === 'swap') {

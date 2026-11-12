@@ -293,6 +293,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   dahinter den Platz tauschen – Objektsteine wie Mauern der Karte; ohne Stein dahinter
   passiert nichts. 0,1 s Richtungsbild (st_swap_n/s/e/w). Abweichung: Mit Oxyd-Steinen
   tauscht er in Murmel nicht (deren Platz ist dort fest mit der Paarlogik verbunden).
+- **st_pull** (`PullStone.cc`): wie st_swap, aber entgegen dem Stoß – er kommt zur Kugel, auch auf
+  freien Boden (nicht aus dem Level). Kugeln im Zielfeld werden ins alte Feld versetzt (auf
+  dessen Ränder 0,01–0,99 begrenzt, ohne Tempo). Lichtdurchlässig. Bilder st_pull, Schatten
+  sh_rawglass bzw. sh_pull1–4 während der 0,1 s Bewegung.
 - **st_fourswitch** (`FourSwitch.cc`): Jeder Treffer dreht ihn eine Richtung weiter (im
   Uhrzeigersinn, `counterclock` umgekehrt); auch signal (ungerader Wert, API 1 jeder),
   toggle und ein fallender Felsbrocken-Auslöser. Mit `target_0`…`target_3` erhält die alte

@@ -515,7 +515,15 @@ function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'items') updateItems();
-    else if (e.type === 'laserhit') {
+    else if (e.type === 'pullWarp') {
+      // PullStone::on_impulse: WarpActor into the old cell (clamped into it), without velocity
+      physics?.marbles.forEach((m, i) => {
+        if (!m.active || Math.floor(m.pos.x) !== e.fromCol || Math.floor(m.pos.y) !== e.fromRow) return;
+        const x = Math.min(e.toCol + 0.99, Math.max(e.toCol + 0.01, m.pos.x));
+        const y = Math.min(e.toRow + 0.99, Math.max(e.toRow + 0.01, m.pos.y));
+        physics!.respawn(x, y, i);
+      });
+    } else if (e.type === 'laserhit') {
       // BasicBall "_laserhit": shatters (not while jumping, falling or in a vortex)
       const m = physics?.marbles[e.marble];
       if (m && m.active && m.jump <= 0 && falling[e.marble] < 0) marbleDies(e.marble, true);

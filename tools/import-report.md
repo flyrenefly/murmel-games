@@ -1,6 +1,6 @@
 # Enigma-Import
 
-447 von 1322 Levels übernommen (17 Pakete).
+456 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -25,11 +25,10 @@
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
-| Stein st_rotator_ccw | 52 | 2 |
+| Stein st_rotator_ccw | 52 | 3 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 5 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_pull | 48 | 8 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -58,7 +57,7 @@
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
-| Gegenstand it_coffee_drop | 28 | 1 |
+| Gegenstand it_coffee_drop | 28 | 2 |
 | Stein st_scissors | 28 | 1 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
@@ -78,7 +77,7 @@
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_stoneimpulse_movable | 20 | 1 |
+| Stein st_stoneimpulse_movable | 20 | 2 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
@@ -148,7 +147,7 @@
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 2 |
 | Stein st_plaster_movable | 8 | 0 |
-| Stein st_box_rock (verbunden) | 8 | 1 |
+| Stein st_box_rock (verbunden) | 8 | 2 |
 | Stein st_dispenser_extralife | 8 | 0 |
 | Lua: :orientate | 7 | 2 |
 | Aktion openclose | 7 | 0 |
@@ -310,7 +309,6 @@
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | Lua: it_burnable | 1 | 0 |
-| Lua: st_pull | 1 | 0 |
 | Stein st_oxyd_b | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 0 |

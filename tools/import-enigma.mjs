@@ -96,6 +96,7 @@ const OBJECTS = [
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
+  [/^st_pull$/, ['st_pull', 'sh_rawglass', 'sh_pull']],
   [/^st_fourswitch$/, ['st_fourswitch', 'sh_round']],
   [/^st_chess(_black|_white)?$/, ['st_chess_black', 'st_chess_white', 'sh_round']],
   [/^st_actorimpulse(_invisible)?$/, ['st_actorimpulse', 'sh_actorimpulse']],

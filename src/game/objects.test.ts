@@ -535,6 +535,19 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES); // back to 1: close
   });
 
+  it("a pull stone moves towards the marble that hits it, also onto free floor, and warps it back", () => {
+    const w = world([{ x: 5, y: 1, k: "st_pull" }, { x: 2, y: 1, k: "st_box" }]);
+    w.hit(5, 1, 0, -1, 0, -6); // marble west of it: the stone comes west
+    expect([w.objects[0].col, w.objects[0].row]).toEqual([4, 1]);
+    expect(w.events).toContainEqual({ type: "pullWarp", fromCol: 4, fromRow: 1, toCol: 5, toRow: 1 });
+    expect(w.swapFrame(w.objects[0])).toBe(4); // st_pull_w
+    w.update(150);
+    w.hit(4, 1, 0, -1, 0, -6);
+    w.update(150);
+    w.hit(3, 1, 0, -1, 0, -6); // the box west of it: they swap
+    expect([w.objects[0].col, w.objects[1].col]).toEqual([2, 3]);
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing
