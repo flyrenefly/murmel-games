@@ -271,7 +271,9 @@ export class ClassicView {
     this.level = level;
     this.objects = objects;
     this.set = set;
-    this.stones = states.map((s) => ({ state: s, prev: s, since: -1e9 }));
+    // OxydStone "peepall" (level init): flavor e shows the colours of all closed stones but fakes
+    const peep = level.world?._PeepAll === 'true';
+    this.stones = states.map((s, i) => ({ state: s, prev: s, since: -1e9, opened: peep && level.signals[i]?.symbol !== '-' }));
     this.img = null;
     const img = await loadImages(set, [...BASE_IMAGES, ...levelImages(level)]);
     if (this.level !== level || this.set !== set) return; // superseded meanwhile

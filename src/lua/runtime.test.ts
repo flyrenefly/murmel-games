@@ -64,6 +64,14 @@ end`;
     expect(w.force()).toBe("80,40");
   });
 
+  it('obj:is matches the kind and its super kinds; obj:kind returns it', async () => {
+    const w = fakeHost([{ ref: 'a', l: 'st', x: 2, y: 2, a: { name: 'o', kind: 'st_oneway_black' } }, { ref: 's', l: 'it', x: 1, y: 1, a: {} }]);
+    const lua = await startLua(`function f() if no["o"]:is("st_oneway") and no["o"]:is("st") and not no["o"]:is("st_one") and no["o"]:kind() == "st_oneway_black" then no["o"]:toggle() end end`, w.host);
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    expect(w.sent).toEqual(['a toggle null']);
+  });
+
   it('group:nearest picks the closest member, ties go south, then east', async () => {
     const w = fakeHost([
       { ref: 'a', l: 'st', x: 2, y: 2, a: { name: 'd#1' } },

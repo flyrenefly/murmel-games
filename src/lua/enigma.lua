@@ -205,7 +205,21 @@ for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "sig
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end
+-- OxydStone "peepall": in init mode a world flag the renderer reads (flavor e shows all colours)
+function methods.peepall(self)
+  if INIT then M.setworld("_PeepAll", "true") else return send(self, "peepall") end
+end
 function methods.exists(self) return self._ref ~= nil and M.exists(self._ref) end
+-- Object:kind() and Object:is(kind) (KindDescriptor::isKind: the kind or a super kind, here by prefix)
+function methods.kind(self)
+  if not self._ref then return nil end
+  return M.get(self._ref, "kind")
+end
+function methods.is(self, match)
+  local k = methods.kind(self)
+  if k == nil or type(match) ~= "string" then return false end
+  return k == match or k:sub(1, #match + 1) == match .. "_"
+end
 function methods.kill(self)
   if INIT or not self._ref then return end
   M.kill(self._ref)
@@ -495,6 +509,9 @@ for _, m in ipairs({"shuffleOxyd", "drawMap", "drawRect", "drawBorder", "world",
     if not INIT then unsupported("wo:" .. m) end
   end
 end
+
+-- api2init.lua: random = math.random
+random = math.random
 
 wo = setmetatable({}, {
   __index = function(_, k)

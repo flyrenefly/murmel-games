@@ -1,15 +1,15 @@
 # Enigma-Import
 
-699 von 1322 Levels übernommen (17 Pakete).
+703 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 119 | 2 |
+| Lua: :drawMap | 119 | 3 |
 | Lua-Rückruf | 117 | 3 |
 | keine Oxyd-Steine | 111 | 0 |
-| Lua-Init | 110 | 3 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
+| Lua-Init | 102 | 2 |
 | Lua: API 1 | 69 | 1 |
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
@@ -32,10 +32,10 @@
 | Gegenstand it_glasses | 27 | 2 |
 | Gegenstand it_cross | 26 | 4 |
 | Gegenstand it_pipe_sw | 24 | 0 |
-| Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 2 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_ghost_break | 23 | 0 |
+| Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Stein st_magic_brick | 20 | 4 |
@@ -49,10 +49,9 @@
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 5 |
 | Lua: :add | 16 | 3 |
-| Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
-| Stein st_polarswitch | 15 | 2 |
+| Stein st_polarswitch | 15 | 4 |
 | Stein st_barrier | 15 | 4 |
 | Stein st_plaster_breakable | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 4 |
@@ -79,10 +78,10 @@
 | Gegenstand it_drop | 10 | 1 |
 | Stein st_spitter | 9 | 1 |
 | Flut | 9 | 4 |
-| Lua-Init (Weltwert) | 9 | 1 |
 | Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
+| Lua-Init (Weltwert) | 8 | 1 |
 | Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 1 |
 | Lua: :orientate | 7 | 2 |
@@ -101,7 +100,6 @@
 | Stein st_disco_dark | 6 | 0 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
-| Lua: :kind | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
@@ -151,7 +149,7 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
-| Lua: :peepall | 2 | 0 |
+| Lua: :peepall | 2 | 1 |
 | Lua: it_pencil | 2 | 0 |
 | Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |

@@ -618,7 +618,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // World attributes set by the level script (wo["GlobalForce"] …), also without callbacks.
   const world = {};
   if (lua) {
-    for (const k of [...RUNTIME_WORLD, ...LIFE_WORLD]) if (lua.world[k] !== undefined) world[k] = lua.world[k];
+    for (const k of [...RUNTIME_WORLD, ...LIFE_WORLD, '_PeepAll']) if (lua.world[k] !== undefined) world[k] = lua.world[k];
     if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k))) reject('Lua-Init (Weltwert)');
     // Life rules of levels whose init the shim cannot run (API 1: enigma.ConserveLevel = FALSE)
     if (lua.error) {
@@ -631,6 +631,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const kinds = {};
   if (needsLua) {
     if (lua.error) reject('Lua-Init');
+    if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns)) reject(`Lua: ${p}`);
     for (const k of runtimeKinds(lua.code)) {
       const v = runtimeKind(k);

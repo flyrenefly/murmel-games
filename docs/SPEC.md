@@ -527,6 +527,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Ungerade Zahl Oxyd-Steine** (`OxydStone::initColors`): Zufallssteine ("?") ergänzen zuerst feste
   Farben ohne Partner, dann paarweise freie Farben; ein übriger wird ein Schein-Oxyd (FAKE): Er geht
   nie auf, schließt einen einzeln offenen Stein und zählt nicht zu den Paaren.
+- **Lua: random, obj:is, obj:kind, peepall** (api2init.lua, KindDescriptor::isKind, OxydStone):
+  `random` = `math.random`; `is` prüft die Art oder eine Oberart (hier per Präfix: st_oneway passt auf
+  st_oneway_black); `peepall` im Levelstart zeigt bei Oxyd-Sorte e die Farben aller Steine außer Schein-Oxyden.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
