@@ -1,6 +1,6 @@
 # Enigma-Import
 
-128 von 1322 Levels übernommen (14 Pakete).
+133 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -122,7 +122,6 @@
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 0 |
 | Boden fl_slope_tw | 23 | 0 |
-| Puzzle hohl | 23 | 5 |
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Gegenstand it_spring_drop | 22 | 0 |
@@ -193,7 +192,7 @@
 | Lua: :add | 11 | 0 |
 | ungerade Zahl Oxyd-Steine | 11 | 1 |
 | Boden fl_slope | 11 | 0 |
-| Gegenstand it_crack_s | 11 | 0 |
+| Gegenstand it_crack_s | 11 | 1 |
 | Gegenstand it_burnable_fireproof | 11 | 1 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
@@ -245,7 +244,7 @@
 | Lua: :kind | 5 | 0 |
 | Lua: :can_go_south | 5 | 0 |
 | Lua: :can_go_east | 5 | 0 |
-| Lua: :orientate | 5 | 0 |
+| Lua: :orientate | 5 | 1 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_plaster_hollow | 5 | 0 |
 | Stein st_jamb_black | 5 | 0 |
@@ -279,6 +278,7 @@
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 0 |
+| Stein st_metal_hollow | 3 | 0 |
 | Stein fl_bridge_bn | 3 | 0 |
 | Lua: st_fourswitch | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
@@ -294,8 +294,8 @@
 | Lua: it_cross | 3 | 0 |
 | Boden mit Kraft (fl_space) | 3 | 0 |
 | Gegenstand it_strip_s | 3 | 0 |
-| Gegenstand it_strip_nesw | 3 | 0 |
 | Gegenstand it_strip_new | 3 | 0 |
+| Gegenstand it_strip_nesw | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
@@ -312,7 +312,7 @@
 | Lua: fl_slope_te | 2 | 0 |
 | Lua: :newMap | 2 | 0 |
 | Lua: :replace | 2 | 0 |
-| Stein st_metal_hollow | 2 | 0 |
+| Puzzle hohl (alter Export) | 2 | 0 |
 | Lua: st_invisible | 2 | 0 |
 | Stein st_volcano_active | 2 | 1 |
 | Lua: fl_slope_pe | 2 | 0 |
@@ -421,7 +421,6 @@
 | Lua: it_strip_ns | 1 | 0 |
 | Lua: floor() | 1 | 0 |
 | Lua: oxyd_shuffle() | 1 | 0 |
-| Stein st_darkgray_hollow | 1 | 0 |
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |

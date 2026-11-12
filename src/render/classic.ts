@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, EAST, type GameObject, meditationImage, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
+import { doorFlavor, EAST, type GameObject, isHollow, meditationImage, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -143,7 +143,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_seed' || kind === 'it_seed_wood') return ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed'];
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
-  if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion'];
+  if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion'];
   if (kind === 'it_magicwand') return ['it_magicwand'];
   if (kind.startsWith('st_boulder')) return ['st_boulder', 'st_boulder_fall', 'sh_round'];
   if (MOVABLE_STONE.test(kind)) {
@@ -443,13 +443,14 @@ export class ClassicView {
         if (pass === 'stone') this.image('it_explosion', px, py);
         return;
       }
+      const hollow = isHollow(o);
       if (pass === 'shadow') {
-        this.image('sh_solid', px, py);
+        this.image(hollow ? 'sh_puzzle_hollow' : 'sh_solid', px, py);
         return;
       }
-      // st_puzzle_<colour>.png: 4×4 sheet, column-major by connection bits (models-2d.lua).
+      // st_puzzle_<colour>[_hollow].png: 4×4 sheet, column-major by connection bits (models-2d.lua).
       const c = Number(o.attrs.$connections) || 0;
-      const im = this.img![o.attrs.color === '3' ? 'st_puzzle_yellow' : 'st_puzzle_blue'];
+      const im = this.img![`${o.attrs.color === '3' ? 'st_puzzle_yellow' : 'st_puzzle_blue'}${hollow ? '_hollow' : ''}`];
       if (im) this.ctx.drawImage(im, Math.floor(c / 4) * 32, (c % 4) * 32, 32, 32, px, py, 32, 32);
       return;
     }

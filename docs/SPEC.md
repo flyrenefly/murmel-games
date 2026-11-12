@@ -195,6 +195,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   blaue Puzzlesteine explodieren zuerst als Cluster, sonst verschieben sie sich, sonst
   rotiert die Reihe. Rechtsklick, Tab oder „Drehen“ rotiert das Inventar
   (`Inventory::rotate_left`). Die Leiste zeigt „Hand: …“ und den Rest.
+- **Hohle Puzzlesteine** (`PuzzleStone.cc`, OBJBIT_HOLLOW): Die Murmel rollt hindurch, ein
+  Treffer bewirkt nichts, beim Verschieben zerdrücken sie keine Murmel; mit ihrem Cluster
+  bewegen, rotieren und explodieren sie wie andere. Bilder `st_puzzle_*_hollow`, Schatten
+  `sh_puzzle_hollow`. Der Export (enigma-web 0d6063b4, Lauf 43209170049) schreibt dafür
+  `$hollow` (das Flag steht in Enigma nicht in der Attributliste). Hinweis: Jeder Export hält
+  Enigmas Zufall eines Ladevorgangs fest (Oxyd-Farben, Zufallsstarts, gemischte Puzzles); ein
+  neuer Export ändert diese Varianten.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

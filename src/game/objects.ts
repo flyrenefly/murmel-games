@@ -191,6 +191,9 @@ export function movableLook(kind: string): { image: string; shadow: string } | n
   return { image, shadow: /glass$/.test(image) ? 'sh_rawglass' : 'sh_solid' };
 }
 
+/** A hollow puzzle stone (OBJBIT_HOLLOW, exported as $hollow): the marble passes through it. */
+export const isHollow = (o: GameObject): boolean => o.attrs.$hollow === 'true';
+
 /** Messages the objects understand (others need Lua or unsupported objects). */
 export const SUPPORTED_ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'grow']);
 
@@ -291,7 +294,8 @@ export class ObjectWorld {
       if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PuzzleStone::collision_response: exploding stones let the marble pass.
-      if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding') return ALL_FACES;
+      // PuzzleStone::collision_response: hollow or exploding stones let the marble pass.
+      if (o.cls === 'puzzle' && !o.gone && o.puzzle !== 'exploding' && !isHollow(o)) return ALL_FACES;
       // StoneImpulse::collision_response: a hollow one only blocks while it is active.
       if (o.cls === 'impulse' && (o.kind !== 'st_stoneimpulse_hollow' || o.impulse)) return ALL_FACES;
     }
@@ -444,6 +448,7 @@ export class ObjectWorld {
   }
 
   private hitPuzzle(o: GameObject, nx: number, ny: number, vn: number): void {
+    if (isHollow(o)) return; // PuzzleStone::actor_hit: a hollow stone ignores hits
     if (o.puzzle) return; // not idle
     const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
     if (!face) return; // contact_face is NODIR: neither rotation nor move
@@ -531,7 +536,7 @@ export class ObjectWorld {
       p.col += dx;
       p.row += dy;
       this.place(p);
-      this.shatterAt(p.col, p.row);
+      if (!isHollow(p)) this.shatterAt(p.col, p.row); // PuzzleStone::on_move
       this.stoneHitsItems(p.col, p.row);
     }
     this.events.push({ type: 'sound', name: 'move' });

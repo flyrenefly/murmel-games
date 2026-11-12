@@ -53,7 +53,7 @@ const OBJECTS = [
   [/^it_seed(_wood)?$/, ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
-  [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'sh_solid', 'it_explosion']],
+  [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
   [/^it_magicwand$/, ['it_magicwand']],
@@ -67,7 +67,7 @@ const OBJECTS = [
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -239,8 +239,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
     blockers = null;
     return reject(`Lizenz: ${licence || 'keine Angabe'}`);
   }
-  // Not built yet: hollow puzzle stones and other floors for fallen puzzles.
-  if (/hollow\s*=\s*true/.test(xml)) reject('Puzzle hohl');
+  // Not built yet: other floors for fallen puzzles.
+  // Hollow stones come as $hollow since the export of 12.11. (enigma-web 0d6063b4); older exports lack it.
+  if (/hollow\s*=\s*true/.test(xml) && !exp.world.cells.some((c) => c.some((o) => o && o.$hollow === 'true'))) reject('Puzzle hohl (alter Export)');
   if (/FallenPuzzle/.test(xml)) reject('FallenPuzzle');
   if (/el:single="false"/.test(xml)) {
     blockers = null;

@@ -423,6 +423,21 @@ describe('ObjectWorld', () => {
     });
   });
 
+  it("hollow puzzle stones let the marble through, ignore hits and move with their cluster without shattering", () => {
+    const w = world([
+      { x: 3, y: 2, k: "st_puzzle_blue", a: { $connections: "4", color: "4" } }, // east
+      { x: 4, y: 2, k: "st_puzzle_blue", a: { $connections: "1", color: "4", $hollow: "true" } }, // west, hollow
+    ]);
+    expect(w.blockAt(4, 2)).toBe(0);
+    expect(w.blockAt(3, 2)).toBe(ALL_FACES);
+    w.hit(4, 2, 0, 0, -1, -10); // a hit on the hollow one: nothing
+    expect(w.objects[1].row).toBe(2);
+    w.marbleAt(4, 3); // marble below the hollow stone
+    w.hit(3, 2, 0, 0, -1, -10); // push the solid one from above → cluster moves south
+    expect(w.objects.map((o) => [o.col, o.row])).toEqual([[3, 3], [4, 3]]);
+    expect(w.events.filter((e) => e.type === "shatter")).toEqual([]);
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([
