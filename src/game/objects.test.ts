@@ -339,8 +339,34 @@ describe('ObjectWorld', () => {
     expect(w.fieldForce(5.6, 0.5)).toEqual([0, 0]); // 0.1 from the centre: no force
     w.actorStep(5.5, 0.5, 0);
     expect(w.inventory).toEqual([]);
-    w.message(w.objects[0], "toggle", true);
+    w.sendMessage(w.objects[0], "toggle", true);
     expect(w.fieldForce(3.5, 0.5)).toEqual([0, 0]);
+  });
+
+  it("sensors act when a marble enters their cell, exit sensors when it leaves; not when jumping in place", () => {
+    const w = world([
+      door(8),
+      { x: 3, y: 0, k: "it_sensor", a: { target: "door1", action: "toggle" } },
+      { x: 5, y: 0, k: "it_sensor_exit", a: { target: "door1", action: "toggle" } },
+    ]);
+    const open = () => w.blockAt(8, 0) === 0;
+    w.marbleAt(2, 0);
+    w.marbleAt(3, 0); // enter the sensor
+    w.update(500);
+    expect(open()).toBe(true);
+    w.marbleGone(0); // jumps …
+    w.marbleAt(3, 0); // … and lands in the same cell: nothing
+    w.update(500);
+    expect(open()).toBe(true);
+    w.marbleAt(4, 0);
+    w.marbleAt(5, 0); // entering the exit sensor: nothing
+    w.update(500);
+    expect(open()).toBe(true);
+    w.marbleAt(6, 0); // leaving it
+    w.update(500);
+    expect(open()).toBe(false);
+    expect(w.sensorLook(w.objects[1])?.image).toBe("it_sensor");
+    expect(w.sensorLook(w.objects[2])).toEqual({ image: "it_sensor_exit", frame: 1 }); // 500 ms into the 3 × 600 ms animation
   });
 
   it("a springboard makes a marble near its centre jump and animates", () => {

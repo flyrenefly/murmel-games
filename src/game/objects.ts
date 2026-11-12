@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3 };
 /** German names of inventory items for the display. */
@@ -216,6 +216,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
   if (kind === 'it_springboard') return 'springboard';
   if (/^it_magnet(_on|_off)?$/.test(kind)) return 'magnet';
+  if (/^it_sensor(_inverse|_exit|_filter[01])?$/.test(kind)) return 'sensor';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
   if (/^it_vortex(_open|_closed)?$/.test(kind)) return 'vortex';
@@ -854,6 +855,36 @@ export class ObjectWorld {
     return o.bounce !== undefined && this.now - o.bounce < 120 ? 1 : 0;
   }
 
+  // ---------- sensors (Sensor.cc) ----------
+
+  /** An actor entered (leave = false) or left the cell: sensors (exit sensors on leaving) act. */
+  private sensorStep(col: number, row: number, leave: boolean): void {
+    for (const o of this.at(col, row)) {
+      if (o.cls !== 'sensor' || o.gone || /filter/.test(o.kind)) continue;
+      if (this.sensorExit(o) !== leave) continue;
+      o.bounce = this.now;
+      this.sensorAction(o);
+    }
+  }
+
+  private sensorExit(o: GameObject): boolean {
+    return o.attrs.exit !== undefined ? truthy(o.attrs.exit) : o.kind === 'it_sensor_exit';
+  }
+
+  /** performAction(true), inverted for it_sensor_inverse / _filter0 (their "inverse" default). */
+  private sensorAction(o: GameObject): void {
+    const kindInverse = o.kind === 'it_sensor_inverse' || o.kind === 'it_sensor_filter0';
+    this.performAction(o, !(kindInverse && o.attrs.inverse === undefined));
+  }
+
+  /** it_sensor(_exit)_hit: 2 images à 300 ms, three times; invisible sensors are not drawn. */
+  sensorLook(o: GameObject): { image: string; frame: number } | null {
+    const invisible = o.attrs.invisible !== undefined ? truthy(o.attrs.invisible) : /filter/.test(o.kind);
+    if (invisible) return null;
+    const age = o.bounce === undefined ? Infinity : this.now - o.bounce;
+    return { image: this.sensorExit(o) ? 'it_sensor_exit' : 'it_sensor', frame: age < 1800 ? Math.floor(age / 300) % 2 : 0 };
+  }
+
   // ---------- meditation (Meditation.cc, ChangeMeditation) ----------
 
   /** Engaged hollows (a pearl rested there 1 s) and how many essential ones exist. */
@@ -1275,7 +1306,7 @@ export class ObjectWorld {
     });
   }
 
-  private slot(i: number): { col: number; row: number; init: boolean } {
+  private slot(i: number): { col: number; row: number; init: boolean; realCol?: number; realRow?: number } {
     while (this.marbles.length <= i) this.marbles.push({ col: -1, row: -1, init: false });
     return this.marbles[i];
   }
@@ -1289,7 +1320,16 @@ export class ObjectWorld {
       m.row = row;
       for (const o of this.at(col, row)) if (o.cls === 'trigger') o.state = 1; // no action at start
       this.pickUp(col, row);
+      m.realCol = col;
+      m.realRow = row;
       return;
+    }
+    // Sensor::actor_enter / actor_leave: a real change of the grid cell (not jumping or dying)
+    if (col >= 0 && (col !== m.realCol || row !== m.realRow)) {
+      if (m.realCol !== undefined && m.realCol >= 0) this.sensorStep(m.realCol, m.realRow!, true);
+      this.sensorStep(col, row, false);
+      m.realCol = col;
+      m.realRow = row;
     }
     if (col === m.col && row === m.row) return;
     const oldCol = m.col;
@@ -1541,6 +1581,11 @@ export class ObjectWorld {
     }
     if (o.cls === 'oxydref') {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
+      return;
+    }
+    if (o.cls === 'sensor') {
+      // Sensor::message: a filter passes signal 1 on
+      if (msg === 'signal' && /filter/.test(o.kind) && (num ?? (value ? 1 : 0)) === 1) this.sensorAction(o);
       return;
     }
     if (o.cls === 'vortex') {

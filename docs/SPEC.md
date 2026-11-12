@@ -353,8 +353,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er 180 ms (PingPong über 3 Bilder à 30 ms) und stößt solange nicht. Der unsichtbare zeigt sich
   nur beim Pulsieren (Brille und Pinsel fehlen). Ein Felsbrocken, der auf ihn zurollt, kehrt um.
   Enigmas Klangsatz hat keine Datei „bumper“, daher stumm. Andere Akteure prallen noch nicht ab.
-- **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
-  Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
+- **it_sensor / _inverse / _exit / _filter0 / _filter1** (`Sensor.cc`): Betritt eine Kugel
+  sein Feld, führt er seine Aktion mit `true` aus (inverse: `false`); der Ausgangssensor beim
+  Verlassen. Ein Sprung auf derselben Stelle und der Tod lösen nichts aus. Bild 2 × 300 ms,
+  dreimal; `invisible` und die Filter werden nicht gezeichnet. Filter geben `signal` 1 weiter.
+  Abweichungen: Gegner lösen Sensoren nicht aus; Lua-Rückrufe bekommen `true` statt des
+  Akteurs; über einen Sensor springende Kugeln lösen ihn nicht aus.
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`

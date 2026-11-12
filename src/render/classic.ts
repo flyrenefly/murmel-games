@@ -177,6 +177,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('it_flag')) return ['it_flag_black', 'it_flag_white'];
   if (kind === 'it_springboard') return ['it_springboard', ...JUMP_IMAGES];
   if (kind.startsWith('it_magnet')) return ['it_magnet_on', 'it_magnet_off'];
+  if (kind.startsWith('it_sensor')) return ['it_sensor', 'it_sensor_exit'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
   if (kind.startsWith('it_spring')) return ['it_spring', ...JUMP_IMAGES];
   if (kind.startsWith('st_passage')) return PASSAGE_IMAGES;
@@ -437,6 +438,10 @@ export class ClassicView {
       else if (o.cls === 'yinyang') this.frame('it_yinyang', 0, px, py); // DefTiles: it_yinyang, it_yangyin
       else if (o.cls === 'tool') this.image(o.kind, px, py);
       else if (o.cls === 'springboard') this.frame('it_springboard', world.springboardFrame(o), px, py);
+      else if (o.cls === 'sensor') {
+        const look = world.sensorLook(o);
+        if (look) this.frame(look.image, look.frame, px, py);
+      }
       else if (o.cls === 'magnet') {
         // it_magnet_on: 5 frames à 100 ms, looping
         if (o.state === 1) this.frame('it_magnet_on', Math.floor(this.now / 100) % 5, px, py);
@@ -451,7 +456,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
