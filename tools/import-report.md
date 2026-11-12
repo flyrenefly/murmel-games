@@ -1,6 +1,6 @@
 # Enigma-Import
 
-594 von 1322 Levels übernommen (17 Pakete).
+600 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -71,7 +71,7 @@
 | Stein st_polarswitch | 15 | 1 |
 | Stein st_barrier | 15 | 2 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Stein st_magic_oxydc | 14 | 3 |
+| Stein st_magic_oxydc | 14 | 4 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
@@ -80,14 +80,13 @@
 | Gegenstand it_seed_hay | 14 | 5 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 2 |
-| Stein st_ice | 14 | 6 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
 | Gegenstand it_burnable_oil | 13 | 1 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| ungerade Zahl Oxyd-Steine | 12 | 3 |
+| ungerade Zahl Oxyd-Steine | 12 | 4 |
 | Lua: :drawRect | 12 | 2 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |

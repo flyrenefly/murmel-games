@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag']);
@@ -386,6 +386,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
+  if (kind === 'st_ice') return 'ice';
   if (/^st_turnstile(_red|_green)?$/.test(kind)) return 'turnstile';
   if (/^st_turnstilearm(_[nesw])?$/.test(kind)) return 'turnstilearm';
   if (/^st_lightpassenger(_on|_off)?$/.test(kind)) return 'lightpassenger';
@@ -553,7 +554,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || o.cls === 'turnstile' || o.cls === 'turnstilearm' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || o.cls === 'dispenser' || o.cls === 'lightpassenger' || o.cls === 'turnstile' || o.cls === 'turnstilearm' || o.cls === 'ice' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -586,6 +587,12 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot') {
         this.hitCoinslot(o, by);
+        return;
+      }
+      if (o.cls === 'ice') {
+        // IceBlock: MOVABLE_STANDARD – pushed like a box while idle
+        const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
+        if (face && vn < -PUSH_SPEED && o.breaking === undefined) this.push(o, -nx, -ny);
         return;
       }
       if (o.cls === 'turnstilearm') {
@@ -759,6 +766,10 @@ export class ObjectWorld {
       o.gone = true;
       this.unplace(o);
       this.events.push({ type: 'sound', name: 'explode' });
+    }
+    if (o.cls === 'ice' && this.env.floorAt(col, row) === 'fl_water') {
+      this.env.setFloor(col, row, 'fl_ice');
+      this.events.push({ type: 'floor', col, row });
     }
     if (o.kind.startsWith('st_box') && SINK_FLOORS.has(this.env.floorAt(col, row))) {
       o.gone = true;
@@ -954,6 +965,7 @@ export class ObjectWorld {
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
       else if (o.cls === 'turnstilearm') this.armImpulse(o, d, -1);
+      else if (o.cls === 'ice' && o.breaking === undefined) this.push(o, dx, dy);
       else if (o.cls === 'lightpassenger' && (o.state === 0 || !this.lit.has(o.row * this.width + o.col))) this.push(o, dx, dy);
       else if ((o.cls === 'rotator' && rotatorMovable(o)) || (o.cls === 'mirror' && mirrorFlags(o).movable)) this.push(o, dx, dy);
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
@@ -1155,7 +1167,7 @@ export class ObjectWorld {
   }
 
   private transparentObject(o: GameObject): boolean {
-    if (o.cls === 'passage' || o.cls === 'grate' || o.cls === 'pull') return true;
+    if (o.cls === 'passage' || o.cls === 'grate' || o.cls === 'pull' || o.cls === 'ice') return true;
     if (o.cls === 'door') return o.state === 1 && !o.moving;
     if (o.cls === 'puzzle') return isHollow(o);
     if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
@@ -1324,6 +1336,7 @@ export class ObjectWorld {
     for (const o of [...this.at(c, r)]) {
       if (o.gone) continue;
       if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
+      else if (o.cls === 'ice') this.breakStone(o);
       else if (o.cls === 'dynamite' || o.cls === 'bomb') this.burn(o);
       else if (o.cls === 'crack') this.crack(o);
     }
@@ -1333,7 +1346,7 @@ export class ObjectWorld {
   private explosionAt(sc: number, sr: number, c: number, r: number, strength: number): void {
     for (const o of [...this.at(c, r)]) {
       if (o.gone || isItem(o)) continue;
-      if (o.cls === 'dispenser') this.breakStone(o); // DispenserStone "_explosion"
+      if (o.cls === 'dispenser' || o.cls === 'ice') this.breakStone(o); // DispenserStone/IceBlock "_explosion"
       if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
       else if (o.cls === 'window' && !truthy(o.attrs.secure)) {
         // WindowStone "_explosion": the faces towards the explosion (all, if it is here) break
@@ -2628,6 +2641,18 @@ export class ObjectWorld {
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
+      if (o.cls === 'ice' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= 5 * 50) {
+        // IceBlock::animcb (BREAKING): CoverFloor fl_ice here and on the four neighbours (not abyss)
+        this.remove(o);
+        for (const [dx, dy] of [[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]]) {
+          const c = o.col + dx;
+          const r = o.row + dy;
+          if (c < 0 || r < 0 || c >= this.width || this.env.floorAt(c, r) === 'fl_abyss') continue;
+          this.env.setFloor(c, r, 'fl_ice');
+          this.events.push({ type: 'floor', col: c, row: r });
+          for (const it of this.at(c, r)) if (!it.gone && (it.cls === 'crack' || (it.cls === 'meditation' && it.state < 0))) this.remove(it);
+        }
+      }
       if (o.cls === 'dispenser' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= 7 * 50) {
         // DispenserStone::animcb: neighbouring dispensers break too, the item here ignites
         this.remove(o);

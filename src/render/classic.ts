@@ -196,6 +196,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
+  if (kind === 'st_ice') return ['st_ice', 'st_ice_break', 'sh_rawglass', 'fl_ice'];
   if (/^st_turnstile(_red|_green)?$/.test(kind)) return ['st_turnstile', 'st_turnstile_green', 'sh_solid'];
   if (kind.startsWith('st_turnstilearm')) return ['st_puzzle_blue', 'sh_solid'];
   if (kind.startsWith('st_lightpassenger')) return ['st_lightpassenger', 'st_lightpassenger_off', 'st_lightpassenger_break', 'sh_rawglass'];
@@ -645,6 +646,12 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'ice') {
+      if (pass === 'shadow') this.image('sh_rawglass', px, py);
+      else if (o.breaking !== undefined) this.frame('st_ice_break', world.dispenserFrame(o) > 4 ? 4 : world.dispenserFrame(o), px, py);
+      else this.image('st_ice', px, py);
       return;
     }
     if (o.cls === 'turnstile' || o.cls === 'turnstilearm') {

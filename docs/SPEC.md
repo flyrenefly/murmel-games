@@ -431,6 +431,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   dahinter an, Aktion mit !uhrzeigersinn. Kugeln: Rot nimmt nur die anstoßende Kugel mit, andere im
   Schwenkbereich zerspringen; grün nimmt alle im Schwenkbereich mit (Versatz um 90° gedreht).
   signal/turn/turnback drehen. Arme als blaue Puzzlesteine (st_puzzle1/2/4/8), Klang st-move.
+- **st_ice** (`IceBlock.cc`): wie eine Kiste schiebbar, lichtdurchlässig; auf Wasser friert der Boden
+  zu Eis und der Block bleibt stehen. Explosion/Zünden: Bruch (5 × 50 ms), dann Eisboden im Kreuz
+  (nicht auf Abgrund; Risse und Mulden dort verschwinden). Offen: Mitnehmen gefrorener Gegenstände,
+  Schmelzen durch Hitze.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

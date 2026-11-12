@@ -618,6 +618,17 @@ describe('ObjectWorld', () => {
     expect([w2.objects[1].col, w2.objects[1].row]).toEqual([5, 2]);
   });
 
+  it("an ice block freezes water it is pushed onto and stays; an explosion turns the area to ice", () => {
+    const floors: Record<string, string> = { "3,1": "fl_water" };
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 4, y: 1, k: "st_ice" }, { x: 6, y: 1, k: "it_bomb_black" }], W, {}, env);
+    w.marbleAt(0, 0);
+    w.hit(4, 1, 0, 1, 0, -6);
+    expect([w.objects[0].col, floors["3,1"]]).toEqual([3, "fl_ice"]);
+    w.sendMessage(w.objects[0], "ignite", true);
+    expect(w.blockAt(3, 1)).toBe(15);
+  });
+
   it("a dispenser hands out its items; an explosion breaks it", () => {
     const w = world([{ x: 4, y: 1, k: "st_dispenser_bombblack", a: { stock: "1" } }, { x: 5, y: 2, k: "it_bomb_white" }]);
     w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0);
