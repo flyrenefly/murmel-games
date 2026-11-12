@@ -1,6 +1,6 @@
 # Enigma-Import
 
-480 von 1322 Levels übernommen (17 Pakete).
+484 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -40,9 +40,8 @@
 | Lua: strsub() | 35 | 0 |
 | Boden fl_fake_abyss | 35 | 0 |
 | Boden ohne Bild fl_fake_abyss | 35 | 0 |
-| Stein st_plop | 34 | 4 |
+| Stein st_plop | 34 | 5 |
 | Gegenstand it_pipe_ew | 34 | 0 |
-| Gegenstand it_wrench | 33 | 4 |
 | Lua: set_actor() | 32 | 0 |
 | Gegenstand it_shogun_s | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
@@ -76,7 +75,7 @@
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
-| Stein st_dispenser_bombblack | 19 | 0 |
+| Stein st_dispenser_bombblack | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 18 | 4 |
 | Stein st_shogun_l | 18 | 0 |
@@ -102,7 +101,7 @@
 | Gegenstand it_extinguisher_full | 14 | 0 |
 | Gegenstand it_bottle_broken | 14 | 0 |
 | Gegenstand it_trap | 14 | 0 |
-| Gegenstand it_seed_hay | 14 | 3 |
+| Gegenstand it_seed_hay | 14 | 4 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 3 |

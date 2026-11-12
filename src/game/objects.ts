@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -309,7 +309,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
-  if (kind === 'it_ring' || kind === 'it_spoon') return 'tool';
+  if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench') return 'tool';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
   if (kind === 'it_springboard') return 'springboard';
