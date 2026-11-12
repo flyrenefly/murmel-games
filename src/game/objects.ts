@@ -231,7 +231,7 @@ export function objectClass(kind: string): ObjectClass | null {
  * Plain stones that move like a wood box (StandardStone/GlassStone with MOVABLE_STANDARD):
  * st_brownie and the _movable variants. Unlike BoxStone they do not sink or build bridges.
  */
-export const MOVABLE_STONE = /^st_(brownie|(granite|camouflage|redbrown|invisible|rawglass|lightglass|darkglass|flat)_movable)$/;
+export const MOVABLE_STONE = /^st_(brownie|(granite|camouflage|redbrown|greenbrown|invisible|rawglass|lightglass|darkglass|flat)_movable)$/;
 
 /** Image and shadow of a movable plain stone (models-2d.lua); invisible ones draw nothing. */
 export function movableLook(kind: string): { image: string; shadow: string } | null {

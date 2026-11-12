@@ -181,8 +181,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   MOVABLE_STANDARD – geschoben wie eine Holzkiste, versinken aber nicht und bauen keine
   Brücke (das kann nur `BoxStone`). Gebaut: st_brownie, st_granite/camouflage/redbrown/
   invisible_movable, st_rawglass/lightglass/darkglass_movable; Schatten nach models-2d.lua
-  (sh_round, sh_rawglass, sonst sh_solid). Offen: flat, plaster, greenbrown, death,
-  stoneimpulse und rotator in der _movable-Form (eigene Sonderregeln).
+  (sh_round, sh_rawglass, sonst sh_solid). Seit 12.11. auch st_greenbrown_movable (flat siehe
+  unten). Offen: plaster, death, stoneimpulse und rotator in der _movable-Form.
+- **st_*_hollow** (StandardStone, GreenBrownStone, Plaster-, Flat-, Glassteine mit
+  OBJBIT_HOLLOW): sehen aus wie der Grundstein, Akteure rollen hindurch (`STONE_PASS`); für
+  andere Steine bleiben sie ein Stein. Der Konverter setzt `hollow` in der Legende, die Physik
+  macht das Feld nicht fest. Brillen (it_glasses, die hohle Steine ausblenden) fehlen.
 - **st_boulder** (`BoulderStone.cc`): rollt in seine Richtung (Standard Nord), gesteuert vom
   Ende jedes Animationsdurchlaufs (3 × 120 ms): frei → ein Feld weiter (Murmel im Zielfeld
   zerspringt), sonst warten. Beim Ankommen und beim Drehen erhält der Stein davor einen

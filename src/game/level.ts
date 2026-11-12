@@ -23,6 +23,8 @@ export interface CellDef {
   start?: boolean;
   /** Constant floor force (Floor::add_force: force_x/force_y, or a slope's direction × strength). */
   force?: [number, number];
+  /** Hollow stone (OBJBIT_HOLLOW): drawn like the stone, but actors pass (STONE_PASS). */
+  hollow?: boolean;
 }
 
 export interface LevelFile {
@@ -68,6 +70,8 @@ export interface Cell {
   stone: string | null;
   /** Floor force of this cell's floor (cleared when the floor changes). */
   force?: [number, number];
+  /** The stone is hollow: actors pass through it. */
+  hollow?: boolean;
 }
 
 export interface SignalStone {
@@ -150,7 +154,10 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
         startCells++;
         if (!file.start) start = { x: col + 0.5, y: row + 0.5 };
       }
-      cells.push(def.force ? { floor, stone, force: def.force } : { floor, stone });
+      const cell: Cell = { floor, stone };
+      if (def.force) cell.force = def.force;
+      if (def.hollow && stone) cell.hollow = true;
+      cells.push(cell);
     }
   }
 

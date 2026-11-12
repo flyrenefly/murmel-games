@@ -167,7 +167,7 @@ export class PhysicsWorld {
     this.solid = new Int32Array(level.width * level.height).fill(-1);
     this.cells = level.cells; // live: boxes turn into floors
     level.cells.forEach((c, i) => {
-      if (c.stone !== null && c.stone !== 'st_oxyd') this.solid[i] = -2;
+      if (c.stone !== null && c.stone !== 'st_oxyd' && !c.hollow) this.solid[i] = -2;
     });
     for (const s of level.signals) this.solid[s.row * level.width + s.col] = s.index;
     this.enemies = createEnemies(level.actors ?? []);

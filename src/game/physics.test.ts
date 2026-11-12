@@ -319,6 +319,21 @@ describe('floor force (SlopeFloor, force_x/force_y)', () => {
   });
 });
 
+describe('hollow stones (OBJBIT_HOLLOW)', () => {
+  it('a hollow stone lets the marble through, a normal one stops it', () => {
+    const lv = (stone: Record<string, unknown>) =>
+      new PhysicsWorld(parseLevel({ id: 'h', title: 'H', author: 'x', license: 'GPL', map: ['#######', '#@.h.A#', '#A....#', '#######'], legend: { h: stone } }));
+    const pass = lv({ floor: 'fl_gray', stone: 'st_granite', hollow: true });
+    pass.marbles[0].vel.x = 12;
+    run(pass, 0.6);
+    expect(pass.marbles[0].pos.x).toBeGreaterThan(3.5);
+    const stop = lv({ floor: 'fl_gray', stone: 'st_granite' });
+    stop.marbles[0].vel.x = 12;
+    run(stop, 0.6);
+    expect(stop.marbles[0].pos.x).toBeLessThan(3);
+  });
+});
+
 describe('swamp (fl_swamp)', () => {
   const swamp = () =>
     new PhysicsWorld(

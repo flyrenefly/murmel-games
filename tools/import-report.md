@@ -1,6 +1,6 @@
 # Enigma-Import
 
-260 von 1322 Levels übernommen (15 Pakete).
+270 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -8,7 +8,7 @@
 | Stein st_laser | 225 | 3 |
 | Akteure: nicht genau eine schwarze Murmel | 198 | 6 |
 | Lua-Rückruf | 163 | 1 |
-| Gegenstand it_sensor | 139 | 3 |
+| Gegenstand it_sensor | 139 | 5 |
 | Lua: :drawMap | 117 | 1 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
@@ -20,7 +20,7 @@
 | Lua: st_oxyd | 103 | 0 |
 | Lua-Init | 96 | 1 |
 | Gegenstand it_key | 94 | 0 |
-| Gegenstand it_hammer | 91 | 0 |
+| Gegenstand it_hammer | 91 | 1 |
 | Stein st_key | 90 | 0 |
 | Gegenstand it_dynamite | 72 | 0 |
 | Boden fl_bridge_gc | 69 | 1 |
@@ -46,7 +46,7 @@
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_stone() | 41 | 0 |
-| Stein st_thief | 41 | 0 |
+| Stein st_thief | 41 | 1 |
 | Stein st_shogun | 39 | 0 |
 | Stein st_window | 38 | 0 |
 | Lua: set_floor() | 38 | 0 |
@@ -69,7 +69,6 @@
 | Gegenstand it_strip_ew | 31 | 0 |
 | Stein st_lightpassenger_on | 31 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Stein st_granite_hollow | 29 | 2 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 0 |
@@ -77,11 +76,10 @@
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein fl_bridge_gc | 27 | 0 |
 | Akteur ac_horse | 27 | 1 |
-| Gegenstand it_strip_ns | 27 | 0 |
+| Gegenstand it_strip_ns | 27 | 1 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
-| Stein st_greenbrown_hollow | 26 | 2 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
 | Gegenstand it_crack_m | 24 | 1 |
@@ -121,10 +119,8 @@
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 1 |
 | Stein st_plaster_breakable | 14 | 0 |
-| Stein st_greenbrown_movable | 14 | 2 |
 | Lua: :is | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 1 |
-| Stein st_lightglass_hollow | 14 | 0 |
 | Lua: draw_stones() | 14 | 0 |
 | Gegenstand it_magnet_off | 14 | 1 |
 | Gegenstand it_extinguisher_full | 14 | 0 |
@@ -134,7 +130,6 @@
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 1 |
-| Stein st_bluegray_hollow | 14 | 0 |
 | Stein st_disco_light | 14 | 0 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 0 |
@@ -160,9 +155,8 @@
 | Gegenstand it_pin | 10 | 0 |
 | Gegenstand it_rubberband | 10 | 0 |
 | Gegenstand it_drop | 10 | 0 |
-| Stein st_spitter | 9 | 0 |
+| Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
-| Stein st_redbrown_hollow | 9 | 2 |
 | Flut | 9 | 0 |
 | Stein st_mirror_sheets | 9 | 0 |
 | Boden fl_bridge_bn | 9 | 0 |
@@ -180,7 +174,6 @@
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
 | Stein fl_bridge_bw | 7 | 0 |
-| Stein st_camouflage_hollow | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 0 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -191,7 +184,6 @@
 | Stein st_lightpassenger_off | 6 | 0 |
 | Stein st_box_hay (verbunden) | 6 | 2 |
 | Stein st_disco_dark | 6 | 0 |
-| Stein st_flat_hollow | 6 | 0 |
 | Gegenstand it_sensor_exit | 5 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
@@ -199,7 +191,6 @@
 | Lua: :can_go_east | 5 | 0 |
 | Lua: :orientate | 5 | 1 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_plaster_hollow | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
 | Gegenstand it_strip_sw | 5 | 0 |
 | Gegenstand it_strip_es | 5 | 0 |
@@ -258,15 +249,12 @@
 | Lua: :newMap | 2 | 0 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
-| Stein st_metal_hollow | 2 | 0 |
 | Lua: st_invisible | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |
-| Stein st_invisible_hollow | 2 | 0 |
 | Stein st_portal_pearl | 2 | 0 |
 | Lua: draw_floor() | 2 | 0 |
-| Stein st_darkglass_hollow | 2 | 0 |
 | Lua: :sound | 2 | 0 |
 | Gegenstand it_extinguisher_empty | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |

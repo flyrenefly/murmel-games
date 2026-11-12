@@ -95,7 +95,7 @@ const OBJECTS = [
   [/^it_spring(_keep|_drop)?$/, ['it_spring', 'ac_marble_black_jump', 'ac_marble_white_jump', 'sh_marble_jump']],
   [/^st_boulder(_[nesw])?$/, ['st_boulder', 'st_boulder_fall', 'sh_round']],
   [/^st_brownie$/, ['st_brownie', 'sh_round']],
-  [/^st_(granite|camouflage|redbrown|flat)_movable$/, ['st_granite', 'st_camouflage', 'st_redbrown', 'st_flat', 'sh_solid']],
+  [/^st_(granite|camouflage|redbrown|greenbrown|flat)_movable$/, ['st_granite', 'st_camouflage', 'st_redbrown', 'st_greenbrown', 'st_flat', 'sh_solid']],
   [/^st_(rawglass|lightglass|darkglass)_movable$/, ['st_rawglass', 'st_lightglass', 'st_darkglass', 'sh_rawglass']],
   [/^st_invisible_movable$/, []],
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
@@ -368,6 +368,11 @@ function convertLevel(pack, meta, xml, exp, lua) {
           imgs.add(def.stone);
         } else if (st.k === 'st_invisible') {
           def.stone = 'st_invisible'; // solid, not drawn
+        } else if (/^st_\w+_hollow$/.test(st.k) && (STONES.has(st.k.replace(/_hollow$/, '')) || st.k === 'st_invisible_hollow')) {
+          // StandardStone/GreenBrownStone/… with OBJBIT_HOLLOW: same look, actors pass (STONE_PASS)
+          def.stone = st.k.replace(/_hollow$/, '');
+          def.hollow = true;
+          if (def.stone !== 'st_invisible') imgs.add(def.stone);
         } else if (STONES.has(st.k) || STONE_BASE.test(st.k)) {
           def.stone = STONE_BASE.exec(st.k)?.[1] ?? st.k;
           imgs.add(def.stone);
