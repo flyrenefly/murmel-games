@@ -484,14 +484,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
     }
     if (pts.length) o.a.dests = pts.map((p) => p.join(',')).join(';');
   }
-  if (lua && /"ot_timer"/.test(lua.code)) {
+  if (lua && /"ot_(timer|counter)"/.test(lua.code)) {
     if (lua.error) reject('Objekt ot_timer (Lua-Init)');
     for (const { kind, attrs } of lua.adds ?? []) {
-      if (kind !== 'ot_timer') continue;
+      if (kind !== 'ot_timer' && kind !== 'ot_counter') continue;
       const a = {};
       for (const [k, v] of Object.entries(attrs)) if (KEEP_ATTR.test(k) && v !== '') a[k] = v;
-      a.$state = attrs.state === '0' || attrs.state === 'false' ? '0' : '1'; // TimerGadget: ON
-      objs.push({ x: -1, y: -1, k: 'ot_timer', a });
+      // TimerGadget: ON by default; CounterGadget: state 0
+      a.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
+      objs.push({ x: -1, y: -1, k: kind, a });
     }
   }
   // "@pattern" in a target is the nearest matching object (Value::finalizeNearestObjectReference,
@@ -562,7 +563,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   }
   // Other objects (ot_timer, ot_counter …) are not in the export; rubber bands and wires are.
   // The level script's init recorded its wo:add calls: timers become objects without a cell.
-  for (const m of (lua?.code ?? '').matchAll(/"(ot_\w+)"/g)) if (!/^ot_(rubberband|wire|timer)$/.test(m[1])) reject(`Objekt ${m[1]}`);
+  for (const m of (lua?.code ?? '').matchAll(/"(ot_\w+)"/g)) if (!/^ot_(rubberband|wire|timer|counter)$/.test(m[1])) reject(`Objekt ${m[1]}`);
   // World attributes set by the level script (wo["GlobalForce"] …), also without callbacks.
   const world = {};
   if (lua) {

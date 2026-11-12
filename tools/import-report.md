@@ -1,17 +1,17 @@
 # Enigma-Import
 
-439 von 1322 Levels übernommen (17 Pakete).
+447 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua-Rückruf | 159 | 1 |
+| Lua-Rückruf | 124 | 1 |
 | keine Oxyd-Steine | 119 | 0 |
 | Lua: :drawMap | 118 | 2 |
 | Gegenstand it_puller_n | 115 | 0 |
 | Gegenstand it_puller_s | 114 | 0 |
+| Lua-Init | 108 | 2 |
 | Gegenstand it_puller_e | 108 | 0 |
 | Gegenstand it_puller_w | 108 | 0 |
-| Lua-Init | 106 | 2 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
@@ -23,14 +23,13 @@
 | Stein st_coinslot | 58 | 0 |
 | Gegenstand it_bomb_black | 56 | 3 |
 | Gegenstand it_coin_s | 55 | 0 |
-| Objekt ot_counter | 54 | 1 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
 | Stein st_blocker | 50 | 5 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_pull | 48 | 5 |
+| Stein st_pull | 48 | 8 |
 | Lua: set_stone() | 43 | 0 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
@@ -70,6 +69,7 @@
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 2 |
 | Gegenstand it_pipe_sw | 24 | 0 |
+| Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 1 |
 | Stein st_turnstile_green | 23 | 0 |
@@ -78,7 +78,7 @@
 | Stein st_shogun_m | 22 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_stoneimpulse_movable | 20 | 0 |
+| Stein st_stoneimpulse_movable | 20 | 1 |
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
@@ -97,7 +97,7 @@
 | mehrere weiße Murmeln | 16 | 4 |
 | Stein st_break_plain | 16 | 0 |
 | Stein st_break_boulder | 15 | 2 |
-| Lua: :is | 15 | 1 |
+| Lua: :is | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
 | Stein st_break_black | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
@@ -112,10 +112,10 @@
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
 | Stein st_ice | 14 | 2 |
-| Stein st_disco_light | 14 | 2 |
-| Lua: :add | 13 | 1 |
+| Stein st_disco_light | 14 | 3 |
+| Lua: :add | 13 | 2 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_bag | 13 | 0 |
+| Gegenstand it_bag | 13 | 1 |
 | Stein st_polarswitch | 13 | 1 |
 | Gegenstand it_burnable_oil | 13 | 0 |
 | Boden fl_thief | 13 | 0 |
@@ -127,7 +127,6 @@
 | Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
-| Objekt ot_timer (Lua-Init) | 11 | 1 |
 | Stein st_brake | 11 | 0 |
 | Lua: :nearest | 10 | 4 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
@@ -161,10 +160,11 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
+| Lua: lib.math | 6 | 0 |
 | Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
 | Stein st_lightpassenger_off | 6 | 0 |
-| Stein st_box_hay (verbunden) | 6 | 2 |
+| Stein st_box_hay (verbunden) | 6 | 3 |
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
@@ -179,7 +179,6 @@
 | Lua: it_death | 4 | 0 |
 | Gegenstand it_strip_e | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
-| Lua: lib.math | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
@@ -191,6 +190,7 @@
 | Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Stein st_break_laser | 4 | 0 |
+| Lua: st_oxyd_d | 4 | 0 |
 | Stein st_dispenser_dynamite | 4 | 0 |
 | Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
@@ -254,7 +254,6 @@
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
-| Lua: st_oxyd_d | 2 | 0 |
 | Lua: :fl | 1 | 0 |
 | Lua: :grid | 1 | 0 |
 | Lua: timer_action() | 1 | 0 |
@@ -302,6 +301,7 @@
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
+| Lua: wo["ElectricStrength"] | 1 | 0 |
 | Lua: hammer() | 1 | 0 |
 | Stein fl_hay | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
@@ -310,6 +310,7 @@
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | Lua: it_burnable | 1 | 0 |
+| Lua: st_pull | 1 | 0 |
 | Stein st_oxyd_b | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 0 |

@@ -520,6 +520,21 @@ describe('ObjectWorld', () => {
     expect(floors["3,1"]).toBe("fl_bridge_gc_closed");
   });
 
+  it("a counter counts signals and acts with target_<n>/action_<n> of the new count", () => {
+    const w = world([door(8), { x: -1, y: -1, k: "ot_counter", a: { name: "c", $state: "0", target_2: "door1", action_2: "open", target_1: "door1", action_1: "close" } }]);
+    const c = w.objects[1];
+    w.sendMessage(c, "signal", true);
+    w.update(300);
+    expect(w.blockAt(8, 0)).toBe(ALL_FACES); // count 1: close (already closed)
+    w.sendMessage(c, "signal", true);
+    w.update(300);
+    expect(c.state).toBe(2);
+    expect(w.blockAt(8, 0)).toBe(0); // count 2: open
+    w.sendMessage(c, "signal", false);
+    w.update(300);
+    expect(w.blockAt(8, 0)).toBe(ALL_FACES); // back to 1: close
+  });
+
   it("a springboard makes a marble near its centre jump and animates", () => {
     const w = world([{ x: 3, y: 0, k: "it_springboard" }]);
     w.actorStep(3.1, 0.5, 0); // 0.4 off in x: nothing

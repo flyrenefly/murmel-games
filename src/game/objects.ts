@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
@@ -299,6 +299,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_crack(_[isml])?(_water)?$/.test(kind)) return 'crack';
   if (kind === 'fl_scales') return 'scales';
   if (kind === 'fl_bridge') return 'bridge';
+  if (kind === 'ot_counter') return 'counter';
   if (MIRROR_KIND.test(kind)) return 'mirror';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
@@ -2015,6 +2016,14 @@ export class ObjectWorld {
       this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
       return;
     }
+    if (o.cls === 'counter') {
+      // CounterGadget::message: signal counts up (true) or down; target_<n>/action_<n> act
+      if (msg === 'signal') {
+        o.state += (num ?? (value ? 1 : 0)) ? 1 : -1;
+        if (o.attrs[`target_${o.state}`] !== undefined || o.attrs[`action_${o.state}`] !== undefined) this.performAction(o, true);
+      }
+      return;
+    }
     if (o.cls === 'bridge') {
       // StateObject messages → BridgeFloor::setState / toggleState
       const b = this.bridgeOf(o);
@@ -2184,6 +2193,8 @@ function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   // Vortex: 1 open, 0 closed
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;
+  // CounterGadget: any whole number
+  if (kind === 'ot_counter') return Math.trunc(Number(a.$state ?? a.state)) || 0;
   // Crack: INVISIBLE -1, SMALL 0, MEDIUM 1, LARGE 2
   if (/^it_crack/.test(kind)) {
     const s = Number(a.$state);

@@ -460,7 +460,9 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Reibung nach `world.cc`: Faktor auf die Bodenreibung, negativ beschleunigend.
 - **ot_timer** (`TimerGadget.cc`): Der Importer zeichnet `wo:add`-Aufrufe im Init-Modus auf;
   Timer werden Objekte ohne Feld (x = −1), Logik wie `st_timer`, standardmäßig an.
-  Andere `ot_`-Objekte (ot_counter …) führen zur Ablehnung. Levels, die ot_timer nutzten,
+  **ot_counter** (`CounterGadget.cc`, seit 12.11.) ebenso: `signal` true zählt hoch, false
+  herunter; gibt es `target_<n>`/`action_<n>` für den neuen Stand, führt er seine Aktion aus.
+  Andere `ot_`-Objekte führen zur Ablehnung. Levels, die ot_timer nutzten,
   waren vorher ohne Timer im Spiel (Inverse Maze II und Kaleidoscope fielen deshalb heraus:
   `lib.maze` bzw. `wo:drawRect` mit Resolver im Rückruf fehlen).
 - **Importprüfung (`tools/lua-check.mjs`):** Rückrufe dürfen nur bekannte Funktionen,
