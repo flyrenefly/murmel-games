@@ -137,7 +137,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_wormhole** (`WormHole.cc`): zieht die Murmel an (Kraft 0,6·strength/Abstand, Standard
   strength 30, range 10, unabhängig vom Boden) und versetzt sie, sobald ihr Mittelpunkt
   näher als 0,125 an der Lochmitte ist, ans Ziel (Tempo 0); `interval` sperrt danach.
-  Das Ziel (Objektname, `#id` oder Position) löst der Konverter in Koordinaten auf.
+  Das Ziel (Objektname, `#id` oder Position) löst der Konverter in Koordinaten auf; bei
+  mehreren Zielen gilt das erste (`getDestinationByIndex(0)`), eine Lua-Position „x,y“ wird
+  unverändert genommen (Value::POSITION, keine Zentrierung).
   `on`/`off` schalten nur den Sog.
 - **st_stoneimpulse** (`StoneImpulse.cc`): schon ein leichter Treffer oder `signal` true startet
   ihn: 220 ms Ausdehnen, dann Impuls an alle vier Nachbarn (Impulssteine pulsieren weiter,

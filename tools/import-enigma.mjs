@@ -342,7 +342,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
   for (const o of objs) {
     if (!o.k.startsWith('it_wormhole')) continue;
     const src = [...allCells(w)].find((c) => c.o.$id === o.a.$id)?.o ?? {};
-    const tok = tokens(src.destination)[0] ?? '';
+    // Object::getDestinationByIndex(0): the first destination. A position "x,y" (Value::POSITION,
+    // taken as is) contains the token separator itself, so test the whole value first.
+    const whole = /^(-?[\d.]+),(-?[\d.]+)/.exec(src.destination ?? '');
+    const tok = whole ? whole[0] : (tokens(src.destination)[0] ?? '');
     let dest = null;
     const pos = /^(-?[\d.]+),(-?[\d.]+)$/.exec(tok);
     if (pos) dest = [Number(pos[1]), Number(pos[2])];

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-133 von 1322 Levels übernommen (14 Pakete).
+136 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -30,7 +30,7 @@
 | Lua-Init | 98 | 0 |
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 0 |
-| Gegenstand it_extralife | 90 | 1 |
+| Gegenstand it_extralife | 90 | 2 |
 | Stein st_key | 90 | 0 |
 | Boden fl_slope_inw | 76 | 0 |
 | Boden fl_slope_isw | 75 | 0 |
@@ -65,7 +65,6 @@
 | Stein st_rotator_cw | 50 | 0 |
 | Stein st_chess_black | 49 | 2 |
 | Stein st_pull | 48 | 2 |
-| Wurmloch ohne Ziel | 46 | 3 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
@@ -125,11 +124,11 @@
 | Boden fl_bridge_bw | 23 | 0 |
 | Stein st_turnstile_green | 23 | 0 |
 | Gegenstand it_spring_drop | 22 | 0 |
-| Stein st_chameleon | 22 | 1 |
+| Stein st_chameleon | 22 | 2 |
 | Stein st_ghost_break | 22 | 0 |
 | Gegenstand it_coin_l | 22 | 0 |
 | Stein st_shogun_m | 22 | 0 |
-| Boden fl_slope_ts | 21 | 0 |
+| Boden fl_slope_ts | 21 | 1 |
 | Boden fl_slope_tn | 21 | 0 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
@@ -184,7 +183,7 @@
 | Gegenstand it_bag | 13 | 0 |
 | Stein st_polarswitch | 13 | 0 |
 | Gegenstand it_burnable_oil | 13 | 0 |
-| Stein st_flat_movable | 13 | 0 |
+| Stein st_flat_movable | 13 | 1 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Stein st_ghost_purplemarble | 12 | 0 |
@@ -230,6 +229,7 @@
 | Stein st_blur_magic | 7 | 0 |
 | Stein st_blur_straight | 7 | 0 |
 | Stein st_camouflage_hollow | 7 | 0 |
+| Wurmloch ohne Ziel | 7 | 0 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
