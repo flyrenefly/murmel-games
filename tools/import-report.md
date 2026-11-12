@@ -1,6 +1,6 @@
 # Enigma-Import
 
-551 von 1322 Levels übernommen (17 Pakete).
+560 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -22,7 +22,6 @@
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 9 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -62,7 +61,7 @@
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
-| Stein st_dispenser_bombblack | 19 | 4 |
+| Stein st_dispenser_bombblack | 19 | 5 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
@@ -323,7 +322,6 @@
 | Lua: it_burnable_ignited | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
-| Lua: st_thief | 1 | 0 |
 | Lua: st_rubberband | 1 | 0 |
 | Lua: st_turnstile | 1 | 0 |
 | Lua: st_turnstilearm_n | 1 | 0 |

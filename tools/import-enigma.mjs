@@ -86,6 +86,7 @@ const OBJECTS = [
   [/^it_wrench$/, ['it_wrench']],
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
+  [/^st_thief$/, ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag']],
   [/^st_floppy$/, ['st_floppy_on', 'st_floppy_off', 'sh_round']],
   [/^it_coin(_s|_m|_l)?$/, ['it_coin_s', 'it_coin_m', 'it_coin_l']],
   [/^st_coinslot(_instant)?$/, ['st_coinslot', 'st_coinslot_insert', 'sh_solid']],

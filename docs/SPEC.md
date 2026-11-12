@@ -413,6 +413,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   à 50 ms; Treffer klingen metallisch.
   Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
+- **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
+  st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
+  Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn
+  zieht, fängt ihn (12 × 80 ms); der Beutel (it_bag) mit der Beute bleibt liegen, Aufheben gibt die
+  Gegenstände zurück. Abweichungen: Beutel als Gegenstand im Inventar, Flasche/Betrunkenheit,
+  fl_thief fehlen; Enigmas Klang „thief“ fehlt auch dort.
 - **st_coinslot(_instant) + it_coin_s/m/l** (`CoinSlot.cc`, `Coin.cc`): Liegt eine Münze vorn
   im Inventar, nimmt der Schlitz sie beim Treffer (Einwurf 18 × 20 ms) und ist dann für
   `interval_s/_m/_l` Sekunden (3/6/12; -2 lehnt ab) an: Aktion true beim Einschalten, false am

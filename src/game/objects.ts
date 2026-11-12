@@ -16,12 +16,12 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3 };
 /** German names of inventory items for the display. */
 export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
@@ -181,6 +181,9 @@ function breakMs(o: GameObject): number {
   return t === 'laser' || t === 'bug' ? 6 * 50 : 10 * 50;
 }
 
+/** ThiefStone emerge/retreat: 7 frames à 80 ms. */
+const THIEF_MS = 7 * 80;
+
 /** CoinSlot insert animation: 18 frames à 20 ms. */
 const COIN_INSERT_MS = 18 * 20;
 
@@ -268,6 +271,10 @@ export interface GameObject {
   blast?: number;
   /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
   igniteAt?: number;
+  /** Thief: phase (none = idle), its start, the marble robbed and the loot in its bag. */
+  thief?: { phase?: 'emerge' | 'retreat' | 'capture'; since?: number; victim?: number; loot: string[] };
+  /** Bag (it_bag): the items it holds. */
+  loot?: string[];
   /** Coin slot: inserting since, time bought until, seconds waiting to be added after the insert. */
   slot?: { inserting?: number; until: number; add: number };
   /** BreakStone: start of BREAKING (removed after the animation). */
@@ -366,6 +373,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_dynamite' || kind === 'it_dynamite_burning') return 'dynamite';
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
+  if (kind === 'st_thief') return 'thief';
+  if (kind === 'it_bag') return 'bag';
   if (kind === 'st_coinslot' || kind === 'st_coinslot_instant') return 'coinslot';
   if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
@@ -528,7 +537,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'pull' || o.cls === 'rotator' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || o.cls === 'actorimpulse' || o.cls === 'keyswitch' || o.cls === 'laser' || o.cls === 'mirror' || o.cls === 'laserswitch' || o.cls === 'breakstone' || o.cls === 'coinslot' || o.cls === 'thief' || (o.cls === 'blocker' && (o.blocker ? o.blocker.phase === 'solid' || o.blocker.phase === 'growing' : !o.kind.startsWith('it_'))) || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       if (o.cls === 'window' && !o.gone) return windowFaces(o) | PANES;
       // PassageStone::collision_response: only an actor of the stone's colour passes.
@@ -667,6 +676,8 @@ export class ObjectWorld {
     for (const o of this.at(col, row)) {
       // PuzzleStone::actor_contact: ignited or exploding puzzle stones shatter the marble.
       if (o.cls === 'puzzle' && (o.puzzle === 'ignited' || o.puzzle === 'exploding')) this.events.push({ type: 'shatter', marble });
+      // ThiefStone::actor_touch: even a slight touch makes an idle thief emerge
+      if (o.cls === 'thief' && !o.gone && !o.thief?.phase) o.thief = { ...(o.thief ?? { loot: [] }), phase: 'emerge', since: this.now, victim: marble };
       if (o.cls !== 'death') continue;
       // DeathStone::actor_touch: the marble shatters, the stone pulses.
       this.events.push({ type: 'shatter', marble });
@@ -1015,7 +1026,8 @@ export class ObjectWorld {
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
         this.unplace(o);
-        inv.unshift(o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind);
+        if (o.cls === 'bag') inv.unshift(...(o.loot ?? []).slice(0, MAX_ITEMS - inv.length)); // it_bag: its items
+        else inv.unshift(o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind);
         if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
         this.events.push({ type: 'sound', name: 'pickup' });
       }
@@ -1370,6 +1382,52 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  // ---------- thieves (ThiefStone.cc) ----------
+
+  private thiefStep(o: GameObject): void {
+    const t = o.thief!;
+    const age = this.now - (t.since ?? 0);
+    if (t.phase === 'emerge' && age >= THIEF_MS) {
+      // ThiefStone::doSteal: a random item of the robbed marble's owner goes into the bag
+      if (t.victim !== undefined && t.victim >= 0) {
+        const inv = this.inventories[this.ownerOf(t.victim)] ?? this.inventory;
+        if (inv.length) {
+          const [it] = inv.splice(Math.floor(this.random() * inv.length), 1);
+          t.loot.push(it);
+          this.events.push({ type: 'items' });
+        }
+      }
+      o.thief = { ...t, phase: 'retreat', since: this.now };
+    } else if (t.phase === 'retreat' && age >= THIEF_MS) o.thief = { loot: t.loot };
+    else if (t.phase === 'capture' && age >= 12 * 80) this.remove(o);
+  }
+
+  /** ThiefStone "_capture": its bag drops (with an item lying there) unless a static item is here. */
+  private captureThief(o: GameObject): void {
+    const t = o.thief ?? { loot: [] };
+    const item = this.at(o.col, o.row).find((x) => !x.gone && isItem(x));
+    const loot = [...t.loot];
+    if (item && PICKUP_RADIUS[item.cls] !== undefined) {
+      loot.push(item.kind);
+      this.remove(item);
+    }
+    if (loot.length && !this.at(o.col, o.row).some((x) => !x.gone && isItem(x))) {
+      const bag = this.add('it_bag', 'bag', o.col, o.row);
+      bag.loot = loot;
+    }
+    o.thief = { phase: 'capture', since: this.now, loot: [] };
+  }
+
+  /** st_bluegray with thief_template 0..6 (80 ms) while emerging/retreating; capture 12 × 80 ms. */
+  thiefLook(o: GameObject): { image: string; frame: number; overlay: boolean } {
+    const t = o.thief;
+    const f = t?.since === undefined ? 0 : Math.floor((this.now - t.since) / 80);
+    if (t?.phase === 'capture') return { image: 'st_thief_capture', frame: Math.min(11, f), overlay: false };
+    if (t?.phase === 'emerge') return { image: 'thief_template', frame: Math.min(6, f), overlay: true };
+    if (t?.phase === 'retreat') return { image: 'thief_template', frame: 6 - Math.min(6, f), overlay: true };
+    return { image: '', frame: 0, overlay: false };
   }
 
   // ---------- coin slots (CoinSlot.cc, Coin.cc) ----------
@@ -2027,6 +2085,12 @@ export class ObjectWorld {
       o.chess = { phase: 'disappearing', since: this.now, dest };
       return;
     }
+    // ThiefStone "_capture": the knight takes an idle thief
+    if (other?.cls === 'thief' && !other.thief?.phase) {
+      this.captureThief(other);
+      o.chess = { phase: 'capturing', since: this.now, dest };
+      return;
+    }
     // _capture: only an idle chess stone of the other colour gives way
     if (other?.cls === 'chess' && other.state !== o.state && (other.chess?.phase ?? 'idle') === 'idle') {
       other.chess = { phase: 'captured', since: this.now };
@@ -2365,6 +2429,7 @@ export class ObjectWorld {
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
+      if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
       if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {

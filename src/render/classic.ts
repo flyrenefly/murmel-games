@@ -196,6 +196,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
+  if (kind === 'st_thief') return ['st_bluegray', 'thief_template', 'st_thief_capture', 'sh_round', 'it_bag'];
   if (kind.startsWith('it_coin')) return ['it_coin_s', 'it_coin_m', 'it_coin_l'];
   if (kind.startsWith('st_coinslot')) return ['st_coinslot', 'st_coinslot_insert', 'sh_solid'];
   if (kind.startsWith('it_bomb')) return ['it_bomb', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
@@ -478,6 +479,7 @@ export class ClassicView {
       else if (o.cls === 'springboard') this.frame('it_springboard', world.springboardFrame(o), px, py);
       else if (o.cls === 'key') this.frame('it_key', 0, px, py); // Item model it_key (codes only in the inventory)
       else if (o.cls === 'coin') this.image(o.kind === 'it_coin' ? 'it_coin_s' : o.kind, px, py);
+      else if (o.cls === 'bag') this.image('it_bag', px, py);
       else if (o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') {
         const look = world.blastLook(o);
         const im = img[look.image];
@@ -506,7 +508,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
@@ -639,6 +641,17 @@ export class ClassicView {
     if (o.cls === 'fourswitch') {
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_fourswitch', world.fourswitchFrame(o), px, py);
+      return;
+    }
+    if (o.cls === 'thief') {
+      const look = world.thiefLook(o);
+      if (pass === 'shadow') {
+        if (look.image !== 'st_thief_capture') this.image('sh_round', px, py);
+      } else if (look.image === 'st_thief_capture') this.frame(look.image, look.frame, px, py);
+      else {
+        this.image('st_bluegray', px, py);
+        if (look.overlay) this.frame('thief_template', look.frame, px, py);
+      }
       return;
     }
     if (o.cls === 'coinslot') {

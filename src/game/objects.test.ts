@@ -594,6 +594,30 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("a thief steals an item on touch; a knight capturing it leaves the bag with the loot", () => {
+    const w = new ObjectWorld([
+      { x: 2, y: 1, k: "it_hammer" },
+      { x: 5, y: 1, k: "st_thief" },
+      { x: 4, y: 3, k: "st_chess_black" },
+    ], W, {}, undefined, () => 0);
+    w.marbleAt(0, 0);
+    w.actorStep(2.5, 1.5, 0);
+    w.touch(5, 1, 0);
+    expect(w.thiefLook(w.objects[1]).overlay).toBe(true);
+    w.update(600);
+    expect(w.inventory).toEqual([]); // stolen
+    w.update(600);
+    expect(w.objects[1].thief?.phase).toBeUndefined();
+    // knight from (4,3): two north, one east → (5,1)
+    (w as unknown as { chessMove: (o: unknown, a: number[], b: number[]) => void }).chessMove(w.objects[2], [0, -1], [1, 0]);
+    w.update(2000);
+    expect(w.objects[1].gone).toBe(true);
+    const bag = w.objects.find((o) => o.kind === "it_bag")!;
+    expect(bag.loot).toEqual(["it_hammer"]);
+    w.actorStep(5.5, 1.5, 0);
+    expect(w.inventory).toEqual(["it_hammer"]);
+  });
+
   it("a coin slot takes a coin, switches on after the insert and off when the time is over", () => {
     const w = world([door(8), { x: 2, y: 1, k: "it_coin_m" }, { x: 5, y: 1, k: "st_coinslot", a: { target: "door1", action: "toggle" } }]);
     w.actorStep(2.5, 1.5, 0);
