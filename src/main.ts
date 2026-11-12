@@ -437,7 +437,21 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();
-    else if (e.type === 'oxyd') {
+    else if (e.type === 'oxydMsg') {
+      // StateObject::message → OxydStone::setState / message
+      const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
+      if (!s) continue;
+      const st = board.states[s.index];
+      const open = e.msg === 'open' || e.msg === 'on' || (e.msg === 'signal' && e.value) || (e.msg === 'toggle' && st === 'closed');
+      const close = e.msg === 'close' || e.msg === 'off' || (e.msg === 'signal' && !e.value) || (e.msg === 'toggle' && st === 'open');
+      if (open) handlePairEvents(board.hit(s.index));
+      else if (close) handlePairEvents(board.close(s.index));
+      else if (e.msg === 'closeall') handlePairEvents(board.closeAll());
+      else if (e.msg === 'shuffle') {
+        board.shuffle();
+        level.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
+      }
+    } else if (e.type === 'oxyd') {
       // a boulder rolled against an Oxyd stone: it opens like on a marble hit
       const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
       if (s) handlePairEvents(board.hit(s.index));

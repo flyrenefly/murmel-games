@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand']);
@@ -150,6 +150,8 @@ export type ObjectEvent =
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
   | { type: 'quake' }
+  /** A message to a named Oxyd stone (open, close, toggle, signal, shuffle, closeall …). */
+  | { type: 'oxydMsg'; col: number; row: number; msg: string; value: boolean }
   /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
   | { type: 'oxyd'; col: number; row: number }
   | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' };
@@ -169,6 +171,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
   if (kind === 'it_seed' || kind === 'it_seed_wood') return 'seed';
   if (kind === 'it_magicwand') return 'wand';
+  // A named Oxyd stone as message target; the stone itself is part of the level map.
+  if (kind === 'st_oxyd_ref') return 'oxydref';
   if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
@@ -256,7 +260,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0) return; // other objects (ot_timer) have no cell
+    if (o.col < 0 || o.cls === 'oxydref') return; // other objects (ot_timer) have no cell; Oxyd stones are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -264,7 +268,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0) return;
+    if (o.col < 0 || o.cls === 'oxydref') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -1049,6 +1053,10 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'oxydref') {
+      this.events.push({ type: 'oxydMsg', col: o.col, row: o.row, msg, value });
+      return;
+    }
     if (o.cls === 'boulder') {
       // BoulderStone::message: turn (clockwise), turnback, flip; counterclock swaps turn directions
       const ccw = truthy(o.attrs.counterclock);

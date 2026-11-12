@@ -49,4 +49,18 @@ describe('PairBoard (Enigma rules)', () => {
     b.hit(1);
     expect(b.hit(1)).toEqual([]);
   });
+
+  it("close() closes a single open stone; shuffle() deals the colours of closed stones anew", () => {
+    const b = new PairBoard(["A", "A", "B", "B", "C", "C"]);
+    b.hit(0);
+    expect(b.close(0)).toEqual([{ type: "closed", indices: [0] }]);
+    expect(b.states[0]).toBe("closed");
+    expect(b.hit(1)).toEqual([{ type: "opened", index: 1 }]); // no pair pending any more
+    b.hit(0); // A pair solved
+    expect(b.close(0)).toEqual([]); // solved pairs stay open
+    let k = 0;
+    b.shuffle(() => [0.9, 0.1, 0.5, 0.3][k++ % 4]);
+    expect([0, 1].map((i) => b.symbolOf(i))).toEqual(["A", "A"]); // solved ones keep theirs
+    expect([2, 3, 4, 5].map((i) => b.symbolOf(i)).sort()).toEqual(["B", "B", "C", "C"]);
+  });
 });

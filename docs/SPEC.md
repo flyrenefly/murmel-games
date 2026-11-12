@@ -204,6 +204,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   `$hollow` (das Flag steht in Enigma nicht in der Attributliste). Hinweis: Jeder Export hält
   Enigmas Zufall eines Ladevorgangs fest (Oxyd-Farben, Zufallsstarts, gemischte Puzzles); ein
   neuer Export ändert diese Varianten.
+- **Nachrichten an Oxyd-Steine** (`OxydStone.cc`, `StateObject.cc`): Benannte Oxyd-Steine
+  bekommen einen unsichtbaren Stellvertreter `st_oxyd_ref` (Ziel für Auslöser, Schalter,
+  Lua). open/on/signal 1 öffnen wie ein Treffer (`tryOpen`), close/off/signal 0 schließen
+  einen einzeln offenen Stein, toggle wechselt, closeall schließt alle, shuffle mischt die
+  Farben aller geschlossenen Steine neu (gleichverteilt; Enigmas Mischregeln aus
+  `wo:shuffleOxyd` bleiben unberücksichtigt). `oxydcolor` „%3“ gilt wie in `Value::toInt`
+  als 3.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer

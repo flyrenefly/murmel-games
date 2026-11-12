@@ -16,8 +16,38 @@ export class PairBoard {
   readonly states: StoneState[];
   private single: number | null = null;
 
-  constructor(private readonly symbols: readonly string[]) {
+  private readonly symbols: string[];
+
+  constructor(symbols: readonly string[]) {
+    this.symbols = [...symbols];
     this.states = symbols.map(() => 'closed');
+  }
+
+  /** Current symbol (colour) of a stone; shuffle changes the closed ones. */
+  symbolOf(index: number): string {
+    return this.symbols[index];
+  }
+
+  /** OxydStone::setState(0) ("close", "off", "signal" 0): a single open stone closes. */
+  close(index: number): PairEvent[] {
+    if (this.states[index] !== 'open') return [];
+    this.states[index] = 'closed';
+    if (this.single === index) this.single = null;
+    return [{ type: 'closed', indices: [index] }];
+  }
+
+  /**
+   * OxydStone::shuffleColors: the colours of all closed stones are dealt out again.
+   * (Enigma's fair shuffle also honours wo:shuffleOxyd rules; here a uniform permutation.)
+   */
+  shuffle(random: () => number = Math.random): void {
+    const closed = this.states.flatMap((s, i) => (s === 'closed' ? [i] : []));
+    const syms = closed.map((i) => this.symbols[i]);
+    for (let k = syms.length - 1; k > 0; k--) {
+      const j = Math.floor(random() * (k + 1));
+      [syms[k], syms[j]] = [syms[j], syms[k]];
+    }
+    closed.forEach((i, k) => (this.symbols[i] = syms[k]));
   }
 
   get solvedPairs(): number {

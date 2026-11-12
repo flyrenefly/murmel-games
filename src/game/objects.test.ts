@@ -438,6 +438,16 @@ describe('ObjectWorld', () => {
     expect(w.events.filter((e) => e.type === "shatter")).toEqual([]);
   });
 
+  it("a trigger sends its action to a named Oxyd stone as an event; the reference blocks nothing", () => {
+    const w = world([
+      { x: 5, y: 0, k: "st_oxyd_ref", a: { name: "oxydl%0" } },
+      { x: 2, y: 0, k: "it_trigger", a: { target: "oxydl%0", action: "open" } },
+    ]);
+    expect(w.blockAt(5, 0)).toBe(0);
+    w.marbleAt(2, 0);
+    expect(w.events).toContainEqual({ type: "oxydMsg", col: 5, row: 0, msg: "open", value: true });
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

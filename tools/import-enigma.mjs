@@ -65,7 +65,7 @@ const OBJECTS = [
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
@@ -302,11 +302,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
         const ox = OXYD.exec(st.k);
         if (ox) {
           const flavor = st.flavor || ox[2] || 'a';
-          const color = Number(st.oxydcolor);
+          // Value::toInt skips a leading % ("%3" → 3, from autotile templates)
+          const color = Number(String(st.oxydcolor ?? '').replace(/^%/, ''));
           def.stone = 'st_oxyd';
           def.flavor = flavor;
           def.symbol = Number.isInteger(color) && color >= 0 && color < 26 ? String.fromCharCode(65 + color) : '?';
           oxyds++;
+          // named Oxyd stones can receive messages (open, close, shuffle …)
+          // ($id: Lua's named list skips it, so no group holds the stone twice)
+          if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name } });
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor}${s}`);
         } else if (objectImages(st.k)) {
           // Boxes moved together by wires, or breaking into items, are not built yet.

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-136 von 1322 Levels übernommen (14 Pakete).
+139 von 1322 Levels übernommen (14 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -116,7 +116,7 @@
 | Boden fl_slope_te | 25 | 0 |
 | Gegenstand it_blocker | 25 | 1 |
 | Gegenstand it_umbrella | 24 | 1 |
-| Gegenstand it_crack_m | 24 | 0 |
+| Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
 | Boden fl_yinyang_yin | 23 | 0 |
@@ -252,11 +252,9 @@
 | Gegenstand it_strip_es | 5 | 0 |
 | Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
-| Stein st_oxyd_a | 5 | 0 |
 | Stein st_brownie (verbunden) | 5 | 1 |
 | Lua: st_window | 5 | 0 |
 | Boden fl_scales_platinum | 5 | 0 |
-| Stein st_oxyd_b | 4 | 3 |
 | Gegenstand it_strip_e | 4 | 0 |
 | Lua: st_lightglass | 4 | 0 |
 | Boden fl_bridge_be | 4 | 0 |
@@ -402,7 +400,6 @@
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
 | Lua: hammer() | 1 | 0 |
-| Stein st_oxyd_c | 1 | 0 |
 | Boden mit Kraft (fl_himalaya) | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
 | Lua: create_world() | 1 | 0 |
@@ -410,6 +407,7 @@
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | Lua: it_burnable | 1 | 0 |
+| Stein st_oxyd_b | 1 | 0 |
 | Boden mit Kraft (fl_dark) | 1 | 0 |
 | Lua: st_chess | 1 | 0 |
 | Stein fl_concrete | 1 | 0 |
