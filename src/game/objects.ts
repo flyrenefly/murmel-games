@@ -706,7 +706,10 @@ export class ObjectWorld {
       if (o.cls === 'box') {
         // Only a hit on a face (axis normal) fast enough pushes, away from the marble.
         const face = (Math.abs(nx) === 1 && ny === 0) || (Math.abs(ny) === 1 && nx === 0);
-        if (face && vn < -PUSH_SPEED && !o.gone) this.push(o, -nx, -ny);
+        if (face && vn < -PUSH_SPEED && !o.gone) {
+          this.push(o, -nx, -ny);
+          this.propagateWire(o, STEPS.findIndex(([x, y]) => x === -nx && y === -ny)); // Stone::propagateImpulse
+        }
         continue;
       }
       if (o.cls === 'quake') {
@@ -979,9 +982,46 @@ export class ObjectWorld {
     if (o.kind === 'st_stoneimpulse_hollow') this.shatterAt(o.col, o.row);
   }
 
+  private inWire = false;
+
+  /** Stone::propagateImpulse: every fellow (ot_wire) gets the impulse too, without passing it on. */
+  private propagateWire(o: GameObject, d: number): void {
+    if (this.inWire || d < 0 || !o.attrs.fellows) return;
+    this.inWire = true;
+    const done = new Set<GameObject>([o]);
+    for (const t of splitTokens(o.attrs.fellows)) {
+      for (const f of this.resolve(t)) {
+        if (done.has(f) || f.gone || isItem(f)) continue;
+        done.add(f);
+        this.sendImpulse(f.col, f.row, d);
+      }
+    }
+    this.inWire = false;
+  }
+
+  /** ot_wire: lines between wired stones (x1, y1, x2, y2 in tile units), each pair once. */
+  wireLines(): number[] {
+    const out: number[] = [];
+    const seen = new Set<string>();
+    for (const o of this.objects) {
+      if (o.gone || !o.attrs.fellows) continue;
+      for (const t of splitTokens(o.attrs.fellows)) {
+        for (const f of this.resolve(t)) {
+          if (f.gone || f === o) continue;
+          const key = o.id < f.id ? `${o.id}-${f.id}` : `${f.id}-${o.id}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(o.col + 0.5, o.row + 0.5, f.col + 0.5, f.row + 0.5);
+        }
+      }
+    }
+    return out;
+  }
+
   /** Stone::send_impulse: a stone receives an impulse in Enigma direction d. */
   private sendImpulse(col: number, row: number, d: number): void {
     const [dx, dy] = STEPS[d];
+    const hit = this.at(col, row).filter((o) => !o.gone && !isItem(o));
     for (const o of [...this.at(col, row)]) {
       if (o.gone) continue;
       if (o.cls === 'impulse') {
@@ -1000,6 +1040,8 @@ export class ObjectWorld {
       else if (o.cls === 'boulder' && o.boulder?.phase !== 'falling') this.boulderMove(o, d);
       else if (o.cls === 'puzzle' && !o.puzzle) this.moveCluster(o, dx, dy);
     }
+    // Stone::on_impulse: move first, then propagateImpulse to the wired fellows
+    for (const o of hit) this.propagateWire(o, d);
   }
 
   // ---------- wormholes (WormHole.cc) ----------

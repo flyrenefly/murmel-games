@@ -1,6 +1,6 @@
 # Enigma-Import
 
-664 von 1322 Levels übernommen (17 Pakete).
+680 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -30,7 +30,7 @@
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_glasses | 27 | 2 |
-| Gegenstand it_cross | 26 | 3 |
+| Gegenstand it_cross | 26 | 4 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 24 | 2 |
 | Gegenstand it_squashed | 24 | 2 |
@@ -73,13 +73,12 @@
 | ungerade Zahl Oxyd-Steine | 12 | 5 |
 | Lua: :drawRect | 12 | 3 |
 | Stein st_ghost_purplemarble | 12 | 0 |
-| Gegenstand it_burnable_fireproof | 11 | 2 |
+| Gegenstand it_burnable_fireproof | 11 | 6 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Gegenstand it_burnable_invisible | 10 | 0 |
 | Aktion turn | 10 | 3 |
-| Stein st_box_wood (verbunden) | 10 | 3 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 1 |
 | Gegenstand it_rubberband | 10 | 2 |
@@ -93,7 +92,6 @@
 | Lua: doorv() | 8 | 0 |
 | Stein st_monoflop | 8 | 3 |
 | Stein st_plaster_movable | 8 | 1 |
-| Stein st_box_rock (verbunden) | 8 | 3 |
 | Lua: :orientate | 7 | 2 |
 | Aktion openclose | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
@@ -107,7 +105,6 @@
 | Akteure: nicht genau eine schwarze Murmel | 6 | 1 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
-| Stein st_box_hay (verbunden) | 6 | 6 |
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
@@ -115,7 +112,7 @@
 | Stein st_death_movable | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
 | Gegenstand it_burnable_ash | 5 | 0 |
-| Stein st_brownie (verbunden) | 5 | 2 |
+| Gummiband an bewegtem oder unbekanntem Anker | 4 | 4 |
 | Lua: it_burnable_burning | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
@@ -128,7 +125,6 @@
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Stein st_ghost_greenbrown | 3 | 0 |
-| Gummiband an bewegtem oder unbekanntem Anker | 3 | 3 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 1 |
 | Lua: :newMap | 3 | 0 |
@@ -163,7 +159,6 @@
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Stein st_rawglass_movable (verbunden) | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 0 |
@@ -243,7 +238,6 @@
 | Lua: it_burnable_oil | 1 | 0 |
 | Lua: gsub() | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
-| Stein st_redbrown_movable (verbunden) | 1 | 1 |
 | Lua: :drawBorder | 1 | 0 |
 | Lua: lib.lua | 1 | 0 |
 | Lua: st_puzzle_yellow_es | 1 | 0 |
@@ -253,7 +247,6 @@
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: st_portal | 1 | 0 |
-| Stein st_flat_movable (verbunden) | 1 | 1 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |

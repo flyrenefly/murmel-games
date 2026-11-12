@@ -146,7 +146,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -438,7 +438,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
           if (flavor === 'e') imgs.add('st_oxyde');
         } else if (objectImages(st.k)) {
           // Boxes moved together by wires, or breaking into items, are not built yet.
-          if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && (st.wires || st.fellows || st.selection)) reject(`Stein ${st.k} (verbunden)`);
+          // stones moved together by wires (fellows) are built; "selection" (surprise) is not
+          if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && st.selection) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
         } else if (FAKE_OXYD.test(st.k)) {

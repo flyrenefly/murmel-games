@@ -649,6 +649,16 @@ describe('ObjectWorld', () => {
     expect(w.objects[3].state).toBe(0);
   });
 
+  it("wired boxes move together; the pushed one moves first, then its fellows", () => {
+    const w = world([
+      { x: 3, y: 1, k: "st_box_hay", a: { name: "a", fellows: "b" } },
+      { x: 3, y: 3, k: "st_box_hay", a: { name: "b", fellows: "a" } },
+    ]);
+    w.hit(3, 1, 0, -1, 0, -6); // push a east
+    expect(w.objects.map((o) => [o.col, o.row])).toEqual([[4, 1], [4, 3]]);
+    expect(w.wireLines()).toEqual([4.5, 1.5, 4.5, 3.5]);
+  });
+
   it("a dispenser hands out its items; an explosion breaks it", () => {
     const w = world([{ x: 4, y: 1, k: "st_dispenser_bombblack", a: { stock: "1" } }, { x: 5, y: 2, k: "it_bomb_white" }]);
     w.hit(4, 1, 0, -1, 0, -3, 0, 0, 0);

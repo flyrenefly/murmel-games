@@ -358,6 +358,18 @@ export class ClassicView {
       this.ctx.drawImage(im, 0, (Math.floor(this.now / 30) % 2) * S, S, S, Math.round(ox + h.x * T - S / 2), Math.round(oy + h.y * T - S / 2), S, S);
     }
     // Rubber bands: thick orange lines (Rubberband::postAddition, DL_Lines).
+    // ot_wire: purple lines between wired stones (Wire::postAddition)
+    const wires = this.objects?.wireLines() ?? [];
+    if (wires.length) {
+      ctx.strokeStyle = 'rgb(200, 50, 150)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < wires.length; i += 4) {
+        ctx.moveTo(Math.round(ox + wires[i] * T), Math.round(oy + wires[i + 1] * T));
+        ctx.lineTo(Math.round(ox + wires[i + 2] * T), Math.round(oy + wires[i + 3] * T));
+      }
+      ctx.stroke();
+    }
     if (this.rubbers.length) {
       ctx.strokeStyle = 'rgb(240, 140, 20)';
       ctx.lineWidth = 2;
