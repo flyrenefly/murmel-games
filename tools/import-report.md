@@ -1,6 +1,6 @@
 # Enigma-Import
 
-658 von 1322 Levels übernommen (17 Pakete).
+664 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -14,7 +14,7 @@
 | Stein st_mail | 54 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
-| Gegenstand it_cherry | 43 | 2 |
+| Gegenstand it_cherry | 43 | 3 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_floor() | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -24,13 +24,11 @@
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
-| Gegenstand it_strip_ew | 31 | 1 |
 | Lua: oxyd() | 30 | 0 |
-| Gegenstand it_coffee_drop | 28 | 4 |
+| Gegenstand it_coffee_drop | 28 | 5 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
-| Gegenstand it_strip_ns | 27 | 2 |
 | Gegenstand it_glasses | 27 | 2 |
 | Gegenstand it_cross | 26 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
@@ -72,7 +70,7 @@
 | Gegenstand it_burnable_oil | 13 | 2 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| ungerade Zahl Oxyd-Steine | 12 | 4 |
+| ungerade Zahl Oxyd-Steine | 12 | 5 |
 | Lua: :drawRect | 12 | 3 |
 | Stein st_ghost_purplemarble | 12 | 0 |
 | Gegenstand it_burnable_fireproof | 11 | 2 |
@@ -83,11 +81,11 @@
 | Aktion turn | 10 | 3 |
 | Stein st_box_wood (verbunden) | 10 | 3 |
 | Gegenstand it_pencil | 10 | 0 |
-| Gegenstand it_pin | 10 | 0 |
+| Gegenstand it_pin | 10 | 1 |
 | Gegenstand it_rubberband | 10 | 2 |
 | Gegenstand it_drop | 10 | 0 |
 | Stein st_spitter | 9 | 1 |
-| Flut | 9 | 2 |
+| Flut | 9 | 3 |
 | Lua-Init (Weltwert) | 9 | 1 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
@@ -109,34 +107,26 @@
 | Akteure: nicht genau eine schwarze Murmel | 6 | 1 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
-| Stein st_box_hay (verbunden) | 6 | 5 |
+| Stein st_box_hay (verbunden) | 6 | 6 |
 | Stein st_disco_dark | 6 | 0 |
 | Lua: getn() | 5 | 0 |
 | Lua: :kind | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 0 |
 | Stein st_jamb_black | 5 | 1 |
-| Gegenstand it_strip_sw | 5 | 0 |
-| Gegenstand it_strip_es | 5 | 0 |
-| Gegenstand it_strip_nw | 5 | 0 |
 | Gegenstand it_burnable_ash | 5 | 0 |
 | Stein st_brownie (verbunden) | 5 | 2 |
-| Gegenstand it_strip_e | 4 | 0 |
 | Lua: it_burnable_burning | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Gegenstand it_extinguisher_medium | 4 | 0 |
-| Gegenstand it_strip_nsw | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: it_cross | 4 | 0 |
-| Gegenstand it_strip_nes | 4 | 0 |
-| Gegenstand it_strip_ne | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
-| Gegenstand it_strip_w | 3 | 0 |
 | Stein st_ghost_greenbrown | 3 | 0 |
 | Gummiband an bewegtem oder unbekanntem Anker | 3 | 3 |
 | Lua: new_kruskal_maze() | 3 | 0 |
@@ -152,9 +142,6 @@
 | Stein st_flat_burnable | 3 | 0 |
 | Stein st_flat_cracked | 3 | 0 |
 | Lua: it_cherry | 3 | 0 |
-| Gegenstand it_strip_s | 3 | 0 |
-| Gegenstand it_strip_nesw | 3 | 0 |
-| Gegenstand it_strip_new | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
@@ -177,9 +164,6 @@
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_rawglass_movable (verbunden) | 2 | 0 |
-| Gegenstand it_strip_esw | 2 | 0 |
-| Gegenstand it_strip_n | 2 | 0 |
-| Gegenstand it_strip | 2 | 0 |
 | Stein st_yinyang | 2 | 0 |
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 0 |
@@ -249,8 +233,6 @@
 | Stein fl_concrete | 1 | 0 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Lua: send_message_named() | 1 | 0 |
-| Lua: it_strip_ew | 1 | 0 |
-| Lua: it_strip_ns | 1 | 0 |
 | Lua: floor() | 1 | 0 |
 | Lua: oxyd_shuffle() | 1 | 0 |
 | Lua: res.composer | 1 | 0 |
@@ -279,7 +261,6 @@
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 0 |
 | Lua: it_pipe | 1 | 0 |
-| Lua: it_strip | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
 | Lua: it_burnable_ignited | 1 | 1 |

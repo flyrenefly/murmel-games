@@ -682,7 +682,7 @@ function frame(now: number): void {
       if (mode === 'play' && objects.meditationDone(ph.marbles.filter((m) => m.pearl).length)) onWin();
       ph.marbles.forEach((m, i) => {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
-        if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y)) marbleDies(i, false);
+        if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y, Math.hypot(m.vel.x, m.vel.y))) marbleDies(i, false);
       });
       acc -= PHYSICS_DT;
     }

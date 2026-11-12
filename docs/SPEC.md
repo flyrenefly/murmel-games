@@ -454,6 +454,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_puller_n/e/s/w** (`PullerItem.cc`): abgelegt dreht er sich 1,6 s (4 × 4 Bilder à 100 ms), dann
   bekommt der Stein auf der Gegenseite einen Impuls in seine Richtung, und er verpufft als leere
   Explosion (Klang explosion2). Offen: Fenster-Innenzug.
+- **it_strip_*** (`StripItem.cc`): Steg über Abgrund/Wasser: deckt den Boden in der Feldmitte und zu den
+  verbundenen Seiten ab (halbe Breite 0,183 + Tempo/400, höchstens +0,125), dort fällt keine Kugel.
+  Bild it_strip nach Verbindungsbits. Offen: friction/adhesion-Attribute, Versinken im Sumpf.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

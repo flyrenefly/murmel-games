@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3 };
 /** German names of inventory items for the display. */
@@ -196,6 +196,13 @@ const COIN_INSERT_MS = 18 * 20;
 /** Items an explosion leaves alone (itf_indestructible) – the others are destroyed. */
 const INDESTRUCTIBLE = new Set<ObjectClass>(['sensor', 'magnet', 'wormhole', 'vortex', 'springboard', 'trigger', 'meditation', 'debris', 'key']);
 
+/** StripItem connections: $connections or the kind suffix. */
+export function stripConnections(o: GameObject): number {
+  if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return Number(o.attrs.$connections) & ALL_FACES;
+  const s = /^it_strip_([nesw]+)$/.exec(o.kind)?.[1] ?? '';
+  return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
+
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
 
@@ -365,6 +372,7 @@ export function objectClass(kind: string): ObjectClass | null {
   // Plain inventory items whose use main.ts handles (Ring, Spoon)
   if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return 'tool';
   if (kind === 'it_death') return 'deathitem';
+  if (/^it_strip(_[nesw]+)?$/.test(kind)) return 'strip';
   if (/^it_puller(_[nesw])?$/.test(kind)) return 'puller';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
   if (/^it_flag(_black|_white)?$/.test(kind)) return 'flag';
@@ -2293,7 +2301,17 @@ export class ObjectWorld {
   }
 
   /** Vortex covers the floor within 0.25 of its centre (Vortex::covers_floor). */
-  coversFloor(x: number, y: number): boolean {
+  coversFloor(x: number, y: number, speed = 0): boolean {
+    // StripItem::covers_floor: a plank along its connections, wider when fast
+    for (const o of this.at(Math.floor(x), Math.floor(y))) {
+      if (o.cls !== 'strip' || o.gone) continue;
+      const c = stripConnections(o);
+      const d = 0.183125 + Math.min(0.125, Math.max(0, speed / 400));
+      const cx = o.col + 0.5;
+      const cy = o.row + 0.5;
+      if ((Math.abs(y - cy) <= d && (Math.abs(x - cx) <= d || (x <= cx + d && c & WEST) || (x >= cx - d && c & EAST))) ||
+          (Math.abs(x - cx) <= d && ((y <= cy + d && c & NORTH) || (y >= cy - d && c & SOUTH)))) return true;
+    }
     return this.at(Math.floor(x), Math.floor(y)).some((o) => o.cls === 'vortex' && !o.gone && Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) < 0.25);
   }
 
