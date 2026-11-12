@@ -1360,3 +1360,28 @@ describe('fire', () => {
     expect(kinds.filter((k) => k === 'it_burnable_fireproof').length).toBe(13);
   });
 });
+
+describe('flat and plaster stones', () => {
+  it('the hammer breaks breakable and cracked ones, not burnable ones; dynamite breaks breakable ones', () => {
+    const w = world([
+      { x: 1, y: 1, k: 'st_flat_breakable' },
+      { x: 3, y: 1, k: 'st_flat_cracked' },
+      { x: 5, y: 1, k: 'st_flat_burnable' },
+      { x: 7, y: 1, k: 'st_plaster_breakable' },
+    ]);
+    w.inventory.push('it_hammer');
+    for (const x of [1, 3, 5, 7]) w.hit(x, 1, 0, -1, 0, -5);
+    w.update(300);
+    expect(w.objects.map((o) => o.gone)).toEqual([true, true, false, true]);
+  });
+
+  it('a burnable flat stone breaks when fire heats it', () => {
+    const fl: Record<string, string> = {};
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => fl[c + ',' + r] ?? 'fl_metal', setFloor: (c, r, k) => (fl[c + ',' + r] = k) };
+    const w = new ObjectWorld([{ x: 2, y: 2, k: 'st_flat_burnable' }, { x: 2, y: 3, k: 'it_burnable_ignited' }], W, {}, env, () => 0.5);
+    w.marbleAt(9, 9);
+    w.update(800);
+    w.update(300);
+    expect(w.objects[0].gone).toBe(true);
+  });
+});

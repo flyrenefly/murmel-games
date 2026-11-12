@@ -171,14 +171,31 @@ export function windowFaces(o: GameObject): number {
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
 }
 
-/** BreakStone type from the kind (st_break = plain). */
+/** FlatStone / PlasterStone kinds built as break stones: flat (breakable), cracked, fire (burnable), plaster. */
+const FLAT_BREAK: Record<string, string> = { st_flat_breakable: 'flat', st_flat_breaking: 'flat', st_flat_cracked: 'cracked', st_flat_burnable: 'fire', st_plaster_breakable: 'plaster' };
+
+/** BreakStone type from the kind (st_break = plain); FlatStone/PlasterStone types from FLAT_BREAK. */
 function breakType(o: GameObject): string {
-  return /^st_break_(\w+)$/.exec(o.kind)?.[1] ?? 'plain';
+  return FLAT_BREAK[o.kind] ?? /^st_break_(\w+)$/.exec(o.kind)?.[1] ?? 'plain';
+}
+
+/** Breaks with the st_flat_break animation (6 × 50 ms). */
+function flatBreak(t: string): boolean {
+  return t === 'laser' || t === 'bug' || t === 'flat' || t === 'cracked' || t === 'fire' || t === 'plaster';
 }
 
 function breakMs(o: GameObject): number {
-  const t = breakType(o);
-  return t === 'laser' || t === 'bug' ? 6 * 50 : 10 * 50;
+  return flatBreak(breakType(o)) ? 6 * 50 : 10 * 50;
+}
+
+/** processLight breaks it: BreakStone (not bug), breakable FlatStone/PlasterStone. */
+function lightBreaks(t: string): boolean {
+  return t !== 'bug' && t !== 'cracked' && t !== 'fire';
+}
+
+/** "ignite" / "_explosion" break it: BreakStone (not bug), FlatStone breakable or cracked, PlasterStone breakable. */
+function explosionBreaks(t: string): boolean {
+  return t !== 'bug' && t !== 'fire';
 }
 
 /** DispenserStone: the item it gives. */
@@ -425,6 +442,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_laserswitch') return 'laserswitch';
   if (/^st_window(_[nesw]+)?$/.test(kind)) return 'window';
   if (/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/.test(kind)) return 'breakstone';
+  if (FLAT_BREAK[kind]) return 'breakstone';
   if (/^it_explosion_(nil|hollow|crack|debris)$/.test(kind)) return 'explosion';
   if (kind === 'it_debris' || kind === 'it_debris_water') return 'debris';
   if (kind === 'it_dynamite' || kind === 'it_dynamite_burning') return 'dynamite';
@@ -467,7 +485,7 @@ export function objectClass(kind: string): ObjectClass | null {
  * Plain stones that move like a wood box (StandardStone/GlassStone with MOVABLE_STANDARD):
  * st_brownie and the _movable variants. Unlike BoxStone they do not sink or build bridges.
  */
-export const MOVABLE_STONE = /^st_(brownie|plop|(granite|camouflage|redbrown|greenbrown|invisible|rawglass|lightglass|darkglass|flat)_movable)$/;
+export const MOVABLE_STONE = /^st_(brownie|plop|(granite|camouflage|redbrown|greenbrown|invisible|rawglass|lightglass|darkglass|flat|plaster)_movable)$/;
 
 /** Image and shadow of a movable plain stone (models-2d.lua); invisible ones draw nothing. */
 export function movableLook(kind: string): { image: string; shadow: string } | null {
@@ -688,7 +706,8 @@ export class ObjectWorld {
         // BreakStone::actor_hit: the hammer breaks plain, oxydc and boulder ones, black/white
         // only for a marble of that colour
         const t = breakType(o);
-        if (this.wields('it_hammer') && (t === 'plain' || t === 'oxydc' || t === 'boulder' || (t === 'black' && color === 0) || (t === 'white' && color === 1))) this.breakStone(o);
+        // FlatStone/PlasterStone::actor_hit: the hammer breaks breakable and cracked ones
+        if (this.wields('it_hammer') && (t === 'plain' || t === 'oxydc' || t === 'boulder' || t === 'flat' || t === 'cracked' || t === 'plaster' || (t === 'black' && color === 0) || (t === 'white' && color === 1))) this.breakStone(o);
         return;
       }
       if (o.cls === 'mirror') {
@@ -1353,7 +1372,7 @@ export class ObjectWorld {
           if (o.cls === 'boulder') o.state = (o.state + 2) % 4; // BoulderStone: turn round
           else if (o.cls === 'impulse' && o.kind !== 'st_stoneimpulse_hollow') this.startImpulse(o, -1);
           else if (o.cls === 'rotator') o.state = 1 - o.state; // RotatorStone::lightDirChanged
-          else if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o); // BreakStone::processLight
+          else if (o.cls === 'breakstone' && lightBreaks(breakType(o))) this.breakStone(o); // BreakStone::processLight
         }
       }
     }
@@ -1364,7 +1383,7 @@ export class ObjectWorld {
       else if (o.cls === 'bomb') this.bombExplode(o);
     }
     // BreakStone::processLight: any light breaks it (not st_break_bug), also at the start
-    for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && breakType(o) !== 'bug' && lit.has(o.row * W + o.col)) this.breakStone(o);
+    for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && lightBreaks(breakType(o)) && lit.has(o.row * W + o.col)) this.breakStone(o);
     // LaserSwitch::lightDirChanged: on with light, off without (the initial state acts not)
     for (const o of this.objects) {
       if (o.cls !== 'laserswitch' || o.gone) continue;
@@ -1452,7 +1471,7 @@ export class ObjectWorld {
   private igniteAt(c: number, r: number): void {
     for (const o of [...this.at(c, r)]) {
       if (o.gone) continue;
-      if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
+      if (o.cls === 'breakstone' && explosionBreaks(breakType(o))) this.breakStone(o);
       else if (o.cls === 'ice') this.breakStone(o);
       else if (o.cls === 'dynamite' || o.cls === 'bomb') this.burn(o);
       else if (o.cls === 'crack') this.crack(o);
@@ -1465,7 +1484,7 @@ export class ObjectWorld {
     for (const o of [...this.at(c, r)]) {
       if (o.gone || isItem(o)) continue;
       if (o.cls === 'dispenser' || o.cls === 'ice') this.breakStone(o); // DispenserStone/IceBlock "_explosion"
-      if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
+      if (o.cls === 'breakstone' && explosionBreaks(breakType(o))) this.breakStone(o);
       else if (o.cls === 'window' && !truthy(o.attrs.secure)) {
         // WindowStone "_explosion": the faces towards the explosion (all, if it is here) break
         let faces = windowFaces(o);
@@ -1666,6 +1685,10 @@ export class ObjectWorld {
 
   /** Stone "heat": st_box_rock blocks the fire. */
   private heatStone(st: GameObject): boolean {
+    if (st.cls === 'breakstone' && breakType(st) === 'fire') {
+      this.breakStone(st); // FlatStone "heat" (burnable, not movable)
+      return true;
+    }
     return st.kind === 'st_box_rock';
   }
 
@@ -1721,6 +1744,7 @@ export class ObjectWorld {
     // stone "_fire": wood and hay boxes burn away
     const here = this.stoneObjectAt(c, r);
     if (here && /^st_box_(wood|hay)/.test(here.kind)) this.remove(here);
+    else if (here?.cls === 'breakstone' && breakType(here) === 'fire') this.breakStone(here); // FlatStone "_fire"
     const cont = justIgnited || this.fireType(c, r, 'eternal') || this.random() < 0.7;
     const f: FireFlags = { message: false, first: justIgnited, last: !cont };
     const st = this.stoneObjectAt(c, r);
@@ -2129,10 +2153,11 @@ export class ObjectWorld {
   /** Image and frame: st_break_<type> 10 × 50 ms; laser/bug: st_flat / st_break_bug, st_flat_break 6 × 50 ms. */
   breakLook(o: GameObject): { image: string; frame: number; solid: boolean } {
     const t = breakType(o);
-    const flat = t === 'laser' || t === 'bug';
+    const flat = flatBreak(t);
     const age = o.breaking === undefined ? -1 : this.now - o.breaking;
     const solid = t === 'oxydc' || t === 'boulder' || flat;
-    if (age < 0) return { image: t === 'laser' ? 'st_flat' : `st_break_${t}`, frame: 0, solid };
+    const idle: Record<string, string> = { laser: 'st_flat', flat: 'st_flat', cracked: 'st_flat_cracked', fire: 'st_flat_fire', plaster: 'st_plaster' };
+    if (age < 0) return { image: idle[t] ?? `st_break_${t}`, frame: 0, solid };
     if (flat) return { image: 'st_flat_break', frame: Math.min(5, Math.floor(age / 50)), solid };
     return { image: `st_break_${t}`, frame: Math.min(9, Math.floor(age / 50)), solid };
   }
@@ -3063,6 +3088,7 @@ export class ObjectWorld {
       if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
+      if (o.cls === 'breakstone' && !o.gone && o.breaking === undefined && o.kind === 'st_flat_breaking') o.breaking = 0;
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
       if (o.cls === 'ice' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= 5 * 50) {
         // IceBlock::animcb (BREAKING): CoverFloor fl_ice here and on the four neighbours (not abyss)

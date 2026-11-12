@@ -530,6 +530,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua: random, obj:is, obj:kind, peepall** (api2init.lua, KindDescriptor::isKind, OxydStone):
   `random` = `math.random`; `is` prüft die Art oder eine Oberart (hier per Präfix: st_oneway passt auf
   st_oneway_black); `peepall` im Levelstart zeigt bei Oxyd-Sorte e die Farben aller Steine außer Schein-Oxyden.
+- **st_flat_breakable / _cracked / _burnable / _breaking, st_plaster_breakable / _movable** (`FlatStone.cc`,
+  `PlasterStone.cc`): als Bruchsteine mit der st_flat_break-Animation (6 × 50 ms). Hammer bricht
+  breakable und cracked; Laser bricht breakable; Explosion/Zünden bricht breakable und cracked; Feuer
+  ("_fire" auf dem Feld, "heat" daneben) bricht burnable. Bilder st_flat, st_flat_cracked, st_flat_fire,
+  st_plaster. st_plaster_movable wird wie eine Kiste geschoben. Abweichungen: Stift/Pinsel (brennbar
+  machen) und Laser auf feste st_flat (werden rissig) fehlen; st_flat_moveburnable fehlt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

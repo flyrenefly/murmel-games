@@ -1,6 +1,6 @@
 # Enigma-Import
 
-703 von 1322 Levels übernommen (17 Pakete).
+710 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -44,26 +44,24 @@
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Akteur ac_bug | 18 | 3 |
-| Gegenstand it_spade | 17 | 2 |
+| Gegenstand it_spade | 17 | 4 |
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_banana | 17 | 0 |
-| Stein st_flat_breakable | 17 | 5 |
-| Lua: :add | 16 | 3 |
+| Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
 | Stein st_polarswitch | 15 | 4 |
 | Stein st_barrier | 15 | 4 |
-| Stein st_plaster_breakable | 14 | 0 |
 | Stein st_magic_oxydc | 14 | 4 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 0 |
 | Gegenstand it_weight | 14 | 1 |
-| Stein st_flash | 14 | 2 |
+| Stein st_flash | 14 | 3 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
-| Gegenstand it_bag | 13 | 2 |
+| Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Lua: :drawRect | 12 | 3 |
@@ -83,7 +81,6 @@
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |
 | Stein st_monoflop | 8 | 3 |
-| Stein st_plaster_movable | 8 | 1 |
 | Lua: :orientate | 7 | 2 |
 | Aktion openclose | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
@@ -124,8 +121,6 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Stein st_flat_burnable | 3 | 1 |
-| Stein st_flat_cracked | 3 | 0 |
 | Lua: it_cherry | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |

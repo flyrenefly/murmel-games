@@ -208,6 +208,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_rotator')) return ['st_rotator_cw', 'st_rotator_ccw', 'sh_round'];
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
+  if (/^st_(flat_(breakable|breaking|cracked|burnable)|plaster_breakable)$/.test(kind)) return ['st_flat', 'st_flat_cracked', 'st_flat_fire', 'st_plaster', 'st_flat_break', 'sh_solid'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
   if (kind.startsWith('st_shogun')) return ['st_shogun', 'sh_shogun_s', 'sh_shogun_m', 'sh_shogun_l'];
