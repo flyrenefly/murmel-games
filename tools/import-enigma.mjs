@@ -318,9 +318,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // A white marble is steered with the yin-yang, which Enigma hands out in single play only
   // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
   const whites = actors.filter((k) => k === 'ac_marble_white').length;
-  if (whites > 1) reject('mehrere weiße Murmeln');
-  // Without network play there is no yin-yang: the white marble (controllers 2) is a passive ball.
-  const passiveWhite = whites === 1 && !/el:network="true"/.test(xml);
+  // Without network play there is no yin-yang: white marbles (controllers 2) are passive balls.
+  const passiveWhite = whites >= 1 && !/el:network="true"/.test(xml);
+  if (whites > 1 && !passiveWhite) reject('mehrere weiße Murmeln');
   // Rubber bands need the export with their values (enigma-web level-export since 11.11. evening).
   const banded = w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers));
   if (banded && !Array.isArray(w.rubberbands)) reject('Gummiband (alter Export)');

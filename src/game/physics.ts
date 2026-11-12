@@ -178,12 +178,15 @@ export class PhysicsWorld {
         ? makeMarble(mp.k === 'ac_pearl_black' || mp.a?.color === '0' ? 0 : 1, level.start.x, level.start.y, true, { x: Number(mp.a?.velocity_x) || 0, y: Number(mp.a?.velocity_y) || 0 })
         : makeMarble(0, level.start.x, level.start.y),
     ];
-    const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
-    if (white) {
+    // White marbles (several only as passive balls, without network play)
+    const whites = new Map<ActorDef, Marble>();
+    for (const white of level.actors ?? []) {
+      if (white.k !== 'ac_marble_white') continue;
       const w = makeMarble(1, white.x, white.y);
       w.passive = white.a?.passive === 'true';
       w.essential = white.a?.essential === '1';
       this.marbles.push(w);
+      whites.set(white, w);
     }
     // Pearls: more balls of the player (velocity_x/_y as given by the level).
     const pearls = new Map<ActorDef, Marble>();
@@ -199,7 +202,7 @@ export class PhysicsWorld {
     let ei = 0;
     for (const a of level.actors ?? []) {
       if (pearls.has(a)) bodies.push(pearls.get(a)!);
-      else if (a.k === 'ac_marble_white') bodies.push(this.marbles[1]);
+      else if (whites.has(a)) bodies.push(whites.get(a)!);
       else if (ei < this.enemies.length && this.enemies[ei].kind === enemyKind(a.k)) bodies.push(this.enemies[ei++]);
       else bodies.push(null);
     }

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-476 von 1322 Levels übernommen (17 Pakete).
+480 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -54,7 +54,7 @@
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
 | Gegenstand it_coffee_drop | 28 | 2 |
-| Stein st_scissors | 28 | 1 |
+| Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 1 |
@@ -78,7 +78,7 @@
 | Stein st_magic_brick | 19 | 2 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Akteure: nicht genau eine schwarze Murmel | 18 | 3 |
+| Akteure: nicht genau eine schwarze Murmel | 18 | 4 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 3 |
@@ -88,7 +88,6 @@
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
-| mehrere weiße Murmeln | 16 | 4 |
 | Stein st_break_plain | 16 | 0 |
 | Stein st_break_boulder | 15 | 2 |
 | Lua: :is | 15 | 2 |
@@ -106,7 +105,7 @@
 | Gegenstand it_seed_hay | 14 | 3 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 1 |
-| Stein st_ice | 14 | 2 |
+| Stein st_ice | 14 | 3 |
 | Stein st_disco_light | 14 | 3 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
@@ -132,7 +131,7 @@
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
 | Flut | 9 | 0 |
-| Lua-Init (Weltwert) | 9 | 0 |
+| Lua-Init (Weltwert) | 9 | 1 |
 | Stein st_break_bug | 9 | 0 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
@@ -221,6 +220,7 @@
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 0 |
+| mehrere weiße Murmeln | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_magic_oxyda | 2 | 0 |

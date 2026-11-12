@@ -267,7 +267,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Weiße Murmel ohne Yin-Yang** (Levels ohne `el:network`): Sie gehört Spieler 2
   (`controllers` 2) und ist im Einzelspiel eine passive Kugel ohne Mauskraft; der Yin-Yang
   fehlt. Sie hat eigene zwei Extraleben (Spieler 2); ohne Leben bleibt sie liegen, außer
-  sie ist `essential` – dann beginnt das Level neu.
+  sie ist `essential` – dann beginnt das Level neu. Mehrere weiße Murmeln (ohne Netzwerkspiel)
+  sind ebenso alle passiv; mit Netzwerkspiel werden sie weiter abgelehnt.
 - **Rotoren `attacknearest` / `prefercurrent`** (`RotorBase::think`): nur die nächste Kugel
   jagen; alle 0,8–1,6 s mit Wahrscheinlichkeit `prefercurrent` nur die gesteuerte Murmel.
   (Wurde vorher vom Importer weggelassen; außer Persecution Mania nutzt kein Level es.)
