@@ -1,6 +1,6 @@
 # Enigma-Import
 
-203 von 1322 Levels übernommen (15 Pakete).
+206 von 1322 Levels übernommen (15 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -93,7 +93,6 @@
 | Stein st_actorimpulse_invisible | 27 | 1 |
 | Stein fl_bridge_gc | 27 | 0 |
 | Akteur ac_horse | 27 | 0 |
-| Stein st_blur_cross | 27 | 3 |
 | Gegenstand it_strip_ns | 27 | 0 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
@@ -207,8 +206,6 @@
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 0 |
 | Stein fl_bridge_bw | 7 | 0 |
-| Stein st_blur_magic | 7 | 0 |
-| Stein st_blur_straight | 7 | 0 |
 | Stein st_camouflage_hollow | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 0 |
 | Lua: document() | 6 | 0 |

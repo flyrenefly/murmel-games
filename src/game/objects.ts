@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang']);
@@ -190,6 +190,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_yinyang') return 'yinyang';
   if (kind === 'st_swap') return 'swap';
   if (kind === 'st_fourswitch') return 'fourswitch';
+  if (/^st_blur(_straight|_cross|_magic)?$/.test(kind)) return 'blur';
   if (/^st_chess(_black|_white)?$/.test(kind)) return 'chess';
   // ChameleonStone: looks like the floor, actors pass (STONE_PASS), other stones do not
   if (kind === 'st_chameleon') return 'chameleon';
@@ -337,7 +338,7 @@ export class ObjectWorld {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
       }
-      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
+      if (o.cls === 'switch' || o.cls === 'timer' || o.cls === 'quake' || o.cls === 'death' || o.cls === 'boulder' || o.cls === 'swap' || o.cls === 'fourswitch' || o.cls === 'chess' || o.cls === 'blur' || (o.cls === 'box' && !o.gone)) return ALL_FACES;
       if (o.cls === 'oneway') return onewayFaces(o);
       // PassageStone::collision_response: only an actor of the stone's colour passes.
       if (o.cls === 'passage') {
@@ -365,6 +366,19 @@ export class ObjectWorld {
       }
       if (o.cls === 'chess') {
         this.hitChess(o, color, nx, ny, vn, vx, vy);
+        return;
+      }
+      if (o.cls === 'blur') {
+        // BlurStone::actor_hit: straight → passage of the marble's colour, cross → the other one;
+        // magic (looks like cross) only with the wand
+        if ((color === 0 || color === 1) && (o.state !== 2 || this.wields('it_magicwand'))) {
+          const c = o.state === 0 ? color : 1 - color;
+          o.kind = `st_passage_${c === 1 ? 'white' : 'black'}_square`;
+          o.cls = 'passage';
+          o.state = c;
+          o.attrs = { ...o.attrs, $flavor: 'square' };
+          this.events.push({ type: 'sound', name: 'switch' });
+        }
         return;
       }
       if (o.cls === 'swap') {
@@ -1403,6 +1417,11 @@ function onewayFaces(o: GameObject): number {
 
 function initialState(kind: string, a: Record<string, string>): number {
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
+  // BlurStone: 0 straight, 1 cross, 2 magic
+  if (/^st_blur/.test(kind)) {
+    const f = a.flavor || a.$flavor || /^st_blur_(\w+)$/.exec(kind)?.[1] || 'straight';
+    return f === 'magic' ? 2 : f === 'cross' ? 1 : 0;
+  }
   // ChessStone: state = colour (0 black, 1 white)
   if (/^st_chess/.test(kind)) return a.color !== undefined && a.color !== '' ? (Number(a.color) === 1 ? 1 : 0) : kind.endsWith('_white') ? 1 : 0;
   // FourSwitch: state = direction (default north)

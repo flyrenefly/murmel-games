@@ -579,6 +579,20 @@ describe('ObjectWorld', () => {
     expect(w.objects[0]).toMatchObject({ col: 6, row: 1 });
   });
 
+  it("st_blur turns into a passage stone when a marble hits it (BlurStone)", () => {
+    const w = world([{ x: 3, y: 0, k: "st_blur_straight" }, { x: 5, y: 0, k: "st_blur_cross" }, { x: 7, y: 0, k: "st_blur_magic" }]);
+    w.hit(3, 0, 1); // white marble: straight → white passage
+    expect(w.objects[0]).toMatchObject({ cls: "passage", state: 1, kind: "st_passage_white_square" });
+    w.hit(5, 0, 1); // cross → the other colour
+    expect(w.objects[1]).toMatchObject({ cls: "passage", state: 0 });
+    w.hit(7, 0, 0); // magic: only with the wand
+    expect(w.objects[2].cls).toBe("blur");
+    w.inventory.push("it_magicwand");
+    w.hit(7, 0, 0);
+    expect(w.objects[2]).toMatchObject({ cls: "passage", state: 1 });
+    expect(w.blockAt(3, 0, 1)).toBe(0);
+  });
+
   describe("magic wand", () => {
     it("is picked up within 0.3, rotates in the inventory and turns boulders and plain one-way stones", () => {
       const w = world([

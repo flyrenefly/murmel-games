@@ -289,6 +289,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Schachstein der anderen Farbe am Ziel wird geschlagen (20 Versuche à 0,1 s), andere Steine
   blockieren. Abgrund: fällt, Sumpf: versinkt (5 × 500 ms). Zauberstab, flip und signal
   wechseln die Farbe. Die Physik gibt dafür die Geschwindigkeit der Murmel weiter.
+- **st_blur_straight / _cross / _magic** (`SimpleStones.cc` BlurStone): Ein Treffer einer Murmel
+  macht ihn zum Durchlass-Stein – „straight“ in ihrer Farbe, „cross“ in der anderen; „magic“
+  (sieht aus wie cross) nur mit dem Zauberstab (Pinsel fehlt noch).
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
   Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
