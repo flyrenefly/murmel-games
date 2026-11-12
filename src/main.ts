@@ -665,7 +665,7 @@ function frame(now: number): void {
   if (isClassic()) {
     classic.status.left = formatTime(playSeconds);
     classic.status.right = `${pairsText()}${falls ? ` · Abstürze ${falls}` : ''}`;
-    classic.updateMarble(x, y, fall, me.color, me.sink, me.jump);
+    classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
     classic.updateRubbers(bands);
     classic.render(dt);

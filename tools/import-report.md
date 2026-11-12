@@ -1,11 +1,10 @@
 # Enigma-Import
 
-275 von 1322 Levels übernommen (15 Pakete).
+334 von 1322 Levels übernommen (16 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Stein st_laser | 225 | 3 |
-| Akteure: nicht genau eine schwarze Murmel | 198 | 62 |
 | keine Oxyd-Steine | 167 | 0 |
 | Lua-Rückruf | 163 | 1 |
 | Gegenstand it_sensor | 139 | 5 |
@@ -22,15 +21,15 @@
 | Gegenstand it_key | 94 | 0 |
 | Gegenstand it_hammer | 91 | 1 |
 | Stein st_key | 90 | 0 |
-| Gegenstand it_dynamite | 72 | 0 |
+| Gegenstand it_dynamite | 72 | 1 |
 | Boden fl_bridge_gc | 69 | 1 |
-| Stein st_oxyd | 68 | 0 |
+| Stein st_oxyd | 68 | 9 |
 | Lua: API 1 | 65 | 0 |
 | Stein st_break_oxydc | 62 | 0 |
 | Stein st_knight | 59 | 0 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
-| Gegenstand it_bomb_black | 56 | 0 |
+| Gegenstand it_bomb_black | 56 | 2 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_mirror_triangle | 55 | 0 |
 | Objekt ot_counter | 54 | 0 |
@@ -39,18 +38,18 @@
 | Stein st_mail | 54 | 0 |
 | Stein st_rotator_ccw | 52 | 2 |
 | XML fehlt | 50 | 50 |
-| Stein st_blocker | 50 | 0 |
+| Stein st_blocker | 50 | 1 |
 | Stein st_rotator_cw | 50 | 0 |
-| Stein st_pull | 48 | 2 |
+| Stein st_pull | 48 | 4 |
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_stone() | 41 | 0 |
 | Stein st_thief | 41 | 1 |
 | Stein st_shogun | 39 | 0 |
-| Stein st_window | 38 | 0 |
+| Stein st_window | 38 | 1 |
 | Lua: set_floor() | 38 | 0 |
-| Gegenstand it_springboard | 38 | 3 |
+| Gegenstand it_springboard | 38 | 6 |
 | Lua: set_item() | 37 | 0 |
 | Gegenstand it_brush | 37 | 0 |
 | Stein st_laserswitch | 36 | 0 |
@@ -71,17 +70,17 @@
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
-| Gegenstand it_coffee_drop | 28 | 0 |
+| Gegenstand it_coffee_drop | 28 | 1 |
 | Stein st_scissors | 28 | 1 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Stein fl_bridge_gc | 27 | 0 |
-| Akteur ac_horse | 27 | 1 |
+| Akteur ac_horse | 27 | 2 |
 | Gegenstand it_strip_ns | 27 | 1 |
 | Gegenstand it_glasses | 27 | 0 |
 | Stein st_turnstile_red | 27 | 0 |
 | Gegenstand it_cross | 26 | 0 |
 | Gegenstand it_blocker | 25 | 1 |
-| Gegenstand it_umbrella | 24 | 1 |
+| Gegenstand it_umbrella | 24 | 2 |
 | Gegenstand it_crack_m | 24 | 1 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Gegenstand it_squashed | 24 | 0 |
@@ -94,27 +93,28 @@
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Stein st_stoneimpulse_movable | 20 | 0 |
-| Gegenstand it_bottle_idle | 20 | 0 |
+| Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 0 |
 | Stein st_dispenser_bombblack | 19 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Boden fl_scales_concrete | 19 | 2 |
+| Akteure: nicht genau eine schwarze Murmel | 18 | 3 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
 | Akteur ac_bug | 18 | 2 |
 | Gegenstand it_spade | 17 | 0 |
-| Gegenstand it_burnable_ignited | 17 | 0 |
+| Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
 | Stein st_flat_breakable | 17 | 0 |
 | Lua: fill_floor() | 16 | 0 |
 | Gegenstand it_seed_volcano | 16 | 1 |
 | mehrere weiße Murmeln | 16 | 4 |
 | Stein st_break_plain | 16 | 0 |
-| Boden fl_scales_bridgewood | 16 | 1 |
+| Boden fl_scales_bridgewood | 16 | 2 |
 | Stein st_break_boulder | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
-| Gegenstand it_magnet_on | 15 | 2 |
+| Gegenstand it_magnet_on | 15 | 6 |
 | Stein st_break_black | 15 | 0 |
 | Stein st_break_white | 15 | 0 |
 | Stein st_barrier | 15 | 1 |
@@ -141,7 +141,7 @@
 | Lua: :add | 11 | 1 |
 | ungerade Zahl Oxyd-Steine | 11 | 1 |
 | Gegenstand it_crack_s | 11 | 1 |
-| Gegenstand it_burnable_fireproof | 11 | 1 |
+| Gegenstand it_burnable_fireproof | 11 | 2 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Objekt ot_timer (Lua-Init) | 11 | 0 |
@@ -153,7 +153,7 @@
 | Stein st_box_wood (verbunden) | 10 | 1 |
 | Gegenstand it_pencil | 10 | 0 |
 | Gegenstand it_pin | 10 | 0 |
-| Gegenstand it_rubberband | 10 | 0 |
+| Gegenstand it_rubberband | 10 | 2 |
 | Gegenstand it_drop | 10 | 0 |
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
@@ -167,7 +167,7 @@
 | Boden fl_scales_darkgray | 8 | 0 |
 | Gegenstand it_seed_greenbrown | 8 | 0 |
 | Lua: doorv() | 8 | 0 |
-| Stein st_monoflop | 8 | 0 |
+| Stein st_monoflop | 8 | 1 |
 | Stein st_plaster_movable | 8 | 0 |
 | Stein st_box_rock (verbunden) | 8 | 1 |
 | Stein st_dispenser_extralife | 8 | 0 |
@@ -349,7 +349,7 @@
 | Lua: gsub() | 1 | 0 |
 | Stein it_magnet_on | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
-| Stein st_redbrown_movable (verbunden) | 1 | 0 |
+| Stein st_redbrown_movable (verbunden) | 1 | 1 |
 | Lua: :drawBorder | 1 | 0 |
 | Lua: lib.lua | 1 | 0 |
 | Lua: st_knight | 1 | 0 |

@@ -171,7 +171,13 @@ export class PhysicsWorld {
     });
     for (const s of level.signals) this.solid[s.row * level.width + s.col] = s.index;
     this.enemies = createEnemies(level.actors ?? []);
-    this.marbles = [makeMarble(0, level.start.x, level.start.y)];
+    // Without a black marble the first pearl is ball 0 (it stays a pearl).
+    const mp = level.mainPearl;
+    this.marbles = [
+      mp
+        ? makeMarble(mp.k === 'ac_pearl_black' || mp.a?.color === '0' ? 0 : 1, level.start.x, level.start.y, true, { x: Number(mp.a?.velocity_x) || 0, y: Number(mp.a?.velocity_y) || 0 })
+        : makeMarble(0, level.start.x, level.start.y),
+    ];
     const white = (level.actors ?? []).find((a) => a.k === 'ac_marble_white');
     if (white) {
       const w = makeMarble(1, white.x, white.y);

@@ -52,6 +52,8 @@ export interface LevelFile {
   world?: Record<string, string>;
   /** Lua callbacks of the level (src/lua). */
   lua?: LevelLua;
+  /** No black marble: this pearl (at the start) is the main ball, actor index 0. */
+  mainPearl?: { k: string; a?: Record<string, string> };
 }
 
 export interface LevelLua {
@@ -100,6 +102,7 @@ export interface Level {
   rubbers: RubberDef[];
   world: Record<string, string>;
   lua: LevelLua | null;
+  mainPearl: { k: string; a?: Record<string, string> } | null;
 }
 
 export const DEFAULT_LEGEND: Record<string, CellDef> = {
@@ -192,6 +195,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     compat: file.compat ?? 1.1,
     actors: file.actors ?? [],
     rubbers: file.rubbers ?? [],
+    mainPearl: file.mainPearl ?? null,
     world: file.world ?? {},
     lua: file.lua ?? null,
   };

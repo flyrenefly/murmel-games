@@ -250,7 +250,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   sinken, lösen Auslöser aus, heben Gegenstände auf, kosten beim Tod ein Extraleben;
   Gummibänder und `velocity_x/_y` aus dem Level gelten. Bilder `ac_pearl_*`, `sh_pearl`,
   Fallanimation 70 65 60 55 50 ms. In Murmels Physik sind sie Einträge in `marbles` mit
-  `pearl: true`.
+  `pearl: true`. Levels ganz ohne schwarze Murmel (meist Meditation): Der Konverter macht die
+  erste Perle zur Hauptkugel (`mainPearl`, Start, Akteurindex 0 für Gummibänder); sie bleibt
+  eine Perle und wird im klassischen Stil als Perle gezeichnet (die 3D-Ansicht zeigt die
+  aktuelle Kugel weiter im Themenstil). Zwei schwarze Murmeln werden weiter abgelehnt.
 - **Weiße Murmel ohne Yin-Yang** (Levels ohne `el:network`): Sie gehört Spieler 2
   (`controllers` 2) und ist im Einzelspiel eine passive Kugel ohne Mauskraft; der Yin-Yang
   fehlt. Sie hat eigene zwei Extraleben (Spieler 2); ohne Leben bleibt sie liegen, außer

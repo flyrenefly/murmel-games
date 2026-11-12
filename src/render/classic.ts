@@ -124,6 +124,7 @@ function levelImages(level: Level): string[] {
   for (const s of level.signals) names.push(`st_oxyd${s.flavor}`, `st_oxyd${s.flavor}_open`, `st_oxyd${s.flavor}_opening`);
   for (const o of level.objects) names.push(...objectImages(o.k));
   for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
+  if (level.mainPearl) names.push(...actorImages(level.mainPearl.k, level.mainPearl.a?.color));
   if (level.cells.some((c) => c.floor === 'fl_swamp')) names.push(...SINK_IMAGES);
   if (level.world.FallenPuzzle) names.push(level.world.FallenPuzzle);
   // Kinds Lua callbacks may place.
@@ -196,7 +197,7 @@ export class ClassicView {
   private objects: ObjectWorld | null = null;
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
-  private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0, jump: -1 };
+  private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0, jump: -1, pearl: false };
   private actors: ActorSprite[] = [];
   private rubbers: number[] = [];
   private now = 0;
@@ -245,7 +246,8 @@ export class ClassicView {
   }
 
   /** Marble position in tile units; fall = progress 0..1 of the fall animation, -1 = not falling. */
-  updateMarble(x: number, y: number, fall: number, color = 0, sink = 0, jump = -1): void {
+  updateMarble(x: number, y: number, fall: number, color = 0, sink = 0, jump = -1, pearl = false): void {
+    this.marble.pearl = pearl;
     this.marble.sink = sink;
     this.marble.jump = jump;
     this.marble.x = x;
@@ -290,7 +292,9 @@ export class ClassicView {
     }
 
     this.drawActors(ox, oy);
-    this.drawMarble(ox, oy, this.marble);
+    // The current ball: a pearl when the level has no black marble (mainPearl)
+    if (this.marble.pearl) this.drawPearl(Math.round(ox + this.marble.x * T), Math.round(oy + this.marble.y * T), this.marble.color, this.marble.fall);
+    else this.drawMarble(ox, oy, this.marble);
     // Rubber bands: thick orange lines (Rubberband::postAddition, DL_Lines).
     if (this.rubbers.length) {
       ctx.strokeStyle = 'rgb(240, 140, 20)';

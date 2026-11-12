@@ -296,7 +296,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
-  if (actors.filter((k) => k === 'ac_marble_black').length !== 1) reject('Akteure: nicht genau eine schwarze Murmel');
+  // No black marble but pearls: the first pearl is the main ball (mainPearl)
+  const blacks = actors.filter((k) => k === 'ac_marble_black').length;
+  if (blacks > 1 || (blacks === 0 && !actors.some((k) => /^ac_pearl/.test(k)))) reject('Akteure: nicht genau eine schwarze Murmel');
   // A white marble is steered with the yin-yang, which Enigma hands out in single play only
   // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
   const whites = actors.filter((k) => k === 'ac_marble_white').length;
@@ -549,7 +551,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
   else if (oxyds % 2) reject('ungerade Zahl Oxyd-Steine');
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
-  const a = w.actors.find((x) => x.o.k === 'ac_marble_black');
+  const a = w.actors.find((x) => x.o.k === 'ac_marble_black') ?? w.actors.find((x) => /^ac_pearl/.test(x.o.k));
+  const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== '')) };
+  if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
     const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
@@ -608,6 +612,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     ...(objs.length ? { objects: objs } : {}),
     ...(others.length ? { actors: others } : {}),
     ...(rubbers.length ? { rubbers } : {}),
+    ...(mainPearl ? { mainPearl: Object.keys(mainPearl.a).length ? mainPearl : { k: mainPearl.k } } : {}),
     ...(compat < 1.1 ? { compat } : {}),
     ...(fallenFloor ? { world: { ...world, FallenPuzzle: fallenFloor } } : Object.keys(world).length ? { world } : {}),
     ...(luaPart ? { lua: luaPart } : {}),
