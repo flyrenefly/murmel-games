@@ -190,6 +190,17 @@ export class PhysicsWorld {
     this.mouseTime = WORLD_TICK;
   }
 
+  /** wo["FrictionStrength"] (server::FrictionFactor); negative values accelerate. */
+  frictionFactor = 1;
+
+  /** A stone appeared (true) or vanished in a cell at runtime (Lua callbacks). */
+  setSolid(col: number, row: number, solid: boolean): void {
+    if (col < 0 || row < 0 || col >= this.width || row >= this.height) return;
+    const i = row * this.width + col;
+    if (this.solid[i] >= 0) return; // Oxyd stones stay
+    this.solid[i] = solid ? -2 : -1;
+  }
+
   setForceField(field: ((x: number, y: number) => [number, number]) | null): void {
     this.field = field;
   }
@@ -289,7 +300,7 @@ export class PhysicsWorld {
   private advance(b: Body, f: BodyForce & { friction: number }): void {
     const dt = PHYSICS_DT;
     let { fx, fy } = f;
-    const friction = f.friction;
+    const friction = f.friction * this.frictionFactor;
     // No pushing into stones the body already rests against.
     for (let i = 0; i < b.normals.length; i += 2) {
       const nx = b.normals[i];
@@ -317,6 +328,14 @@ export class PhysicsWorld {
       const dv = Math.min(v, (dt * friction * Math.pow(v, 0.8)) / b.mass);
       vel.x -= (vel.x / v) * dv;
       vel.y -= (vel.y / v) * dv;
+      if (friction < 0) {
+        // inverse, accelerating friction: limit the speed again
+        const w = Math.hypot(vel.x, vel.y);
+        if (w > MAX_SPEED) {
+          vel.x *= MAX_SPEED / w;
+          vel.y *= MAX_SPEED / w;
+        }
+      }
     }
     b.pos.x += vel.x * dt;
     b.pos.y += vel.y * dt;

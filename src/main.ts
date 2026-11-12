@@ -6,7 +6,9 @@ import { ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
+import { applyWorld, makeLuaHost } from './game/luahost';
 import { LEVELS } from './levels';
+import type { LuaLevel } from './lua/runtime';
 import { listPacks, packLevels, packTitle } from './packs';
 import { type ActorSprite, CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
@@ -76,6 +78,10 @@ let packName = 'Murmel';
 let level: Level;
 let board: PairBoard;
 let physics: PhysicsWorld | null = null;
+/** Lua callbacks of the current level (null = none). */
+let lua: LuaLevel | null = null;
+/** wo["GlobalForce"] of the current level. */
+let globalForce = { x: 0, y: 0 };
 let objects: ObjectWorld = new ObjectWorld([], 1);
 let acc = 0;
 let falls = 0;
@@ -131,7 +137,25 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     },
   }, Math.random, lv.compat);
   physics = new PhysicsWorld(level, objects);
-  physics.setForceField((x, y) => objects.fieldForce(x, y));
+  // wo["GlobalForce"] (server::ConstantForce) acts on every actor, like the item forces.
+  const force = (globalForce = { x: 0, y: 0 });
+  const world = { ...lv.world };
+  applyWorld(physics, world, force);
+  physics.setForceField((x, y) => {
+    const [fx, fy] = objects.fieldForce(x, y);
+    return [fx + force.x, fy + force.y];
+  });
+  lua = null;
+  if (lv.lua) {
+    const ph = physics;
+    const ow = objects;
+    const { startLua } = await import('./lua');
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random }, world, force);
+    const l = await startLua(lv.lua.code, host);
+    if (level !== lv) return; // another level was loaded meanwhile
+    lua = l;
+    ow.onCallback = (fn, value, sender) => l.callback(fn, value, `o:${sender.id}`);
+  }
   updateItems();
   acc = 0;
   falls = 0;
@@ -654,6 +678,11 @@ requestAnimationFrame((t) => {
   state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m) => ({ ...m.pos, active: m.active })) }),
   swap: swapMarble,
   drop: dropItem,
+  luaError: () => lua?.lastError ?? null,
+  /** Test helper: call a Lua function of the level like a callback. */
+  luaCall: (fn: string, sender = '') => lua?.callback(fn, true, sender),
+  globalForce: () => ({ ...globalForce }),
+  friction: () => physics?.frictionFactor ?? 1,
   inventory: () => [...objects.inventory],
   push: (x: number, y: number) => {
     if (!physics) return;
@@ -662,7 +691,8 @@ requestAnimationFrame((t) => {
   },
   mouse: (dx: number, dy: number) => physics?.addMouseForce(dx * mouseSpeed, dy * mouseSpeed),
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
-  objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone })),
+  objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
+  cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),
   /** Test helper: put the marble at x/y (tile units). */
   teleport: (x: number, y: number) => physics?.respawn(x, y),
 };

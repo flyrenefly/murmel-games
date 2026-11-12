@@ -44,6 +44,21 @@ export interface LevelFile {
   actors?: ActorDef[];
   /** Rubber bands between actors (0 = black marble, n = actors[n − 1]) or to a stone centre. */
   rubbers?: RubberDef[];
+  /** World attributes the level script sets (GlobalForce "x,y", FrictionStrength). */
+  world?: Record<string, string>;
+  /** Lua callbacks of the level (src/lua). */
+  lua?: LevelLua;
+}
+
+export interface LevelLua {
+  /** The level script (el:luamain). */
+  code: string;
+  /** Kinds callbacks may set: floor/stone image name, 'object' or 'nil'. */
+  kinds: Record<string, string>;
+  /** Names and custom attributes of floors (l 'fl') and plain stones (l 'st'). */
+  named: { l: string; x: number; y: number; a: Record<string, string> }[];
+  /** Name and custom attributes of the black marble. */
+  marble?: Record<string, string>;
 }
 
 export interface Cell {
@@ -75,6 +90,8 @@ export interface Level {
   compat: number;
   actors: ActorDef[];
   rubbers: RubberDef[];
+  world: Record<string, string>;
+  lua: LevelLua | null;
 }
 
 export const DEFAULT_LEGEND: Record<string, CellDef> = {
@@ -145,7 +162,8 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     if (n % 2 !== 0) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
   }
 
-  const objects = (file.objects ?? []).filter((o) => o.x >= 0 && o.y >= 0 && o.x < width && o.y < height);
+  // Other objects (ot_timer) have no cell.
+  const objects = (file.objects ?? []).filter((o) => o.k.startsWith('ot_') || (o.x >= 0 && o.y >= 0 && o.x < width && o.y < height));
   return {
     id: file.id,
     title: file.title,
@@ -161,6 +179,8 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     compat: file.compat ?? 1.1,
     actors: file.actors ?? [],
     rubbers: file.rubbers ?? [],
+    world: file.world ?? {},
+    lua: file.lua ?? null,
   };
 }
 

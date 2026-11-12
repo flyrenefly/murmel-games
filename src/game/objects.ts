@@ -153,7 +153,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
   if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
-  if (kind === 'st_timer') return 'timer';
+  if (kind === 'st_timer' || kind === 'ot_timer') return 'timer'; // ot_timer: TimerGadget, no cell
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
   if (kind in MEDITATION_STATE) return 'meditation';
   if (kind === 'it_landmine') return 'landmine';
@@ -180,6 +180,8 @@ export class ObjectWorld {
   readonly events: ObjectEvent[] = [];
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
+  /** Lua function as action target (Object::performAction → lua::CallFunc). */
+  onCallback: ((fn: string, value: boolean, sender: GameObject) => void) | null = null;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
   readonly inventory: string[] = [];
   private nextId = 0;
@@ -226,6 +228,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
+    if (o.col < 0) return; // other objects (ot_timer) have no cell
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -233,6 +236,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
+    if (o.col < 0) return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -815,6 +819,42 @@ export class ObjectWorld {
   }
 
   /** Animation progress 0..1 towards the target state (1 when not moving). */
+  /** A message from a Lua callback (obj:open(), obj:message("toggle") …). */
+  sendMessage(o: GameObject, msg: string, value: boolean): void {
+    if (!o.gone) this.message(o, msg, value);
+  }
+
+  /** The stone (non-item) object in a cell. */
+  stoneObjectAt(col: number, row: number): GameObject | null {
+    return this.at(col, row).find((o) => !o.gone && !ITEM_CLASSES.has(o.cls)) ?? null;
+  }
+
+  /** The item object in a cell. */
+  itemAt(col: number, row: number): GameObject | null {
+    return this.at(col, row).find((o) => !o.gone && ITEM_CLASSES.has(o.cls)) ?? null;
+  }
+
+  /** wo[pos] = {kind, …} from a Lua callback: a new object (null if Murmel has no such object). */
+  create(kind: string, col: number, row: number, attrs: Record<string, string>): GameObject | null {
+    const cls = objectClass(kind);
+    if (!cls) return null;
+    const o = this.add(kind === 'st_box_wood' ? (this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v') : kind, cls, col, row);
+    o.attrs = { ...attrs };
+    o.name = attrs.name ?? '';
+    o.state = initialState(kind, attrs);
+    if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
+    this.updateTriggers(col, row);
+    return o;
+  }
+
+  /** obj:kill() / wo[pos] = {"st_nil"}. */
+  remove(o: GameObject): void {
+    if (o.gone) return;
+    o.gone = true;
+    this.unplace(o);
+    this.updateTriggers(o.col, o.row);
+  }
+
   /** Milliseconds since a seed or grown box started growing (-1 = not growing). */
   growAge(o: GameObject): number {
     return o.growing === undefined ? -1 : this.now - o.growing;
@@ -920,7 +960,10 @@ export class ObjectWorld {
     const actions = splitTokens(o.attrs[`action_${s}`] ?? o.attrs.action);
     targets.forEach((t, i) => {
       const action = actions[i] ?? '';
-      for (const obj of this.resolve(t)) this.message(obj, action === '' ? 'toggle' : action, value);
+      const objs = this.resolve(t);
+      // No target object: a Lua function of the level, if any (action "callback" or empty).
+      if (objs.length === 0 && (action === '' || action === 'callback')) this.onCallback?.(t, value, o);
+      for (const obj of objs) this.message(obj, action === '' ? 'toggle' : action, value);
     });
   }
 
@@ -963,7 +1006,7 @@ function initialState(kind: string, a: Record<string, string>): number {
   }
   const s = a.$state ?? a.state;
   if (s !== undefined && s !== '') return Number(s) ? 1 : 0;
-  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' ? 1 : 0;
+  return kind.endsWith('_open') || kind === 'st_timer' || kind === 'ot_timer' || kind === 'it_wormhole' || kind === 'it_wormhole_on' ? 1 : 0;
 }
 
 function numAttr(v: string | undefined, fallback: number): number {

@@ -15,10 +15,12 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
+    "fengari-web": "^0.1.4",
     "three": "^0.187.0"
   },
   "devDependencies": {
     "@types/three": "^0.187.0",
+    "fengari": "^0.1.5",
     "ssh2-sftp-client": "^12.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

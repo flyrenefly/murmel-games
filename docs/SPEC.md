@@ -176,7 +176,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Brücke. Die übrigen Samen (greenbrown, volcano, hay) und die Oxyd-Sonderregel (Samen auf
   Gitter wird Holzboden) fehlen noch.
 - **it_sensor** bleibt offen: Die drei Levels, die nur am Sensor scheiterten (Limited
-  Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf.
+  Supplies, Magic Trinity, Tilt Board), rufen damit Lua-Funktionen auf (siehe Lua-Rückrufe).
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
@@ -210,6 +210,46 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Der Export (enigma-web `level-export`) liefert die Bänder als `rubberbands`; Bänder an
   beweglichen Steinen (Kisten, Puzzles …) bleiben vorerst draußen. Gezeichnet als 2 px
   breite orange Linie (240, 140, 20).
+
+### Lua-Rückrufe (ab 12.11.2026, `src/lua/`, `src/game/luahost.ts`)
+
+Viele Enigma-Levels lassen Auslöser, Schalter oder Timer eine Lua-Funktion des Levels aufrufen
+(`Object::performAction`: Ziel ohne Objekt und Aktion „callback“ oder leer → `lua::CallFunc`
+mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau je Level.
+
+- **Interpreter:** fengari (Lua 5.3 in JavaScript, MIT), im Browser `fengari-web` (das
+  Paket `fengari` hält den Vite-Entwicklungsserver wegen dessen `process`-Objekt für Node),
+  in Node (Importer, Tests) `fengari`. Wird nur in Lua-Levels nachgeladen (ca. 68 KB gzip).
+- **API-Schicht `src/lua/enigma.lua`:** Teil von Enigmas API 2 – `po`, Positionslisten,
+  `no[]`, `st/it/fl`, Gruppen (`+ - *`, `g[obj]`, `g[-1]`, `:sub`, `:sort`, `:shuffle`,
+  Nachrichten an alle), Objekte (Attribute, `:open/:close/:toggle/:message/:kill/:exists`),
+  `ti`, `wo[pos] = Kachel`, `wo["GlobalForce"]`, `wo["FrictionStrength"]`, `cond`,
+  Konstanten aus `api2init.lua`. Lua-5.1-Ausgleich (`unpack`, `table.getn` …; ganze
+  Koordinaten bleiben Ganzzahlen, weil 5.3 sonst „8.0“ statt „8“ schreibt).
+- **Init-Modus:** Das Levelskript läuft beim Start einmal; Weltaufbau (`wo(...)`,
+  `wo[...] = …`, `wo:shuffleOxyd`, Objektänderungen) wird übersprungen, weil der Export ihn
+  schon enthält. Weltwerte zählen (der Export enthält sie nicht).
+- **Brücke `luahost.ts`:** Referenzen `o:<id>` (Objekte), `c:fl|st:x:y` (Böden, einfache
+  Steine), `a:<n>` (Akteure). Neue Steine/Böden zur Laufzeit ändern `level.cells`, die
+  Physik (`setSolid`) und zeichnen die statische Ebene neu; Objekte (Türen, Gitter …)
+  entstehen über `ObjectWorld.create`. Namen auf „#“ werden wie in Enigma durchnummeriert.
+- **Weltwerte auch ohne Rückrufe:** Der Importer führt jedes Levelskript einmal auf dem
+  Export aus und übernimmt `GlobalForce` und `FrictionStrength` (`world`). Vorher ignoriert:
+  Good Luck!, Parabola (Schwerkraft), Friction Nightmare, Worse Nightmare (Reibung).
+  Reibung nach `world.cc`: Faktor auf die Bodenreibung, negativ beschleunigend.
+- **ot_timer** (`TimerGadget.cc`): Der Importer zeichnet `wo:add`-Aufrufe im Init-Modus auf;
+  Timer werden Objekte ohne Feld (x = −1), Logik wie `st_timer`, standardmäßig an.
+  Andere `ot_`-Objekte (ot_counter …) führen zur Ablehnung. Levels, die ot_timer nutzten,
+  waren vorher ohne Timer im Spiel (Inverse Maze II und Kaleidoscope fielen deshalb heraus:
+  `lib.maze` bzw. `wo:drawRect` mit Resolver im Rückruf fehlen).
+- **Importprüfung (`tools/lua-check.mjs`):** Rückrufe dürfen nur bekannte Funktionen,
+  Methoden und Arten setzen; abgelehnt werden API 1 (`set_stone`, `enigma.*` …),
+  Bibliotheken (`lib.*`, `res.*` im Spiel), Akteure zur Laufzeit, unbekannte Kachelarten,
+  Fehler beim Init. Ziele, die nichts benennen, ignoriert Enigma – der Importer auch
+  (außer bei Bibliotheken oder Namen, die im Skript vorkommen).
+- **Offen:** 3D-Stil zeichnet zur Laufzeit gesetzte Steine/Böden nicht neu; `postinit`
+  wird nicht aufgerufen (der Export ist nach `postinit` entstanden); Akteur in einem neu
+  gesetzten Stein ungeprüft.
 
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 

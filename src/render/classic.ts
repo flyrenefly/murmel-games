@@ -113,6 +113,11 @@ function levelImages(level: Level): string[] {
   for (const o of level.objects) names.push(...objectImages(o.k));
   for (const a of level.actors) names.push(...actorImages(a.k, a.a?.color));
   if (level.cells.some((c) => c.floor === 'fl_swamp')) names.push(...SINK_IMAGES);
+  // Kinds Lua callbacks may place.
+  for (const [k, v] of Object.entries(level.lua?.kinds ?? {})) {
+    if (v === 'object') names.push(...objectImages(k));
+    else if (v !== 'nil') names.push(v);
+  }
   return names;
 }
 
@@ -361,7 +366,7 @@ export class ClassicView {
       return px > -2 * T && py > -2 * T && px < VIEW_W + T && py < SCREEN_H * T + T;
     };
     for (const o of world.objects) {
-      if (!visible(o)) continue;
+      if (o.gone || o.col < 0 || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
       const px = ox + o.col * T;
       const py = oy + o.row * T;
       if (o.cls === 'trigger' && o.attrs.invisible !== 'true') this.frame('it_trigger', o.state ? 1 : 0, px, py);
@@ -377,7 +382,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (!visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed') continue;
+        if (o.gone || o.col < 0 || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }

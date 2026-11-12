@@ -407,6 +407,17 @@ describe('ObjectWorld', () => {
   describe("timers", () => {
     const timer = (a: Record<string, string>): ObjectDef => ({ x: 3, y: 0, k: "st_timer", a: { target: "door1", action: "signal", ...a } });
 
+    it("ot_timer (no cell) runs like a timer stone and calls a Lua function without target object", () => {
+      const w = world([door(5), { x: -1, y: -1, k: "ot_timer", a: { target: "door1;spin", action: "signal", interval: "0.5", $state: "1" } }]);
+      const calls: string[] = [];
+      w.onCallback = (fn, value) => calls.push(`${fn} ${value}`);
+      expect(w.blockAt(-1, -1)).toBe(0);
+      w.update(600);
+      w.update(200);
+      expect(w.objects[0].state).toBe(1);
+      expect(calls).toEqual(["spin true"]);
+    });
+
     it("a looping timer sends true and false in turn", () => {
       const w = world([door(5), timer({ interval: "2" })]);
       w.update(1900);

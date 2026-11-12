@@ -40,3 +40,7 @@ Die Grafiken in `public/enigma/` stammen aus [Enigma](https://github.com/Enigma-
 (GPL-2.0-or-later), siehe [public/enigma/README.md](public/enigma/README.md); die Klänge in
 `public/sounds/` ebenfalls aus Enigma, siehe [public/sounds/README.md](public/sounds/README.md). Physik und
 Paarregel sind nach Enigmas Quellcode (`src/world.cc`, `src/stones/OxydStone.cc`) nachgebaut.
+
+Lua-Rückrufe der Enigma-Levels laufen in [fengari](https://github.com/fengari-lua/fengari)
+(Lua 5.3 in JavaScript, MIT; im Browser `fengari-web`). `src/lua/enigma.lua` bildet einen Teil von
+Enigmas Lua-API 2 nach (Konstanten und Verhalten aus Enigmas `data/api2init.lua` und `src/lua.cc`).

@@ -10,6 +10,7 @@
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -59,7 +60,7 @@ const OBJECTS = [
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -190,12 +191,41 @@ function objectDef(x, y, o) {
   return { x, y, k: o.k, a };
 }
 
-function convert(pack, meta, xml, exp) {
-  blockers = new Set();
-  return finish(convertLevel(pack, meta, xml, exp));
+/** Lua of a level: code, its functions and the result of running its init on the export. */
+async function analyzeLua(xml, exp) {
+  const code = luaCode(xml);
+  if (!code) return null;
+  let init;
+  try {
+    init = await luaInit(code, exp.world);
+  } catch (e) {
+    init = { world: {}, error: String(e) };
+  }
+  return { code, fns: luaFunctions(code), ...init };
 }
 
-function convertLevel(pack, meta, xml, exp) {
+/** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
+function runtimeKind(kind) {
+  if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
+  if (kind.startsWith('fl_')) {
+    if (SPECIAL_FLOORS.test(kind)) return null;
+    return DEADLY.has(kind) ? kind : imageFor(kind);
+  }
+  if (objectImages(kind)) return 'object';
+  if (kind.startsWith('st_')) {
+    if (OXYD.test(kind)) return null;
+    if (FAKE_OXYD.test(kind)) return `st_oxyd${FAKE_OXYD.exec(kind)[1]}`;
+    if (STONES.has(kind) || STONE_BASE.test(kind)) return STONE_BASE.exec(kind)?.[1] ?? kind;
+  }
+  return null;
+}
+
+function convert(pack, meta, xml, exp, lua) {
+  blockers = new Set();
+  return finish(convertLevel(pack, meta, xml, exp, lua));
+}
+
+function convertLevel(pack, meta, xml, exp, lua) {
   const imgs = new Set();
   const licence = attr(xml, /<el:license el:type="([^"]*)"/);
   if (!licenceOk(licence)) {
@@ -318,6 +348,16 @@ function convertLevel(pack, meta, xml, exp) {
       /* scissor cuts rubber bands; Murmel has none, so it changes nothing */
     }
   }
+  if (lua && /"ot_timer"/.test(lua.code)) {
+    if (lua.error) reject('Objekt ot_timer (Lua-Init)');
+    for (const { kind, attrs } of lua.adds ?? []) {
+      if (kind !== 'ot_timer') continue;
+      const a = {};
+      for (const [k, v] of Object.entries(attrs)) if (KEEP_ATTR.test(k) && v !== '') a[k] = v;
+      a.$state = attrs.state === '0' || attrs.state === 'false' ? '0' : '1'; // TimerGadget: ON
+      objs.push({ x: -1, y: -1, k: 'ot_timer', a });
+    }
+  }
   // "@pattern" in a target is the nearest matching object (Value::finalizeNearestObjectReference,
   // World::get_group: ties go to the one further south, then east); "@@pattern" and "@name" drop the @.
   const named = [...allCells(w)].filter((c) => c.o.name);
@@ -344,20 +384,53 @@ function convertLevel(pack, meta, xml, exp) {
         .join(',');
     }
   }
-  // Every action must be a supported message to a supported object (no Lua callbacks).
+  // Every action must be a supported message to a supported object, or a Lua function of the
+  // level (Object::performAction: no target object and action "callback" or empty).
+  let needsLua = false;
   for (const o of objs) {
     for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
       const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
       tokens(o.a[key]).forEach((t, i) => {
         const act = acts[i] ?? '';
-        if (act === 'callback' || resolveTarget(t, objs).length === 0) {
+        if ((act === 'callback' || act === '') && resolveTarget(t, objs).length === 0 && lua?.fns.has(t)) {
+          needsLua = true;
+        } else if (act === 'callback' || resolveTarget(t, objs).length === 0) {
           const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
-          reject(named ? `Stein ${named.k.replace(/_[nesw]+$/, '')}` : 'Lua-Rückruf');
+          const actor = w.actors.some((x) => x.o.name === t || '#' + x.o.$id === t);
+          // Object::performAction ignores a target that names nothing ("no longer valid target"),
+          // unless it is a Lua function (maybe from a library) or an ot_ object we do not have.
+          const unknown = act !== 'callback' && !/<el:dependency/.test(xml) && !(lua?.code ?? '').includes(`"${t}"`) && !/[*?]/.test(t);
+          if (named) reject(`Stein ${named.k.replace(/_[nesw]+$/, '')}`);
+          else if (actor) reject('Akteur als Ziel');
+          else if (!unknown) reject('Lua-Rückruf');
         } else if (!ACTIONS.has(act)) {
           const ok = compat < 1.1 && resolveTarget(t, objs).every((x) => API1_ACTIONS.some(([re, a]) => a === act && re.test(x.k)));
           if (!ok) reject(`Aktion ${act}`);
         }
       });
+    }
+  }
+  // Other objects (ot_timer, ot_counter …) are not in the export; rubber bands and wires are.
+  // The level script's init recorded its wo:add calls: timers become objects without a cell.
+  for (const m of (lua?.code ?? '').matchAll(/"(ot_\w+)"/g)) if (!/^ot_(rubberband|wire|timer)$/.test(m[1])) reject(`Objekt ${m[1]}`);
+  // World attributes set by the level script (wo["GlobalForce"] …), also without callbacks.
+  const world = {};
+  if (lua) {
+    for (const k of RUNTIME_WORLD) if (lua.world[k] !== undefined) world[k] = lua.world[k];
+    if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k))) reject('Lua-Init (Weltwert)');
+  }
+  const kinds = {};
+  if (needsLua) {
+    if (lua.error) reject('Lua-Init');
+    for (const p of luaProblems(lua.code, lua.fns)) reject(`Lua: ${p}`);
+    for (const k of runtimeKinds(lua.code)) {
+      const v = runtimeKind(k);
+      if (v === null) reject(`Lua: ${k}`);
+      else {
+        kinds[k] = v;
+        if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
+        else if (v !== 'nil') imgs.add(v);
+      }
     }
   }
   if (oxyds === 0) reject('keine Oxyd-Steine');
@@ -366,7 +439,7 @@ function convertLevel(pack, meta, xml, exp) {
   for (const i of imgs) usedImages.add(i);
   const a = w.actors.find((x) => x.o.k === 'ac_marble_black');
   const others = w.actors.filter((x) => x !== a).map((x) => {
-    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== ''));
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
     actorImages(x.o.k, attrs.color).forEach((i) => usedImages.add(i));
     return { k: x.o.k, x: Math.round(x.x * 1000) / 1000, y: Math.round(x.y * 1000) / 1000, ...(Object.keys(attrs).length ? { a: attrs } : {}) };
   });
@@ -397,6 +470,19 @@ function convertLevel(pack, meta, xml, exp) {
     rubbers.push(def);
   }
   if (blockers.size) return null;
+  // Lua: names and custom attributes of floors and plain stones (objects carry their own).
+  let luaPart = null;
+  if (needsLua) {
+    const inObjs = new Set(objs.map((o) => o.a.$id));
+    const named = [];
+    for (const c of allCells(w)) {
+      if (inObjs.has(c.o.$id)) continue;
+      const a = Object.fromEntries(Object.entries(c.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && v !== ''));
+      if (Object.keys(a).length) named.push({ l: c.o.k.slice(0, 2), x: c.x, y: c.y, a });
+    }
+    const black = Object.fromEntries(Object.entries(a.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && v !== ''));
+    luaPart = { code: lua.code, kinds, named, ...(Object.keys(black).length ? { marble: black } : {}) };
+  }
   return {
     id: `enigma:${exp.id}`,
     title: meta.title,
@@ -410,6 +496,8 @@ function convertLevel(pack, meta, xml, exp) {
     ...(others.length ? { actors: others } : {}),
     ...(rubbers.length ? { rubbers } : {}),
     ...(compat < 1.1 ? { compat } : {}),
+    ...(Object.keys(world).length ? { world } : {}),
+    ...(luaPart ? { lua: luaPart } : {}),
     ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
   };
 }
@@ -434,7 +522,7 @@ for (const pack of readPacks()) {
       continue;
     }
     current = `${pack.name}/${meta.xpath.replace(/^\.\//, '')} (${meta.title})`;
-    const lvl = convert(pack.name, meta, xml, exp);
+    const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp));
     if (lvl) levels.push(lvl);
   }
   ok += levels.length;
