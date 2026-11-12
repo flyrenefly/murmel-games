@@ -509,6 +509,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
   umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
+- **ot_wire / `fellows`** (`Wire.cc`, `Stone::propagateImpulse`): Verdrahtete Steine bekommen
+  denselben Stoß, nachdem der gestoßene Stein sich bewegt hat; weitergereicht wird er nicht.
+  Gezeichnet als lila Linien (Wire::postAddition). `selection` (Überraschung) fehlt noch.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
