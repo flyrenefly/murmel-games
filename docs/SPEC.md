@@ -413,6 +413,17 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   à 50 ms; Treffer klingen metallisch.
   Offen: Lichtpassagiere, Bomben/Dynamit im Strahl, Brille; die 3D-Ansicht
   zeichnet keine Strahlen.
+- **Explosionen** (`world.cc` SendExplosionEffect/explosion, `Dynamite.cc`, `Bomb.cc`,
+  `SimpleItems.cc` Explosion/Debris): `it_dynamite` wird aufgehoben, brennt nach dem Ablegen
+  (oder durch Zünden/Licht) 15 × 100 ms und zündet dann das 3 × 3-Feld (Bruchsteine brechen,
+  Dynamit/Bomben brennen, Risse reißen); zurück bleibt eine Mulde (auf Eis ein Wasserriss).
+  `it_bomb_black/_white` (fest) brennt 9 × 100 ms bzw. explodiert sofort bei Licht oder 10 ms
+  nach einem daraufgeschobenen Stein; schwarz: Explosion in Mitte und 4 Nachbarn, Diagonalen
+  zünden; weiß: alle 8 Nachbarn mit Trümmern. Explosionsfelder zerstören gewöhnliche Gegenstände
+  (stärkere gewinnen), brechen Fensterscheiben zur Explosion hin und lassen Kugeln zerspringen;
+  nach 50 ms bleibt je nach Stärke nichts, eine Mulde, ein Wasserriss oder Trümmer (8 × 50 ms,
+  Kugeln fallen hinein, danach Abgrund/Wasser). Klänge explosion2 (Dynamit), explosion1 (Bomben).
+  Offen: Feuer, Kanonenkugeln, Spender.
 - **st_break_* + it_hammer** (`BreakStone.cc`, `Hammer.cc`): Mit dem Hammer in der Hand zerschlägt
   ein Treffer plain, oxydc und boulder, black/white nur mit einer Kugel dieser Farbe; ein
   Felsbrocken zerbricht st_break_boulder, Laserlicht alle außer bug. Bruchanimation 10 × 50 ms

@@ -23,6 +23,7 @@ const SAMPLES = [
   'boink',
   'st-mirrorturn',
   'st-laser',
+  'explosion1',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
 
@@ -117,6 +118,11 @@ export class Sfx {
 
   quake(): void {
     this.play('quake');
+  }
+
+  /** A bomb explodes (sound-defaults.lua: bomb_black/_white = enigma/explosion1). */
+  bomb(): void {
+    this.play('explosion1', 0.8);
   }
 
   /** A mirror turns (sound-defaults.lua: mirrorturn = enigma/st-mirrorturn). */

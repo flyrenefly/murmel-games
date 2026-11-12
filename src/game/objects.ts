@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -181,6 +181,9 @@ function breakMs(o: GameObject): number {
   return t === 'laser' || t === 'bug' ? 6 * 50 : 10 * 50;
 }
 
+/** Items an explosion leaves alone (itf_indestructible) – the others are destroyed. */
+const INDESTRUCTIBLE = new Set<ObjectClass>(['sensor', 'magnet', 'wormhole', 'vortex', 'springboard', 'trigger', 'meditation', 'debris', 'key']);
+
 /** RotatorStone: one turn of the animation (8 × 70 ms). */
 const ROTATOR_TURN_MS = 8 * 70;
 
@@ -258,6 +261,10 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** Explosion, debris, burning dynamite or bomb: start of its animation. */
+  blast?: number;
+  /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
+  igniteAt?: number;
   /** BreakStone: start of BREAKING (removed after the animation). */
   breaking?: number;
   /** Blocker: stone (solid, shrinking, growing) or item (open, with its lock state). */
@@ -296,6 +303,8 @@ export type ObjectEvent =
   | { type: 'pullWarp'; fromCol: number; fromRow: number; toCol: number; toRow: number }
   /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
   | { type: 'laserhit'; marble: number }
+  /** Debris::actor_hit → "_fall": marble i falls. */
+  | { type: 'fall'; marble: number }
   /** marble: index of the marble that shatters. */
   | { type: 'shatter'; marble: number }
   | { type: 'floor'; col: number; row: number }
@@ -310,7 +319,7 @@ export type ObjectEvent =
   | { type: 'oxydMsg'; col: number; row: number; msg: string; value: boolean }
   /** A stone triggered the Oxyd stone in this cell (OxydStone "_trigger" → tryOpen). */
   | { type: 'oxyd'; col: number; row: number }
-  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' | 'mirror' | 'laser' | 'glass' };
+  | { type: 'sound'; name: 'switch' | 'door' | 'triggerdown' | 'triggerup' | 'pickup' | 'move' | 'explode' | 'fakeoxyd' | 'landmine' | 'mirror' | 'laser' | 'glass' | 'bomb' };
 
 export function objectClass(kind: string): ObjectClass | null {
   if (/^st_door(_[abcd])?(_ew)?(_open)?$/.test(kind)) return 'door';
@@ -347,6 +356,10 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_laserswitch') return 'laserswitch';
   if (/^st_window(_[nesw]+)?$/.test(kind)) return 'window';
   if (/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/.test(kind)) return 'breakstone';
+  if (/^it_explosion_(nil|hollow|crack|debris)$/.test(kind)) return 'explosion';
+  if (kind === 'it_debris' || kind === 'it_debris_water') return 'debris';
+  if (kind === 'it_dynamite' || kind === 'it_dynamite_burning') return 'dynamite';
+  if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^(st|it)_blocker(_new)?$/.test(kind)) return 'blocker';
   if (/^st_rotator(_cw|_ccw)?(_movable)?$/.test(kind)) return 'rotator';
   if (MIRROR_KIND.test(kind)) return 'mirror';
@@ -950,6 +963,12 @@ export class ObjectWorld {
           }
         }
       }
+      // Explosion::actor_hit shatters, Debris::actor_hit lets fall
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.gone) continue;
+        if (o.cls === 'explosion') this.events.push({ type: 'shatter', marble });
+        else if (o.cls === 'debris') this.events.push({ type: 'fall', marble });
+      }
       // LaserBeam::actor_hit: closer than 0.21 to the beam's axis → "_laserhit"
       const beam = this.beams.get(Math.floor(y) * this.width + Math.floor(x)) ?? 0;
       if (beam) {
@@ -980,6 +999,7 @@ export class ObjectWorld {
         const radius = PICKUP_RADIUS[o.cls];
         const inv = this.inventories[this.ownerOf(marble)] ?? this.inventory;
         if (radius === undefined || o.gone || o.growing !== undefined || inv.length >= MAX_ITEMS) continue;
+        if (o.cls === 'dynamite' && o.blast !== undefined) continue; // Dynamite::isStatic while burning
         if (this.inhibitPickup && this.ownerOf(marble) === this.player) continue;
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
         o.gone = true;
@@ -1012,6 +1032,7 @@ export class ObjectWorld {
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
     if (o.cls === 'seed') this.startGrowing(o);
     if (o.cls === 'flag') this.flagRespawn[flagColor(kind)] = { x: col + 0.5, y: row + 0.5 };
+    if (o.cls === 'dynamite') this.burn(o); // Dynamite::on_drop
     return true;
   }
 
@@ -1140,6 +1161,12 @@ export class ObjectWorld {
         }
       }
     }
+    // Dynamite::processLight burns, Bomb::processLight explodes
+    for (const o of this.objects) {
+      if (o.gone || !lit.has(o.row * W + o.col)) continue;
+      if (o.cls === 'dynamite') this.burn(o);
+      else if (o.cls === 'bomb') this.bombExplode(o);
+    }
     // BreakStone::processLight: any light breaks it (not st_break_bug), also at the start
     for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && breakType(o) !== 'bug' && lit.has(o.row * W + o.col)) this.breakStone(o);
     // LaserSwitch::lightDirChanged: on with light, off without (the initial state acts not)
@@ -1173,6 +1200,165 @@ export class ObjectWorld {
   /** st_laser sheet: column N E S W, row 1 off, rows 1..8 animated (100 ms) when on. */
   laserLook(o: GameObject): { col: number; row: number } {
     return { col: 3 - laserDir(o), row: o.state === 1 ? 1 + (Math.floor(this.now / 100) % 8) : 1 };
+  }
+
+  // ---------- explosions (world.cc, Dynamite.cc, Bomb.cc, SimpleItems.cc Explosion/Debris) ----------
+
+  /** Dynamite/Bomb::burn: the fuse starts (dynamite 15, bombs 9 frames à 100 ms). */
+  private burn(o: GameObject): void {
+    if (o.blast === undefined) o.blast = this.now;
+  }
+
+  private bombBlack(o: GameObject): boolean {
+    return o.attrs.color !== undefined && o.attrs.color !== '' ? Number(o.attrs.color) === 0 : !o.kind.includes('white');
+  }
+
+  /** Bomb::explode: its sound, the effect (black: neighbours, white: all eight), debris here. */
+  private bombExplode(o: GameObject): void {
+    if (o.gone) return;
+    const black = this.bombBlack(o);
+    this.remove(o);
+    this.events.push({ type: 'sound', name: 'bomb' });
+    this.explosionEffect(o.col, o.row, black ? 'black' : 'white');
+    this.addExplosion(o.col, o.row, 3);
+  }
+
+  /** Dynamite::explode: ignites the 3 × 3 field, a hollow (ice: a water crack) remains. */
+  private dynamiteExplode(o: GameObject): void {
+    if (o.gone) return;
+    this.remove(o);
+    this.events.push({ type: 'sound', name: 'landmine' }); // dynamite = explosion2
+    this.explosionEffect(o.col, o.row, 'dynamite');
+    this.addExplosion(o.col, o.row, this.env.floorAt(o.col, o.row) === 'fl_ice' ? 2 : 1);
+  }
+
+  private addExplosion(col: number, row: number, strength: number): GameObject {
+    const kind = ['it_explosion_nil', 'it_explosion_hollow', 'it_explosion_crack', 'it_explosion_debris'][strength];
+    const e = this.add(kind, 'explosion', col, row);
+    e.state = strength;
+    e.blast = this.now;
+    return e;
+  }
+
+  /** SendExplosionEffect: the centre, its 4 neighbours and the 4 diagonal cells. */
+  private explosionEffect(col: number, row: number, type: 'dynamite' | 'black' | 'white'): void {
+    const cells: [number, number, boolean][] = [[0, 0, true], [0, -1, true], [1, 0, true], [0, 1, true], [-1, 0, true], [1, -1, false], [1, 1, false], [-1, 1, false], [-1, -1, false]];
+    for (const [dx, dy, direct] of cells) {
+      const c = col + dx;
+      const r = row + dy;
+      if (c < 0 || r < 0 || c >= this.width) continue;
+      if (type === 'dynamite' || (type === 'black' && !direct)) this.igniteAt(c, r);
+      else this.explosionAt(col, row, c, r, type === 'black' ? 0 : 3);
+    }
+  }
+
+  /** "ignite" to stone and item of a cell. */
+  private igniteAt(c: number, r: number): void {
+    for (const o of [...this.at(c, r)]) {
+      if (o.gone) continue;
+      if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
+      else if (o.cls === 'dynamite' || o.cls === 'bomb') this.burn(o);
+      else if (o.cls === 'crack') this.crack(o);
+    }
+  }
+
+  /** world.cc explosion(): stone gets "_explosion"; the item becomes an explosion (stronger wins). */
+  private explosionAt(sc: number, sr: number, c: number, r: number, strength: number): void {
+    for (const o of [...this.at(c, r)]) {
+      if (o.gone || isItem(o)) continue;
+      if (o.cls === 'breakstone' && breakType(o) !== 'bug') this.breakStone(o);
+      else if (o.cls === 'window' && !truthy(o.attrs.secure)) {
+        // WindowStone "_explosion": the faces towards the explosion (all, if it is here) break
+        let faces = windowFaces(o);
+        for (const [bit, dx, dy] of [[WEST, -1, 0], [SOUTH, 0, 1], [EAST, 1, 0], [NORTH, 0, -1]] as const) {
+          if ((faces & bit) && ((c + dx === sc && r + dy === sr) || (c === sc && r === sr))) faces &= ~bit;
+        }
+        if (faces !== windowFaces(o)) {
+          o.attrs = { ...o.attrs, $connections: String(ALL_FACES ^ faces) };
+          this.events.push({ type: 'sound', name: 'glass' });
+          if (!faces) this.remove(o);
+        }
+      }
+    }
+    if (c === sc && r === sr) return;
+    const item = this.at(c, r).find((x) => !x.gone && isItem(x));
+    if (item) {
+      if (item.cls === 'explosion') {
+        if (strength > item.state) {
+          this.remove(item);
+          this.addExplosion(c, r, strength);
+        }
+        return;
+      }
+      if (item.cls === 'dynamite' || item.cls === 'bomb') {
+        this.burn(item);
+        return;
+      }
+      if (item.cls === 'crack') {
+        // Crack::message "_explosion": debris
+        this.remove(item);
+        const d = this.add(this.crackWater(item) ? 'it_debris_water' : 'it_debris', 'debris', c, r);
+        d.blast = this.now;
+        return;
+      }
+      if (item.cls === 'landmine') {
+        this.explode(item);
+        return;
+      }
+      if (INDESTRUCTIBLE.has(item.cls)) return;
+      this.remove(item);
+    }
+    this.addExplosion(c, r, strength);
+  }
+
+  private blastStep(o: GameObject): void {
+    if (o.blast === undefined && (o.kind.endsWith('_burning') || ((o.cls === 'dynamite' || o.cls === 'bomb') && o.attrs.$state === '1'))) o.blast = this.now;
+    if (o.cls === 'bomb') {
+      if (o.igniteAt !== undefined && this.now >= o.igniteAt) this.bombExplode(o);
+      else if (o.blast !== undefined && this.now - o.blast >= 9 * 100) this.bombExplode(o);
+      return;
+    }
+    if (o.blast === undefined) return;
+    const age = this.now - o.blast;
+    if (o.cls === 'dynamite') {
+      if (age >= 15 * 100) this.dynamiteExplode(o);
+      return;
+    }
+    if (o.cls === 'debris') {
+      // Debris::animcb: the floor breaks away
+      if (age >= 8 * 50) {
+        this.remove(o);
+        this.env.setFloor(o.col, o.row, o.kind === 'it_debris_water' ? 'fl_water' : 'fl_abyss');
+        this.events.push({ type: 'floor', col: o.col, row: o.row });
+      }
+      return;
+    }
+    // Explosion::animcb: hollow, water crack or debris on a destructible floor, else nothing
+    if (age < EXPLOSION_MS) return;
+    this.remove(o);
+    const floor = this.env.floorAt(o.col, o.row);
+    if (o.state === 0 || HARD_FLOORS.has(floor)) return;
+    if (o.state === 1) {
+      const h = this.add('it_meditation_hollow', 'meditation', o.col, o.row);
+      h.state = -2;
+    } else if (o.state === 2) {
+      const k = this.add('it_crack_m_water', 'crack', o.col, o.row);
+      k.state = 1;
+      k.attrs = { flavor: 'water' };
+    } else {
+      const d = this.add(floor === 'fl_water' ? 'it_debris_water' : 'it_debris', 'debris', o.col, o.row);
+      d.blast = this.now;
+    }
+  }
+
+  /** Render frames: dynamite idle / burning 15, bombs from the it_bomb sheet, debris 8 × 50 ms. */
+  blastLook(o: GameObject): { image: string; col: number; row: number } {
+    const age = o.blast === undefined ? -1 : this.now - o.blast;
+    if (o.cls === 'explosion') return { image: 'it_explosion', col: 0, row: 0 };
+    if (o.cls === 'debris') return { image: o.kind === 'it_debris_water' ? 'it_crack_water' : 'it_crack_abyss', col: 0, row: Math.min(7, Math.floor(age / 50)) };
+    if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
+    // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
+    return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
   }
 
   // ---------- breakable stones (BreakStone.cc) ----------
@@ -1976,6 +2162,7 @@ export class ObjectWorld {
   private stoneHitsItems(col: number, row: number): void {
     for (const o of [...this.at(col, row)]) {
       if (o.cls === 'landmine' && !o.gone) this.explode(o);
+      else if (o.cls === 'bomb' && !o.gone && o.blast === undefined && o.igniteAt === undefined) o.igniteAt = this.now + 10; // Bomb::on_stonehit
       else if (o.cls === 'seed' && !o.gone) this.startGrowing(o);
       else if (o.cls === 'meditation' && !o.gone) this.shovel(o);
     }
@@ -2100,6 +2287,7 @@ export class ObjectWorld {
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
+      if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {
         o.boulder ??= { phase: 'init', since: 0 };
@@ -2326,6 +2514,12 @@ export class ObjectWorld {
         } else if (b.phase === 'shrinking') this.blockerSet(o, 'growing');
         else this.blockerSet(o, 'shrinking');
       }
+      return;
+    }
+    if (o.cls === 'dynamite' || o.cls === 'bomb') {
+      // ignite / explode (Dynamite/Bomb::message), signal 1 = burning
+      if (msg === 'ignite' || (msg === 'signal' && value) || msg === 'on') this.burn(o);
+      else if (msg === 'explode') o.cls === 'bomb' ? this.bombExplode(o) : this.dynamiteExplode(o);
       return;
     }
     if (o.cls === 'counter') {

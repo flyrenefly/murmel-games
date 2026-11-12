@@ -594,6 +594,40 @@ describe('ObjectWorld', () => {
     expect(w.blockAt(8, 0)).toBe(ALL_FACES);
   });
 
+  it("dropped dynamite burns 1.5 s, then explodes: neighbours ignite, a hollow remains", () => {
+    const floors: Record<string, string> = {};
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 2, y: 2, k: "it_dynamite" }, { x: 5, y: 2, k: "st_break_plain" }, { x: 6, y: 2, k: "it_bomb_black" }], W, {}, env);
+    w.marbleAt(0, 0);
+    w.actorStep(2.5, 2.5, 0);
+    expect(w.inventory).toEqual(["it_dynamite"]);
+    w.dropItem(4.5, 2.5);
+    w.update(1000);
+    expect(w.blastLook(w.objects.find((o) => o.cls === "dynamite" && !o.gone)!).image).toBe("it_dynamite_burning");
+    w.update(600); // explodes: the break stone next to it breaks, the explosion stays 50 ms
+    expect(w.objects[1].breaking).toBeDefined();
+    expect(w.objects.some((o) => o.cls === "explosion" && !o.gone && o.col === 4)).toBe(true);
+    w.actorStep(4.5, 2.5, 0);
+    expect(w.events).toContainEqual({ type: "shatter", marble: 0 });
+    w.update(60);
+    expect(w.objects.some((o) => o.cls === "meditation" && !o.gone && o.col === 4)).toBe(true);
+  });
+
+  it("a black bomb hit by a moving stone explodes into its four neighbours, leaving debris", () => {
+    const floors: Record<string, string> = {};
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => floors[`${c},${r}`] ?? "fl_gray", setFloor: (c, r, k) => (floors[`${c},${r}`] = k) };
+    const w = new ObjectWorld([{ x: 4, y: 2, k: "it_bomb_black" }, { x: 5, y: 2, k: "st_box" }, { x: 4, y: 1, k: "it_magicwand" }], W, {}, env);
+    w.marbleAt(0, 0);
+    w.hit(5, 2, 0, 1, 0, -6); // box west onto the bomb
+    w.update(20);
+    expect(w.objects[2].gone).toBe(true); // the wand north of it was destroyed
+    expect(w.objects.filter((o) => o.cls === "explosion" && !o.gone).map((o) => [o.col, o.row]).sort()).toEqual([[3, 2], [4, 1], [4, 2], [4, 3], [5, 2]].sort());
+    w.update(60); // debris in the centre, the others leave nothing (black: nil)
+    w.update(450);
+    expect(floors["4,2"]).toBe("fl_abyss");
+    expect(floors["4,1"]).toBeUndefined();
+  });
+
   it("the hammer breaks st_break stones; black/white ones only for a marble of their colour", () => {
     const w = world([
       { x: 2, y: 1, k: "it_hammer" },

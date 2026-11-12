@@ -515,6 +515,10 @@ function handleObjectEvents(events: ObjectEvent[]): void {
   for (const e of events.splice(0)) {
     if (e.type === 'shatter') marbleDies(e.marble, true);
     else if (e.type === 'items') updateItems();
+    else if (e.type === 'fall') {
+      const m = physics?.marbles[e.marble];
+      if (m && m.active && m.jump <= 0) marbleDies(e.marble, false);
+    }
     else if (e.type === 'pullWarp') {
       // PullStone::on_impulse: WarpActor into the old cell (clamped into it), without velocity
       physics?.marbles.forEach((m, i) => {
@@ -579,6 +583,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     else if (e.name === 'mirror') sfx.mirror();
     else if (e.name === 'laser') sfx.laser();
     else if (e.name === 'glass') sfx.shatter();
+    else if (e.name === 'bomb') sfx.bomb();
   }
 }
 

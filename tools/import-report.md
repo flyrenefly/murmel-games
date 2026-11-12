@@ -1,6 +1,6 @@
 # Enigma-Import
 
-521 von 1322 Levels übernommen (17 Pakete).
+529 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -14,12 +14,10 @@
 | Gegenstand it_puller_w | 108 | 0 |
 | Lua: :shuffleOxyd | 104 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Gegenstand it_dynamite | 72 | 3 |
 | Lua: API 1 | 69 | 1 |
 | Stein st_knight | 59 | 1 |
 | Gegenstand it_floppy | 58 | 0 |
 | Stein st_coinslot | 58 | 0 |
-| Gegenstand it_bomb_black | 56 | 4 |
 | Gegenstand it_coin_s | 55 | 0 |
 | Stein st_floppy | 54 | 1 |
 | Stein st_mail | 54 | 1 |
@@ -28,7 +26,7 @@
 | Stein st_turnstilearm | 43 | 0 |
 | Gegenstand it_cherry | 43 | 1 |
 | Lizenz: keine Angabe | 42 | 42 |
-| Stein st_thief | 41 | 3 |
+| Stein st_thief | 41 | 4 |
 | Lua: set_floor() | 39 | 0 |
 | Stein st_shogun | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
@@ -48,7 +46,7 @@
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_death | 29 | 0 |
 | Gegenstand it_coin_m | 28 | 0 |
-| Gegenstand it_coffee_drop | 28 | 2 |
+| Gegenstand it_coffee_drop | 28 | 3 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
@@ -70,7 +68,7 @@
 | Gegenstand it_bottle_idle | 20 | 1 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_magic_brick | 19 | 2 |
-| Stein st_dispenser_bombblack | 19 | 2 |
+| Stein st_dispenser_bombblack | 19 | 4 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Stein st_shogun_l | 18 | 0 |
 | Stein st_rubberband | 18 | 1 |
@@ -79,7 +77,7 @@
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 1 |
 | Gegenstand it_banana | 17 | 0 |
-| Stein st_flat_breakable | 17 | 0 |
+| Stein st_flat_breakable | 17 | 1 |
 | Gegenstand it_seed_volcano | 16 | 1 |
 | Lua: :is | 15 | 2 |
 | Stein st_portal_horse | 15 | 0 |
@@ -94,15 +92,15 @@
 | Gegenstand it_seed_hay | 14 | 4 |
 | Gegenstand it_weight | 14 | 0 |
 | Stein st_flash | 14 | 2 |
-| Stein st_ice | 14 | 3 |
+| Stein st_ice | 14 | 4 |
 | Stein st_disco_light | 14 | 4 |
 | Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 1 |
 | Stein st_polarswitch | 13 | 1 |
-| Gegenstand it_burnable_oil | 13 | 0 |
+| Gegenstand it_burnable_oil | 13 | 1 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| ungerade Zahl Oxyd-Steine | 12 | 2 |
+| ungerade Zahl Oxyd-Steine | 12 | 3 |
 | Lua: :drawRect | 12 | 1 |
 | Aktion onoff | 12 | 1 |
 | Stein st_ghost_purplemarble | 12 | 0 |
@@ -118,7 +116,7 @@
 | Gegenstand it_drop | 10 | 0 |
 | Stein st_spitter | 9 | 1 |
 | Stein st_shogun_sml | 9 | 0 |
-| Flut | 9 | 0 |
+| Flut | 9 | 1 |
 | Lua-Init (Weltwert) | 9 | 1 |
 | Gegenstand it_burnable_burning | 9 | 0 |
 | Stein st_disco_medium | 9 | 0 |
@@ -142,7 +140,6 @@
 | Lua: puzzle() | 6 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 6 | 0 |
 | Lua: lib.math | 6 | 0 |
-| Gegenstand it_bomb_white | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
 | Stein st_lightpassenger_off | 6 | 0 |
 | Stein st_box_hay (verbunden) | 6 | 3 |
@@ -353,15 +350,12 @@
 | Lua: it_pipe_nw | 1 | 0 |
 | Lua: it_pipe_ne | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
-| Lua: it_bomb_black | 1 | 0 |
 | Lua: st_dispenser_bombblack | 1 | 0 |
-| Lua: it_bomb_white | 1 | 0 |
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |
 | Lua: st_charge_zero | 1 | 0 |
 | Lua: it_surprise | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
-| Lua: it_dynamite | 1 | 0 |
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
