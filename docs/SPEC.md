@@ -451,6 +451,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Schutz (aufaddiert): kein Zerspringen, Fallen oder Versinken; Halo (2 Bilder à 30 ms), in den letzten
   3 s blinkend, Perlen mit kleinem Halo. Licht macht den Schirm in Enigma zur Explosion – fehlt.
   **it_death** (`SimpleItems.cc` DeathItem): zerschmettert jede Kugel in seinem Feld (Bild 4 × 100 ms).
+- **it_puller_n/e/s/w** (`PullerItem.cc`): abgelegt dreht er sich 1,6 s (4 × 4 Bilder à 100 ms), dann
+  bekommt der Stein auf der Gegenseite einen Impuls in seine Richtung, und er verpufft als leere
+  Explosion (Klang explosion2). Offen: Fenster-Innenzug.
 - **st_thief** (`ThiefStone.cc`): Schon eine Berührung lässt ihn auftauchen (7 × 80 ms, Bild
   st_bluegray + thief_template); dann nimmt er einen zufälligen Gegenstand aus dem Inventar des
   Besitzers der Kugel in seinen Beutel und zieht sich zurück. Ein Springer (st_chess), der auf ihn

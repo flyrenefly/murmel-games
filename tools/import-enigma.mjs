@@ -91,6 +91,7 @@ const OBJECTS = [
   [/^it_sword$/, ['it_sword']],
   [/^it_umbrella$/, ['it_umbrella']],
   [/^it_death$/, ['it_death']],
+  [/^it_puller(_[nesw])?$/, ['it_puller', 'it_explosion']],
   [/^st_knight$/, ['st_knight', 'sh_round']],
   [/^st_dispenser(_bombblack|_bombwhite|_dynamite|_extralife)?$/, ['st_dispenser_bombblack', 'st_dispenser_bombwhite', 'st_dispenser_dynamite', 'st_dispenser_extralife', 'sh_round', 'it_bomb', 'it_dynamite', 'it_dynamite_burning', 'it_extralife', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
   [/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/, ['st_shogun', 'sh_shogun_s', 'sh_shogun_m', 'sh_shogun_l']],

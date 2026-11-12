@@ -1,17 +1,13 @@
 # Enigma-Import
 
-653 von 1322 Levels übernommen (17 Pakete).
+658 von 1322 Levels übernommen (17 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 2 |
 | Lua-Rückruf | 118 | 3 |
-| Gegenstand it_puller_n | 115 | 0 |
-| Gegenstand it_puller_s | 114 | 2 |
 | keine Oxyd-Steine | 111 | 0 |
 | Lua-Init | 110 | 3 |
-| Gegenstand it_puller_e | 108 | 0 |
-| Gegenstand it_puller_w | 108 | 1 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua: API 1 | 69 | 1 |
@@ -54,8 +50,8 @@
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_burnable_ignited | 17 | 2 |
 | Gegenstand it_banana | 17 | 0 |
-| Stein st_flat_breakable | 17 | 3 |
-| Lua: :add | 16 | 2 |
+| Stein st_flat_breakable | 17 | 4 |
+| Lua: :add | 16 | 3 |
 | Lua: :is | 16 | 2 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 0 |
