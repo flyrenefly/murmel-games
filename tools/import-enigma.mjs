@@ -155,13 +155,13 @@ const OBJECTS = [
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
 const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
-const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
+const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff'], [/^fl_bridge/, 'openclose']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
 
 const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();

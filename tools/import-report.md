@@ -1,6 +1,6 @@
 # Enigma-Import
 
-771 von 1322 Levels übernommen (18 Pakete).
+779 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -53,7 +53,6 @@
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 2 |
-| Aktion turn | 10 | 4 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_pin | 10 | 3 |
 | Gegenstand it_rubberband | 10 | 2 |
@@ -65,7 +64,6 @@
 | Lua-Init (Weltwert) | 8 | 1 |
 | Stein st_monoflop | 8 | 3 |
 | Lua: :orientate | 7 | 3 |
-| Aktion openclose | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 1 |
@@ -92,7 +90,7 @@
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
-| Stein st_laserflop | 3 | 1 |
+| Stein st_laserflop | 3 | 2 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
@@ -113,7 +111,6 @@
 | Puzzle hohl (alter Export) | 2 | 2 |
 | Aktion ignite | 2 | 1 |
 | mehrere weiße Murmeln | 2 | 0 |
-| Aktion turnback | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_portal_pearl | 2 | 2 |
@@ -191,6 +188,7 @@
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |
+| Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Lua: gsub() | 1 | 0 |

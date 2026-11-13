@@ -309,6 +309,7 @@ const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setF
  */
 const API1_RENAMING: Record<string, string> = {
   door__openclose: 'toggle',
+  bridge__openclose: 'toggle',
   switch__onoff: 'toggle',
 };
 
@@ -3567,8 +3568,7 @@ export class ObjectWorld {
     if (o.cls === 'mirror') {
       // MirrorStone::message: orientate, turn/turnback, signal 1 and _trigger toggle
       if (msg === 'orientate' && num !== undefined && num >= 0 && num <= 3) o.state = num;
-      else if (msg === 'turn') this.turnMirror(o, 1);
-      else if (msg === 'turnback') this.turnMirror(o, -1);
+      else if (msg === 'turn' || msg === 'turnback') this.turnMirror(o, (msg === 'turn') !== truthy(o.attrs.counterclock) ? 1 : -1);
       else if ((msg === 'signal' || msg === 'toggle') && (num ?? (value ? 1 : 0)) === 1) this.turnMirror(o, 1);
       return;
     }

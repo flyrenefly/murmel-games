@@ -508,7 +508,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
-  umbenannt (`openclose` an Türen und `onoff` an Schalter → `toggle`).
+  umbenannt (`openclose` an Türen und Brücken und `onoff` an Schalter → `toggle`). Aktionen `turn` und
+  `turnback` gehen an Spiegel (mit `counterclock`), Laser, Felsbrocken und Drehkreuze.
 - **ot_wire / `fellows`** (`Wire.cc`, `Stone::propagateImpulse`): Verdrahtete Steine bekommen
   denselben Stoß, nachdem der gestoßene Stein sich bewegt hat; weitergereicht wird er nicht.
   Gezeichnet als lila Linien (Wire::postAddition). `selection` (Überraschung) fehlt noch.
