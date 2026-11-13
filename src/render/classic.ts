@@ -417,7 +417,32 @@ export class ClassicView {
       ox = (this.offset.x - this.screen.x) * T;
       oy = (this.offset.y - this.screen.y) * T;
     }
+    this.drawWorld(ox, oy);
+    this.drawStatusBar();
+  }
 
+  /**
+   * Vorschaubild (docs/SPEC-levelseiten.md): the whole level at once on this view's canvas, as at the
+   * start, without the status bar. For the level pages built in Node (tools/levelseiten).
+   */
+  renderWhole(): void {
+    const { level } = this;
+    if (!level || !this.img || !this.staticLayer) throw new Error('Level nicht geladen');
+    this.zoom = false;
+    this.vw = level.width * T;
+    this.ph = level.height * T;
+    this.canvas.width = this.vw;
+    this.canvas.height = this.ph;
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, this.vw, this.ph);
+    this.drawWorld(0, 0);
+  }
+
+  /** Floors, objects, Oxyd stones, actors and lines of the play area, shifted by ox/oy. */
+  private drawWorld(ox: number, oy: number): void {
+    const { ctx, level, staticLayer } = this;
+    if (!level || !staticLayer) return;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, this.vw, this.ph);
@@ -472,7 +497,6 @@ export class ClassicView {
       ctx.stroke();
     }
     ctx.restore();
-    this.drawStatusBar();
   }
 
   private updateScreen(level: Level): void {
