@@ -94,7 +94,7 @@ const OBJECTS = [
   [/^it_floppy$/, ['it_floppy']],
   [/^it_sword$/, ['it_sword']],
   [/^st_polarswitch$/, ['st_lightglass', 'st_darkglass', 'sh_rawglass']],
-  [/^st_monoflop$/, ['st_monoflop', 'sh_round']],
+  [/^st_(monoflop|laserflop|laserflop_on)$/, ['st_monoflop', 'sh_round']],
   [/^st_mail(_[nesw])?$/, ['st_mail', 'sh_solid']],
   [/^st_charge(_plus|_minus|_zero)?$/, ['st_charge_plus', 'st_charge_minus', 'st_charge_zero', 'sh_rounded']],
   [/^(st|it)_brake$/, ['st_brake', 'sh_brake', 'it_explosion']],

@@ -383,6 +383,8 @@ export interface GameObject {
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
   /** st_monoflop: when it switches off again. */
   alarmAt?: number;
+  /** st_laserflop: held on by laser light. */
+  lasered?: boolean;
   /** it_cross: an actor inside (last seen), and when the alarm rings. */
   cross?: { seen: number; inside: boolean; at: number };
   /** Explosion, debris, burning dynamite or bomb: start of its animation. */
@@ -527,7 +529,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_magic(_brick|_oxyda|_oxydc)?$/.test(kind)) return 'magic';
   if (/^st_ghost(_purplemarble|_greenbrown|_break)?$/.test(kind)) return 'ghost';
   if (/^st_disco(_light|_medium|_dark)?$/.test(kind)) return 'disco';
-  if (kind === 'st_monoflop') return 'monoflop';
+  if (kind === 'st_monoflop' || kind === 'st_laserflop' || kind === 'st_laserflop_on') return 'monoflop';
   if (kind === 'st_flash') return 'flash';
   if (kind === 'st_scissors') return 'scissors';
   if (/^st_portal(_horse|_pearl|_glass)?$/.test(kind)) return 'portal';
@@ -1676,6 +1678,21 @@ export class ObjectWorld {
     }
     // BreakStone::processLight: any light breaks it (not st_break_bug), also at the start
     for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && lightBreaks(breakType(o)) && lit.has(o.row * W + o.col)) this.breakStone(o);
+    // MonoFlopStone (st_laserflop)::lightDirChanged: on while lit (action on OFF → on), the timer starts when the light goes
+    for (const o of this.objects) {
+      if (o.cls !== 'monoflop' || o.gone || !o.kind.startsWith('st_laserflop')) continue;
+      const on = (lit.get(o.row * W + o.col) ?? 0) !== 0;
+      if (on && !o.lasered) {
+        o.lasered = true;
+        o.alarmAt = undefined;
+        const was = o.state;
+        o.state = 1;
+        if (was === 0 && this.lightDone) this.performAction(o, true);
+      } else if (!on && o.lasered) {
+        o.lasered = false;
+        o.alarmAt = this.now + (Number(o.attrs.interval) || 1.8) * 1000;
+      }
+    }
     // LaserSwitch::lightDirChanged: on with light, off without (the initial state acts not)
     for (const o of this.objects) {
       if (o.cls !== 'laserswitch' || o.gone) continue;
@@ -1901,6 +1918,7 @@ export class ObjectWorld {
 /** MonoFlopStone::setState(1): off → on with its action; on → the timer starts again. */
   private monoflopOn(o: GameObject): void {
     const ms = (Number(o.attrs.interval) || 1.8) * 1000;
+    if (o.lasered) return; // ON_LASER: setState(1) changes nothing
     if (o.state === 1) {
       o.alarmAt = this.now + ms;
       return;
@@ -3664,6 +3682,8 @@ export class ObjectWorld {
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
       if (o.cls === 'volcano' && !o.gone) this.volcanoStep(o);
+      // st_laserflop_on starts ON_TIMER
+      if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt === undefined && !o.lasered) o.alarmAt = this.now + (Number(o.attrs.interval) || 1.8) * 1000;
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt !== undefined && this.now >= o.alarmAt) {
         // MonoFlopStone::alarm: off, action false
         o.state = 0;
@@ -4171,6 +4191,8 @@ function onewayFaces(o: GameObject): number {
 }
 
 function initialState(kind: string, a: Record<string, string>): number {
+  // MonoFlopStone st_laserflop_on: ON_PENDING (on, the timer runs, no action)
+  if (kind === 'st_laserflop_on') return 1;
   // VolcanoStone: 0 inactive, 1 active, 2 new, 3 growing, 4 breaking, 5 finished
   if (/^st_volcano/.test(kind)) return kind === 'st_volcano_active' || a.$state === '1' ? 1 : kind === 'st_volcano_new' ? 2 : kind === 'st_volcano_growing' ? 3 : 0;
   // DiscoStone: 0 light, 1 medium, 2 dark

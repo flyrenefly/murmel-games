@@ -568,7 +568,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Bodenkräfte und Stöße bewegen ihn; er schadet der Kugel nicht und zerbricht st_break_bug.
 - **st_monoflop** (`MonoFlopStone.cc`): Anstoßen oder on/signal 1 schaltet ihn an (Aktion true, Bild
   st_monoflop_anim 2 × 180 ms); nach `interval` (1,8 s) geht er aus (Aktion false), erneutes Anstoßen
-  startet die Zeit neu. st_laserflop fehlt noch.
+  startet die Zeit neu. st_laserflop(_on) bleibt zudem an, solange Laserlicht darauf fällt (Aktion beim
+  Einschalten), und startet die Zeit, wenn das Licht geht; _on beginnt eingeschaltet mit laufender Zeit.
 - **st_flash** (`SimpleStones.cc` FlashStone): Anstoßen gibt der Kugel der anderen Farbe die Kraft
   distortedVelocity(Geschwindigkeit, 20) und blitzt (5 Bilder à 50 ms).
 - **st_scissors** (`ScissorsStone.cc`): Anstoßen schneidet alle Gummibänder der Kugel; nur wenn eines

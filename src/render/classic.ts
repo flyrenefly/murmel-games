@@ -219,7 +219,7 @@ export function objectImages(kind: string): string[] {
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
-  if (kind === 'st_monoflop') return ['st_monoflop', 'sh_round'];
+  if (kind === 'st_monoflop' || kind.startsWith('st_laserflop')) return ['st_monoflop', 'sh_round'];
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];

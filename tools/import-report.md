@@ -1,6 +1,6 @@
 # Enigma-Import
 
-883 von 1322 Levels übernommen (18 Pakete).
+886 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -63,7 +63,6 @@
 | Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
-| Stein st_laserflop | 3 | 3 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
