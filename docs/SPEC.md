@@ -508,7 +508,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_fake_quake** (`FakeStone.cc`): sieht aus wie ein Bebenstein und wackelt beim Treffer
   (Klang „st-fakeoxyd“), schließt aber keine Oxyd-Steine und kennt keine Nachrichten.
 - **API 1** (Enigma-Kompatibilität < 1.10): Nachrichten werden wie in `api1init.lua`
-  umbenannt (`openclose` an Türen und Brücken und `onoff` an Schalter → `toggle`). Aktionen `turn` und
+  umbenannt (ganze MessageRenaming-Tabelle: openclose, onoff, trigger, direction je Empfänger, z. B. onoff am
+  Laser → toggle, trigger am Oxyd → open). Aktion `ignite` zündet brennbare Böden, Dynamit, Bomben, Risse. Aktionen `turn` und
   `turnback` gehen an Spiegel (mit `counterclock`), Laser, Felsbrocken und Drehkreuze.
 - **ot_wire / `fellows`** (`Wire.cc`, `Stone::propagateImpulse`): Verdrahtete Steine bekommen
   denselben Stoß, nachdem der gestoßene Stein sich bewegt hat; weitergereicht wird er nicht.
@@ -627,6 +628,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_pencil** (`SimpleItems.cc` Pencil): zeichnet ein Kreuz (it_cross) unter die Kugel, auf Eis einen kleinen
   Wasserriss, und ist verbraucht; liegt dort etwas oder ist es Abgrund, Wasser, Sumpf oder Brücke, bleibt
   er; im Sprung fällt er herunter.
+- **it_trap** (`TrapItem.cc`): unsichtbare Falle; eine Kugel auf dem Boden fällt hinein, die Falle öffnet sich
+  (8 Bilder) und bleibt sichtbar. **fl_adhesionless**: Boden ohne Haftung (die Maus wirkt nicht).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

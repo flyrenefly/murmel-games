@@ -1,15 +1,15 @@
 # Enigma-Import
 
-892 von 1322 Levels übernommen (18 Pakete).
+900 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 3 |
-| Lua-Rückruf | 116 | 5 |
+| Lua-Rückruf | 116 | 6 |
 | keine Oxyd-Steine | 111 | 2 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
-| Lua-Init | 103 | 3 |
+| Lua-Init | 103 | 4 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -26,8 +26,6 @@
 | Lua: :add | 18 | 6 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
-| Aktion onoff | 14 | 2 |
-| Gegenstand it_trap | 14 | 2 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
 | Gegenstand it_rubberband | 10 | 3 |
@@ -39,14 +37,13 @@
 | Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
-| Wurmloch ohne Ziel | 7 | 1 |
+| Wurmloch ohne Ziel | 7 | 2 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
-| Boden fl_adhesionless | 6 | 2 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
@@ -55,7 +52,7 @@
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
-| Stein st_surprise | 4 | 1 |
+| Stein st_surprise | 4 | 2 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
@@ -78,7 +75,6 @@
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
-| Aktion ignite | 2 | 2 |
 | mehrere weiße Murmeln | 2 | 1 |
 | Lua: st_darkglass_hollow | 2 | 0 |
 | Lua: set_attribs() | 2 | 0 |
@@ -119,9 +115,7 @@
 | Lua: random_element() | 1 | 0 |
 | Lua: test_link() | 1 | 0 |
 | Lua: fl_bridge | 1 | 0 |
-| Lua: it_trap | 1 | 0 |
 | Lua: st_greenbrown_hollow | 1 | 0 |
-| Aktion trigger | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
 | Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
@@ -150,7 +144,6 @@
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |
-| Aktion openclose | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Lua: gsub() | 1 | 0 |

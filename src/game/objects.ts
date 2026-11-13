@@ -16,10 +16,10 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3, surprise: 0.3 };
 /** German names of inventory items for the display. */
@@ -348,9 +348,33 @@ const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setF
  * translates them per receiving class (api1init.lua MessageRenaming).
  */
 const API1_RENAMING: Record<string, string> = {
-  door__openclose: 'toggle',
+  // api1init.lua MessageRenaming, by Murmel object class
   bridge__openclose: 'toggle',
+  bridge__signal: 'toggle',
+  blocker__trigger: 'toggle',
+  blocker__openclose: 'toggle',
+  burnable__trigger: 'ignite',
+  magnet__onoff: 'toggle',
+  meditation__trigger: 'flip',
+  vortex__openclose: 'toggle',
+  vortex__trigger: 'toggle',
+  wormhole__onoff: 'toggle',
+  boulder__direction: 'orientate',
+  door__openclose: 'toggle',
+  fourswitch__trigger: 'toggle',
+  keyswitch__onoff: 'toggle',
+  laser__onoff: 'toggle',
+  lightpassenger__trigger: 'toggle',
+  lightpassenger__onoff: 'toggle',
+  mirror__trigger: 'turn',
+  oneway__direction: 'orientate',
+  oxydref__trigger: 'open',
+  passage__trigger: 'signal',
+  polarswitch__onoff: 'toggle',
+  quake__trigger: 'toggle',
+  impulse__trigger: 'signal',
   switch__onoff: 'toggle',
+  volcano__trigger: 'toggle',
 };
 
 export interface GameObject {
@@ -523,6 +547,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_thief') return 'thief';
   if (kind === 'fl_thief') return 'flthief';
   if (kind === 'it_surprise') return 'surprise';
+  if (kind === 'it_trap') return 'trap';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
   if (kind === 'st_polarswitch') return 'polarswitch';
@@ -1376,6 +1401,15 @@ export class ObjectWorld {
         this.remove(o);
         inv.unshift('it_brake');
         this.events.push({ type: 'sound', name: 'pickup' }, { type: 'items' });
+      }
+      // TrapItem::actor_hit: an actor on the floor falls; the trap opens (it_trap_breaking)
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.cls !== 'trap' || o.gone) continue;
+        this.events.push({ type: 'fall', marble });
+        if (o.state === 0) {
+          o.state = 1;
+          o.blast = this.now;
+        }
       }
       // Bottle::actor_hit: a broken bottle shatters an actor on the floor
       for (const o of this.at(Math.floor(x), Math.floor(y))) {
@@ -3965,6 +3999,13 @@ export class ObjectWorld {
 
   private message(o: GameObject, msg: string, value: boolean, num?: number): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
+    // "ignite": burnable items set their floor on fire, dynamite and bombs burn, cracks crack
+    if (msg === 'ignite' && (o.cls === 'burnable' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'crack')) {
+      if (o.cls === 'burnable') this.floorIgnite(o.col, o.row);
+      else if (o.cls === 'crack') this.crack(o);
+      else this.burn(o);
+      return;
+    }
     if (o.cls === 'quake') {
       // A fake quake stone has no messages.
       if (o.kind !== 'st_fake_quake' && (msg === 'toggle' || (msg === 'signal' && value))) this.quake(o);

@@ -1617,3 +1617,20 @@ describe('surprise', () => {
     expect(w.objects.find((o) => !o.gone && o.kind === 'it_hammer')?.col).toBe(3);
   });
 });
+
+describe('trap and API 1 messages', () => {
+  it('a hidden trap lets the marble fall and opens', () => {
+    const w = world([{ x: 3, y: 0, k: 'it_trap' }]);
+    w.actorStep(3.5, 0.5, 0);
+    expect(w.events.some((e) => e.type === 'fall')).toBe(true);
+    expect(w.objects[0].state).toBe(1);
+  });
+
+  it('old levels: onoff toggles a laser', () => {
+    const w = new ObjectWorld([{ x: 3, y: 0, k: 'st_laser_e', a: { name: 'l' } }], W, {}, undefined, Math.random, 0.92);
+    w.marbleAt(0, 0);
+    const before = w.objects[0].state;
+    w.sendMessage(w.objects[0], 'onoff', true);
+    expect(w.objects[0].state).toBe(1 - before);
+  });
+});

@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|fake_trigger|adhesionless|ice_heating|swamp_heating)/;
+const SPECIAL_FLOORS = /^fl_(forward|fake_trigger|ice_heating|swamp_heating)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -113,6 +113,7 @@ const OBJECTS = [
   [/^it_(spade|brush|cherry|banana|cross|squashed)$/, ['it_spade', 'it_brush', 'it_cherry', 'it_banana', 'it_cross', 'it_squashed']],
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
+  [/^it_trap$/, ['it_trap']],
   [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],
   [/^it_glasses(_broken)?$/, ['it_glasses', 'it_glasses_broken', 'st_death']],
   [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
@@ -172,13 +173,21 @@ const OBJECTS = [
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback', 'ignite']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
 const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|length|threshold|max|orientation|charge|selection|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
-const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff'], [/^fl_bridge/, 'openclose']];
+// api1init.lua MessageRenaming: receiver kind → old message Murmel translates
+const API1_ACTIONS = [
+  [/^fl_bridge/, 'openclose'], [/^fl_bridge/, 'signal'], [/^(it|st)_blocker/, 'trigger'], [/^(it|st)_blocker/, 'openclose'],
+  [/^it_burnable/, 'trigger'], [/^it_magnet/, 'onoff'], [/^it_meditation/, 'trigger'], [/^it_vortex/, 'openclose'], [/^it_vortex/, 'trigger'],
+  [/^it_wormhole/, 'onoff'], [/^st_boulder/, 'direction'], [/^st_door/, 'openclose'], [/^st_fourswitch/, 'trigger'], [/^st_floppy/, 'onoff'],
+  [/^st_key/, 'onoff'], [/^st_laser/, 'onoff'], [/^st_lightpassenger/, 'trigger'], [/^st_lightpassenger/, 'onoff'], [/^st_mirror/, 'trigger'],
+  [/^st_oneway/, 'direction'], [/^st_oxyd/, 'trigger'], [/^st_passage/, 'trigger'], [/^st_polarswitch/, 'onoff'], [/^st_quake/, 'trigger'],
+  [/^st_stoneimpulse/, 'trigger'], [/^st_switch/, 'onoff'], [/^st_volcano/, 'trigger'],
+];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
 
 const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
