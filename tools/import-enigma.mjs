@@ -113,6 +113,7 @@ const OBJECTS = [
   [/^it_(spade|brush|cherry|banana|cross|squashed)$/, ['it_spade', 'it_brush', 'it_cherry', 'it_banana', 'it_cross', 'it_squashed']],
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
+  [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],
   [/^it_glasses(_broken)?$/, ['it_glasses', 'it_glasses_broken', 'st_death']],
   [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],

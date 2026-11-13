@@ -871,6 +871,13 @@ function dropItem(): boolean {
     }
     return true;
   }
+  // Pencil::activate: a cross under the marble (ITEM_KILL); flying it is dropped
+  if (first === 'it_pencil') {
+    if (m.jump > 0) objects.dropItem(m.pos.x, m.pos.y);
+    else objects.pencilAt(m.pos.x, m.pos.y);
+    updateItems();
+    return true;
+  }
   // Weight::activate: ITEM_KEEP – it cannot be dropped
   if (first === 'it_weight') return true;
   // Bottle::activate: "_booze" – drunk for 5 s more, then the bottle is dropped (ITEM_DROP)

@@ -1,12 +1,12 @@
 # Enigma-Import
 
-888 von 1322 Levels übernommen (18 Pakete).
+892 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 3 |
 | Lua-Rückruf | 116 | 5 |
-| keine Oxyd-Steine | 111 | 1 |
+| keine Oxyd-Steine | 111 | 2 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
 | Lua-Init | 103 | 3 |
@@ -30,7 +30,6 @@
 | Gegenstand it_trap | 14 | 2 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
-| Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 3 |
 | Stein st_spitter | 9 | 1 |
@@ -89,7 +88,6 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_yinyang | 2 | 0 |
 | Lua: :peepall | 2 | 1 |
-| Lua: it_pencil | 2 | 1 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |
@@ -115,7 +113,7 @@
 | Lua: test() | 1 | 0 |
 | Lua: close() | 1 | 1 |
 | Lua: hollow() | 1 | 0 |
-| Lua: st_spitter | 1 | 0 |
+| Lua: st_spitter | 1 | 1 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
 | Lua: random_element() | 1 | 0 |
@@ -170,7 +168,6 @@
 | Stein fl_water | 1 | 1 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 1 |
-| Stein st_barrier (it_pencil) | 1 | 0 |
 | Überraschung mit =w | 1 | 1 |
 | Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |

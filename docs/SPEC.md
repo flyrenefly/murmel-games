@@ -624,6 +624,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_surprise** (`SurpriseItem.cc`): abgelegt führt es seine Aktion aus und wird zu einem zufälligen
   Gegenstand aus `selection` (Vorgabe Schirm, Feder, Dynamit, Kaffee, Hammer; ohne dessen Ablegewirkung).
   Ziel und Auswahl reisen im Inventar mit. Auswahl mit "=Kachel" (Lua) fehlt.
+- **it_pencil** (`SimpleItems.cc` Pencil): zeichnet ein Kreuz (it_cross) unter die Kugel, auf Eis einen kleinen
+  Wasserriss, und ist verbraucht; liegt dort etwas oder ist es Abgrund, Wasser, Sumpf oder Brücke, bleibt
+  er; im Sprung fällt er herunter.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
