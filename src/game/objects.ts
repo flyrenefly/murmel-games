@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack' };
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
@@ -173,6 +173,20 @@ export function windowFaces(o: GameObject): number {
   if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return ALL_FACES ^ (Number(o.attrs.$connections) & ALL_FACES);
   const s = /^st_window_([nesw]+)$/.exec(o.kind)?.[1] ?? 's';
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
+
+/** BagItem::BAGSIZE */
+const BAG_SIZE = 13;
+/** A bag in the inventory: "it_bag" or "it_bag:item,item…" with its contents. */
+export function isBag(kind: string | undefined): boolean {
+  return kind === 'it_bag' || !!kind?.startsWith('it_bag:');
+}
+export function bagContents(kind: string): string[] {
+  const i = kind.indexOf(':');
+  return i < 0 ? [] : kind.slice(i + 1).split(',').filter(Boolean);
+}
+function bagKind(contents: string[]): string {
+  return contents.length ? `it_bag:${contents.join(',')}` : 'it_bag';
 }
 
 /** it_pipe connections as Enigma direction bits (W 1, S 2, E 4, N 8); it_pipe = ew. */
@@ -1400,15 +1414,33 @@ export class ObjectWorld {
       for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
         const radius = PICKUP_RADIUS[o.cls];
         const inv = this.inventories[this.ownerOf(marble)] ?? this.inventory;
-        if (radius === undefined || o.gone || o.growing !== undefined || inv.length >= MAX_ITEMS) continue;
+        const intoBag = isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE && !(o.cls === 'bag' && !(o.loot ?? []).length);
+        if (radius === undefined || o.gone || o.growing !== undefined || (inv.length >= MAX_ITEMS && !intoBag && o.cls !== 'bag')) continue;
         if ((o.cls === 'dynamite' || o.cls === 'puller') && o.blast !== undefined) continue; // isStatic while burning / active
         if (o.kind === 'it_bottle_broken') continue; // itf_static
         if (this.inhibitPickup && this.ownerOf(marble) === this.player) continue;
         if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
+        if (o.cls === 'bag') {
+          // BagItem::actor_hit: the inventory takes its items (not into a bag in front), then maybe the bag
+          const loot = [...(o.loot ?? [])];
+          const before = loot.length;
+          if (!(isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE)) while (inv.length < MAX_ITEMS && loot.length) inv.unshift(loot.shift()!);
+          // Inventory::willAddItem: an empty bag not into a full inventory or behind another bag
+          const takeBag = inv.length < MAX_ITEMS && !(loot.length === 0 && isBag(inv[0]));
+          if (takeBag) {
+            o.gone = true;
+            this.unplace(o);
+            inv.unshift(bagKind(loot));
+          } else o.loot = loot;
+          if (takeBag || loot.length !== before) this.events.push({ type: 'sound', name: 'pickup' }, { type: 'items' });
+          continue;
+        }
         o.gone = true;
         this.unplace(o);
-        if (o.cls === 'bag') inv.unshift(...(o.loot ?? []).slice(0, MAX_ITEMS - inv.length)); // it_bag: its items
-        else inv.unshift(o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind);
+        const kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
+        // Inventory::add_item: into a bag in front that is not full
+        if (intoBag) inv[0] = bagKind([kind, ...bagContents(inv[0])]);
+        else inv.unshift(kind);
         if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
         this.events.push({ type: 'sound', name: 'pickup' });
       }
@@ -1445,6 +1477,11 @@ export class ObjectWorld {
 
   /** Item::drop: an item of this kind lands in the cell (with its on_drop effects). */
   private dropKind(kind: string, col: number, row: number): void {
+    if (isBag(kind)) {
+      const bag = this.add('it_bag', 'bag', col, row);
+      bag.loot = bagContents(kind);
+      return;
+    }
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
     if (o.cls === 'seed') this.startGrowing(o);
     if (o.cls === 'flag') this.flagRespawn[flagColor(kind)] = { x: col + 0.5, y: row + 0.5 };

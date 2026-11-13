@@ -612,6 +612,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   stiehlt einen zufälligen Gegenstand ihres Besitzers und einen aufnehmbaren Gegenstand auf dem Feld und
   verschwindet wieder. Steht ein Schachstein darauf, wird er gefangen (12 × 80 ms): Die Beute fällt als
   Sack heraus, danach ist es ein gewöhnlicher Boden. Abweichung: der betrunkene Dieb (Flasche) fehlt.
+- **it_bag** (`BagItem.cc`, `Inventory.cc`): Beim Aufnehmen nimmt das Inventar zuerst die Gegenstände des Sacks,
+  dann den Sack selbst (leer nicht in ein volles Inventar oder hinter einen anderen Sack). Liegt ein nicht
+  voller Sack (13) vorne, wandern neue Gegenstände hinein; abgelegt behält er seinen Inhalt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

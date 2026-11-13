@@ -98,6 +98,7 @@ const OBJECTS = [
   [/^st_mail(_[nesw])?$/, ['st_mail', 'sh_solid']],
   [/^(st|it)_brake$/, ['st_brake', 'sh_brake', 'it_explosion']],
   [/^it_pipe(_[nesw]{1,2})?$/, ['it_pipe']],
+  [/^it_bag$/, ['it_bag']],
   [/^st_portal(_horse|_pearl)?$/, ['st_portal_horse', 'sh_portal_horse']],
   [/^st_scissors$/, ['st_scissors', 'sh_round']],
   [/^st_rubberband$/, ['st_rubberband', 'sh_round']],

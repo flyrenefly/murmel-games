@@ -690,7 +690,7 @@ describe('ObjectWorld', () => {
     const bag = w.objects.find((o) => o.kind === "it_bag")!;
     expect(bag.loot).toEqual(["it_hammer"]);
     w.actorStep(5.5, 1.5, 0);
-    expect(w.inventory).toEqual(["it_hammer"]);
+    expect(w.inventory).toEqual(["it_bag", "it_hammer"]); // BagItem: the items, then the empty bag itself
   });
 
   it("a coin slot takes a coin, switches on after the insert and off when the time is over", () => {
@@ -1590,5 +1590,17 @@ describe('floor thief', () => {
     w.update(7 * 80);
     expect(w.inventory).toEqual([]);
     expect(w.objects[0].thief?.loot).toEqual(['it_hammer', 'it_spade']);
+  });
+});
+
+describe('bag', () => {
+  it('a bag in front takes new items; dropped it keeps them', () => {
+    const w = world([{ x: 2, y: 0, k: 'it_bag' }, { x: 4, y: 0, k: 'it_hammer' }]);
+    w.actorStep(2.5, 0.5, 0);
+    expect(w.inventory).toEqual(['it_bag']);
+    w.actorStep(4.5, 0.5, 0);
+    expect(w.inventory).toEqual(['it_bag:it_hammer']);
+    w.dropItem(6.5, 0.5);
+    expect(w.objects.find((o) => o.cls === 'bag' && !o.gone)?.loot).toEqual(['it_hammer']);
   });
 });

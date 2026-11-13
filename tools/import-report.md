@@ -1,6 +1,6 @@
 # Enigma-Import
 
-869 von 1322 Levels übernommen (18 Pakete).
+874 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -28,9 +28,8 @@
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_trap | 14 | 1 |
-| Gegenstand it_weight | 14 | 4 |
+| Gegenstand it_weight | 14 | 5 |
 | Pferd mit Zielen | 13 | 2 |
-| Gegenstand it_bag | 13 | 5 |
 | Lua: :drawRect | 12 | 5 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
@@ -183,7 +182,6 @@
 | Stein st_barrier (it_drop) | 1 | 0 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
-| Lua: it_bag | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |

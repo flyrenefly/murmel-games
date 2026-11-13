@@ -2,7 +2,7 @@ import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
 import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
-import { ITEM_NAMES, ObjectWorld, type ObjectEvent } from './game/objects';
+import { bagContents, isBag, ITEM_NAMES, ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, JUMP_SECONDS, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
@@ -964,7 +964,7 @@ function updateItems(): void {
   hudItems.hidden = n === 0;
   btnDrop.hidden = n === 0;
   btnRotate.hidden = n < 2;
-  const names = inv.map((k) => ITEM_NAMES[k] ?? k);
+  const names = inv.map((k) => (isBag(k) ? `Sack (${bagContents(k).length})` : (ITEM_NAMES[k] ?? k)));
   const rest = new Map<string, number>();
   for (const s of names.slice(1)) rest.set(s, (rest.get(s) ?? 0) + 1);
   hudItems.textContent = n ? [`Hand: ${names[0]}`, ...[...rest].map(([s, c]) => (c > 1 ? `${s} ${c}` : s))].join(' · ') : '';
