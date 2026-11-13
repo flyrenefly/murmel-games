@@ -1,6 +1,6 @@
 # Enigma-Import
 
-943 von 1322 Levels übernommen (18 Pakete).
+945 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -56,7 +56,6 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Aktion hit | 3 | 2 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: res.autotile | 2 | 0 |

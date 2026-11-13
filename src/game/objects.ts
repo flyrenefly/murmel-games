@@ -801,6 +801,11 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      // Stone::actor_hit with action "hit": the target gets "hit" with the actor (its colour)
+      if (by >= 0 && o.attrs.action === 'hit' && o.attrs.target && !o.gone) {
+        this.hitColor = color;
+        this.performAction(o, true);
+      }
       if (o.cls === 'yystone') {
         // YinyangStone::actor_hit: an idle one turns (6 × 140 ms), then switches the player (instant: at once)
         if (o.state === 0) this.yinyangActivate(o);
@@ -2271,6 +2276,8 @@ export class ObjectWorld {
 
   /** The object whose action is being performed (Message::sender), e.g. for st_jamb. */
   private sender: GameObject | null = null;
+  /** Colour of the actor behind a "hit" action (JambStone). */
+  private hitColor = -1;
 
   /** Milliseconds since a time of the object clock. */
   ageOf(t: number): number {
@@ -4305,7 +4312,8 @@ export class ObjectWorld {
       // JambStone "signal" from a stone (not an item): the neighbours in the sender's row (or column) get 1,
       // the other two 0
       const from = this.sender;
-      if (msg === 'signal' && from && !isItem(from)) {
+      const jambColor = o.kind === 'st_jamb_white' || o.attrs.color === '1' ? 1 : 0;
+      if ((msg === 'signal' && from && !isItem(from)) || (msg === 'hit' && from && this.hitColor === jambColor)) {
         const row = from.row === o.row;
         for (const [dx, dy, horiz] of [[1, 0, true], [-1, 0, true], [0, -1, false], [0, 1, false]] as const) {
           const n = this.stoneObjectAt(o.col + dx, o.row + dy);

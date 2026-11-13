@@ -603,6 +603,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Aktion aus; danach ist es inaktiv, mit `loop` wieder ruhend.
 - **st_jamb_black / _white** (`JambStone.cc`): fester Türpfosten; ein "signal" von einem Stein gibt er an die
   Nachbarsteine weiter: in der Zeile (bzw. Spalte) des Absenders mit 1, an die beiden anderen mit 0.
+  Hat ein angestoßener Stein die Aktion "hit", reagiert der Pfosten nur auf eine Kugel seiner Farbe.
   Abweichung: Signale von Gegenständen mit Akteur-Farbe (Sensoren) fehlen.
 - **Fenster "inner_pull"** (`WindowStone::tryMoveWindowFace`, Aktion z. B. eines Vierfachschalters mit Richtung):
   die gegenüberliegende Scheibe wandert auf die gezogene Seite, falls dort keine ist und kein Hindernis daneben;

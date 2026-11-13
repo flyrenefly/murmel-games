@@ -1685,3 +1685,16 @@ describe('window inner_pull', () => {
     expect(w.blockAt(3, 1, 0) & 1).toBe(0);
   });
 });
+
+describe('jamb hit', () => {
+  it('a door with action hit lets a jamb of the marble colour signal its neighbours', () => {
+    const w = world([
+      { x: 2, y: 2, k: 'st_door_d', a: { faces: 'ns', target: 'j', action: 'hit' } },
+      { x: 3, y: 2, k: 'st_jamb_black', a: { name: 'j' } },
+      { x: 3, y: 1, k: 'st_door_a' },
+    ]);
+    w.hit(2, 2, 1, -1, 0, -3, 0, 0, 0); // a white marble: nothing
+    w.update(1500);
+    expect(w.objects[2].state).toBe(0);
+  });
+});
