@@ -15,6 +15,10 @@ export interface LuaWorld {
   /** Floors or plain stones changed: redraw. */
   redraw(): void;
   random(): number;
+  /** wo[pos] = {"st_oxyd", …} during play: a new closed Oxyd stone at a cell (its flavor). */
+  addOxyd?(x: number, y: number, flavor: string): void;
+  /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
+  shuffleOxyd?(): void;
 }
 
 const glob = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
@@ -129,6 +133,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         const o = byId(ref);
         if (!o) return;
         if (key === 'name') o.name = value ?? '';
+        // TimerGadget::setState: sender.state = OFF stops the timer (ON starts it)
+        if (key === 'state' && o.cls === 'timer') {
+          objects.sendMessage(o, truthy(value) ? 'on' : 'off', truthy(value));
+          return;
+        }
         if (value === null) delete o.attrs[key];
         else o.attrs[key] = value;
         return;
@@ -184,7 +193,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         attrs.set(`c:fl:${x}:${y}`, decl);
       } else if (kind.startsWith('st_')) {
         removeStone(x, y);
-        if (look === 'object') objects.create(kind, x, y, decl);
+        if (look === 'oxyd') {
+          // OxydStone: a closed stone of the flavor (default "a"); named ones receive messages
+          w.addOxyd?.(x, y, decl.flavor ?? 'a');
+          if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
+        } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {
           cell(x, y).stone = look;
           physics.setSolid(x, y, true);
@@ -208,6 +221,15 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
     },
     size: () => [level.width, level.height],
+    /** PuzzleStone "get_cluster": the stones of the fragment (none for other objects). */
+    cluster(ref) {
+      const o = ref.startsWith('o:') ? byId(ref) : null;
+      if (!o || o.cls !== 'puzzle') return [];
+      return objects.puzzleFragment(o).cluster.map((p) => `o:${p.id}`);
+    },
+    shuffleOxyd() {
+      w.shuffleOxyd?.();
+    },
     /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
     addInventory(player, kind) {
       const inv = objects.inventories[Number(player)] ?? objects.inventory;

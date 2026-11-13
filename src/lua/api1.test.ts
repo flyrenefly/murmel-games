@@ -3,7 +3,7 @@ import api1 from './api1.lua?raw';
 import shim from './enigma.lua?raw';
 import { api1Source, type LuaHost, LuaLevel } from './runtime';
 
-const startLua = async (code: string, host: LuaHost) => LuaLevel.create(code, host, shim, await import('fengari'), api1);
+const startLua = async (code: string, host: LuaHost) => LuaLevel.create(code, host, shim, await import('fengari'), [], api1);
 
 /** A tiny exported world: objects with ref, layer, position and string attributes (kind among them). */
 function fakeHost(objs: { ref: string; l: 'st' | 'it' | 'fl'; x: number; y: number; a: Record<string, string> }[]) {

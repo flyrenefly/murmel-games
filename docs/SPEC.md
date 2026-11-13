@@ -24,6 +24,13 @@ Levels, eigener Code. Kein Code, keine Grafik und keine Levels aus Oxyd oder Eni
 
 Installierbar als App (PWA), offline spielbar.
 
+**Offline (ab 13.11.2026):** Service Worker `sw.js`, beim Build vom Plugin `murmel-offline` in
+`vite.config.ts` aus `src/sw-template.js` erzeugt (Version = Hash über Vorlage und Dateien). Spiel, Grafik,
+Klänge und eingebaute Levels (rund 4 MB) werden bei der Installation vorab gespeichert, Seitenaufrufe
+kommen zuerst aus dem Netz (neue Versionen sofort), offline aus dem Speicher. Enigma-Pakete
+(`levels/enigma/*.json`, 12 MB) werden beim ersten Öffnen gespeichert und im Hintergrund
+aufgefrischt. `sw.js` wird ohne HTTP-Cache ausgeliefert (`.htaccess`).
+
 ## Technik
 
 | Bereich | Wahl | Grund |
@@ -539,11 +546,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Spiegel, Laser, Felsbrocken, Drehkreuzarme).
 - **Lua wo:drawMap / drawRect / drawBorder während des Spiels** (api2init.lua): mit einfachen Kacheltabellen (ti) als
   Auflöser; Kartenobjekte, Leserichtungen und res.*-Auflöser fehlen. Der Import erkennt die gesetzten Kacheln an den
-  Kartenzeichen und Variablen der Aufrufe.
+  Kartenzeichen und Variablen der Aufrufe. Seit 13.11. (Pentomino, siehe dort) auch mit Auflöser-Ketten
+  (`res.autotile`, `res.pento`), Leserichtungen und Karten aus `wo:newMap`.
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
 - **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
 - **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
 - **Lua-Tabellen als Attributwerte** (`target = {"a#*", "b#*"}`, `action_3 = {"open", "close"}`): werden zu Tokenlisten „a#*,b#*“ (ot_counter/ot_timer aus wo:add).
+- **it_surprise mit "=Taste"**: Der Import löst die Kachel ti[Taste] des Levelskripts auf (Tasten mit Leerzeichen am Ende inklusive); eine Überraschung in der eigenen Auswahl bleibt Überraschung mit derselben Auswahl. Levels, die hohle Puzzlesteine erst zur Laufzeit setzen, werden nicht mehr als „alter Export“ abgelehnt.
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
   Hauptkugel (Spieler 2, sein Inventar).
 - **st_stoneimpulse_steady**: pulsiert immer wieder, solange Laserlicht darauf fällt. **it_explosion(_nil/…)** als
@@ -769,6 +778,50 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
 - **Offen:** 3D-Stil zeichnet zur Laufzeit gesetzte Steine/Böden nicht neu; `postinit`
   wird nicht aufgerufen (der Export ist nach `postinit` entstanden); Akteur in einem neu
   gesetzten Stein ungeprüft.
+
+### Pentomino-Levels (ab 13.11.2026, `src/lua/lib/libpento.lua`)
+
+Die Pentomino-Levels (Paket pentomino_i und Pentomino II–V in enigma_ii) bauen ihr Rätsel mit
+Enigmas Bibliothek `lib/libpento`: Schalter zeigen die zwölf Pentomino-Formen nacheinander als
+blaue Puzzlesteine im 5×5-Quellfeld (`pento.next`), ein Vierfachschalter dreht (`pento.rotate`),
+ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ein `ot_timer`
+(`check`) aus zwölf Randsteinen Oxyd-Steine und mischt ihre Farben.
+
+- **Bibliotheken:** `libpento` liegt unverändert (GPL v2+, Ronald Lamprecht) in
+  `src/lua/lib/`; der Importer trägt sie aus `el:dependency` als `lua.libs` ein, Murmel führt sie
+  vor dem Levelskript als eigenen Chunk aus (wie Enigmas `preload`). Andere Bibliotheken fehlen.
+- **Auflöser (api2init.lua):** echte Auflöser-Kontexte `{Implementierung, Finalisierer, Unterauflöser, …}`
+  mit `evaluateKey`-Kette (ti, Funktion, Kontext), `res.metatable`, `is_resolver`,
+  `assert_bool`/`assert_type`, `res.autotile` (Bereichs- und Präfixregeln, `%%` im Muster) und
+  `tile:_declaration()`. Unbekannte `res.*` geben ihr Argument weiter wie bisher.
+  `wo(resolver, …)` im Init-Modus ruft nur die Finalisierer (so kennt `res.pento` Quell- und
+  Zielfeld aus dem Export); `wo:drawMap` während des Spiels zeichnet mit Leserichtung und ruft
+  danach die Finalisierer.
+- **Karten (Teil von libmap):** `wo:newMap(key, zeilen | b, h)` mit `width`, `height`,
+  `defaultkey`, `keylength`, `map[{x, y}]`; `map ^ transformation` (`lib.map.transform`);
+  `MAP_IDENT … MAP_FLIP_VERTICAL`, `MAP_ALL`, Verknüpfung `*`, Potenz `^`, Umkehrung `-` nach
+  `lib.map.transformation_compose`. Weitere libmap-Funktionen fehlen (der Import lehnt `lib.map` ab).
+- **Rückrufe mit Punkt:** Ziele wie `pento.next` werden wie `lua::CallFunc` über Tabellen
+  aufgelöst; der Importer fragt nach dem Init, ob das Ziel eine Funktion ist.
+- **Puzzlesteine zur Laufzeit** (`PuzzleStone::on_creation` → `Stone::autoJoinCluster`): ein neuer
+  Stein mit `cluster` verbindet sich mit Nachbarn gleichen Clusters (und gleicher Farbe) und
+  trennt sich von anderen; ohne `cluster` passt er geclusterte Nachbarn an. `obj:get_cluster()`
+  liefert das Fragment. Eigene Attribute (`_transform`) bleiben am Stein.
+- **Oxyd-Steine zur Laufzeit** (`wo[…] = {"st_oxyd"}`): ein neuer geschlossener Stein (Geschmack a,
+  Physik, Paarbrett, Renderer); Farben bekommen sie wie bei `OxydStone::initColors` paarweise,
+  sobald `wo:shuffleOxyd()` läuft oder der erste getroffen wird. Levels ohne Oxyd-Steine, deren
+  Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Nur in
+  Levels, die ohne Oxyd-Steine beginnen, und nur schlichtes `{"st_oxyd"}`: Ersetzen vorhandener
+  Oxyd-Steine, feste Farben (`oxydcolor`), andere Formen oder `noshuffle` lehnt der Import ab.
+- **`wo:shuffleOxyd()` während des Spiels** mischt die Farben der geschlossenen Steine (wie
+  die Nachricht `shuffle`).
+- **`po["name"]`** (lua.cc dispatchPositionsReadAccess): benannte Position oder Position des
+  benannten Objekts, mit `*`/`?` eine Positionsliste; `po["name"] = pos` benennt eine Position.
+- **Benannte Oxyd-Steine** behalten ihre eigenen `_`-Attribute (`_kind`) für Lua.
+- **Karten in Variablen** (`wo:drawMap(ti, pos, karte ^ drehung)`): der Import nimmt alle
+  `ti`-Arten des Levels als mögliche Laufzeitkacheln (unbekannte führen zur Ablehnung).
+- **`sender.state = OFF`** an einem `ot_timer` hält ihn an (TimerGadget::setState).
+- **Nicht übernommen:** Pentomino I (enigma_ii/ralf16, Bibliothek `ralf_pento` mit API 1).
 
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 

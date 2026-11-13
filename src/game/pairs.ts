@@ -31,6 +31,17 @@ export class PairBoard {
     return this.symbols[index];
   }
 
+  /** An Oxyd stone made during play (closed); its index is the next one. */
+  add(symbol: string): void {
+    this.symbols.push(symbol);
+    this.states.push('closed');
+  }
+
+  /** OxydStone::initColors for stones made during play: their colour is known now. */
+  setSymbol(index: number, symbol: string): void {
+    this.symbols[index] = symbol;
+  }
+
   /** OxydStone::setState(0) ("close", "off", "signal" 0): a single open stone closes. */
   close(index: number): PairEvent[] {
     if (this.states[index] !== 'open') return [];

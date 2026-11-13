@@ -27,6 +27,21 @@ const API1_HELPER_KINDS = new Map(
 /** The new kind of an API 1 kind name ("st-rock1" → "st_granite"), or null. */
 export const api1Kind = (name) => API1_KINDS.get(name) ?? null;
 
+/**
+ * Enigma libraries Murmel ships (src/lua/lib): dependency path → name in lua.libs, and the kinds
+ * the library itself may set during play. lib/libmap: the shim has the part libpento uses.
+ */
+export const LIBS = { 'lib/libpento': { name: 'libpento', kinds: ['st_puzzle'] } };
+export function libCode(name) {
+  return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
+}
+/** The supported libraries a level depends on (el:dependency), in order. */
+export function levelLibs(xml) {
+  return [...xml.matchAll(/<el:dependency el:path="([^"]+)"/g)].map((m) => LIBS[m[1]]).filter(Boolean);
+}
+/** Resolvers that really work during play (the rest only pass their argument on). */
+const RESOLVERS = new Set(['autotile', 'pento']);
+
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
 }
@@ -62,6 +77,8 @@ function bodies(code, entries) {
     }
     byName.set(h[1], code.slice(h.index, end));
   }
+  // a callback kept in a variable (rail0 = a closure of lib/ant) may call anything: check all
+  if ([...entries].some((n) => !byName.has(n))) return [...byName.values()].join('\n');
   const seen = new Set();
   const todo = [...entries];
   while (todo.length) {
@@ -73,7 +90,7 @@ function bodies(code, entries) {
   return [...seen].map((n) => byName.get(n)).join('\n');
 }
 
-const METHODS = new Set(['open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
+const METHODS = new Set(['shuffleOxyd', 'open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',
@@ -98,7 +115,9 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
   // wo:drawMap/drawRect/drawBorder during play: only with plain tile tables (no res.* resolvers, no map objects)
   const draws = [...body.matchAll(/:\s*(draw(?:Map|Rect|Border))\s*\(/g)].map((m) => m[1]);
-  if (draws.length && (/\bres\.\w+/.test(code) || /\blib\.map\b|wo:newMap|MAP_ROT|MAP_FLIP/.test(code))) for (const d of new Set(draws)) problems.add(`:${d}`);
+  // (res.autotile, res.pento and wo:newMap with map ^ transformation are built; libmap's other functions are not)
+  const otherResolver = [...code.matchAll(/\bres\.(\w+)/g)].some((m) => !RESOLVERS.has(m[1]));
+  if (draws.length && (otherResolver || /\blib\.map\b/.test(code))) for (const d of new Set(draws)) problems.add(`:${d}`);
   // wo:add during play: only items into an inventory (YIN/YANG) and rubber bands
   const raw = reached.replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
@@ -154,6 +173,10 @@ export function runtimeKinds(code, api1 = false, entries = undefined) {
       for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
     }
   }
+  // maps from wo:newMap kept in variables (parts[kind] ^ rotation): any ti entry may be drawn
+  if (/:\s*drawMap\s*\(/.test(body) && /wo:newMap/.test(code)) {
+    for (const d of code.matchAll(/ti\[\s*"[^"]*"\s*\]\s*=([^\n]*)/g)) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+  }
   for (const ch of keys) {
     const key = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
@@ -177,7 +200,7 @@ export function allTileKinds(code) {
 }
 
 /** Run the level script in init mode on the exported world; returns world attributes and errors. */
-export async function luaInit(code, w, api1 = false) {
+export async function luaInit(code, w, libs = [], api1 = false) {
   const named = [];
   const byRef = new Map();
   const layers = ['fl', 'st', 'it'];
@@ -229,7 +252,7 @@ export async function luaInit(code, w, api1 = false) {
     size: () => [w.w, w.h],
     add: (kind, attrs) => void adds.push({ kind, attrs }),
   };
-  const lua = await LuaLevel.create(code, host, SHIM, await import('fengari'), api1 ? API1_SHIM : undefined);
+  const lua = await LuaLevel.create(code, host, SHIM, await import('fengari'), libs.map((l) => libCode(l.name)), api1 ? API1_SHIM : undefined);
   // wo["FallenPuzzle"] = "=key": the kinds of tile ti[key]
   let fallenTile = null;
   if (typeof world.FallenPuzzle === 'string' && world.FallenPuzzle.startsWith('=')) {
@@ -237,5 +260,7 @@ export async function luaInit(code, w, api1 = false) {
     lua.describeTile(world.FallenPuzzle.slice(1));
     fallenTile = adds.splice(before).filter((a) => a.kind.startsWith('tile:')).map((a) => a.kind.slice(5));
   }
-  return { world, adds, fallenTile, error: lua.lastError };
+  const error = lua.lastError;
+  // callback targets that name a Lua function after the init ("pento.next" in a library's table)
+  return { world, adds, fallenTile, error, isFunction: (name) => !error && lua.isFunction(name) };
 }
