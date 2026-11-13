@@ -189,6 +189,33 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (key === 'GlobalForce' || key === 'FrictionStrength') applyWorld(physics, world, force);
     },
     size: () => [level.width, level.height],
+    /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
+    addInventory(player, kind) {
+      const inv = objects.inventories[Number(player)] ?? objects.inventory;
+      if (inv.length < 13) inv.unshift(String(kind));
+      w.redraw();
+    },
+    /** wo:add({"ot_rubberband", anchor1 = a marble, anchor2 = a stone or marble}) during play. */
+    addRubber(a1, a2, strength, length, threshold, min, max) {
+      const marbleOf = (ref: string | null): number => {
+        if (!ref?.startsWith('a:')) return -1;
+        const i = Number(ref.slice(2));
+        if (i === 0) return 0;
+        return level.actors[i - 1]?.k === 'ac_marble_white' && physics.marbles[1] ? 1 : -1;
+      };
+      const m = marbleOf(a1);
+      if (m < 0 || !a2) throw new Error('Murmel kann dieses Gummiband nicht spannen');
+      const num = (v: string | null) => (v === null || v === '' ? undefined : Number(v));
+      const def = { strength: num(strength), length: num(length), threshold: num(threshold), min: num(min), max: num(max) };
+      const m2 = marbleOf(a2);
+      if (m2 >= 0) {
+        physics.addRubberBetween(m, m2, def);
+        return;
+      }
+      const [x, y] = host.pos(a2);
+      const follow = a2.startsWith('o:') ? () => { const o = byId(a2); return o ? { x: o.col + 0.5, y: o.row + 0.5 } : null; } : undefined;
+      physics.addRubber(m, x + 0.5, y + 0.5, def, follow);
+    },
   };
   return host;
 }

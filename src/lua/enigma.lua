@@ -497,8 +497,30 @@ end
 
 local wmethods = {}
 -- wo:add({"ot_timer", …}): other objects are not in the export; in init mode the host records them
+-- an object reference for the host: an object's ref or the first object of that name
+local function refof(v)
+  if type(v) == "table" then return v._ref end
+  if type(v) == "string" then return (M.find(v) or {})[1] end
+  return nil
+end
+
 function wmethods.add(_, a, b)
-  if not INIT then unsupported("wo:add") end
+  if not INIT then
+    -- during play: an item into a player's inventory, or a rubber band
+    if type(a) == "number" and type(b) == "table" and type(b[1]) == "string" then
+      local k = b[1]
+      -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
+      if k == "it_pipe" and type(b.connections) == "string" and b.connections ~= "" then k = "it_pipe_" .. b.connections end
+      M.addinventory(a, k)
+      return
+    end
+    local d = b or a
+    if type(d) == "table" and d[1] == "ot_rubberband" then
+      M.addrubber(refof(d.anchor1), refof(d.anchor2), d.strength, d.length, d.threshold, d.min, d.max)
+      return
+    end
+    unsupported("wo:add")
+  end
   local d = b or a
   if type(d) == "table" and type(d[1]) == "string" then
     M.add(d[1], table.unpack(declargs(d)))

@@ -688,10 +688,23 @@ export class PhysicsWorld {
     return this.rubbers.some((r) => r.a1 === m && !r.a2 && Math.abs(r.end.x - x) < 1e-6 && Math.abs(r.end.y - y) < 1e-6);
   }
 
-  /** A new band from the marble to a stone centre (st_rubberband). */
-  addRubber(i: number, x: number, y: number, def: Omit<RubberDef, 'a' | 'b'>): void {
+  /** A new band from the marble to a stone centre (st_rubberband; follow: a moving stone's centre). */
+  addRubber(i: number, x: number, y: number, def: Omit<RubberDef, 'a' | 'b'>, follow?: () => { x: number; y: number } | null): void {
     const m = this.marbles[i];
-    this.rubbers.push(new Rubberband({ ...def, a: i, b: [x, y] }, m, null, { x, y }));
+    const last = { x, y };
+    const fixed = follow
+      ? {
+          get x() { const p = follow(); if (p) Object.assign(last, p); return last.x; },
+          get y() { const p = follow(); if (p) Object.assign(last, p); return last.y; },
+        }
+      : last;
+    this.rubbers.push(new Rubberband({ ...def, a: i, b: [x, y] }, m, null, fixed));
+    this.recountBands();
+  }
+
+  /** A new band between two marbles. */
+  addRubberBetween(i: number, j: number, def: Omit<RubberDef, 'a' | 'b'>): void {
+    this.rubbers.push(new Rubberband({ ...def, a: i, b: j }, this.marbles[i], this.marbles[j], null));
     this.recountBands();
   }
 

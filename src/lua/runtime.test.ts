@@ -175,3 +175,16 @@ end`;
     expect(lua.lastError).toMatch(/drawMap/);
   });
 });
+
+describe('wo:add during play', () => {
+  it('puts items into an inventory and spans rubber bands', async () => {
+    const w = fakeHost([{ ref: 'a:0', l: 'st', x: 1, y: 1, a: { name: 'ball' } }, { ref: 'o:5', l: 'st', x: 4, y: 2, a: { name: 'post' } }]);
+    const calls: string[] = [];
+    w.host.addInventory = (p, k) => calls.push(`inv ${p} ${k}`);
+    w.host.addRubber = (a1, a2, s, l) => calls.push(`rubber ${a1} ${a2} ${s} ${l}`);
+    const lua = await startLua(`function f() wo:add(YIN, {"it_extralife"}); wo:add({"ot_rubberband", anchor1="ball", anchor2=no["post"], strength=20, length=2}) end`, w.host);
+    lua.callback('f', true, 'o:5');
+    expect(lua.lastError).toBe('');
+    expect(calls).toEqual(['inv 0 it_extralife', 'rubber a:0 o:5 20 2']);
+  });
+});

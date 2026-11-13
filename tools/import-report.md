@@ -1,6 +1,6 @@
 # Enigma-Import
 
-906 von 1322 Levels übernommen (18 Pakete).
+909 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -23,14 +23,14 @@
 | Lua: oxyd() | 30 | 0 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Lua: abyss() | 20 | 0 |
-| Lua: :add | 18 | 6 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 3 |
-| Stein st_spitter | 9 | 1 |
+| Stein st_spitter | 9 | 2 |
+| Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 2 |

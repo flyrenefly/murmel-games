@@ -42,7 +42,12 @@ export function luaProblems(code, fns) {
   if (API1.test(code)) problems.add('API 1');
   const body = bodies(code).replace(/--[^\n]*/g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
   const locals = new Set([...body.matchAll(/\blocal\s+(?:function\s+)?([A-Za-z_][\w\s,]*)/g)].flatMap((m) => m[1].split(',').map((s) => s.trim())));
-  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1])) problems.add(`:${m[1]}`);
+  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add') problems.add(`:${m[1]}`);
+  // wo:add during play: only items into an inventory (YIN/YANG) and rubber bands
+  const raw = bodies(code).replace(/--[^\n]*/g, '');
+  const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
+  const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*connections\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_rubberband"/g)].length;
+  if (adds > ok) problems.add(':add');
   for (const m of body.matchAll(/(^|[^.:\w])([A-Za-z_]\w*)\s*\(/g)) {
     const n = m[2];
     if (!FUNCS.has(n) && !KEYWORDS.has(n) && !fns.has(n) && !locals.has(n)) problems.add(`${n}()`);

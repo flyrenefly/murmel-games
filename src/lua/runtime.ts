@@ -25,6 +25,10 @@ export interface LuaHost {
   size(): [number, number];
   /** wo:add({kind, …}) in init mode (the importer records ot_timer); the game ignores it. */
   add?(kind: string, attrs: Record<string, string>): void;
+  /** wo:add(YIN/YANG, {"it_…"}) during play. */
+  addInventory?(player: number, kind: string): void;
+  /** wo:add({"ot_rubberband", …}) during play: anchor refs and the band's attributes. */
+  addRubber?(a1: string | null, a2: string | null, strength: string | null, length: string | null, threshold: string | null, min: string | null, max: string | null): void;
 }
 
 export type Fengari = typeof import('fengari');
@@ -185,6 +189,14 @@ export class LuaLevel {
           if (v !== null) attrs[arg(i) ?? ''] = v;
         }
         host.add?.(arg(1) ?? '', attrs);
+        return 0;
+      },
+      addinventory: () => {
+        host.addInventory?.(num(1), arg(2) ?? '');
+        return 0;
+      },
+      addrubber: () => {
+        host.addRubber?.(arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), arg(7));
         return 0;
       },
       size: () => {
