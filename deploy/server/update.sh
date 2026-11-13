@@ -9,6 +9,8 @@ ROOT=/opt/murmel
 WORK="$ROOT/repo"
 exec 9>"$ROOT/update.lock"
 flock -n 9 || exit 0
+# nach einem Rückweg (release.sh --rollback) angehalten, bis /opt/murmel/hold entfernt wird
+[ -e "$ROOT/hold" ] && exit 0
 
 log() { echo "[update] $*"; }
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Murmel-Release auf dem VPS. Läuft als Benutzer murmel in /opt/murmel.
 #   release.sh <version> <site-dir> <server-src-dir>   neues Release aktivieren
-#   release.sh --rollback                              auf das vorherige Release zurück
+#   release.sh --rollback                              auf das vorherige Release zurück (hält
+#                                                      den automatischen Rollout an: rm /opt/murmel/hold)
 # <site-dir> ist das gebaute Spiel (dist/), <server-src-dir> der Ordner server/ des Repos.
 set -euo pipefail
 
@@ -46,6 +47,9 @@ if [ "${1:-}" = "--rollback" ]; then
   cur=$(current_version)
   activate "$prev"
   echo "$cur" > "$ROOT/previous-version"
+  # automatischen Rollout anhalten, sonst käme nach 2 min wieder der neueste Stand
+  date -Is > "$ROOT/hold"
+  log "automatischer Rollout angehalten – fortsetzen mit: rm $ROOT/hold"
   exit 0
 fi
 
