@@ -34,10 +34,12 @@ Lösbarkeitsprüfung, Geister, Tipps, Spieler-Levels und Wettkampf auf.
 ```json
 { "v": 1, "level": "enigma_iv/ant03_3", "levelHash": "sha256…", "seed": 123456789,
   "dt": 0.005, "steps": 18234, "result": "sieg",
-  "input": [[120, 0, 0], [3, 512, -64], [1, "drop"], …] }
+  "input": [[120, 0, 0], [3, 512, -64], [1, "drop"], [40, 0, 0], …] }
 ```
 
-- `input`: Lauflängen `[anzahl, kraftX, kraftY]` oder Aktion `[schritt, "name"]`.
+- `input`: Lauflängen `[anzahl, kraftX, kraftY]` (Kraft in 1/1024) oder Aktion `[anzahl, "name"]`;
+  eine Aktion gilt vor dem nächsten Schritt. Aktionen: `drop`, `rotate`, `swap`, `restart`.
+- Umgesetzt in `src/game/recording.ts` (Stufe A4, Modul; Einbindung in die Spielschleife nach A3).
 - `levelHash` bindet die Aufzeichnung an den Levelinhalt (geänderte Levels → alte Aufzeichnungen
   ungültig, nicht falsch).
 
