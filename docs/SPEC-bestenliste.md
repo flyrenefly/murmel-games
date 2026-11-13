@@ -45,7 +45,7 @@ GET /api/bestenliste/pruefung/:id  ──► { status, zeit, platz, von, neu }  
 echtem Spielcode und `solutions/murmel/01.json`, PostgreSQL-Teil nur in der CI), vitest, Browser mit lokaler Test-API
 (echter Lauf eingereicht und nachgespielt, Levelliste mit Platz, Ranglistenseite hell/dunkel/375 px, Admin-Knöpfe).
 Nicht geprüft: Siegmeldung nach einem von Hand gespielten Sieg, Rollout auf dem Server (erster Rollout legt
-`/opt/murmel/game/<version>` an). Datenschutzabschnitt wartet auf Freigabe.
+`/opt/murmel/game/<version>` an). Datenschutzabschnitt „Bestenlisten“ vom Nutzer freigegeben und eingetragen (13.11.2026).
 
 ## Prüfen
 
@@ -132,18 +132,23 @@ index (level, steps, created_at, id)
 
 ## Datenschutz
 
-Abschnitt „Bestenlisten“ der Datenschutzerklärung: Entwurf in der Übergabe an den Nutzer; er kommt
-erst nach Freigabe in `datenschutz.html`.
+Abschnitt „Bestenlisten“ in `datenschutz.html` (vom Nutzer freigegeben 13.11.2026): Anzeigename, Zeit, Platz und
+Datum sind öffentlich; gespeichert wird nur die Aufzeichnung des besten Laufs je Konto und Level, bis der Eintrag
+oder das Konto gelöscht wird (Sicherungen höchstens 14 Tage länger).
+
+## Läufe von Admins als Lösungen (Nutzerentscheidung 13.11.2026: ja)
+
+Ein angenommener Lauf eines Admins wird zusätzlich in `solutions` gespeichert (wie „Als Lösung speichern“) und
+nachts von der Lösbarkeitsprüfung mitgeprüft. Spielerläufe nie.
 
 ## Grenzen
 
 - **Immer:** Spiel bleibt ohne Konto und offline voll spielbar; Nachspielen bremst die API nicht
   (Warteschlange, ein Prozess, niedrige Priorität); Tests zuerst.
-- **Erst fragen:** Änderungen der Datenschutzerklärung; geprüfte Läufe von Admins als Lösung für die
-  Lösbarkeitsprüfung übernehmen; Aufzeichnungen anderen zeigen (Geister).
+- **Erst fragen:** Änderungen der Datenschutzerklärung; Spielerläufe für die Lösbarkeitsprüfung; Aufzeichnungen
+  anderen zeigen (Geister).
 - **Nie:** Mailadressen zeigen, gemeldete statt nachgespielter Zeiten übernehmen, Daten außerhalb der EU.
 
 ## Offene Fragen
 
-1. Soll ein geprüfter Lauf eines Admins gleich als Lösung für die Lösbarkeitsprüfung dienen? (Nutzerfrage)
-2. Neubewertung bei geänderten Levels (alte Einträge ausblenden?) – vorerst nein.
+1. Neubewertung bei geänderten Levels (alte Einträge ausblenden?) – vorerst nein.

@@ -54,7 +54,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   if (accounts) accountRoutes(app, accounts);
   if (accounts && forum) forumRoutes(app, { store: forum, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
   if (accounts && solvability) solvabilityRoutes(app, solvability);
-  if (accounts && leaderboard) leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: accounts.now ?? now });
+  if (accounts && leaderboard) leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: accounts.now ?? now, solutions: solvability });
 
   // Statistics: the game reports level starts and solves (navigator.sendBeacon, no cookie).
   app.post<{ Body: { type: StatType; level: string } }>(

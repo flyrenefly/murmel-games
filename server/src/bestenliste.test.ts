@@ -13,6 +13,7 @@ import { type AccountStore, COOKIE, readCookie } from './konten.ts';
 import { accountStore } from './konten-db.ts';
 import { memoryStore } from './konten-memory.ts';
 import type { Recording } from './loesbarkeit.ts';
+import { memorySolvabilityStore } from './loesbarkeit-memory.ts';
 import { migrate } from './migrate.ts';
 
 const ORIGIN = 'https://murmel.example';
@@ -82,13 +83,15 @@ describe('Bestenliste-API', () => {
     const accounts = memoryStore();
     const names = new Map<number, string>();
     const store = memoryLeaderboardStore(accounts, names);
+    const solvability = memorySolvabilityStore();
     const app = buildApp({
       version: 'abcdef123456',
       db: { ping: async () => {}, recordEvent: async () => {}, statistics: async () => ({ days: [], levels: [] }) },
       accounts: { store: accounts, mailer, origin: ORIGIN, adminEmails: ['admin@example.de'], now: () => clock },
       leaderboard: { store, checker },
+      solvability,
     });
-    return { app, accounts, names, store };
+    return { app, accounts, names, store, solvability };
   }
   async function signIn(a: FastifyInstance, email: string): Promise<string> {
     await a.inject({ method: 'POST', url: '/api/konto/mail', payload: { email }, headers: { origin: ORIGIN } });
@@ -172,6 +175,21 @@ describe('Bestenliste-API', () => {
     assert.equal((await call(app, 'POST', '/api/bestenliste', cora, REC)).statusCode, 403);
     const after = (await call(app, 'GET', '/api/bestenliste/level?id=enigma%3Arb01', anna)).json();
     assert.deepEqual([after.anzahl, after.ich.platz], [2, 2]);
+  });
+
+  test('Admins: ein geprüfter Sieg wird zusätzlich Lösung für die Lösbarkeitsprüfung, Spielerläufe nie', async () => {
+    const { app, solvability } = setup();
+    const admin = await signIn(app, 'admin@example.de');
+    const anna = await signIn(app, 'anna@example.de');
+    await submit(app, anna, REC);
+    assert.equal((await solvability.solutions()).length, 0);
+    await submit(app, admin, { ...REC, seed: 13 }); // not solved: no solution
+    assert.equal((await solvability.solutions()).length, 0);
+    assert.equal((await submit(app, admin, REC)).status, 'angenommen');
+    await submit(app, admin, REC); // the same recording once only
+    const saved = await solvability.solutions();
+    assert.deepEqual(saved.map((x) => [x.level, x.steps]), [['enigma:rb01', 500]]);
+    assert.deepEqual(await solvability.recording(saved[0].id), REC);
   });
 
   test('Löschen: eigener Eintrag und Admin, sonst niemand', async () => {

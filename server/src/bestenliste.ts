@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAccount, requireSignedIn } from './konten.ts';
 import { RateLimit } from './limit.ts';
-import { parseRecording, type Recording } from './loesbarkeit.ts';
+import { parseRecording, type Recording, recordingHash, type SolvabilityStore } from './loesbarkeit.ts';
 import { LEVEL_ID } from './stats.ts';
 
 /**
@@ -165,8 +165,10 @@ export interface LeaderboardOptions {
   version: string;
   /** Public address of the game (CSRF check). */
   origin: string;
-  /** Replays at the same time (BESTENLISTE_JOBS). */
+  /** Replays at the same time (one checker process: keep 1). */
   parallel?: number;
+  /** Lösbarkeitsprüfung: a checked win of an admin is also stored as a solution for the nightly run. */
+  solutions?: SolvabilityStore;
   now?: () => Date;
 }
 
@@ -185,13 +187,17 @@ export function leaderboardRoutes(app: FastifyInstance, opts: LeaderboardOptions
   });
 
   /** Replays the run and, if it wins, keeps it when it is the account's best. */
-  async function judge(accountId: number, rec: Recording, clientVersion: string | null): Promise<JobState> {
+  async function judge(accountId: number, admin: boolean, rec: Recording, clientVersion: string | null): Promise<JobState> {
     const r = await checker.check(rec);
     if (r.status === 'unbekannt') return { status: 'abgelehnt', grund: 'Dieses Level gibt es in der aktuellen Spielversion nicht.' };
     if (r.status !== 'geloest') {
       if (clientVersion && !sameVersion(clientVersion, version)) return { status: 'abgelehnt', grund: 'Dein Spiel ist nicht auf dem neuesten Stand – bitte die Seite neu laden.' };
       if (r.status === 'fehler' && /Zeitüberschreitung/.test(r.error ?? '')) return { status: 'abgelehnt', grund: 'Die Prüfung dauerte zu lange.' };
       return { status: 'abgelehnt', grund: r.status === 'fehler' ? 'Der Lauf ließ sich nicht nachspielen.' : 'Beim Nachspielen wurde das Level nicht gelöst.' };
+    }
+    // admins only (docs/SPEC-bestenliste.md): the checked win also serves the nightly Lösbarkeitsprüfung
+    if (admin && opts.solutions) {
+      await opts.solutions.addSolution({ level: rec.level, recordingHash: recordingHash(rec), recording: rec, steps: rec.steps, accountId }).catch(() => {});
     }
     const kept = await store.submit({ accountId, level: rec.level, steps: r.steps, levelHash: r.levelHash ?? '', version, recording: rec, now: now() });
     const { total, entries } = await store.ranking(rec.level, 0, accountId);
@@ -210,7 +216,7 @@ export function leaderboardRoutes(app: FastifyInstance, opts: LeaderboardOptions
       return reply.code(429).send({ error: `Höchstens ${SUBMISSIONS_PER_HOUR} Läufe pro Stunde. Bitte versuch es später noch einmal.` });
     }
     const v = typeof req.body?.version === 'string' ? req.body.version.slice(0, 40) : null;
-    const id = queue.add(a.id, () => judge(a.id, rec, v));
+    const id = queue.add(a.id, () => judge(a.id, a.role === 'admin', rec, v));
     return reply.code(202).send({ id });
   });
 
