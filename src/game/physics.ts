@@ -341,6 +341,9 @@ export class PhysicsWorld {
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
         add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR + ffx, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR + ffy, friction);
+      } else if (e.kind === 'bug') {
+        // Bug: a plain actor without a will – only floor forces and collisions move it
+        add(e, ffx, ffy, friction);
       } else {
         const [cx, cy] = e.chaseForce(targets, dt);
         add(e, cx + ffx, cy + ffy, friction);
@@ -365,7 +368,8 @@ export class PhysicsWorld {
     for (const e of this.enemies) {
       this.advance(e, forces.get(e)!);
       // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
-      this.collide(e, onContact, { by: -1, color: e.kind === 'killer' ? e.color : 2 });
+      // by -2: the bug (BreakStone st_break_bug breaks under it)
+      this.collide(e, onContact, { by: e.kind === 'bug' ? -2 : -1, color: e.kind === 'killer' ? e.color : 2 });
     }
   }
 
@@ -454,7 +458,8 @@ export class PhysicsWorld {
         if (relspeed < 0) continue; // moving apart
         // Marbles come first: a1 is a marble whenever one of the two is.
         const mi = this.marbles.indexOf(a1 as Marble);
-        if (mi >= 0 && j >= marbles.length) onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
+        // a bug does not hurt (it has no on_collision)
+        if (mi >= 0 && j >= marbles.length && (a2 as Enemy).kind !== 'bug') onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
         const dmu = a1.mass === a2.mass ? a1.mass : (2 * a1.mass * a2.mass) / (a1.mass + a2.mass);
         const j1 = (dmu * relspeed) / a1.mass;
         const j2 = (dmu * relspeed) / a2.mass;

@@ -564,6 +564,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   geht durch (außer purplemarble).
 - **st_disco_light / _medium / _dark** (`DiscoStone.cc`): durchfahrbare Abdunklung (Bilder st_disco0..2),
   Nachrichten lighten, darken (alte Levels um 2), signal (1 heller, 0 dunkler um 2).
+- **ac_bug** (`BugActor.cc`): kleiner Akteur ohne eigenen Antrieb (Radius 12/64, Masse 0,7), nur
+  Bodenkräfte und Stöße bewegen ihn; er schadet der Kugel nicht und zerbricht st_break_bug.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

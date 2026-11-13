@@ -231,10 +231,11 @@ for (const f of readdirSync(exportDir)) {
 }
 
 /** Actors Murmel can play. */
-const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black']);
+const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black', 'ac_bug']);
 /** Images of the other actors (models-2d.lua: killers look like pearls). */
 function actorImages(k, color) {
   if (k === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
+  if (k === 'ac_bug') return ['ac_bug', 'sh_pearl'];
   if (k === 'ac_top') return ['ac_top', 'sh_top'];
   if (k.startsWith('ac_killer')) return [color === '0' || (color === undefined && k === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (k === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];

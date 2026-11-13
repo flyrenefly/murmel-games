@@ -766,6 +766,11 @@ export class ObjectWorld {
         // BreakStone::actor_hit: the hammer breaks plain, oxydc and boulder ones, black/white
         // only for a marble of that colour
         const t = breakType(o);
+        // BreakStone::actor_hit: st_break_bug breaks when the bug (ac_bug) hits it
+        if (t === 'bug' && by === -2) {
+          this.breakStone(o);
+          return;
+        }
         // FlatStone/PlasterStone::actor_hit: the hammer breaks breakable and cracked ones
         if (this.wields('it_hammer') && (t === 'plain' || t === 'oxydc' || t === 'boulder' || t === 'flat' || t === 'cracked' || t === 'plaster' || (t === 'black' && color === 0) || (t === 'white' && color === 1))) this.breakStone(o);
         return;

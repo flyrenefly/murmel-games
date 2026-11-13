@@ -13,13 +13,14 @@ export interface ActorDef {
   a?: Record<string, string>;
 }
 
-export type EnemyKind = 'rotor' | 'top' | 'killer';
+export type EnemyKind = 'rotor' | 'top' | 'killer' | 'bug';
 
 /** Radius and mass (ActorTraits). */
 const TRAITS: Record<EnemyKind, { radius: number; mass: number }> = {
   rotor: { radius: 22 / 64, mass: 0.8 },
   top: { radius: 16 / 64, mass: 0.8 },
   killer: { radius: 13 / 64, mass: 0.7 },
+  bug: { radius: 12 / 64, mass: 0.7 },
 };
 
 /** Killer: attribute adhesion 2.0 = factor on the mouse force (marbles: 1.0). */
@@ -28,6 +29,7 @@ export const KILLER_MOUSE_FACTOR = 2;
 export function enemyKind(kind: string): EnemyKind | null {
   if (kind === 'ac_rotor') return 'rotor';
   if (kind === 'ac_top') return 'top';
+  if (kind === 'ac_bug') return 'bug';
   if (kind === 'ac_killer' || kind === 'ac_killer_white' || kind === 'ac_killer_black') return 'killer';
   return null;
 }

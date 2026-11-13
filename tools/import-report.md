@@ -1,6 +1,6 @@
 # Enigma-Import
 
-779 von 1322 Levels übernommen (18 Pakete).
+783 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -35,7 +35,6 @@
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Akteur ac_bug | 18 | 4 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |

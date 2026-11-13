@@ -151,6 +151,7 @@ function levelImages(level: Level): string[] {
 export function actorImages(kind: string, color?: string): string[] {
   if (kind === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
   if (kind === 'ac_top') return ['ac_top', 'sh_top'];
+  if (kind === 'ac_bug') return ['ac_bug', 'sh_pearl'];
   if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (kind === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
   if (/^ac_pearl(_white|_black)?$/.test(kind)) {
@@ -981,6 +982,13 @@ export class ClassicView {
       }
       if (a.kind === 'marble') {
         this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0, jump: a.jump ?? -1 });
+        continue;
+      }
+      if (a.kind === 'bug') {
+        // ac_bug: SpriteImage centred, shadow sh_pearl
+        if (img.sh_pearl) ctx.drawImage(img.sh_pearl, cx - s, cy - s);
+        const im = img.ac_bug;
+        if (im) ctx.drawImage(im, cx - im.width / 2, cy - im.height / 2);
         continue;
       }
       if (a.kind === 'killer') {
