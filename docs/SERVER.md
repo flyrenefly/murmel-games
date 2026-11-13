@@ -248,13 +248,16 @@ die Bestenlisten ohnehin entsteht.
   ist am VPS gesperrt).
 - **„Mit Apple anmelden“** nutzt das **Apple-Developer-Konto von WH-Control**. Services ID, Schlüssel
   und Return-URL legt der Nutzer dort an; die Geheimnisse liegen nur auf dem Server.
+- **`konten` wird gebaut** („Ja, starten“): erste Stufe im Branch `konten` – Mail-Link, Passkey und
+  Admin-Rolle über `ADMIN_EMAILS` in `/opt/murmel/.env`. **Keine Passwörter**; der Anmeldelink per Mail
+  übernimmt die Rolle von „Passwort vergessen“.
 - **Forum** (`forum`, Abschnitt 7.1) gehört zur Planung, Bau erst auf Entscheidung des Nutzers.
 - **Erledigt am 13.11.:** VPS bestellt (Nutzer) und eingerichtet, DNS umgestellt (Abschnitt 9),
   Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“).
 
 **Noch offen**
 1. **Fremdanmeldung:** Google und GitHub brauchen je eine eigene App-Anmeldung (legt der Nutzer an).
-2. **Wann `konten` (und damit `forum`) gebaut wird**, entscheidet der Nutzer.
+2. **Wann `forum` gebaut wird**, entscheidet der Nutzer.
 
 ## 12. Grenzen (für alle Bausteine)
 
