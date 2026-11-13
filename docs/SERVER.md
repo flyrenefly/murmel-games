@@ -121,7 +121,7 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 ## 7.1 Forum (`forum`)
 
 Wunsch des Nutzers (13.11.2026): Spieler können Verbesserungen, Fehler usw. posten; die Beiträge
-fließen in die Todo-Liste ein. Gebaut wird der Baustein erst auf Entscheidung des Nutzers.
+fließen in die Todo-Liste ein. Gebaut wird der Baustein direkt nach `konten` (Nutzer, 13.11.2026).
 
 - **Lesen ohne Konto, Schreiben nur mit Konto** (`konten`).
 - **Kategorien:** Fehler, Verbesserung, Frage, Level.
@@ -251,13 +251,13 @@ die Bestenlisten ohnehin entsteht.
 - **`konten` wird gebaut** („Ja, starten“): erste Stufe im Branch `konten` – Mail-Link, Passkey und
   Admin-Rolle über `ADMIN_EMAILS` in `/opt/murmel/.env`. **Keine Passwörter**; der Anmeldelink per Mail
   übernimmt die Rolle von „Passwort vergessen“.
-- **Forum** (`forum`, Abschnitt 7.1) gehört zur Planung, Bau erst auf Entscheidung des Nutzers.
+- **Forum** (`forum`, Abschnitt 7.1) wird **direkt im Anschluss an `konten`** gebaut („forum nach den
+  konten bauen“).
 - **Erledigt am 13.11.:** VPS bestellt (Nutzer) und eingerichtet, DNS umgestellt (Abschnitt 9),
   Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“).
 
 **Noch offen**
 1. **Fremdanmeldung:** Google und GitHub brauchen je eine eigene App-Anmeldung (legt der Nutzer an).
-2. **Wann `forum` gebaut wird**, entscheidet der Nutzer.
 
 ## 12. Grenzen (für alle Bausteine)
 
