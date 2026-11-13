@@ -135,6 +135,14 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (value === null) delete a[key];
       else a[key] = value;
       attrs.set(ref, a);
+      // Floor::add_force: force_x / force_y of a floor change its constant force
+      if (ref.startsWith('c:fl:') && (key === 'force_x' || key === 'force_y')) {
+        const { x, y } = parse(ref);
+        const c = cell(x, y);
+        const f = c.force ?? [0, 0];
+        const v = Number(value) || 0;
+        c.force = key === 'force_x' ? [v, f[1]] : [f[0], v];
+      }
     },
     send(ref, msg, value) {
       if (!ref.startsWith('o:')) return; // plain floors and stones ignore messages

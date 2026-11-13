@@ -1,6 +1,6 @@
 # Enigma-Import
 
-957 von 1322 Levels übernommen (18 Pakete).
+959 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -43,7 +43,6 @@
 | Pferd mit Aktion oder Steuerung | 4 | 2 |
 | Lua: :setfire | 4 | 1 |
 | Lua: lib.math | 4 | 0 |
-| Lua: :set | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
@@ -71,7 +70,6 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Lua: ac_top | 2 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 2 | 0 |
-| Lua: :fl | 1 | 0 |
 | Lua: :grid | 1 | 0 |
 | Lua: timer_action() | 1 | 0 |
 | Lua: solidfloor() | 1 | 0 |
@@ -100,7 +98,6 @@
 | Lua: test_link() | 1 | 0 |
 | Lua: fl_bridge | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
-| Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
 | Lua: ferry_movement() | 1 | 0 |
 | Lua: st_lightglass_hollow | 1 | 1 |

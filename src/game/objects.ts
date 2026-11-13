@@ -1246,7 +1246,7 @@ export class ObjectWorld {
   }
 
   /** rotateLine: the same-coloured stones from o in a direction shift by one, the last wraps to o's place. */
-  private rotatePuzzleLine(o: GameObject, dx: number, dy: number): void {
+  private rotatePuzzleLine(o: GameObject, dx: number, dy: number, forward = true): void {
     const color = o.attrs.color ?? '';
     const line: GameObject[] = [];
     for (let c = o.col, r = o.row, p = this.puzzleAt(c, r, color); p; c += dx, r += dy, p = this.puzzleAt(c, r, color)) line.push(p);
@@ -1254,7 +1254,7 @@ export class ObjectWorld {
     const cells = line.map((p) => [p.col, p.row]);
     line.forEach((p) => this.unplace(p));
     line.forEach((p, i) => {
-      const [c, r] = cells[(i + 1) % cells.length];
+      const [c, r] = cells[(i + (forward ? 1 : cells.length - 1)) % cells.length];
       p.col = c;
       p.row = r;
       this.place(p);
@@ -4221,6 +4221,12 @@ export class ObjectWorld {
     // "kill": the object is gone
     if (msg === 'kill') {
       this.remove(o);
+      return;
+    }
+    // PuzzleStone push_rotate / pull_rotate: rotate the line in a direction (WEST 0, SOUTH 1, EAST 2, NORTH 3)
+    if (o.cls === 'puzzle' && (msg === 'push_rotate' || msg === 'pull_rotate')) {
+      const d = [[-1, 0], [0, 1], [1, 0], [0, -1]][num ?? -1];
+      if (d && !o.puzzle) this.rotatePuzzleLine(o, d[0], d[1], msg === 'push_rotate');
       return;
     }
     if (o.cls === 'floorref') {

@@ -210,6 +210,11 @@ function methods.peepall(self)
   if INIT then M.setworld("_PeepAll", "true") else return send(self, "peepall") end
 end
 function methods.exists(self) return self._ref ~= nil and M.exists(self._ref) end
+-- Object:set({key = value, …}): several attributes at once
+function methods.set(self, t)
+  for k, v in pairs(t) do self[k] = v end
+  return self
+end
 -- Object:kind() and Object:is(kind) (KindDescriptor::isKind: the kind or a super kind, here by prefix)
 function methods.kind(self)
   if not self._ref then return nil end
@@ -582,6 +587,11 @@ function wmethods.drawBorder(_, ...)
     if origin.x ~= dest.x then settile(newpos(dest.x, y), tile) end
   end
 end
+
+-- wo:fl(pos), wo:st(pos), wo:it(pos): the object of that layer at a position
+function wmethods.fl(_, p) return fl(p) end
+function wmethods.st(_, p) return st(p) end
+function wmethods.it(_, p) return it(p) end
 
 for _, m in ipairs({"shuffleOxyd", "world", "_register"}) do
   wmethods[m] = function()

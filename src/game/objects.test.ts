@@ -236,6 +236,14 @@ describe('ObjectWorld', () => {
       expect(pos(w)).toEqual([[3, 1, 4], [4, 1, 5], [2, 1, 5]]);
     });
 
+    it("push_rotate and pull_rotate rotate the line in the given direction", () => {
+      const w = pw([Y(2, 1, 4), Y(3, 1, 5), Y(4, 1, 1 | 4)]);
+      w.sendMessage(w.objects[0], "push_rotate", true, 2); // EAST
+      expect(pos(w)).toEqual([[3, 1, 4], [4, 1, 5], [2, 1, 5]]);
+      w.sendMessage(w.objects[2], "pull_rotate", true, 2); // the stone now at (2,1): back again
+      expect(pos(w)).toEqual([[2, 1, 4], [3, 1, 5], [4, 1, 5]]);
+    });
+
     it("a complete yellow puzzle with no other neighbours explodes stone by stone", () => {
       const w = pw([Y(2, 1, 4), Y(3, 1, 1)]); // east ↔ west: complete
       w.hit(2, 1, 0, -1, 0, -2);

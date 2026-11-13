@@ -541,6 +541,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Auflöser; Kartenobjekte, Leserichtungen und res.*-Auflöser fehlen. Der Import erkennt die gesetzten Kacheln an den
   Kartenzeichen und Variablen der Aufrufe.
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
+- **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
   Hauptkugel (Spieler 2, sein Inventar).
 - **st_stoneimpulse_steady**: pulsiert immer wieder, solange Laserlicht darauf fällt. **it_explosion(_nil/…)** als
