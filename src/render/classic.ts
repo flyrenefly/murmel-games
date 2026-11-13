@@ -163,6 +163,9 @@ export function actorImages(kind: string, color?: string): string[] {
 }
 
 /** Images an interactive object needs (models-2d.lua). */
+/** Volcano: seed, growing, quaking, breaking, finished (st_flat). */
+const VOLCANO_IMAGES = ['it_seed', 'st_volcano_growing', 'st_quake', 'st_quake_break', 'st_flat', 'sh_round', 'sh_solid'];
+
 /** Fire: the burnable items, the extinguisher, transformed floors and heating animations. */
 const FIRE_IMAGES = ['it_burnable_oil', 'it_burnable_ignite', 'it_burnable_burning', 'it_burnable_ash', 'it_burnable_fireproof', 'it_extinguisher', 'fl_abyss', 'fl_dunes', 'fl_swamp', 'fl_water', 'fl_ice_heating', 'fl_water_heating', 'fl_swamp_heating', 'it_crack_abyss', 'it_crack_water'];
 
@@ -178,6 +181,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_seed' || kind === 'it_seed_wood') return ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed'];
   if (kind === 'it_seed_hay') return ['it_seed', 'st_box_hay', 'sh_round', 'fl_hay'];
   if (kind === 'it_seed_greenbrown') return ['it_seed', 'st_greenbrown', 'sh_round'];
+  if (kind === 'it_seed_volcano' || kind.startsWith('st_volcano')) return VOLCANO_IMAGES;
   if (kind.startsWith('it_meditation') || kind === 'it_landmine') return [...MEDITATION_IMAGES, 'it_landmine', 'it_explosion'];
   if (kind.startsWith('st_stoneimpulse')) return ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round'];
   if (kind.startsWith('st_puzzle')) return ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion'];
@@ -819,6 +823,13 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'volcano') {
+      const look = world.volcanoLook(o);
+      if (pass === 'shadow') {
+        if (look.shadow) this.image(look.shadow, px, py);
+      } else this.frame(look.image, look.frame, px, py);
       return;
     }
     if (o.cls === 'mail') {

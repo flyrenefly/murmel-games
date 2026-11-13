@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe']);
@@ -27,6 +27,9 @@ export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wo
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
+
+/** st_quaking: ping-pong of 4 frames, repeated, 50 ms each (one animcb cycle). */
+const VOLCANO_QUAKE_MS = 16 * 50;
 
 /** it_seed_growing: 13 frames à 120 ms (models-2d.lua), then the stone appears. */
 export const SEED_GROW_FRAMES = [0, 1, 0, 2, 0, 1, 0, 3, 4, 3, 0, 3, 4];
@@ -452,7 +455,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind in MEDITATION_STATE) return 'meditation';
   if (kind === 'it_landmine') return 'landmine';
   if (/^st_boulder(_[nesw])?$/.test(kind)) return 'boulder';
-  if (kind === 'it_seed' || kind === 'it_seed_wood' || kind === 'it_seed_hay' || kind === 'it_seed_greenbrown') return 'seed';
+  if (kind === 'it_seed' || kind === 'it_seed_wood' || kind === 'it_seed_hay' || kind === 'it_seed_greenbrown' || kind === 'it_seed_volcano') return 'seed';
+  if (/^st_volcano(_idle|_active|_new|_growing)?$/.test(kind)) return 'volcano';
   if (kind === 'it_magicwand') return 'wand';
   if (kind === 'it_extralife') return 'extralife';
   if (kind === 'it_yinyang') return 'yinyang';
@@ -675,6 +679,11 @@ export class ObjectWorld {
         if ((f === 'horse' && actor === 'horse') || (f === 'pearl' && actor === 'pearl_white')) continue;
         return ALL_FACES;
       }
+      // VolcanoStone::collision_response: a new one (still a seed) lets actors pass
+      if (o.cls === 'volcano' && !o.gone) {
+        if (o.state === 2) continue;
+        return ALL_FACES;
+      }
       if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
@@ -719,6 +728,14 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'volcano') {
+        // VolcanoStone::actor_hit: an active one breaks with the hammer; a growing one shatters
+        if (o.state === 1 && this.wields('it_hammer')) {
+          o.state = 4;
+          o.blast = this.now;
+        } else if (o.state === 3 && by >= 0) this.events.push({ type: 'shatter', marble: by });
+        return;
+      }
       if (o.cls === 'mail') {
         // MailStone::actor_hit: the first item goes through the pipes and drops behind the last one
         if (by < 0) return;
@@ -1823,6 +1840,64 @@ export class ObjectWorld {
   anchorAt(id: string): { x: number; y: number } | null {
     const o = this.objects.find((x) => x.id === id && !x.gone);
     return o ? { x: o.col + 0.5, y: o.row + 0.5 } : null;
+  }
+
+  // ---------- volcano (VolcanoStone.cc) ----------
+
+  private volcanoSet(o: GameObject, s: number): void {
+    o.state = s;
+    o.blast = this.now;
+  }
+
+  /** VolcanoStone::animcb: new → growing → active; each quake cycle spreads and may finish; breaking ends. */
+  private volcanoStep(o: GameObject): void {
+    const age = this.now - (o.blast ?? 0);
+    if (o.state === 2 && age >= SEED_GROW_MS) {
+      this.volcanoSet(o, 3);
+      this.updateTriggers(o.col, o.row);
+    } else if (o.state === 3 && age >= 3 * 80) this.volcanoSet(o, 1);
+    else if (o.state === 4 && age >= 6 * 50) this.remove(o);
+    else if (o.state === 1 && age >= VOLCANO_QUAKE_MS) {
+      for (const d of [3, 2, 1, 0]) if (this.random() > 0.7) this.volcanoSpread(o, o.col + L_DX[d], o.row + L_DY[d]);
+      if ((!truthy(o.attrs.secure) || this.volcanoSurrounded(o)) && this.random() > 0.95) this.volcanoSet(o, 5);
+      else o.blast = this.now;
+    }
+    // actor_inside: growing, active and breaking volcanos shatter actors in their cell
+    if (o.state === 1 || o.state === 3 || o.state === 4) this.shatterAt(o.col, o.row);
+  }
+
+  private volcanoSpread(o: GameObject, c: number, r: number): void {
+    if (c < 0 || r < 0 || c >= this.width || this.env.stoneAt(c, r) || this.stoneObjectAt(c, r)) return;
+    const n = this.add('st_volcano_new', 'volcano', c, r);
+    n.state = 2;
+    n.blast = this.now;
+    n.attrs = { secure: o.attrs.secure ?? '' };
+  }
+
+  /** neighborsVulcanized: every free neighbour has another active volcano next to it. */
+  private volcanoSurrounded(o: GameObject): boolean {
+    for (let d = 0; d < 4; d++) {
+      const c = o.col + L_DX[d];
+      const r = o.row + L_DY[d];
+      if (this.env.stoneAt(c, r) || this.stoneObjectAt(c, r)) continue;
+      let ok = false;
+      for (let e = 0; e < 4 && !ok; e++) {
+        const v = this.stoneObjectAt(c + L_DX[e], r + L_DY[e]);
+        ok = !!v && v !== o && v.cls === 'volcano' && (v.state === 1 || v.state === 2 || v.state === 3);
+      }
+      if (!ok) return false;
+    }
+    return true;
+  }
+
+  /** Image and frame of a volcano. */
+  volcanoLook(o: GameObject): { image: string; frame: number; shadow: string } {
+    const age = Math.max(0, this.now - (o.blast ?? 0));
+    if (o.state === 2) return { image: 'it_seed', frame: SEED_GROW_FRAMES[Math.min(SEED_GROW_FRAMES.length - 1, Math.floor(age / 120))], shadow: '' };
+    if (o.state === 3) return { image: 'st_volcano_growing', frame: Math.min(2, Math.floor(age / 80)), shadow: 'sh_round' };
+    if (o.state === 1) return { image: 'st_quake', frame: [0, 1, 2, 3, 3, 2, 1, 0][Math.floor(age / 50) % 8], shadow: 'sh_round' };
+    if (o.state === 4) return { image: 'st_quake_break', frame: Math.min(5, Math.floor(age / 50)), shadow: 'sh_round' };
+    return { image: 'st_flat', frame: 0, shadow: 'sh_solid' };
   }
 
   /** ScissorsStone: the cut succeeded – perform the action (true). */
@@ -3491,6 +3566,7 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
+      if (o.cls === 'volcano' && !o.gone) this.volcanoStep(o);
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt !== undefined && this.now >= o.alarmAt) {
         // MonoFlopStone::alarm: off, action false
         o.state = 0;
@@ -3535,6 +3611,17 @@ export class ObjectWorld {
         }
       }
       // SeedItem::animcb: the seed becomes st_box_wood_growing, replacing any stone there.
+      if (o.kind === 'it_seed_volcano' && !o.gone && o.growing !== undefined && this.now - o.growing >= SEED_GROW_MS) {
+        // SeedItem::animcb: st_volcano_growing replaces the stone here
+        o.gone = true;
+        this.unplace(o);
+        for (const s of this.at(o.col, o.row)) if (!s.gone && !isItem(s)) this.remove(s);
+        const v = this.add('st_volcano_growing', 'volcano', o.col, o.row);
+        v.state = 3;
+        v.blast = this.now;
+        v.attrs = { secure: o.attrs.secure ?? '' };
+        continue;
+      }
       if (o.cls === 'seed' && !o.gone && o.growing !== undefined && this.now - o.growing >= SEED_GROW_MS) {
         o.gone = true;
         this.unplace(o);
@@ -3728,6 +3815,13 @@ export class ObjectWorld {
     if (o.cls === 'monoflop') {
       // MonoFlopStone::setState: on / signal 1 switch on (or renew the timer); off is ignored
       if (msg === 'on' || (msg === 'signal' && value) || msg === 'toggle') this.monoflopOn(o);
+      return;
+    }
+    if (o.cls === 'volcano') {
+      // VolcanoStone: _trigger / toggle wake an inactive one; setState (signal, on, off) while inactive or active
+      if (msg === 'toggle' || msg === '_trigger') {
+        if (o.state === 0) this.volcanoSet(o, 1);
+      } else if (o.state <= 1 && (msg === 'signal' || msg === 'on' || msg === 'off')) this.volcanoSet(o, msg === 'on' || (msg === 'signal' && value) ? 1 : 0);
       return;
     }
     if (o.cls === 'disco') {
@@ -3968,6 +4062,8 @@ function onewayFaces(o: GameObject): number {
 }
 
 function initialState(kind: string, a: Record<string, string>): number {
+  // VolcanoStone: 0 inactive, 1 active, 2 new, 3 growing, 4 breaking, 5 finished
+  if (/^st_volcano/.test(kind)) return kind === 'st_volcano_active' || a.$state === '1' ? 1 : kind === 'st_volcano_new' ? 2 : kind === 'st_volcano_growing' ? 3 : 0;
   // DiscoStone: 0 light, 1 medium, 2 dark
   if (/^st_disco/.test(kind)) return a.$state !== undefined && a.$state !== '' ? Number(a.$state) : kind === 'st_disco_dark' ? 2 : kind === 'st_disco_medium' ? 1 : 0;
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);

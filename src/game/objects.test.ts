@@ -1550,3 +1550,19 @@ describe('mail and pipes', () => {
     expect(w.inventory).toEqual(['it_pipe_ns']);
   });
 });
+
+describe('volcano', () => {
+  it('an active volcano spreads into free cells, a hammer breaks it, an inactive one wakes on toggle', () => {
+    const w = new ObjectWorld([{ x: 3, y: 3, k: 'st_volcano_active' }, { x: 6, y: 3, k: 'st_volcano', a: { name: 'v' } }], W, {}, undefined, () => 0.8);
+    w.marbleAt(9, 9);
+    w.update(16 * 50);
+    expect(w.objects.filter((o) => o.kind === 'st_volcano_new').length).toBe(4);
+    expect(w.blockAt(3, 2, 0)).toBe(0); // new ones still let actors pass
+    w.inventory.push('it_hammer');
+    w.hit(3, 3, 0, -1, 0, -3, 0, 0, 0);
+    w.update(300);
+    expect(w.objects[0].gone).toBe(true);
+    w.sendMessage(w.objects[1], 'toggle', true);
+    expect(w.objects[1].state).toBe(1);
+  });
+});

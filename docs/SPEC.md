@@ -600,6 +600,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Gegenstände. Stößt eine Kugel mit Gegenständen an einen Briefstein, folgt der erste Gegenstand den
   Rohren ab der Steinrichtung und fällt im ersten Feld ohne passendes Rohr ab (wie abgelegt, mit
   dessen Wirkung), falls dort nichts liegt; kaputte oder kreisförmige Rohre schicken nichts.
+- **st_volcano / _active, it_seed_volcano** (`VolcanoStone.cc`): Ein Vulkansamen wächst (13 × 120 ms, noch
+  durchfahrbar), dann wächst der Stein (3 × 80 ms, zerschmettert Kugeln) und bebt aktiv (16 × 50 ms je
+  Zyklus). Je Zyklus breitet er sich mit je 30 % in freie Nachbarfelder aus und erlischt mit 5 % zu einem
+  flachen Stein (`secure`: erst wenn alle freien Nachbarn versorgt sind). Kugeln in aktiven, wachsenden
+  oder brechenden Vulkanen zerschellen; der Hammer bricht einen aktiven. Inaktive wachen mit toggle auf.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

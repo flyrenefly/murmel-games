@@ -78,6 +78,7 @@ const OBJECTS = [
   [/^it_seed(_wood)?$/, ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed']],
   [/^it_seed_hay$/, ['it_seed', 'st_box_hay', 'sh_round', 'fl_hay']],
   [/^it_seed_greenbrown$/, ['it_seed', 'st_greenbrown', 'sh_round']],
+  [/^(it_seed_volcano|st_volcano(_idle|_active|_new|_growing)?)$/, ['it_seed', 'st_volcano_growing', 'st_quake', 'st_quake_break', 'st_flat', 'sh_round', 'sh_solid']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow|_movable)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
@@ -799,6 +800,7 @@ for (const pack of readPacks()) {
       continue;
     }
     current = `${pack.name}/${meta.xpath.replace(/^\.\//, '')} (${meta.title})`;
+    if (process.env.PROGRESS) console.log('>>', current);
     const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp));
     if (lvl) levels.push(lvl);
   }
