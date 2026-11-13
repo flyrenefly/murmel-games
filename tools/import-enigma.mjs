@@ -381,6 +381,9 @@ async function analyzeLua(xml, exp) {
   return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
 }
 
+/** Flavors of an Oxyd stone kind made during play: st_oxyd_d → d; plain st_oxyd a (API 2) and b (API 1 oxyd()). */
+const oxydFlavors = (k) => (OXYD.exec(k)?.[2] ? [OXYD.exec(k)[2]] : ['a', 'b']);
+
 /** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
 function runtimeKind(kind) {
   if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
@@ -392,8 +395,7 @@ function runtimeKind(kind) {
   if (objectImages(kind)) return 'object';
   if (kind.startsWith('st_')) {
     // OxydStone made during play (wo[…] = {"st_oxyd"}, Pentomino): a new closed stone, flavor a
-    if (kind === 'st_oxyd') return 'oxyd';
-    if (OXYD.test(kind)) return null;
+    if (OXYD.test(kind)) return 'oxyd'; // st_oxyd_d: a stone of that flavor
     if (FAKE_OXYD.test(kind)) return `st_oxyd${FAKE_OXYD.exec(kind)[1]}`;
     if (kind === 'st_invisible') return 'st_invisible';
     if (STONES.has(kind) || STONE_BASE.test(kind)) return STONE_BASE.exec(kind)?.[1] ?? kind;
@@ -821,10 +823,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns, lua.api1, callbacks)) reject(`Lua: ${p}`);
-    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a; API 1 oxyd(): b), colour by shuffle, in a level
-    // that starts without any (Pentomino). Replacing existing Oxyd stones, fixed colours or other
-    // flavors are not built.
-    const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
+    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a; API 1 oxyd(): b) or {"st_oxyd_d"}
+    // (that flavor), colour by shuffle, in a level that starts without any (Pentomino, Panelled Puzzle).
+    // Replacing existing Oxyd stones, fixed colours or flavor attributes are not built.
+    const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
     for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks), ...lua.libs.flatMap((l) => l.kinds)]) {
@@ -835,7 +837,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening', 'st_oxydb', 'st_oxydb_open', 'st_oxydb_opening']) imgs.add(i); // flavor a (API 2), b (API 1 oxyd())
+      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
@@ -847,14 +849,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening', 'st_oxydb', 'st_oxydb_open', 'st_oxydb_opening']) imgs.add(i); // flavor a (API 2), b (API 1 oxyd())
+      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)
   const meditation = w.actors.some((a) => /^ac_pearl/.test(a.o.k)) && objs.some((o) => o.k.startsWith('it_meditation'));
   // Oxyd stones may come during play (Pentomino: once the puzzle is done)
-  if (oxyds === 0 && !meditation && kinds.st_oxyd !== 'oxyd') reject('keine Oxyd-Steine');
+  if (oxyds === 0 && !meditation && !Object.values(kinds).includes('oxyd')) reject('keine Oxyd-Steine');
   else {
     // OxydStone::initColors: random ('?') stones complete odd fixed colours; an odd one left becomes a fake
     const fixed = new Map();

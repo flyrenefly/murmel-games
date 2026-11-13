@@ -8,8 +8,8 @@ import { ObjectWorld } from './objects';
 import { PhysicsWorld } from './physics';
 
 /** A plain imported level with the game's own Lua host and a level script of our own. */
-async function withScript(code: string) {
-  const file = { ...(JSON.parse(packText) as { levels: LevelFile[] }).levels[0], lua: { code, kinds: {}, named: [] } };
+async function withScript(code: string, kinds: Record<string, string> = {}) {
+  const file = { ...(JSON.parse(packText) as { levels: LevelFile[] }).levels[0], lua: { code, kinds, named: [] } };
   const level = parseLevel(file, () => 0.3);
   const objects = new ObjectWorld(level.objects, level.width, level.texts, {
     stoneAt: (c, r) => (cellAt(level, c, r)?.stone ?? 'x') !== null,
@@ -18,9 +18,11 @@ async function withScript(code: string) {
     staticStone: (c, r) => cellAt(level, c, r)?.stone ?? null,
   });
   const physics = new PhysicsWorld(level, objects);
-  const host = makeLuaHost({ level, objects, physics, redraw: () => {}, random: () => 0.5 }, { ...level.world }, { x: 0, y: 0 });
+  const oxyds: string[] = [];
+  const addOxyd = (x: number, y: number, flavor: string) => void oxyds.push(`${x},${y},${flavor}`);
+  const host = makeLuaHost({ level, objects, physics, redraw: () => {}, random: () => 0.5, addOxyd }, { ...level.world }, { x: 0, y: 0 });
   const lua = await LuaLevel.create(code, host, shim, await import('fengari'));
-  return { objects, lua };
+  return { objects, lua, oxyds };
 }
 
 describe('wo:add of gadgets during play', () => {
@@ -45,5 +47,14 @@ end`);
     const { lua } = await withScript('function f() wo:add({"ot_wire", anchor1 = "a", anchor2 = "b"}) end');
     lua.callback('f', true, '');
     expect(lua.lastError).toMatch(/wo:add/);
+  });
+});
+
+describe('Oxyd stones made during play', () => {
+  it('get the flavor of their kind (st_oxyd_d), plain st_oxyd flavor a', async () => {
+    const { lua, oxyds } = await withScript('function f() wo[po(2, 2)] = {"st_oxyd_d"} wo[po(3, 2)] = {"st_oxyd"} end', { st_oxyd_d: 'oxyd', st_oxyd: 'oxyd' });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(oxyds).toEqual(['2,2,d', '3,2,a']);
   });
 });

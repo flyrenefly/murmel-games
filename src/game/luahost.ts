@@ -197,8 +197,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       } else if (kind.startsWith('st_')) {
         removeStone(x, y);
         if (look === 'oxyd') {
-          // OxydStone: a closed stone of the flavor (default "a"); named ones receive messages
-          w.addOxyd?.(x, y, decl.flavor ?? 'a');
+          // OxydStone: a closed stone of the flavor (st_oxyd_d: d, default "a"); named ones receive messages
+          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a');
           if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
         } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {
