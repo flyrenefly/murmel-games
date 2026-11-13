@@ -55,6 +55,9 @@
       .muted {
         color: var(--muted);
       }
+      form[hidden] {
+        display: none;
+      }
       form {
         display: flex;
         flex-wrap: wrap;
@@ -194,6 +197,29 @@
           </thead>
           <tbody id="levels"></tbody>
         </table>
+      </section>
+
+      <section id="konten" hidden>
+        <h2>Konten</h2>
+        <div class="tiles">
+          <div class="tile"><span class="muted">Konten insgesamt</span><b id="k-total">–</b></div>
+          <div class="tile"><span class="muted">Neu im Zeitraum</span><b id="k-new">–</b></div>
+          <div class="tile"><span class="muted">Anmeldungen im Zeitraum</span><b id="k-signins">–</b></div>
+          <div class="tile"><span class="muted">Admins · Passkeys · gesperrt</span><b id="k-misc">–</b></div>
+        </div>
+        <h2>Konten pro Tag</h2>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Tag</th>
+              <th scope="col" title="Neu angelegte Konten">Neu</th>
+              <th scope="col" title="Anmeldungen insgesamt">Anmeld.</th>
+              <th scope="col" title="Verschiedene Konten, die sich angemeldet haben">Konten</th>
+            </tr>
+          </thead>
+          <tbody id="k-days"></tbody>
+        </table>
+        <p class="muted">Gezählt werden nur Tageszahlen; wer sich angemeldet hat, wird nicht gespeichert.</p>
       </section>
     </main>
   </body>

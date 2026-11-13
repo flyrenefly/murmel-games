@@ -162,6 +162,27 @@ export function accountStore(sql: Sql): AccountStore {
       await sql`delete from webauthn_challenges where expires_at < ${now}`;
     },
 
+    async recordSignIn(accountId, day) {
+      await sql.begin(async (tx) => {
+        // who signed in is only kept for the current day; earlier days keep just the totals
+        await tx`delete from signin_seen where day < ${day}`;
+        const fresh = (await tx`insert into signin_seen (day, account_id) values (${day}, ${accountId}) on conflict do nothing returning 1`).length;
+        await tx`
+          insert into signin_day (day, sign_ins, accounts) values (${day}, 1, ${fresh})
+          on conflict (day) do update set sign_ins = signin_day.sign_ins + 1, accounts = signin_day.accounts + excluded.accounts`;
+      });
+    },
+
+    async accountHistory(since) {
+      const [b] = await sql<{ n: number }[]>`select count(*)::int as n from accounts where blocked_at is not null`;
+      const created = await sql<{ day: string; count: number }[]>`
+        select to_char(created_at at time zone 'Europe/Berlin', 'YYYY-MM-DD') as day, count(*)::int as count
+        from accounts where (created_at at time zone 'Europe/Berlin')::date >= ${since} group by 1 order by 1`;
+      const signIns = await sql<{ day: string; signIns: number; accounts: number }[]>`
+        select to_char(day, 'YYYY-MM-DD') as day, sign_ins as "signIns", accounts from signin_day where day >= ${since} order by day`;
+      return { blocked: b.n, created: [...created], signIns: [...signIns] };
+    },
+
     async overview() {
       const [r] = await sql<{ accounts: number; admins: number; passkeys: number }[]>`
         select (select count(*)::int from accounts) as accounts,

@@ -9,6 +9,7 @@ import {
 } from '@simplewebauthn/server';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { RateLimit } from './limit.ts';
+import { berlinDay } from './stats.ts';
 
 // ---------- data model ----------
 
@@ -74,6 +75,18 @@ export interface AccountStore {
   /** Deletes expired links, sessions and challenges. */
   cleanup(now: Date): Promise<void>;
   overview(): Promise<{ accounts: number; admins: number; passkeys: number }>;
+  /** Counts a sign-in for the day (Berlin): sign-ins and different accounts; only day totals are kept. */
+  recordSignIn(accountId: number, day: string): Promise<void>;
+  /** Admin view: new accounts and sign-ins per day since a day (YYYY-MM-DD), plus blocked accounts. */
+  accountHistory(since: string): Promise<AccountHistory>;
+}
+
+export interface AccountHistory {
+  blocked: number;
+  /** New accounts per day (accounts deleted since then no longer count). */
+  created: { day: string; count: number }[];
+  /** Sign-ins per day and how many different accounts signed in. */
+  signIns: { day: string; signIns: number; accounts: number }[];
 }
 
 export interface Mailer {
@@ -206,6 +219,8 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   async function startSession(reply: FastifyReply, account: Account) {
     const token = secret();
     await store.addSession(account.id, hash(token), new Date(now().getTime() + SESSION_DAYS * 86_400_000));
+    // Admin statistics: count the sign-in (a lost count never blocks the sign-in)
+    await store.recordSignIn(account.id, berlinDay(now())).catch(() => {});
     reply.header('Set-Cookie', sessionCookie(token, SESSION_DAYS * 86_400));
     return { angemeldet: true, konto: accountJson(account, await store.passkeys(account.id)) };
   }
@@ -385,5 +400,13 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   app.get('/api/admin/uebersicht', { preHandler: requireAdmin }, async (_req, reply) => {
     reply.header('Cache-Control', 'no-store');
     return store.overview();
+  });
+
+  // Admin: accounts and sign-ins over time (statistik.html, section „Konten“)
+  app.get<{ Querystring: { tage?: string } }>('/api/admin/konten', { preHandler: requireAdmin }, async (req, reply) => {
+    const days = Math.min(Math.max(Math.trunc(Number(req.query.tage ?? 30)) || 30, 1), 366);
+    const since = berlinDay(new Date(now().getTime() - (days - 1) * 86_400_000));
+    reply.header('Cache-Control', 'no-store');
+    return { ...(await store.overview()), ...(await store.accountHistory(since)) };
   });
 }

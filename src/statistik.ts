@@ -1,4 +1,5 @@
-// statistik.html: reads GET /api/statistik with the token from /opt/murmel/.env (STATS_TOKEN).
+// statistik.html: reads GET /api/statistik with the token from /opt/murmel/.env (STATS_TOKEN), or as a
+// signed-in admin without it; admins also see the section „Konten“ (GET /api/admin/konten).
 // The token stays in this browser only (sessionStorage) and is sent as a bearer header.
 interface StatDay {
   day: string;
@@ -96,23 +97,84 @@ function render(daysIn: StatDay[], levels: StatLevel[], count: number): void {
   }
 }
 
-async function load(): Promise<void> {
+interface AccountStats {
+  accounts: number;
+  admins: number;
+  passkeys: number;
+  blocked: number;
+  created: { day: string; count: number }[];
+  signIns: { day: string; signIns: number; accounts: number }[];
+}
+
+/** Section „Konten“: only for admins (GET /api/admin/konten answers 401/403 to everyone else). */
+async function loadAccounts(count: number): Promise<void> {
+  const section = $<HTMLElement>('konten');
+  try {
+    const res = await fetch(`/api/admin/konten?tage=${count}`, { cache: 'no-store' });
+    if (!res.ok) {
+      section.hidden = true;
+      return;
+    }
+    const k = (await res.json()) as AccountStats;
+    const created = new Map(k.created.map((d) => [d.day, d.count]));
+    const signIns = new Map(k.signIns.map((d) => [d.day, d]));
+    $('k-total').textContent = fmt.format(k.accounts);
+    $('k-new').textContent = fmt.format(k.created.reduce((n, d) => n + d.count, 0));
+    $('k-signins').textContent = fmt.format(k.signIns.reduce((n, d) => n + d.signIns, 0));
+    $('k-misc').textContent = `${fmt.format(k.admins)} · ${fmt.format(k.passkeys)} · ${fmt.format(k.blocked)}`;
+    // only days with activity, newest first
+    const days = [...new Set([...created.keys(), ...signIns.keys()])].sort().reverse();
+    const body = $('k-days');
+    body.replaceChildren(
+      ...days.map((day) => {
+        const tr = document.createElement('tr');
+        const s = signIns.get(day);
+        for (const text of [dayFmt.format(new Date(`${day}T00:00:00Z`)), fmt.format(created.get(day) ?? 0), fmt.format(s?.signIns ?? 0), fmt.format(s?.accounts ?? 0)]) {
+          const td = document.createElement('td');
+          td.textContent = text;
+          tr.append(td);
+        }
+        return tr;
+      }),
+    );
+    if (!days.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4;
+      td.className = 'muted';
+      td.textContent = 'In diesem Zeitraum gab es weder neue Konten noch Anmeldungen.';
+      tr.append(td);
+      body.append(tr);
+    }
+    section.hidden = false;
+  } catch {
+    section.hidden = true;
+  }
+}
+
+/** Loads the statistics: with the token from the form, or without it for a signed-in admin (cookie). */
+async function load(quiet = false): Promise<void> {
   const token = tokenInput.value.trim();
   const count = Number(range.value);
-  statusEl.textContent = 'Lade …';
+  if (!quiet) statusEl.textContent = 'Lade …';
   try {
-    const res = await fetch(`/api/statistik?tage=${count}`, { headers: { authorization: `Bearer ${token}` }, cache: 'no-store' });
+    const res = await fetch(`/api/statistik?tage=${count}`, { headers: token ? { authorization: `Bearer ${token}` } : {}, cache: 'no-store' });
     if (res.status === 401) {
-      statusEl.textContent = 'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.';
+      if (!quiet) statusEl.textContent = 'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.';
       result.hidden = true;
       return;
     }
     if (!res.ok) throw new Error(String(res.status));
     const data = (await res.json()) as { days: StatDay[]; levels: StatLevel[] };
-    try {
-      sessionStorage.setItem('murmel-stats-token', token);
-    } catch {
-      // not stored, still shown
+    // signed in as admin: no key needed
+    if (!token) form.hidden = true;
+    void loadAccounts(count);
+    if (token) {
+      try {
+        sessionStorage.setItem('murmel-stats-token', token);
+      } catch {
+        // not stored, still shown
+      }
     }
     render(data.days, data.levels, count);
     statusEl.textContent = '';
@@ -127,6 +189,7 @@ form.addEventListener('submit', (e) => {
   void load();
 });
 range.addEventListener('change', () => {
-  if (tokenInput.value) void load();
+  void load(!tokenInput.value);
 });
-if (tokenInput.value) void load();
+// With a stored key load right away; otherwise try quietly as a signed-in admin.
+void load(!tokenInput.value);
