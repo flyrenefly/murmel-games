@@ -26,14 +26,14 @@ function bodies(code) {
   return out.join('\n');
 }
 
-const METHODS = new Set(['open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
+const METHODS = new Set(['open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',
   'error', 'assert', 'print', 'rawget', 'rawset', 'setmetatable', 'getmetatable', 'random']);
 const KEYWORDS = new Set(['if', 'while', 'for', 'function', 'return', 'and', 'or', 'not', 'elseif', 'until', 'local', 'then', 'do', 'end', 'in', 'else', 'repeat']);
 /** World attributes the game applies (also when set during play). */
-export const RUNTIME_WORLD = new Set(['GlobalForce', 'FrictionStrength']);
+export const RUNTIME_WORLD = new Set(['GlobalForce', 'FrictionStrength', 'ElectricStrength']);
 const API1 = /\b(set_stone|set_floor|set_item|set_actor|set_attrib|get_attrib|fill_floor|fill_stones|draw_\w+|create_world|SendMessage|enigma\.\w+)\s*\(/;
 
 /** What the callbacks use that the shim does not know (empty = fine). */
@@ -66,6 +66,8 @@ export function luaProblems(code, fns) {
 export function runtimeKinds(code) {
   const body = bodies(code);
   const kinds = new Set([...body.matchAll(/"((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
+  // fire messages to floors: burning items
+  if (/:\s*(setfire|forcefire|ignite|heat)\s*\(/.test(body)) kinds.add('it_burnable_ignited');
   // drawMap/drawRect/drawBorder during play: the tiles of the keys in their string arguments (map lines, keys)
   const keys = new Set();
   for (const m of body.matchAll(/:\s*draw(?:Map|Rect|Border)\s*\(/g)) {

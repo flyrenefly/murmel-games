@@ -4216,6 +4216,28 @@ export class ObjectWorld {
     }
   }
 
+  /** Floor messages: fire (setfire, forcefire, stopfire, heat, ignite); a FloodStream floor starts flooding. */
+  floorMessage(col: number, row: number, msg: string, value: boolean): void {
+    // Floor messages: fire (setfire, forcefire, stopfire, heat, ignite); a FloodStream floor starts flooding
+    const f: FireFlags = { message: true, first: false, last: false };
+    const c = col;
+    const r = row;
+    if (msg === 'forcefire') this.forceFire(c, r);
+    else if (msg === 'setfire') this.tryIgnite(c, r, -1, f);
+    else if (msg === 'ignite') this.floorIgnite(c, r);
+    else if (msg === 'heat') this.tryHeating(c, r, -1, f);
+    else if (msg === 'stopfire') {
+      const it = this.itemAt(c, r);
+      if (it?.cls === 'burnable' && (burnState(it) === 'ignited' || burnState(it) === 'burning')) {
+        // Floor::stop_fire(message): no transformation, ash unless noash
+        this.remove(it);
+        if (!this.fireType(c, r, 'noash')) this.add('it_burnable_ash', 'burnable', c, r);
+      }
+    } else if ((msg === 'toggle' || msg === 'on' || (msg === 'signal' && value)) && (this.env.floorAt(c, r) === 'fl_water' || /^fl_(wood|hay|rock)_framed/.test(this.env.floorAt(c, r)))) {
+      this.startFlood(c, r, this.floodInterval(c, r));
+    }
+  }
+
   private message(o: GameObject, msg: string, value: boolean, num?: number): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
     // "kill": the object is gone
@@ -4230,24 +4252,7 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'floorref') {
-      // Floor messages: fire (setfire, forcefire, stopfire, heat, ignite); a FloodStream floor starts flooding
-      const f: FireFlags = { message: true, first: false, last: false };
-      const c = o.col;
-      const r = o.row;
-      if (msg === 'forcefire') this.forceFire(c, r);
-      else if (msg === 'setfire') this.tryIgnite(c, r, -1, f);
-      else if (msg === 'ignite') this.floorIgnite(c, r);
-      else if (msg === 'heat') this.tryHeating(c, r, -1, f);
-      else if (msg === 'stopfire') {
-        const it = this.itemAt(c, r);
-        if (it?.cls === 'burnable' && (burnState(it) === 'ignited' || burnState(it) === 'burning')) {
-          // Floor::stop_fire(message): no transformation, ash unless noash
-          this.remove(it);
-          if (!this.fireType(c, r, 'noash')) this.add('it_burnable_ash', 'burnable', c, r);
-        }
-      } else if ((msg === 'toggle' || msg === 'on' || (msg === 'signal' && value)) && (this.env.floorAt(c, r) === 'fl_water' || /^fl_(wood|hay|rock)_framed/.test(this.env.floorAt(c, r)))) {
-        this.startFlood(c, r, this.floodInterval(c, r));
-      }
+      this.floorMessage(o.col, o.row, msg, value);
       return;
     }
     // "ignite": burnable items set their floor on fire, dynamite and bombs burn, cracks crack

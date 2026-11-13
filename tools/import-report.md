@@ -1,6 +1,6 @@
 # Enigma-Import
 
-959 von 1322 Levels übernommen (18 Pakete).
+961 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -27,9 +27,9 @@
 | Lua: draw_stones() | 14 | 0 |
 | Lua: :add | 10 | 5 |
 | Lua: :drawRect | 9 | 4 |
+| Lua-Init (Weltwert) | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
-| Lua-Init (Weltwert) | 8 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -41,7 +41,6 @@
 | Lua: mirrorp() | 5 | 0 |
 | Lua: st_oxyd_d | 5 | 1 |
 | Pferd mit Aktion oder Steuerung | 4 | 2 |
-| Lua: :setfire | 4 | 1 |
 | Lua: lib.math | 4 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Lua: :newMap | 3 | 0 |
@@ -104,7 +103,6 @@
 | Lua: fakeoxyd() | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
-| Lua: wo["ElectricStrength"] | 1 | 1 |
 | Lua: hammer() | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
 | Lua: create_world() | 1 | 0 |

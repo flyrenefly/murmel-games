@@ -20,13 +20,15 @@ export interface LuaWorld {
 const glob = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
 const truthy = (v: string | null): boolean => v === null || (v !== 'false' && v !== '0' && v !== '');
 
-/** Applies wo["GlobalForce"] / wo["FrictionStrength"] to the physics; returns the force. */
+/** Applies wo["GlobalForce"] / wo["FrictionStrength"] / wo["ElectricStrength"] to the physics; returns the force. */
 export function applyWorld(physics: PhysicsWorld, world: Record<string, string>, force: { x: number; y: number }): void {
   const g = /^(-?[\d.e-]+),(-?[\d.e-]+)$/.exec(world.GlobalForce ?? '');
   force.x = g ? Number(g[1]) : 0;
   force.y = g ? Number(g[2]) : 0;
   const f = Number(world.FrictionStrength);
   physics.frictionFactor = world.FrictionStrength !== undefined && Number.isFinite(f) ? f : 1;
+  const e = Number(world.ElectricStrength);
+  physics.electricForce = world.ElectricStrength !== undefined && Number.isFinite(e) ? e : 15;
 }
 
 export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: { x: number; y: number }): LuaHost {
@@ -145,7 +147,13 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       }
     },
     send(ref, msg, value) {
-      if (!ref.startsWith('o:')) return; // plain floors and stones ignore messages
+      if (ref.startsWith('c:fl:')) {
+        // plain floors: fire and flood messages
+        const { x, y } = parse(ref);
+        objects.floorMessage(x, y, msg, truthy(value) && value !== '0');
+        return;
+      }
+      if (!ref.startsWith('o:')) return; // plain stones ignore messages
       const o = byId(ref);
       // a number travels along (orientate EAST, signal 0/1)
       const n = value === null || value === '' ? NaN : Number(value);
@@ -197,7 +205,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     setWorld(key, value) {
       if (value === null) delete world[key];
       else world[key] = value;
-      if (key === 'GlobalForce' || key === 'FrictionStrength') applyWorld(physics, world, force);
+      if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
     },
     size: () => [level.width, level.height],
     /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
