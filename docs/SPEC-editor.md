@@ -32,7 +32,8 @@ Bewerten und Moderieren macht der Baustein `spielerlevels`.
 - **Oxyd-Steine paarweise:** Farbwahl A–H oder „Zufall“ (`?`). Im Modus „Automatisch“ bekommt
   der nächste Stein die Farbe, der noch ein Partner fehlt, sonst eine neue Farbe. Jede Farbe ist
   in der Karte sichtbar (Farbpunkt mit Buchstabe). Sorte (Aussehen) a–d wählbar.
-- Titel und Autor im Kopf; der Hinweis „Geteilte Levels sind öffentlich.“ steht beim Teilen.
+- Titel und Autor im Kopf. Beim Teilen und im Level-Menü (Export) steht: geteilte und exportierte
+  Levels sind öffentlich und stehen unter **CC BY-SA 4.0** (Nutzerentscheidung 13.11.2026).
 - **Rückgängig/Wiederholen** (Strg+Z / Strg+Y bzw. Strg+Umschalt+Z, Knöpfe): ein Strich oder
   ein Rechteck ist ein Schritt; bis 200 Schritte.
 - Bedienung mit Maus und Touch (Pointer Events). Auf dem Handy: ansehen, einfache Änderungen,
@@ -83,7 +84,8 @@ offener Rand (die Murmel kann hinausrollen).
 ### 6. Teilen per Link (`src/editor/link.ts`)
 
 - Format: `#level=1.<daten>`; `<daten>` = base64url( deflate-raw( kompaktes JSON ) ) mit
-  `CompressionStream` (Browser und Node ≥ 18). Das JSON ist ein `LevelFile` ohne `id`/`license`.
+  `CompressionStream` (Browser und Node ≥ 18). Das JSON ist ein `LevelFile` ohne `id`/`license`;
+  beim Dekodieren wird `license` auf `CC-BY-SA-4.0` gesetzt.
 - Grenzen: über 2 000 Zeichen Hinweis „langer Link, manche Messenger kürzen ihn“; über 16 000
   Zeichen kein Link, stattdessen Datei-Export empfohlen.
 - Dekodieren ist streng (Links sind fremde Eingaben): Länge ≤ 16 000, entpackt ≤ 512 KB, nur
@@ -105,8 +107,10 @@ offener Rand (die Murmel kann hinausrollen).
 ## Nicht-Ziele
 
 Server, Hochladen, Bewertung (Baustein `spielerlevels`); Lua; Dokumenttexte; Wurmlöcher und
-andere Objekte mit Koordinaten-Attributen; mehrere Murmeln. Lizenz der Spieler-Levels bleibt
-offene Frage in `SERVER.md`; das `license`-Feld lautet „Spieler-Level“.
+andere Objekte mit Koordinaten-Attributen; mehrere Murmeln. Lizenz der Spieler-Levels:
+**CC BY-SA 4.0** (Nutzerentscheidung 13.11.2026); das `license`-Feld jedes Editor-Levels lautet
+`CC-BY-SA-4.0` (SPDX), damit `spielerlevels` sie übernimmt. „Neue Levels erst nach Freigabe“ betrifft
+erst das Hochladen (`spielerlevels`).
 
 ## Berührung bestehender Dateien
 

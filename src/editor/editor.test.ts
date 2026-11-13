@@ -128,6 +128,8 @@ describe('link', () => {
     expect(linkLength(data)).toBe('ok');
     const back = await decodeLevel(data);
     expect(back.id).toBe(linkId(data));
+    expect(back.license).toBe('CC-BY-SA-4.0');
+    expect(f.license).toBe('CC-BY-SA-4.0');
     expect(fromLevelFile(back).level).toEqual(sample());
   });
 

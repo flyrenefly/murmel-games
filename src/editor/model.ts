@@ -36,7 +36,9 @@ export const MIN_H = 5;
 export const MAX_H = 40;
 export const DEFAULT_FLOOR = 'fl_gray';
 export const DEFAULT_WALL = 'st_granite';
-export const LICENSE = 'Spieler-Level';
+/** Licence of player levels (user decision 13.11.2026), SPDX id; `spielerlevels` takes it over. */
+export const LICENSE = 'CC-BY-SA-4.0';
+export const LICENSE_NOTE = 'Geteilte und exportierte Levels sind öffentlich und stehen unter der Lizenz CC BY-SA 4.0: Andere dürfen sie spielen, verändern und weitergeben, mit Nennung des Autors und unter derselben Lizenz.';
 
 /** A new level: walls around, grey floor, the marble in the middle and one Oxyd pair. */
 export function newLevel(width = 20, height = 13): EditorLevel {

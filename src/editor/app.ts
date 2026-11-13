@@ -5,7 +5,7 @@ import './editor.css';
 import { drawEntry, drawLevel, ED_STYLES, type EdStyle, loadImages, symbolColor } from './draw';
 import { History } from './history';
 import { decodeLevel, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, sanitizeLevel } from './link';
-import { cellOf, clone, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
+import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
 import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, searchPalette } from './palette';
 import { canShare, check, loadError, type Problem } from './rules';
 import { currentId, deleteLevel, listLevels, loadHistory, loadStored, newId, saveHistory, saveLevel, setCurrentId } from './storage';
@@ -623,6 +623,7 @@ function showLevelMenu(): void {
       note(`Inhalt bleibt oben links. ${MIN_W}–${MAX_W} × ${MIN_H}–${MAX_H} Felder.`),
       field('Stil der Vorschau', styleSel),
       note('Alles wird automatisch in diesem Browser gespeichert.'),
+      note(LICENSE_NOTE),
     ],
     [
       ['Neues Level', () => (close(), open(newId(), newLevel()))],
@@ -683,7 +684,7 @@ function exportFile(): void {
   a.download = `${slug(level.title)}.murmel.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(`Gespeichert als ${a.download}`);
+  toast(`Gespeichert als ${a.download} (Lizenz CC BY-SA 4.0)`);
 }
 
 function importFile(): void {
@@ -756,7 +757,7 @@ async function share(): Promise<void> {
   out.className = 'ed-link';
   out.setAttribute('aria-label', 'Link zum Level');
   out.addEventListener('focus', () => out.select());
-  const body: (HTMLElement | string)[] = [out, `${url.length} Zeichen.${kind === 'lang' ? ' Langer Link: manche Messenger kürzen ihn – im Zweifel als Datei teilen.' : ''}`, 'Geteilte Levels sind öffentlich: Wer den Link hat, kann das Level spielen und im Editor öffnen.'];
+  const body: (HTMLElement | string)[] = [out, `${url.length} Zeichen.${kind === 'lang' ? ' Langer Link: manche Messenger kürzen ihn – im Zweifel als Datei teilen.' : ''}`, `${LICENSE_NOTE} Wer den Link hat, kann das Level spielen und im Editor öffnen.`];
   const buttons: [string, () => void, string?][] = [
     [
       'Link kopieren',
