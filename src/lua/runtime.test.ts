@@ -168,11 +168,32 @@ end`;
     expect(w.host.world('Result')).toBe('2 nil court#2 8,9 2,1 2 2');
   });
 
+  it('po["name"] gives named positions and positions of named objects, patterns a list', async () => {
+    const w = fakeHost([
+      { ref: 'a', l: 'fl', x: 2, y: 3, a: { name: 'floor1#1' } },
+      { ref: 'b', l: 'fl', x: 4, y: 5, a: { name: 'floor1#2' } },
+      { ref: 's', l: 'it', x: 1, y: 1, a: {} },
+    ]);
+    const lua = await startLua(
+      `po["spot"] = po(7, 8)
+function f()
+  local l = po["floor1#*"]
+  wo["Result"] = #l .. " " .. tostring(po["floor1#2"]) .. " " .. tostring(po["spot"]) .. " " .. tostring(po["nothing"]) .. " " .. tostring(po(1, 2))
+  wo[po["floor1#*"]] = {"fl_lawn"}
+end`,
+      w.host,
+    );
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    expect(w.host.world('Result')).toBe('2 po(4, 5) po(7, 8) nil po(1, 2)');
+    expect(w.tiles).toEqual(['2,3 fl_lawn {}', '4,5 fl_lawn {}']);
+  });
+
   it('reports Lua errors instead of throwing', async () => {
     const w = fakeHost([]);
-    const lua = await startLua('function boom() wo:shuffleOxyd() end', w.host);
+    const lua = await startLua('function boom() wo:world() end', w.host);
     lua.callback('boom', true, 'x');
-    expect(lua.lastError).toMatch(/shuffleOxyd/);
+    expect(lua.lastError).toMatch(/wo:world/);
   });
 });
 

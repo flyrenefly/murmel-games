@@ -10,7 +10,7 @@
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { allTileKinds, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, levelLibs, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -336,13 +336,15 @@ function objectDef(x, y, o) {
 async function analyzeLua(xml, exp) {
   const code = luaCode(xml);
   if (!code) return null;
+  // libraries Murmel ships (libpento) run before the level, as Enigma preloads them
+  const libs = levelLibs(xml);
   let init;
   try {
-    init = await luaInit(code, exp.world);
+    init = await luaInit(code, exp.world, libs);
   } catch (e) {
     init = { world: {}, error: String(e) };
   }
-  return { code, fns: luaFunctions(code), ...init };
+  return { code, libs, fns: luaFunctions(code), ...init };
 }
 
 /** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
@@ -355,6 +357,8 @@ function runtimeKind(kind) {
   }
   if (objectImages(kind)) return 'object';
   if (kind.startsWith('st_')) {
+    // OxydStone made during play (wo[…] = {"st_oxyd"}, Pentomino): a new closed stone, flavor a
+    if (kind === 'st_oxyd') return 'oxyd';
     if (OXYD.test(kind)) return null;
     if (FAKE_OXYD.test(kind)) return `st_oxyd${FAKE_OXYD.exec(kind)[1]}`;
     if (kind === 'st_invisible') return 'st_invisible';
@@ -552,7 +556,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
           oxyds++;
           // named Oxyd stones can receive messages (open, close, shuffle …)
           // ($id: Lua's named list skips it, so no group holds the stone twice)
-          if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name } });
+          // (with the level's own attributes "_kind" …, which Lua reads)
+          const own = Object.fromEntries(Object.entries(st).filter(([k, v]) => /^_\w+$/.test(k) && v !== ''));
+          if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name, ...own } });
           // flavor e: b's images plus the peephole mask st_oxyde (models-2d.lua)
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor === 'e' ? 'b' : flavor}${s}`);
           if (flavor === 'e') imgs.add('st_oxyde');
@@ -700,7 +706,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
       tokens(o.a[key]).forEach((t, i) => {
         const act = acts[i] ?? '';
-        if ((act === 'callback' || act === '') && resolveTarget(t, objs).length === 0 && lua?.fns.has(t)) {
+        if ((act === 'callback' || act === '') && resolveTarget(t, objs).length === 0 && (lua?.fns.has(t) || lua?.isFunction?.(t))) {
           needsLua = true;
         } else if (act === 'callback' || resolveTarget(t, objs).length === 0) {
           const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
@@ -753,27 +759,37 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns)) reject(`Lua: ${p}`);
-    for (const k of runtimeKinds(lua.code)) {
+    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a, colour by shuffle) in a level
+    // that starts without any (Pentomino). Replacing existing Oxyd stones, fixed colours or other
+    // flavors are not built.
+    const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
+    const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
+    // kinds a library sets itself (libpento: the puzzle stones of its shapes)
+    for (const k of [...runtimeKinds(lua.code), ...lua.libs.flatMap((l) => l.kinds)]) {
       const v = runtimeKind(k);
-      if (v === null) reject(`Lua: ${k}`);
-      else {
-        kinds[k] = v;
-        if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-        else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
+      if (!runtimeOk(v)) {
+        reject(`Lua: ${k}`);
+        continue;
       }
+      kinds[k] = v;
+      if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
+      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening']) imgs.add(i);
+      else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
     for (const k of allTileKinds(lua.code)) {
       const v = kinds[k] === undefined ? runtimeKind(k) : null;
-      if (!v) continue;
+      if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
+      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening']) imgs.add(i);
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)
   const meditation = w.actors.some((a) => /^ac_pearl/.test(a.o.k)) && objs.some((o) => o.k.startsWith('it_meditation'));
-  if (oxyds === 0 && !meditation) reject('keine Oxyd-Steine');
+  // Oxyd stones may come during play (Pentomino: once the puzzle is done)
+  if (oxyds === 0 && !meditation && kinds.st_oxyd !== 'oxyd') reject('keine Oxyd-Steine');
   else {
     // OxydStone::initColors: random ('?') stones complete odd fixed colours; an odd one left becomes a fake
     const fixed = new Map();
@@ -845,7 +861,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (Object.keys(a).length) named.push({ l: c.o.k.slice(0, 2), x: c.x, y: c.y, a });
     }
     const black = Object.fromEntries(Object.entries(a.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && v !== ''));
-    luaPart = { code: lua.code, kinds, named, ...(Object.keys(black).length ? { marble: black } : {}) };
+    luaPart = { code: lua.code, kinds, named, ...(Object.keys(black).length ? { marble: black } : {}), ...(lua.libs.length ? { libs: lua.libs.map((l) => l.name) } : {}) };
   }
   return {
     id: `enigma:${exp.id}`,

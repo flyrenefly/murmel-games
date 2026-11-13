@@ -142,6 +142,7 @@ function levelImages(level: Level): string[] {
   // Kinds Lua callbacks may place.
   for (const [k, v] of Object.entries(level.lua?.kinds ?? {})) {
     if (v === 'object') names.push(...objectImages(k));
+    else if (v === 'oxyd') names.push('st_oxyda', 'st_oxyda_open', 'st_oxyda_opening');
     else if (v !== 'nil') names.push(v);
   }
   return names;
@@ -331,6 +332,13 @@ export class ClassicView {
   /** A floor changed (box became a bridge): redraw the static layer. */
   floorChanged(): void {
     if (this.level && this.img) this.staticLayer = this.renderStatic(this.level, this.img);
+  }
+
+  /** Oxyd stones made during play (Lua): closed state slots, redraw (images came with the level). */
+  signalsAdded(): void {
+    const n = this.level?.signals.length ?? 0;
+    while (this.stones.length < n) this.stones.push({ state: 'closed', prev: 'closed', since: -1e9, opened: false });
+    this.floorChanged();
   }
 
   /** OxydStone "peepall": flavor e stones show their colours. */

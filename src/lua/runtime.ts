@@ -29,6 +29,10 @@ export interface LuaHost {
   addInventory?(player: number, kind: string): void;
   /** wo:add({"ot_rubberband", …}) during play: anchor refs and the band's attributes. */
   addRubber?(a1: string | null, a2: string | null, strength: string | null, length: string | null, threshold: string | null, min: string | null, max: string | null): void;
+  /** PuzzleStone "get_cluster": refs of the stones of the fragment. */
+  cluster?(ref: string): string[];
+  /** wo:shuffleOxyd() during play. */
+  shuffleOxyd?(): void;
 }
 
 export type Fengari = typeof import('fengari');
@@ -48,8 +52,8 @@ export class LuaLevel {
   }
 
   /** Start the level script; init mode skips world building (the export already holds it). */
-  /** f: the fengari module (fengari-web in the browser, fengari in Node). */
-  static async create(code: string, host: LuaHost, shim: string, f: Fengari): Promise<LuaLevel> {
+  /** f: the fengari module (fengari-web in the browser, fengari in Node); libs: library code (libpento) run before the level. */
+  static async create(code: string, host: LuaHost, shim: string, f: Fengari, libs: readonly string[] = []): Promise<LuaLevel> {
     const { lua, lauxlib, lualib, to_luastring } = f;
     const L = lauxlib.luaL_newstate();
     for (const [name, open] of [
@@ -64,6 +68,7 @@ export class LuaLevel {
     const level = new LuaLevel(f, L);
     level.bridge(host);
     level.run(shim, '=enigma.lua');
+    libs.forEach((lib, i) => level.run(lib, `=lib${i + 1}`));
     level.run(code, '=level');
     level.callGlobal('__endinit', []);
     return level;
@@ -72,6 +77,20 @@ export class LuaLevel {
   /** Call the level function `name` like Enigma's callback (value, sender). */
   callback(name: string, value: boolean | number, senderRef: string): void {
     this.callGlobal('__callback', [name, value, senderRef]);
+  }
+
+  /** Importer: whether a callback target names a Lua function ("check", "pento.next"). */
+  isFunction(name: string): boolean {
+    const { lua } = this.f;
+    lua.lua_getglobal(this.L, this.str('__isfunction'));
+    lua.lua_pushstring(this.L, this.str(name));
+    if (lua.lua_pcall(this.L, 1, 1, 0) !== lua.LUA_OK) {
+      this.fail();
+      return false;
+    }
+    const r = lua.lua_toboolean(this.L, -1);
+    lua.lua_pop(this.L, 1);
+    return r;
   }
 
   /** Importer: report the declarations of ti[key] through host.add("tile:<kind>", attrs). */
@@ -197,6 +216,19 @@ export class LuaLevel {
       },
       addrubber: () => {
         host.addRubber?.(arg(1), arg(2), arg(3), arg(4), arg(5), arg(6), arg(7));
+        return 0;
+      },
+      cluster: () => {
+        const refs = host.cluster?.(arg(1) ?? '') ?? [];
+        lua.lua_createtable(L, refs.length, 0);
+        refs.forEach((r, i) => {
+          push(r);
+          lua.lua_rawseti(L, -2, i + 1);
+        });
+        return 1;
+      },
+      shuffleoxyd: () => {
+        host.shuffleOxyd?.();
         return 0;
       },
       size: () => {
