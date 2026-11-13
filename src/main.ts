@@ -728,6 +728,48 @@ let last = performance.now();
 let slowFrames = 0;
 let fastFrames = 0;
 
+/** Set by fallStep when the level starts over; frame() reloads it. */
+let restartNow: 'new' | 'keep' | null = null;
+
+/** One physics step of the item timers (shield, invisibility, drunk, rotor) and play time. */
+function timerStep(ph: PhysicsWorld, dt: number): void {
+  playSeconds += dt;
+  shield = shield.map((s) => Math.max(0, s - dt));
+  invis = invis.map((s) => Math.max(0, s - dt));
+  drunk = drunk.map((s) => Math.max(0, s - dt));
+  rotorTime = rotorTime.map((s) => Math.max(0, s - dt));
+  ph.marbles.forEach((m, i) => {
+    m.shielded = (shield[i] ?? 0) > 0;
+    m.invisible = (invis[i] ?? 0) > 0;
+    m.drunk = (drunk[i] ?? 0) > 0;
+    // DropCallback::alarm: back to a marble after 5 s
+    m.rotor = (rotorTime[i] ?? 0) > 0;
+    m.radius = m.rotor ? 22 / 64 : m.pearl ? 13 / 64 : 19 / 64;
+    // Actor "_update_mass": the inventory's weights (it_weight, mass 10) add to the marble
+    m.mass = (m.pearl ? 0.7 : 1) + 10 * (objects.inventories[ownerOf(i)] ?? objects.inventory).filter((k) => k === 'it_weight').length;
+    m.spikes = (objects.inventories[ownerOf(i)] ?? objects.inventory).includes('it_pin'); // Actor "_update_pin"
+  });
+}
+
+/** One physics step of falling marbles: after the fall they come back (or the level starts over). */
+function fallStep(ph: PhysicsWorld, dt: number): void {
+  falling.forEach((f, i) => {
+    if (f < 0) return;
+    falling[i] = f + dt;
+    if (falling[i] < FALL_SECONDS + 0.25) return;
+    // a marble without lives that is not essential stays fallen: still 'falling', never drawn
+    if (deadForever[i]) return;
+    falling[i] = -1;
+    if (pendingRestart) {
+      restartNow = pendingRestart;
+      pendingRestart = null;
+      return;
+    }
+    const at = respawnPos(i);
+    ph.respawn(at.x, at.y, i);
+  });
+}
+
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, 0.1);
   last = now;
@@ -736,24 +778,6 @@ function frame(now: number): void {
 
   if (physics && mode !== 'menu') {
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];
-    if (mode === 'play') {
-      playSeconds += dt;
-      shield = shield.map((s) => Math.max(0, s - dt));
-      invis = invis.map((s) => Math.max(0, s - dt));
-      drunk = drunk.map((s) => Math.max(0, s - dt));
-      rotorTime = rotorTime.map((s) => Math.max(0, s - dt));
-      physics?.marbles.forEach((m, i) => {
-        m.shielded = (shield[i] ?? 0) > 0;
-        m.invisible = (invis[i] ?? 0) > 0;
-        m.drunk = (drunk[i] ?? 0) > 0;
-        // DropCallback::alarm: back to a marble after 5 s
-        m.rotor = (rotorTime[i] ?? 0) > 0;
-        m.radius = m.rotor ? 22 / 64 : m.pearl ? 13 / 64 : 19 / 64;
-        // Actor "_update_mass": the inventory's weights (it_weight, mass 10) add to the marble
-        m.mass = (m.pearl ? 0.7 : 1) + 10 * (objects.inventories[ownerOf(i)] ?? objects.inventory).filter((k) => k === 'it_weight').length;
-        m.spikes = (objects.inventories[ownerOf(i)] ?? objects.inventory).includes('it_pin'); // Actor "_update_pin"
-      });
-    }
     if (falling[physics.current] < 0 && mode === 'play') {
       physics.addMouseForce(mdx * mouseSpeed, mdy * mouseSpeed);
       const [ax, ay] = input.axis();
@@ -762,6 +786,9 @@ function frame(now: number): void {
     acc += dt;
     const ph = physics;
     while (acc >= PHYSICS_DT) {
+      // Timers count physics steps, not frames: a run replays the same on any refresh rate
+      // (docs/SPEC-aufzeichnung.md, stage A2).
+      if (mode === 'play') timerStep(ph, PHYSICS_DT);
       ph.step(onContact);
       ph.marbles.forEach((m, i) => {
         if (falling[i] >= 0) return;
@@ -788,34 +815,26 @@ function frame(now: number): void {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
         if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && !((rotorTime[i] ?? 0) > 0) && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y, Math.hypot(m.vel.x, m.vel.y))) marbleDies(i, false);
       });
+      fallStep(ph, PHYSICS_DT);
       acc -= PHYSICS_DT;
     }
   } else {
     input.takeMouse();
   }
 
-  const fallen = falling.map((f, i) => {
-    if (f < 0 || !physics) return -1;
-    falling[i] = f + dt;
-    if (falling[i] < FALL_SECONDS + 0.25) return Math.min(falling[i] / FALL_SECONDS, 1);
-    // a marble without lives that is not essential stays fallen: still 'falling', never drawn
-    if (deadForever[i]) return 1;
-    falling[i] = -1;
-    if (pendingRestart) {
-      const how = pendingRestart;
-      pendingRestart = null;
-      if (how === 'keep') carryLives = livesLeft();
-      else showToast('Keine Extraleben mehr – das Level beginnt neu.', 2500);
-      void (async () => {
-        await loadLevel(packId, levelIndex);
-        startPlaying();
-      })();
-      return -1;
-    }
-    const at = respawnPos(i);
-    physics.respawn(at.x, at.y, i);
-    return -1;
-  });
+  // the level starts over after the last life (decided in fallStep, the reload is asynchronous)
+  if (restartNow) {
+    const how = restartNow;
+    restartNow = null;
+    if (how === 'keep') carryLives = livesLeft();
+    else showToast('Keine Extraleben mehr – das Level beginnt neu.', 2500);
+    void (async () => {
+      await loadLevel(packId, levelIndex);
+      startPlaying();
+    })();
+  }
+  // fall animation only: falling[] is advanced by fallStep in the physics loop
+  const fallen = falling.map((f, i) => (f < 0 || !physics ? -1 : deadForever[i] && f >= FALL_SECONDS + 0.25 ? 1 : Math.min(f / FALL_SECONDS, 1)));
 
   // Interpolate between the last two physics states: smooth on any refresh rate.
   const a = acc / PHYSICS_DT;
@@ -1198,7 +1217,6 @@ requestAnimationFrame((t) => {
   /** Test helper: hold or release the drop button (player::InhibitPickup). */
   hold: (on: boolean) => (objects.inhibitPickup = on),
   luaError: () => lua?.lastError ?? null,
-  /** Test hook: load a level of a pack and start playing. */
   /** Test helper: start a level; with a seed the run uses that random sequence. */
   load: async (pack: string, i: number, seed?: number) => {
     await loadLevel(pack, i, seed);
