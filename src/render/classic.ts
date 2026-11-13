@@ -301,6 +301,12 @@ export class ClassicView {
   private now = 0;
   private screen = { x: 0, y: 0 };
   private offset = { x: 0, y: 0 };
+  /** Picture width and play-area height in canvas pixels (640 × 416, or the zoom window). */
+  private vw = VIEW_W;
+  private ph = SCREEN_H * T;
+  /** Zoom (phone in portrait): the camera follows the marble instead of flipping screens. */
+  private zoom = false;
+  private cam = { x: 0, y: 0, set: false };
   status = { left: '', right: '' };
 
   constructor(readonly canvas: HTMLCanvasElement) {
@@ -329,6 +335,7 @@ export class ClassicView {
     // Small levels sit in the middle of the screen.
     this.offset.x = level.width < SCREEN_W ? Math.floor((SCREEN_W - level.width) / 2) : 0;
     this.offset.y = level.height < SCREEN_H ? Math.floor((SCREEN_H - level.height) / 2) : 0;
+    this.cam.set = false;
     this.resize();
   }
 
@@ -389,16 +396,29 @@ export class ClassicView {
     this.now += dt * 1000;
     const { ctx, img, level, staticLayer } = this;
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.fillRect(0, 0, this.vw, this.ph + BAR_H);
     if (!img || !level || !staticLayer) return;
 
-    this.updateScreen(level);
-    const ox = (this.offset.x - this.screen.x) * T;
-    const oy = (this.offset.y - this.screen.y) * T;
+    let ox: number;
+    let oy: number;
+    if (this.zoom) {
+      const c = zoomCamera(this.marble.x * T, this.marble.y * T, level.width * T, level.height * T, this.vw, this.ph);
+      // glide after the marble; jump on a new level
+      const k = this.cam.set ? Math.min(1, dt * 8) : 1;
+      this.cam.x += (c.x - this.cam.x) * k;
+      this.cam.y += (c.y - this.cam.y) * k;
+      this.cam.set = true;
+      ox = Math.round(-this.cam.x);
+      oy = Math.round(-this.cam.y);
+    } else {
+      this.updateScreen(level);
+      ox = (this.offset.x - this.screen.x) * T;
+      oy = (this.offset.y - this.screen.y) * T;
+    }
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, VIEW_W, SCREEN_H * T);
+    ctx.rect(0, 0, this.vw, this.ph);
     ctx.clip();
     ctx.drawImage(staticLayer, ox, oy);
 
@@ -407,7 +427,7 @@ export class ClassicView {
     for (const s of level.signals) {
       const px = ox + s.col * T;
       const py = oy + s.row * T;
-      if (px < -T || py < -T || px > VIEW_W || py > SCREEN_H * T) continue;
+      if (px < -T || py < -T || px > this.vw || py > this.ph) continue;
       this.drawOxyd(px, py, s.symbol, s.flavor, this.stones[s.index]);
     }
 
@@ -553,7 +573,7 @@ export class ClassicView {
     const visible = (o: GameObject) => {
       const px = ox + o.col * T;
       const py = oy + o.row * T;
-      return px > -2 * T && py > -2 * T && px < VIEW_W + T && py < SCREEN_H * T + T;
+      return px > -2 * T && py > -2 * T && px < this.vw + T && py < this.ph + T;
     };
     // it_laserbeam: it_laser_h, _v, _hv
     if (img.it_laser)
@@ -562,7 +582,7 @@ export class ClassicView {
         const row = Math.floor(k / world.width);
         const bx = ox + col * T;
         const by = oy + row * T;
-        if (bx < -T || by < -T || bx > VIEW_W || by > SCREEN_H * T) continue;
+        if (bx < -T || by < -T || bx > this.vw || by > this.ph) continue;
         const h = (b & 5) !== 0;
         const v = (b & 10) !== 0;
         this.frame('it_laser', h && v ? 2 : h ? 0 : 1, bx, by);
@@ -1132,7 +1152,7 @@ export class ClassicView {
     for (const a of this.actors) {
       const cx = Math.round(ox + a.x * T);
       const cy = Math.round(oy + a.y * T);
-      if (cx < -SPRITE || cy < -SPRITE || cx > VIEW_W + SPRITE || cy > SCREEN_H * T + SPRITE) continue;
+      if (cx < -SPRITE || cy < -SPRITE || cx > this.vw + SPRITE || cy > this.ph + SPRITE) continue;
       const s = 0.4 * SPRITE;
       if (a.kind === 'marble' && a.pearl) {
         this.drawPearl(cx, cy, a.color, a.fall ?? -1);
@@ -1231,11 +1251,11 @@ export class ClassicView {
 
   private drawStatusBar(): void {
     const { ctx } = this;
-    const y = SCREEN_H * T;
+    const y = this.ph;
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, y, VIEW_W, BAR_H);
+    ctx.fillRect(0, y, this.vw, BAR_H);
     ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(0, y, VIEW_W, 2);
+    ctx.fillRect(0, y, this.vw, 2);
     ctx.font = 'bold 22px ui-monospace, Consolas, monospace';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#d8d8d8';
@@ -1244,14 +1264,37 @@ export class ClassicView {
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9a9a9a';
     ctx.font = '16px ui-monospace, Consolas, monospace';
-    ctx.fillText(this.status.right, VIEW_W - 16, y + BAR_H / 2 + 1);
+    ctx.fillText(this.status.right, this.vw - 16, y + BAR_H / 2 + 1);
   }
 
-  /** Upscaling of the 640×480 picture, centred in the window (see displayScale). */
+  /**
+   * Picture size and upscaling, centred in the window (see displayScale). A phone held upright
+   * gets the zoom window (zoomLayout) instead of the whole 640 × 416 screen.
+   */
   resize(): void {
-    const css = displayScale(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
-    this.canvas.style.width = `${VIEW_W * css}px`;
-    this.canvas.style.height = `${VIEW_H * css}px`;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    // Zoom: the picture goes into the band between the info box (#hud) and the footer (#credits)
+    const top = document.getElementById('hud')?.getBoundingClientRect().bottom ?? 0;
+    const bottom = document.getElementById('credits')?.getBoundingClientRect().top || h;
+    const band = Math.max(0, bottom - top - 8);
+    const z = touch ? zoomLayout(w, h, band) : null;
+    this.zoom = z !== null;
+    this.vw = z ? z.cols * T : VIEW_W;
+    this.ph = z ? z.rows * T : SCREEN_H * T;
+    if (this.canvas.width !== this.vw || this.canvas.height !== this.ph + BAR_H) {
+      this.canvas.width = this.vw;
+      this.canvas.height = this.ph + BAR_H;
+      this.ctx.imageSmoothingEnabled = false; // reset by the size change
+      this.cam.set = false;
+    }
+    const css = displayScale(w, h, dpr, this.vw, this.ph + BAR_H);
+    this.canvas.style.width = `${this.vw * css}px`;
+    this.canvas.style.height = `${(this.ph + BAR_H) * css}px`;
+    // #classic is centred with translate(-50%, -50%): in the zoom its middle goes to the band's middle
+    this.canvas.style.top = z ? `${top + 4 + ((this.ph + BAR_H) * css) / 2}px` : '';
   }
 }
 
@@ -1262,13 +1305,37 @@ export class ClassicView {
  * 213 instead of 390 px wide); there uneven pixels are invisible, so the picture fills the window
  * unless a whole number keeps at least 95 % of that size.
  */
-export function displayScale(w: number, h: number, dpr: number): number {
-  const fit = Math.min(w / VIEW_W, h / VIEW_H);
+export function displayScale(w: number, h: number, dpr: number, pw = VIEW_W, ph = VIEW_H): number {
+  const fit = Math.min(w / pw, h / ph);
   const device = fit * dpr;
   if (device < 1) return fit;
   const whole = Math.floor(device);
   if (dpr >= 2 && whole < device * 0.95) return fit;
   return whole / dpr;
+}
+
+/** Tiles across in the zoom window: twice the size of the whole 20-tile screen. */
+export const ZOOM_COLS = 10;
+
+/**
+ * Zoom window for a phone held upright (window clearly taller than wide): 10 tiles across and as many
+ * rows as fit above the status bar in the free band (default 85 % of the height), 8 to 24.
+ * Null otherwise: the whole screen as in Enigma.
+ */
+export function zoomLayout(w: number, h: number, band = h * 0.85): { cols: number; rows: number } | null {
+  if (h < w * 1.15) return null;
+  const s = w / (ZOOM_COLS * T); // CSS pixels per canvas pixel
+  const rows = Math.floor((band - BAR_H * s) / (T * s));
+  return { cols: ZOOM_COLS, rows: Math.max(8, Math.min(24, rows)) };
+}
+
+/**
+ * Top-left corner of the zoom window in level pixels: the marble in the middle, but never beyond the
+ * level's edge; a level smaller than the window sits in its middle.
+ */
+export function zoomCamera(mx: number, my: number, lw: number, lh: number, vw: number, vh: number): { x: number; y: number } {
+  const axis = (m: number, l: number, v: number) => (l <= v ? (l - v) / 2 : Math.min(l - v, Math.max(0, m - v / 2)));
+  return { x: axis(mx, lw, vw), y: axis(my, lh, vh) };
 }
 
 /**
