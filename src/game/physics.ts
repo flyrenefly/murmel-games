@@ -142,6 +142,8 @@ interface Body {
   normals: number[]; // contact normals of the last step (x, y pairs)
   touching: Set<number>;
   nowTouching: Set<number>;
+  /** Electric charge (st_charge): charged actors push or pull each other. */
+  charge?: number;
 }
 
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
@@ -279,6 +281,8 @@ export class PhysicsWorld {
 
   /** wo["FrictionStrength"] (server::FrictionFactor); negative values accelerate. */
   frictionFactor = 1;
+  /** server::ElectricForce (wo["ElectricForce"], default 15). */
+  electricForce = 15;
   /** Level time in seconds (server::LevelTime) for the drunken mouse force. */
   private clock = 0;
 
@@ -376,6 +380,21 @@ export class PhysicsWorld {
       } else {
         const [cx, cy] = e.chaseForce(targets, dt);
         add(e, cx + ffx, cy + ffy, friction);
+      }
+    }
+    // World::get_local_force: electrostatic force ElectricForce · q1 · q2 / dist along the line between them
+    const charged = [...forces.keys()].filter((b) => b.charge);
+    for (const a of charged) {
+      for (const b of charged) {
+        if (a === b) continue;
+        const dx = a.pos.x - b.pos.x;
+        const dy = a.pos.y - b.pos.y;
+        const d = Math.hypot(dx, dy);
+        if (d === 0) continue;
+        const f = forces.get(a)!;
+        const k = (this.electricForce * a.charge! * b.charge!) / d / d;
+        f.fx += k * dx;
+        f.fy += k * dy;
       }
     }
     // 2. Rubber bands (bands of a falling marble rest).

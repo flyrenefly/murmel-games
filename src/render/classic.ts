@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, magicFlavor, mailDir, pipeBits, windowFaces, stripConnections, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
+import { chargeOf, doorFlavor, magicFlavor, mailDir, pipeBits, windowFaces, stripConnections, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -223,6 +223,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
+  if (/^st_charge/.test(kind)) return ['st_charge_plus', 'st_charge_minus', 'st_charge_zero', 'sh_rounded'];
   if (kind === 'st_brake' || kind === 'it_brake') return ['st_brake', 'sh_brake', 'it_explosion'];
   if (/^it_pipe/.test(kind)) return ['it_pipe'];
   if (kind === 'st_rubberband') return ['st_rubberband', 'sh_round'];
@@ -830,6 +831,14 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'charge') {
+      // st_charge_plus/minus/zero: frame 0, hit: frame 1 for 140 ms; shadow sh_rounded
+      const c = chargeOf(o);
+      const age = o.pulse === undefined ? -1 : world.ageOf(o.pulse);
+      if (pass === 'shadow') this.image('sh_rounded', px, py);
+      else this.frame(c > 0 ? 'st_charge_plus' : c < 0 ? 'st_charge_minus' : 'st_charge_zero', age >= 0 && age < 140 ? 1 : 0, px, py);
       return;
     }
     if (o.cls === 'brake') {

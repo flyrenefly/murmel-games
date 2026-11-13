@@ -615,6 +615,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_bag** (`BagItem.cc`, `Inventory.cc`): Beim Aufnehmen nimmt das Inventar zuerst die Gegenstände des Sacks,
   dann den Sack selbst (leer nicht in ein volles Inventar oder hinter einen anderen Sack). Liegt ein nicht
   voller Sack (13) vorne, wandern neue Gegenstände hinein; abgelegt behält er seinen Inhalt.
+- **st_charge_plus / _minus / _zero** (`SimpleStones.cc` ChargeStone, `world.cc`): Anstoßen gibt der Kugel
+  die Ladung des Steins (+1, −1, 0, oder Attribut `charge`). Geladene Akteure ziehen sich an oder stoßen
+  sich ab: Kraft ElectricForce (15) · q1 · q2 / Abstand entlang ihrer Verbindungslinie.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

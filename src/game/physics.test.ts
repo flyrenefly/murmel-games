@@ -419,3 +419,16 @@ describe('it_pin', () => {
     expect(b.velocity.x).toBeLessThan(a.velocity.x);
   });
 });
+
+describe('electric charge', () => {
+  it('two marbles with the same charge push each other apart', () => {
+    const lv = parseLevel({ id: 't', title: 'T', author: 'x', license: 'GPL', map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'], actors: [{ k: 'ac_marble_white', x: 2.5, y: 1.5 }] });
+    const w = new PhysicsWorld(lv);
+    expect(w.marbles.length).toBe(2);
+    w.marbles[0].charge = 1;
+    w.marbles[1].charge = 1;
+    run(w, 0.05);
+    expect(w.marbles[0].vel.x).toBeLessThan(0);
+    expect(w.marbles[1].vel.x).toBeGreaterThan(0);
+  });
+});

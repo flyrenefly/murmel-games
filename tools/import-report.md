@@ -1,6 +1,6 @@
 # Enigma-Import
 
-874 von 1322 Levels übernommen (18 Pakete).
+878 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -31,8 +31,6 @@
 | Gegenstand it_weight | 14 | 5 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
-| Stein st_charge_minus | 11 | 0 |
-| Stein st_charge_plus | 11 | 0 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 3 |
@@ -58,7 +56,6 @@
 | Stein st_death_movable | 5 | 3 |
 | Stein st_jamb_black | 5 | 2 |
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
-| Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
 | Stein st_surprise | 4 | 1 |
@@ -85,8 +82,8 @@
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
-| Aktion ignite | 2 | 1 |
-| mehrere weiße Murmeln | 2 | 0 |
+| Aktion ignite | 2 | 2 |
+| mehrere weiße Murmeln | 2 | 1 |
 | Lua: st_darkglass_hollow | 2 | 0 |
 | Lua: set_attribs() | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |
@@ -140,7 +137,7 @@
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
-| Lua: wo["ElectricStrength"] | 1 | 0 |
+| Lua: wo["ElectricStrength"] | 1 | 1 |
 | Lua: hammer() | 1 | 0 |
 | Stein fl_hay | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
@@ -183,9 +180,6 @@
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
-| Lua: st_charge_plus | 1 | 0 |
-| Lua: st_charge_minus | 1 | 0 |
-| Lua: st_charge_zero | 1 | 0 |
 | Lua: it_surprise | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
 | Boden fl_forward | 1 | 0 |

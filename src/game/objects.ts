@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe']);
@@ -173,6 +173,13 @@ export function windowFaces(o: GameObject): number {
   if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return ALL_FACES ^ (Number(o.attrs.$connections) & ALL_FACES);
   const s = /^st_window_([nesw]+)$/.exec(o.kind)?.[1] ?? 's';
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
+
+/** ChargeStone: attribute charge, else +1 / -1 / 0 by kind. */
+export function chargeOf(o: GameObject): number {
+  const v = Number(o.attrs.charge);
+  if (o.attrs.charge !== undefined && o.attrs.charge !== '' && Number.isFinite(v)) return v;
+  return o.kind === 'st_charge_plus' ? 1 : o.kind === 'st_charge_minus' ? -1 : 0;
 }
 
 /** BagItem::BAGSIZE */
@@ -436,6 +443,8 @@ export type ObjectEvent =
   | { type: 'laserhit'; marble: number }
   /** FlashStone::actor_hit: the other marble gets this force. */
   | { type: 'flash'; marble: number; fx: number; fy: number }
+  /** ChargeStone::actor_hit: the marble takes the stone's charge. */
+  | { type: 'charge'; marble: number; charge: number }
   /** ScissorsStone::actor_hit: the marble's bands snap; if any did, the stone performs its action (col/row). */
   | { type: 'scissors'; marble: number; col: number; row: number }
   /** RubberbandStone::actor_hit: a band from the marble to this stone (scissor: others snap first). */
@@ -511,6 +520,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
   if (kind === 'fl_thief') return 'flthief';
+  if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
   if (kind === 'st_polarswitch') return 'polarswitch';
   if (kind === 'st_barrier') return 'barrier';
@@ -702,7 +712,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -746,6 +756,12 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'charge') {
+        // ChargeStone::actor_hit: the actor gets its charge; animation 140 ms
+        o.pulse = this.now;
+        if (by >= 0) this.events.push({ type: 'charge', marble: by, charge: chargeOf(o) });
+        return;
+      }
       if (o.cls === 'volcano') {
         // VolcanoStone::actor_hit: an active one breaks with the hammer; a growing one shatters
         if (o.state === 1 && this.wields('it_hammer')) {

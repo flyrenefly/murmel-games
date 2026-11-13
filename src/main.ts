@@ -594,6 +594,9 @@ function handleObjectEvents(events: ObjectEvent[]): void {
         if (e.scissor) ph.cutRubbers(e.marble);
         ph.addRubber(e.marble, e.col + 0.5, e.row + 0.5, { strength: e.strength, length: e.length, threshold: e.threshold, max: e.max });
       }
+    } else if (e.type === 'charge') {
+      const m = physics?.marbles[e.marble];
+      if (m) m.charge = e.charge;
     } else if (e.type === 'flash') {
       // FlashStone: FindOtherMarble – the marble of the other colour gets the force
       const ph = physics;
