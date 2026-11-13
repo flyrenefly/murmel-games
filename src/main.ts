@@ -22,6 +22,8 @@ import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, 
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
+import { Geist, vergleich } from './game/geist';
+import { auswahl, eigenenLaufSpeichern, eigenerLauf, geistLaden, geisterListe, type Option } from './geister';
 import { editorButton, LINK_PACK, openLinkFromHash } from './editor/game-link';
 import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
@@ -138,7 +140,10 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
   const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
+  const ghost = await geistFuer(packList[i], startLua);
   if (token !== loadToken) return; // another level was loaded meanwhile
+  geist = ghost;
+  geistImZiel = false;
   s = created;
   session = s;
   // levels from links (docs/SPEC-editor.md) count in no progress, statistics or best times
@@ -423,14 +428,63 @@ function loadProgressFile(): void {
 function showStart(): void {
   mode = 'menu';
   const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
-  showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
+  const ghostNote = geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '';
+  const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? 'Geist ändern' : 'Mit Geist', () => void showGeister()]];
+  showOverlay(`${levelIndex + 1}. ${level.title}`, credit + ghostNote + controlsHelp(), [
     ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
+    ...ghostButton,
     ['Levels', showLevels],
     ['Zu zweit', zz.menue],
     ...linkButtons(),
     [kontoLabel(), openKonto],
   ]);
   addSteeringChoice(showStart);
+}
+
+// ---------- Geister (docs/SPEC-geister.md, src/game/geist.ts) ----------
+/** The chosen run: plays along in this level (also after restarts) until another level is loaded. */
+let geistWahl: { level: string; titel: string; daten: { steps: number } } | null = null;
+let geist: Geist | null = null;
+let geistImZiel = false;
+
+/** The ghost for a level that is being loaded; null without a choice, zu zweit or when the run does not fit. */
+async function geistFuer(file: LevelFile, startLua: Parameters<typeof Geist.create>[2]): Promise<Geist | null> {
+  if (geistWahl && geistWahl.level !== file.id) geistWahl = null;
+  if (!geistWahl || zz.laeuft()) return null;
+  try {
+    return await Geist.create(file, geistWahl.daten, startLua);
+  } catch {
+    geistWahl = null;
+    showToast('Dieser Lauf passt nicht mehr zum Level – es geht ohne Geist weiter.', 2800);
+    return null;
+  }
+}
+
+/** The choice: own best run, other players' shared runs, none. */
+async function showGeister(): Promise<void> {
+  mode = 'menu';
+  const lv = level.id;
+  const token = loadToken;
+  showOverlay('Mit Geist spielen', 'Einen Moment …', [['Zurück', showStart]]);
+  const [lokal, server] = await Promise.all([eigenerLauf(lv), geisterListe(lv)]);
+  // the player went elsewhere meanwhile
+  if (token !== loadToken || mode !== 'menu' || ovTitle.textContent !== 'Mit Geist spielen') return;
+  const opts = auswahl(lokal, server, formatBest);
+  const text = opts.length
+    ? 'Ein gespeicherter Lauf fährt als durchscheinende Murmel mit. So siehst du, ob du vorn liegst.'
+    : 'Für dieses Level gibt es noch keinen Lauf. Gewinne es einmal, dann kannst du gegen dich selbst spielen.';
+  const none: [string, () => void][] = geistWahl ? [['Ohne Geist', () => ((geistWahl = null), (geist = null), showStart())]] : [];
+  showOverlay('Mit Geist spielen', text, [...opts.map((o): [string, () => void] => [o.titel, () => void geistWaehlen(o, lokal)]), ...none, ['Zurück', showStart]]);
+}
+
+async function geistWaehlen(o: Option, lokal: { steps: number } | null): Promise<void> {
+  const daten = o.quelle === 'lokal' ? lokal : await geistLaden(o.quelle);
+  if (!daten || typeof (daten as { steps?: unknown }).steps !== 'number') return void showToast('Dieser Lauf ist gerade nicht erreichbar.', 2400);
+  geistWahl = { level: level.id, titel: o.titel, daten: daten as { steps: number } };
+  await loadLevel(packId, levelIndex); // the ghost starts with the level
+  if (!geist) return showStart();
+  if (isTouch) void startTouch();
+  else startPlaying();
 }
 
 /** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link. */
@@ -641,18 +695,25 @@ function onWin(): void {
   const last = levelIndex === packList.length - 1;
   // Admins: the won run as a solution for the nightly check (docs/SPEC-loesbarkeit.md)
   const recording = s.recording();
+  void eigenenLaufSpeichern(recording); // kept only if it is the best of this level
+  const ghostLine = geistWahl ? `<br>${escapeHtml(vergleich(s.steps, geistWahl.daten.steps, formatBest))}` : '';
+  const raceIt: [string, () => void][] = [['Gegen diesen Lauf', () => {
+    geistWahl = { level: level.id, titel: `Dein Lauf ${formatBest(s.steps)}`, daten: recording };
+    void restart();
+  }]];
   const board = leaderboardLine(recording, s.steps, level.id);
   const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart], ...ranking, ...asSolution]
+        ? [['Levels', showLevels], ['Nochmal', restart], ...raceIt, ...ranking, ...asSolution]
         : [
             ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
+            ...raceIt,
             ...ranking,
             ...asSolution,
           ],
@@ -775,6 +836,13 @@ function frame(now: number): void {
       acc -= PHYSICS_DT;
     }
     if (mode === 'play') noteRunStarted(s);
+    if (geist) {
+      geist.folgen(s.steps);
+      if (geist.imZiel && !geistImZiel) {
+        geistImZiel = true;
+        if (!s.won) showToast(`Geist im Ziel: ${formatBest(geist.zeit ?? 0)}`, 2000);
+      }
+    }
   } else {
     input.takeMouse();
     pendingMouse = { x: 0, y: 0 };
@@ -825,6 +893,8 @@ function frame(now: number): void {
   }));
   actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i] && !((invis[i] ?? 0) > 0) && !((rotorTime[i] ?? 0) > 0)));
   actors.push(...zz.geister(dt));
+  const ghostSprite = geist?.sprite(a);
+  if (ghostSprite) actors.push(ghostSprite);
   // marbles turned into rotors (it_drop) are drawn as rotors
   marbles.forEach((mm, i) => {
     if ((rotorTime[i] ?? 0) > 0 && !deadForever[i]) actors.push({ kind: 'rotor', color: 0, x: mm.x, y: mm.y });
@@ -1070,6 +1140,10 @@ requestAnimationFrame((t) => {
   },
   /** The recording of the current run (docs/SPEC-aufzeichnung.md). */
   recording: () => session?.recording() ?? null,
+  /** Test helper: the start menu of the current level. */
+  start: () => showStart(),
+  /** Geister: the ghost of this run (docs/SPEC-geister.md). */
+  ghost: () => (geist ? { steps: geist.schritte, done: geist.imZiel, sprite: geist.sprite(1) } : null),
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
   cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),

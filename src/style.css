@@ -480,6 +480,28 @@ button.level small {
   gap: 8px;
 }
 
+/* Geister: one switch with its label, the whole line is the target */
+.konto-schalter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.konto-schalter input {
+  inline-size: 22px;
+  block-size: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.konto-schalter input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .konto-passkeys {
   list-style: none;
   margin: 0;

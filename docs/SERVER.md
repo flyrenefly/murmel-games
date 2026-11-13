@@ -311,6 +311,9 @@ die Bestenlisten ohnehin entsteht.
   „automatisch sichtbar, wenn vom Autor gelöst“; die Variante „nach N positiven Bewertungen“ entfällt).
   Gemeldete Levels werden ausgeblendet. Lizenz: **CC BY-SA 4.0**. Hochladen weiterhin nur, wenn der
   Autor das Level selbst gelöst hat.
+- Geister (`geister`, docs/SPEC-geister.md): **der eigene beste Lauf immer, fremde Läufe nur mit eigener
+  Freigabe im Konto** („Meine Läufe als Geist zeigen“, Standard aus). G1–G3 gebaut (Branch `geister`);
+  Datenschutzabsatz wartet auf Freigabe.
 - Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
 - Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
 - **Mailversand** der Login-Links über ein **IONOS-Postfach von murmel.games**. `info@murmel.games` ist
