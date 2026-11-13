@@ -1,4 +1,4 @@
-import type { Account, AccountStore, Passkey } from './konten.ts';
+import type { Account, AccountStore, Passkey, Provider } from './konten.ts';
 import { berlinDay } from './stats.ts';
 
 /**
@@ -8,7 +8,7 @@ import { berlinDay } from './stats.ts';
 export function memoryStore(): AccountStore {
   const key = (b: Buffer) => b.toString('hex');
   const accounts = new Map<number, Account>();
-  const identities = new Map<string, number>();
+  const identities = new Map<string, { accountId: number; email: string | null; createdAt: Date }>();
   const tokens = new Map<string, { email: string; created: Date; expires: Date; used: boolean }>();
   const sessions = new Map<string, { accountId: number; expires: Date }>();
   const passkeys = new Map<string, Passkey & { accountId: number }>();
@@ -32,18 +32,43 @@ export function memoryStore(): AccountStore {
       return t.email;
     },
     async signIn(identity, role) {
-      let id = identities.get(`${identity.provider}:${identity.subject}`);
-      if (id === undefined) {
-        id = [...accounts.values()].find((a) => a.email === identity.email.toLowerCase())?.id;
+      const k = `${identity.provider}:${identity.subject}`;
+      let found = identities.get(k);
+      if (found === undefined) {
+        let id = [...accounts.values()].find((a) => a.email === identity.email.toLowerCase())?.id;
         if (id === undefined) {
           id = nextId++;
           accounts.set(id, { id, email: identity.email.toLowerCase(), role: 'player', createdAt: new Date(), blocked: false });
         }
-        identities.set(`${identity.provider}:${identity.subject}`, id);
+        found = { accountId: id, email: null, createdAt: new Date() };
+        identities.set(k, found);
       }
-      const a = accounts.get(id)!;
+      found.email = identity.email.toLowerCase();
+      const a = accounts.get(found.accountId)!;
       a.role = role;
       return { ...a };
+    },
+    async identities(accountId) {
+      return [...identities]
+        .filter(([, v]) => v.accountId === accountId)
+        .map(([k, v]) => {
+          const i = k.indexOf(':');
+          return { provider: k.slice(0, i) as Provider, subject: k.slice(i + 1), email: v.email, createdAt: v.createdAt };
+        });
+    },
+    async linkIdentity(accountId, identity) {
+      const k = `${identity.provider}:${identity.subject}`;
+      const found = identities.get(k);
+      if (found && found.accountId !== accountId) return 'vergeben';
+      if (found) found.email = identity.email.toLowerCase();
+      else identities.set(k, { accountId, email: identity.email.toLowerCase(), createdAt: new Date() });
+      return 'ok';
+    },
+    async unlinkIdentity(accountId, provider, subject) {
+      const k = `${provider}:${subject}`;
+      if (identities.get(k)?.accountId !== accountId) return false;
+      identities.delete(k);
+      return true;
     },
     async account(accountId) {
       const a = accounts.get(accountId);
@@ -74,7 +99,7 @@ export function memoryStore(): AccountStore {
     async deleteAccount(accountId) {
       const email = accounts.get(accountId)?.email;
       accounts.delete(accountId);
-      for (const [k, v] of identities) if (v === accountId) identities.delete(k);
+      for (const [k, v] of identities) if (v.accountId === accountId) identities.delete(k);
       for (const [k, s] of sessions) if (s.accountId === accountId) sessions.delete(k);
       for (const [k, p] of passkeys) if (p.accountId === accountId) passkeys.delete(k);
       for (const [k, t] of tokens) if (t.email === email) tokens.delete(k);

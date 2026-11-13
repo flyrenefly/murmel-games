@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { KontoApi, loginTokenFromHash, OFFLINE, passkeyFehler } from './konto';
+import { anbieterFehlerText, anbieterRueckkehr, anbieterStart, KontoApi, loginTokenFromHash, OFFLINE, passkeyFehler } from './konto';
 
 describe('loginTokenFromHash', () => {
   test('liest das Token aus #anmelden=…', () => {
@@ -61,4 +61,30 @@ test('passkeyFehler: Abbruch und vorhandener Passkey verständlich', () => {
   expect(passkeyFehler({ name: 'NotAllowedError' })).toMatch(/Abgebrochen/);
   expect(passkeyFehler({ name: 'InvalidStateError' })).toMatch(/schon einen Passkey/);
   expect(passkeyFehler(new Error('x'))).toMatch(/Mail-Link/);
+});
+
+describe('Anmeldung mit Anbietern (Konten Stufe 2)', () => {
+  test('liest #anbieter=… und #anbieter-fehler=…, ignoriert Unsinn', () => {
+    const v = 'xY9_-'.repeat(9);
+    expect(anbieterRueckkehr(`#anbieter=${v}`)).toEqual({ vorgang: v });
+    expect(anbieterRueckkehr('#anbieter-fehler=abgebrochen')).toEqual({ fehler: 'abgebrochen' });
+    expect(anbieterRueckkehr('#anbieter=kurz')).toBeNull();
+    expect(anbieterRueckkehr('#anbieter-fehler=<b>x</b>')).toBeNull();
+    expect(anbieterRueckkehr('#anmelden=' + v)).toBeNull();
+  });
+  test('jeder Grund hat einen verständlichen Text, Unbekanntes einen allgemeinen', () => {
+    for (const g of ['abgebrochen', 'abgelaufen', 'adresse', 'zuviele', 'pruefung']) expect(anbieterFehlerText(g)).not.toBe(anbieterFehlerText('anbieter'));
+    expect(anbieterFehlerText('gibtsnicht')).toMatch(/nicht erreichbar/);
+  });
+  test('Start-Adresse und API-Aufrufe', async () => {
+    expect(anbieterStart('apple')).toBe('/api/konto/apple/start');
+    const { fn, calls } = fakeFetch(() => json(200, { angemeldet: false }));
+    const api = new KontoApi('/api/konto', fn);
+    await api.anbieterAbschliessen('v'.repeat(30));
+    await api.anbieterTrennen('github', '789');
+    expect(calls.map((c) => [c.url, c.init.method, c.init.body])).toEqual([
+      ['/api/konto/anbieter/abschliessen', 'POST', JSON.stringify({ vorgang: 'v'.repeat(30) })],
+      ['/api/konto/anbieter/trennen', 'POST', JSON.stringify({ anbieter: 'github', kennung: '789' })],
+    ]);
+  });
 });

@@ -15,7 +15,7 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
-import { beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { anbieterRueckkehrPruefen, beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
 import { Abgleich, statusText, type SyncStatus } from './sync';
 import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
@@ -1168,8 +1168,8 @@ void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
   for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
 });
-if (mailLinkPruefen(kontoHost)) {
-  /* the mail link opened its dialog */
+if (mailLinkPruefen(kontoHost) || anbieterRueckkehrPruefen(kontoHost)) {
+  /* a mail link or the way back from Google, Apple, GitHub opened its dialog */
 } else if (location.hash === '#konto') {
   // from the forum: "Anmelden" opens the account dialog
   history.replaceState(null, '', location.pathname + location.search);

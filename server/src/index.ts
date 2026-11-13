@@ -4,6 +4,7 @@ import { leaderboardStore } from './bestenliste-db.ts';
 import { gameChecker } from './bestenliste-pruefer.ts';
 import { connect, database } from './db.ts';
 import { parseAdminEmails } from './konten.ts';
+import { activeProviders, providersFromEnv } from './anbieter.ts';
 import { forumStore } from './forum-db.ts';
 import { ghostStore } from './geister-db.ts';
 import { dailyStore } from './tageslevel-db.ts';
@@ -22,11 +23,14 @@ const port = Number(process.env.PORT ?? 3000);
 
 const sql = connect(url);
 const done = await migrate(sql, fileURLToPath(new URL('../migrations', import.meta.url)));
+// Google, Apple, GitHub (docs/SPEC-konten.md, Stufe 2): values from /opt/murmel/.env, Apple key as a read-only file
+const providers = providersFromEnv(process.env);
 const accounts = {
   store: accountStore(sql),
   mailer: mailerFromEnv(process.env),
   origin: process.env.PUBLIC_ORIGIN || 'https://murmel.games',
   adminEmails: parseAdminEmails(process.env.ADMIN_EMAILS),
+  providers: providers.config,
 };
 // Zu zweit spielen: TURN credentials only with the secret from /opt/murmel/.env (TURN_SECRET)
 const turnSecret = process.env.TURN_SECRET;
@@ -46,6 +50,8 @@ const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS
 });
 if (!checker.available()) app.log.warn({ gameDir }, 'no game code: leaderboard submissions are off');
 if (!turnSecret) app.log.warn('TURN_SECRET not set: rooms work, but browsers get no TURN server');
+for (const w of providers.warnings) app.log.warn(w);
+app.log.info({ providers: activeProviders(providers.config) }, 'sign-in providers');
 if (!accounts.mailer) app.log.warn('SMTP not configured: sign-in by mail link is off');
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
 

@@ -179,7 +179,7 @@
         E-Mail-Adresse, optional einen selbst gewählten Anzeigenamen, das Datum der Anlage und Ihre Rolle
         (Spieler oder Administrator). Passwörter speichern wir nicht: Sie melden sich mit einem Anmeldelink an,
         den wir an Ihre E-Mail-Adresse senden und der 15 Minuten lang einmal gültig ist, oder mit einem Passkey
-        Ihres Geräts. Bei einem Passkey speichern wir nur dessen öffentlichen Schlüssel, eine Bezeichnung (z. B.
+        Ihres Geräts oder über Google, Apple oder GitHub (siehe nächster Abschnitt). Bei einem Passkey speichern wir nur dessen öffentlichen Schlüssel, eine Bezeichnung (z. B.
         „iPhone“) und wann er zuletzt benutzt wurde; Fingerabdruck oder Gesichtsdaten verlassen Ihr Gerät nie.
         Anmeldelinks und Sitzungen speichern wir nur als Prüfwert (Hash). Abgelaufene Anmeldelinks löschen wir
         nach einem Tag, abgelaufene Sitzungen sofort. Für eine Übersicht zählen wir je Tag, wie oft sich Konten
@@ -200,6 +200,67 @@
         werden auf unserem Server in
         Deutschland verarbeitet.
       </p>
+
+      <h2>Anmeldung mit Google, Apple oder GitHub</h2>
+      <p>
+        Statt mit Anmeldelink oder Passkey können Sie sich auch mit Ihrem Konto bei Google, Apple oder GitHub
+        anmelden. Das ist freiwillig; Murmel funktioniert auch ohne diese Anbieter vollständig. Murmel lädt dafür
+        nichts von den Anbietern nach. Erst wenn Sie auf „Mit Google anmelden“, „Mit Apple anmelden“ oder
+        „Mit GitHub anmelden“ klicken, leiten wir Sie auf die Seite des Anbieters weiter. Dort melden Sie sich
+        an und stimmen zu. Was der Anbieter dabei selbst erhebt (etwa Ihre IP-Adresse und Angaben zu Ihrem
+        Browser), richtet sich nach seinen Datenschutzbestimmungen.
+      </p>
+      <p>
+        Nach Ihrer Zustimmung übermittelt der Anbieter uns eine feste Kennung Ihres Kontos (bei GitHub die
+        öffentliche Benutzernummer) und Ihre vom Anbieter bestätigte E-Mail-Adresse:
+      </p>
+      <ul>
+        <li><strong>Google</strong> schickt außerdem Ihren Namen und Ihr Profilbild. Beides verwerfen wir sofort.</li>
+        <li>
+          <strong>Apple</strong> schickt beim ersten Mal Ihren Namen, den wir ebenfalls nicht speichern. Auf Wunsch
+          gibt Apple statt Ihrer Adresse eine zufällige Weiterleitungsadresse weiter („E-Mail-Adresse verbergen“).
+        </li>
+        <li>
+          <strong>GitHub</strong> gibt uns Zugriff auf die Liste Ihrer E-Mail-Adressen. Davon übernehmen wir nur die
+          bestätigte Hauptadresse.
+        </li>
+      </ul>
+      <p>
+        Wir speichern zu Ihrem Konto den Anbieter, die Kennung, die E-Mail-Adresse und den Zeitpunkt der
+        Verknüpfung. Zugangsschlüssel (Tokens) der Anbieter speichern wir nicht. Sie werden nur während der
+        Anmeldung im Arbeitsspeicher verwendet. Passwörter erfahren wir nicht.
+      </p>
+      <p>
+        Gehört die bestätigte Adresse schon zu einem Murmel-Konto, wird der Anbieter mit diesem Konto verknüpft;
+        sonst legen wir ein neues Konto an.
+      </p>
+      <p>
+        Während der Anmeldung setzt der Server ein technisch notwendiges Cookie
+        (<code>__Host-murmel-anbieter</code>) mit einem Zufallswert. Es stellt sicher, dass die Antwort des
+        Anbieters zu Ihrem Browser gehört. Es gilt höchstens 10 Minuten und wird nach der Anmeldung gelöscht
+        (§ 25 Abs. 2 Nr. 2 TDDDG). Danach gilt das Anmelde-Cookie aus dem Abschnitt „Konto“. Die Zahl der
+        Anmeldeversuche begrenzen wir je IP-Adresse wie dort beschrieben.
+      </p>
+      <p>
+        Anbieter sind Google (Google Ireland Limited, Irland; Muttergesellschaft Google LLC, USA), Apple (Apple
+        Distribution International Ltd., Irland; Muttergesellschaft Apple Inc., USA) und GitHub, Inc. (USA). Dabei
+        können Daten in die USA gelangen. Für diese Unternehmen gilt der Angemessenheitsbeschluss der
+        EU-Kommission zum EU-US-Datenschutzrahmen (EU-U.S. Data Privacy Framework, Art. 45 DSGVO). Die Anbieter
+        verarbeiten die Anmeldung bei sich in eigener Verantwortung, nicht in unserem Auftrag. Rechtsgrundlage ist
+        die Bereitstellung des von Ihnen gewünschten Kontos (Art. 6 Abs. 1 lit. b DSGVO).
+      </p>
+      <p>
+        Auf der Kontoseite sehen Sie unter „Anmeldewege“, welche Anbieter verbunden sind und mit welcher
+        Adresse. Dort können Sie einen Anbieter jederzeit trennen; die gespeicherte Kennung und Adresse löschen wir
+        dann sofort. Einen Anmeldeweg müssen Sie behalten, damit Sie wieder in Ihr Konto kommen. „Konto löschen“
+        entfernt alle Anmeldewege mit dem Konto. Den Zugriff von Murmel können Sie außerdem beim Anbieter
+        widerrufen:
+      </p>
+      <ul>
+        <li><strong>Google:</strong> Google-Konto → Sicherheit → Verbindungen zu Drittanbieter-Apps und -Diensten</li>
+        <li><strong>Apple:</strong> Einstellungen → Apple-Account → Mit Apple anmelden</li>
+        <li><strong>GitHub:</strong> Settings → Applications → Authorized OAuth Apps</li>
+      </ul>
 
       <h2>Forum</h2>
       <p>
