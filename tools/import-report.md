@@ -1,6 +1,6 @@
 # Enigma-Import
 
-783 von 1322 Levels übernommen (18 Pakete).
+789 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -44,7 +44,6 @@
 | Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 1 |
 | Gegenstand it_weight | 14 | 1 |
-| Stein st_flash | 14 | 3 |
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
@@ -61,7 +60,6 @@
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |
-| Stein st_monoflop | 8 | 3 |
 | Lua: :orientate | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
@@ -73,7 +71,7 @@
 | Lua: puzzle() | 6 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
 | Lua: lib.math | 6 | 0 |
-| Boden fl_adhesionless | 6 | 1 |
+| Boden fl_adhesionless | 6 | 2 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |

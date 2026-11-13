@@ -1467,3 +1467,23 @@ describe('magic, ghost and disco stones', () => {
     expect(w.objects[0].state).toBe(0);
   });
 });
+
+describe('monoflop and flash', () => {
+  it('a monoflop switches on when hit, the timer restarts on a new hit, then it switches off', () => {
+    const w = world([door(5), { x: 3, y: 0, k: 'st_monoflop', a: { target: 'door1', action: 'signal', interval: '1' } }]);
+    w.hit(3, 0, 0, -1, 0, -3);
+    expect(w.objects[1].state).toBe(1);
+    w.update(800);
+    w.hit(3, 0, 0, -1, 0, -3); // renew
+    w.update(800);
+    expect(w.objects[1].state).toBe(1);
+    w.update(300);
+    expect(w.objects[1].state).toBe(0);
+  });
+
+  it('a flash stone pushes the other marble with 20 × the hitting velocity', () => {
+    const w = world([{ x: 3, y: 0, k: 'st_flash' }]);
+    w.hit(3, 0, 0, -1, 0, -3, 2, 1, 0);
+    expect(w.events.find((e) => e.type === 'flash')).toEqual({ type: 'flash', marble: 0, fx: 40, fy: 20 });
+  });
+});

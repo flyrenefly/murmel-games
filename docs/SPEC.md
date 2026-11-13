@@ -566,6 +566,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Nachrichten lighten, darken (alte Levels um 2), signal (1 heller, 0 dunkler um 2).
 - **ac_bug** (`BugActor.cc`): kleiner Akteur ohne eigenen Antrieb (Radius 12/64, Masse 0,7), nur
   Bodenkräfte und Stöße bewegen ihn; er schadet der Kugel nicht und zerbricht st_break_bug.
+- **st_monoflop** (`MonoFlopStone.cc`): Anstoßen oder on/signal 1 schaltet ihn an (Aktion true, Bild
+  st_monoflop_anim 2 × 180 ms); nach `interval` (1,8 s) geht er aus (Aktion false), erneutes Anstoßen
+  startet die Zeit neu. st_laserflop fehlt noch.
+- **st_flash** (`SimpleStones.cc` FlashStone): Anstoßen gibt der Kugel der anderen Farbe die Kraft
+  distortedVelocity(Geschwindigkeit, 20) und blitzt (5 Bilder à 50 ms).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

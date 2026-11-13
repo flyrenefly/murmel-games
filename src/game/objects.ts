@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed']);
@@ -341,6 +341,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** st_monoflop: when it switches off again. */
+  alarmAt?: number;
   /** it_cross: an actor inside (last seen), and when the alarm rings. */
   cross?: { seen: number; inside: boolean; at: number };
   /** Explosion, debris, burning dynamite or bomb: start of its animation. */
@@ -397,6 +399,8 @@ export type ObjectEvent =
   | { type: 'turnstile'; col: number; row: number; cw: boolean; red: boolean; sender: number; seen: boolean[] }
   /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
   | { type: 'laserhit'; marble: number }
+  /** FlashStone::actor_hit: the other marble gets this force. */
+  | { type: 'flash'; marble: number; fx: number; fy: number }
   /** Debris::actor_hit → "_fall": marble i falls. */
   | { type: 'fall'; marble: number }
   /** marble: index of the marble that shatters. */
@@ -471,6 +475,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_magic(_brick|_oxyda|_oxydc)?$/.test(kind)) return 'magic';
   if (/^st_ghost(_purplemarble|_greenbrown|_break)?$/.test(kind)) return 'ghost';
   if (/^st_disco(_light|_medium|_dark)?$/.test(kind)) return 'disco';
+  if (kind === 'st_monoflop') return 'monoflop';
+  if (kind === 'st_flash') return 'flash';
   if (kind === 'st_knight') return 'knight';
   if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
   if (/^it_shogun(_s|_m|_l)?$/.test(kind)) return 'shogundot';
@@ -637,7 +643,7 @@ export class ObjectWorld {
    */
   blockAt(col: number, row: number, color = 2, invisible = false, by = -1, shielded = false): number {
     for (const o of this.at(col, row)) {
-      if ((o.cls === 'magic' || o.cls === 'ghost') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -681,6 +687,21 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'monoflop') {
+        // MonoFlopStone::actor_hit → setState(1)
+        this.monoflopOn(o);
+        return;
+      }
+      if (o.cls === 'flash') {
+        // FlashStone::actor_hit: the other marble gets distortedVelocity(velocity, 20); animation 6 frames
+        o.pulse = this.now;
+        if (by >= 0) {
+          const num = (k: string, def: number) => (o.attrs[k] !== undefined && o.attrs[k] !== '' ? Number(o.attrs[k]) : def);
+          const f = num('hit_strength', 20);
+          this.events.push({ type: 'flash', marble: by, fx: (num('hit_distortion_xx', 1) * vx + num('hit_distortion_xy', 0) * vy) * f, fy: (num('hit_distortion_yx', 0) * vx + num('hit_distortion_yy', 1) * vy) * f });
+        }
+        return;
+      }
       if (o.cls === 'magic') {
         // MagicStone::actor_hit: brick + magic wand → st_rawglass; oxyda → light glass, oxydc → raw glass (movable)
         const f = magicFlavor(o);
@@ -1691,6 +1712,24 @@ export class ObjectWorld {
       const n = this.add(kind, cls, o.col, o.row);
       n.state = initialState(kind, {});
     } else this.env.setStaticStone?.(o.col, o.row, kind);
+  }
+
+/** MonoFlopStone::setState(1): off → on with its action; on → the timer starts again. */
+  private monoflopOn(o: GameObject): void {
+    const ms = (Number(o.attrs.interval) || 1.8) * 1000;
+    if (o.state === 1) {
+      o.alarmAt = this.now + ms;
+      return;
+    }
+    o.state = 1;
+    o.alarmAt = this.now + ms;
+    this.events.push({ type: 'sound', name: 'switch' });
+    this.performAction(o, true);
+  }
+
+  /** Milliseconds since a time of the object clock. */
+  ageOf(t: number): number {
+    return this.now - t;
   }
 
   /** PolarSwitchStone::setState: light glass (ON, transparent) or dark glass; performs its action. */
@@ -3241,6 +3280,12 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
+      if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt !== undefined && this.now >= o.alarmAt) {
+        // MonoFlopStone::alarm: off, action false
+        o.state = 0;
+        o.alarmAt = undefined;
+        this.performAction(o, false);
+      }
       if (o.cls === 'cross' && !o.gone && o.cross) {
         // CrossItem::actor_leave cancels the alarm; CrossItem::alarm performs the action
         if (o.cross.inside && this.now - o.cross.seen > 150) {
@@ -3468,6 +3513,11 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'monoflop') {
+      // MonoFlopStone::setState: on / signal 1 switch on (or renew the timer); off is ignored
+      if (msg === 'on' || (msg === 'signal' && value) || msg === 'toggle') this.monoflopOn(o);
+      return;
+    }
     if (o.cls === 'disco') {
       // DiscoStone::message: lighten, darken (old levels: by 2), signal (1 lighter, 0 darker by 2)
       const old = this.compat < 1.1;

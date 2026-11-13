@@ -212,6 +212,8 @@ export function objectImages(kind: string): string[] {
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
+  if (kind === 'st_monoflop') return ['st_monoflop', 'sh_round'];
+  if (kind === 'st_flash') return ['st_flash', 'sh_solid'];
   if (/^st_magic/.test(kind)) return ['st_brick', 'st_oxyda', 'st_oxydc', 'sh_solid', 'st_rawglass', 'st_lightglass', 'sh_rawglass'];
   if (/^st_ghost/.test(kind)) return ['st_purplemarble', 'st_greenbrown', 'st_break_oxydc', 'st_flat_break', 'sh_solid', 'sh_round'];
   if (/^st_disco/.test(kind)) return ['st_disco'];
@@ -790,6 +792,19 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'monoflop') {
+      // st_monoflop: frame 0 off; on: st_monoflop_anim 2 × 180 ms
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_monoflop', o.state === 1 ? Math.floor(this.now / 180) % 2 : 0, px, py);
+      return;
+    }
+    if (o.cls === 'flash') {
+      // st_flash: frame 0; hit: st_flash_anim = frames 1..5 à 50 ms (models-2d.lua)
+      const age = o.pulse === undefined ? -1 : world.ageOf(o.pulse);
+      if (pass === 'shadow') this.image('sh_solid', px, py);
+      else this.frame('st_flash', age >= 0 && age < 5 * 50 ? 1 + Math.floor(age / 50) : 0, px, py);
       return;
     }
     if (o.cls === 'magic') {

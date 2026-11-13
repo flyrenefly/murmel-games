@@ -580,6 +580,12 @@ function handleObjectEvents(events: ObjectEvent[]): void {
         const y = Math.min(e.toRow + 0.99, Math.max(e.toRow + 0.01, m.pos.y));
         physics!.respawn(x, y, i);
       });
+    } else if (e.type === 'flash') {
+      // FlashStone: FindOtherMarble – the marble of the other colour gets the force
+      const ph = physics;
+      const m = ph?.marbles[e.marble];
+      const other = m ? ph!.marbles.findIndex((o, k) => k !== e.marble && !o.pearl && o.color === 1 - m.color && o.active) : -1;
+      if (other >= 0) ph!.kick(other, e.fx, e.fy);
     } else if (e.type === 'laserhit') {
       // BasicBall "_laserhit": shatters (not while jumping, falling or in a vortex)
       const m = physics?.marbles[e.marble];
