@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -49,8 +50,8 @@ function offline(): Plugin {
       outDir = resolve(c.root, c.build.outDir);
     },
     closeBundle() {
-      // statistik.html is an internal page that needs the server anyway: not precached
-      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      // statistik.html and forum.html need the server anyway: not precached
+      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
@@ -64,7 +65,19 @@ function offline(): Plugin {
   };
 }
 
+/** Short commit of this build: shown in bug reports from the game ("Fehler melden"). */
+function gameVersion(): string {
+  const env = process.env.MURMEL_VERSION || process.env.GITHUB_SHA;
+  if (env) return env.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
+
 export default defineConfig({
+  define: { __MURMEL_VERSION__: JSON.stringify(gameVersion()) },
   // Relative paths so the build works in any webspace folder.
   base: './',
   plugins: [cspSafeFengari(), offline()],
@@ -79,6 +92,7 @@ export default defineConfig({
         impressum: resolve(__dirname, 'impressum.html'),
         datenschutz: resolve(__dirname, 'datenschutz.html'),
         statistik: resolve(__dirname, 'statistik.html'),
+        forumseite: resolve(__dirname, 'forum.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

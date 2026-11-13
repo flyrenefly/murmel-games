@@ -17,6 +17,7 @@ import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 import { kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
 import { reportEvent } from './stats';
+import { fehlerLink } from './forum-text';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -354,7 +355,13 @@ function showPause(): void {
     ['Neustart', restart],
     ['Levels', showLevels],
     [kontoLabel(), openKonto],
+    ['Fehler melden', reportBug],
   ]);
+}
+
+/** Opens the forum in a new tab with a bug topic for this level and game version (src/forum-text.ts). */
+function reportBug(): void {
+  window.open(fehlerLink(level.id, __MURMEL_VERSION__), '_blank', 'noopener');
 }
 
 // ---------- account (optional, src/konto-ui.ts) ----------
@@ -831,7 +838,13 @@ await loadLevel(packId, levelIndex);
 void kontoLaden().then(() => {
   for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
 });
-if (!mailLinkPruefen(kontoHost)) showStart();
+if (mailLinkPruefen(kontoHost)) {
+  /* the mail link opened its dialog */
+} else if (location.hash === '#konto') {
+  // from the forum: "Anmelden" opens the account dialog
+  history.replaceState(null, '', location.pathname + location.search);
+  openKonto();
+} else showStart();
 // A mail link opened in a tab that already plays
 window.addEventListener('hashchange', () => void mailLinkPruefen(kontoHost));
 $('loading').remove();

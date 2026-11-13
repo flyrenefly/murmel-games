@@ -71,6 +71,11 @@ export function accountStore(sql: Sql): AccountStore {
       });
     },
 
+    async account(accountId) {
+      const [r] = await sql<AccountRow[]>`select id, email::text, role, created_at, blocked_at from accounts where id = ${accountId}`;
+      return r ? account(r) : null;
+    },
+
     async setRole(accountId, role) {
       await sql`update accounts set role = ${role} where id = ${accountId}`;
     },

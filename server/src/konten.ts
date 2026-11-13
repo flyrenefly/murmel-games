@@ -53,6 +53,8 @@ export interface AccountStore {
   redeemLoginToken(hash: Buffer, now: Date): Promise<string | null>;
   /** Finds the account by identity, else by address (linking the identity), else creates it; sets the role. */
   signIn(identity: Identity, role: Role): Promise<Account>;
+  /** The account by id, or null (admins, e.g. blocking in the forum). */
+  account(accountId: number): Promise<Account | null>;
   setRole(accountId: number, role: Role): Promise<void>;
   /** Blocks or unblocks an account (admins, e.g. in the forum). */
   setBlocked(accountId: number, blocked: boolean, now: Date): Promise<void>;
