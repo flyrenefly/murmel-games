@@ -1749,6 +1749,19 @@ describe('fl_forward', () => {
     expect(w.objects[2].col).toBe(5);
   });
 
+  it('carries a mirror only if it is movable (export $movable → movable)', () => {
+    const w = world([
+      { x: 3, y: 1, k: 'fl_forward', a: { $state: '2', interval: '1' } },
+      { x: 3, y: 1, k: 'st_mirror_slab', a: { movable: 'true' } },
+      { x: 3, y: 3, k: 'fl_forward', a: { $state: '2', interval: '1' } },
+      { x: 3, y: 3, k: 'st_mirror_slab' },
+    ]);
+    w.update(1000);
+    w.update(100);
+    expect(w.objects[1].col).toBe(4);
+    expect(w.objects[3].col).toBe(3);
+  });
+
   it('is a floor: it neither blocks nor counts as a stone', () => {
     const w = world([{ x: 3, y: 1, k: 'fl_forward' }]);
     expect(w.blockAt(3, 1)).toBe(0);

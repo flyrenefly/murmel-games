@@ -415,6 +415,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Eine Kugel näher als 0,21 an der Strahlachse zerspringt (`_laserhit`). Neues Licht öffnet
   Oxyd-Steine, dreht Felsbrocken um und startet Impulssteine; die erste Berechnung löst nichts
   aus. Auf Strahlfelder kann nichts abgelegt werden. Klänge st-laser, st-mirrorturn.
+  **Beweglich per Attribut** (ab 13.11.2026): `movable = true` setzt in Enigma nur das Flag
+  `OBJBIT_MOVABLE`; der Export (enigma-web `level-export` 420a9755) liefert es als `$movable`. Der
+  Konverter macht daraus `movable = true` (Spiegel, Rotatoren, Todessteine) bzw. für gewöhnliche Steine
+  die `_movable`-Art (z. B. st_rawglass → st_rawglass_movable). Ältere Exporte ohne `$movable`
+  ergeben feste Spiegel.
   **st_laserswitch** (`LaserSwitch.cc`): an, solange Licht auf ihn fällt (Aktion true), sonst
   aus (false); der Anfangszustand löst nichts aus. Bild aus = st_oxydb, an = st_quake pendelnd
   à 50 ms; Treffer klingen metallisch.

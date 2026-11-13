@@ -562,6 +562,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       const force = floorForce(fl, slopeForce);
       if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
+      // OBJBIT_MOVABLE (export $movable since enigma-web 420a9755): mirrors, rotators, death stones read
+      // `movable`; a plain stone made movable is pushed like its _movable kind
+      if (st && st.$movable === 'true') {
+        if (st.movable === undefined || st.movable === '') st.movable = 'true';
+        const base = STONE_BASE.exec(st.k)?.[1] ?? st.k;
+        if (!objectImages(st.k) && objectImages(`${base}_movable`)) st.k = `${base}_movable`;
+      }
       if (st) {
         const ox = OXYD.exec(st.k);
         if (ox) {
