@@ -221,7 +221,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     const ow = objects;
     const { startLua } = await import('./lua');
     const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random }, world, force);
-    const l = await startLua(lv.lua.code, host);
+    const l = await startLua(lv.lua.code, host, lv.compat < 1.1);
     if (level !== lv) return; // another level was loaded meanwhile
     lua = l;
     ow.onCallback = (fn, value, sender) => l.callback(fn, value, `o:${sender.id}`);

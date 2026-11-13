@@ -725,3 +725,7 @@ function __callback(name, value, ref)
   if type(f) ~= "function" then return end
   f(value, obj(ref))
 end
+
+-- Internals for the API 1 layer (api1.lua), which takes this table and clears it.
+__api = {M = M, obj = obj, NULLOBJ = NULLOBJ, encode = encode, decode = decode, topos = topos,
+  isinit = function() return INIT end}

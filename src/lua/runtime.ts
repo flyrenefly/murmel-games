@@ -33,9 +33,23 @@ export interface LuaHost {
 
 export type Fengari = typeof import('fengari');
 
+/**
+ * Lua 5.0 code of API 1 levels: a vararg function sees its arguments as the table arg
+ * (Lua 5.1 LUA_COMPAT_VARARG). Declared on the function's own line, so line numbers stay.
+ * (A backslash before another character than an escape letter loses it, as in Lua 5.1.)
+ */
+export function api1Source(code: string): string {
+  return code
+    // Lua 5.1 keeps an unknown escape's character ("\(" is "("), Lua 5.3 refuses it
+    .replace(/\\([\s\S])/g, (m, c: string) => (/[abfnrtvxz0-9\\"'\r\n]/.test(c) ? m : c))
+    .replace(/\bfunction\b[\w\s.:]*\(([^()]*\.\.\.)\s*\)/g, (m) => `${m} local arg = {n = select("#", ...), ...};`);
+}
+
 export class LuaLevel {
   /** Do not log Lua errors (the importer runs many levels). */
   static quiet = false;
+  /** Lua instructions the level script may run in its init. */
+  static INIT_STEPS = 50_000_000;
   /** Last Lua error (also logged), for tests. */
   lastError = '';
 
@@ -49,7 +63,8 @@ export class LuaLevel {
 
   /** Start the level script; init mode skips world building (the export already holds it). */
   /** f: the fengari module (fengari-web in the browser, fengari in Node). */
-  static async create(code: string, host: LuaHost, shim: string, f: Fengari): Promise<LuaLevel> {
+  /** api1: Murmel's API 1 layer (api1.lua) for old levels (compatibility below 1.10), run after the shim. */
+  static async create(code: string, host: LuaHost, shim: string, f: Fengari, api1?: string): Promise<LuaLevel> {
     const { lua, lauxlib, lualib, to_luastring } = f;
     const L = lauxlib.luaL_newstate();
     for (const [name, open] of [
@@ -63,8 +78,17 @@ export class LuaLevel {
     }
     const level = new LuaLevel(f, L);
     level.bridge(host);
+    // The init runs on the finished (exported) world: a level that loops until it finds something
+    // its own world building would have changed never ends there. Stop it after INIT_STEPS instructions.
+    let steps = 0;
+    lua.lua_sethook(L, (s) => {
+      steps += 1000;
+      if (steps > LuaLevel.INIT_STEPS) lauxlib.luaL_error(s, to_luastring('Murmel: Level-Init läuft endlos'));
+    }, lua.LUA_MASKCOUNT, 1000);
     level.run(shim, '=enigma.lua');
-    level.run(code, '=level');
+    if (api1) level.run(api1, '=api1.lua');
+    level.run(api1 ? api1Source(code) : code, '=level');
+    lua.lua_sethook(L, null, 0, 0);
     level.callGlobal('__endinit', []);
     return level;
   }
