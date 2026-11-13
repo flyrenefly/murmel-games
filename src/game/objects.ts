@@ -1616,7 +1616,9 @@ export class ObjectWorld {
       const next = list[Math.floor(this.random() * list.length)];
       const cls = objectClass(next);
       this.remove(o);
-      if (cls) this.add(next, cls, col, row);
+      const n = cls ? this.add(next, cls, col, row) : null;
+      // a surprise in its own selection ("=w" with ti["w"] = this surprise) keeps the selection
+      if (n && next === 'it_surprise') n.attrs = { ...n.attrs, selection: o.attrs.selection ?? '' };
       return;
     }
     if (isBag(kind)) {

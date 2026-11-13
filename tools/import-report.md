@@ -1,6 +1,6 @@
 # Enigma-Import
 
-966 von 1322 Levels übernommen (18 Pakete).
+970 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -58,7 +58,6 @@
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
 | Lua: :replace | 2 | 0 |
-| Puzzle hohl (alter Export) | 2 | 2 |
 | mehrere weiße Murmeln | 2 | 1 |
 | Lua: st_darkglass_hollow | 2 | 0 |
 | Lua: set_attribs() | 2 | 0 |
@@ -125,11 +124,9 @@
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
-| Überraschung mit =w | 1 | 1 |
 | Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Überraschung mit =i | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
