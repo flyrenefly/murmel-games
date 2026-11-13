@@ -26,7 +26,7 @@ function bodies(code) {
   return out.join('\n');
 }
 
-const METHODS = new Set(['open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
+const METHODS = new Set(['open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',
@@ -55,9 +55,10 @@ export function luaProblems(code, fns) {
     const n = m[2];
     if (!FUNCS.has(n) && !KEYWORDS.has(n) && !fns.has(n) && !locals.has(n)) problems.add(`${n}()`);
   }
-  for (const m of body.matchAll(/\b(res|lib)\.(\w+)/g)) problems.add(`${m[1]}.${m[2]}`);
+  // lib.math.permutation is provided (enigma.lua); other libraries and resolvers are not
+  for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation')) problems.add(`${m[1]}.${m[2]}`);
   // world attributes changed during play: only those the game applies
-  for (const m of bodies(code).matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1])) problems.add(`wo["${m[1]}"]`);
+  for (const m of bodies(code).matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];
 }
 

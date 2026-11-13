@@ -15,6 +15,8 @@ import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 
+/** World attributes during play (Lua may change them: wo["ConserveLevel"] …). */
+let runWorld: Record<string, string> = {};
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 const FALL_SECONDS = CLASSIC_FALL_SECONDS;
 
@@ -184,6 +186,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   // wo["GlobalForce"] (server::ConstantForce) acts on every actor, like the item forces.
   const force = (globalForce = { x: 0, y: 0 });
   const world = { ...lv.world };
+  runWorld = world;
   applyWorld(physics, world, force);
   physics.setForceField((x, y, flying) => {
     const [fx, fy] = objects.fieldForce(x, y, flying);
@@ -517,7 +520,7 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
     updateItems();
     if (idx >= 0) {
       // ConserveLevel false: the level restarts (costing the life)
-      if (level.world.ConserveLevel === 'false') pendingRestart = 'keep';
+      if ((runWorld.ConserveLevel ?? level.world.ConserveLevel) === 'false') pendingRestart = 'keep';
     } else if (owner === 0 || m.essential) {
       pendingRestart = 'new'; // out of lives: a new game
     } else {
@@ -640,6 +643,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
       if (open) handlePairEvents(board.hit(s.index));
       else if (close) handlePairEvents(board.close(s.index));
       else if (e.msg === 'closeall') handlePairEvents(board.closeAll());
+      else if (e.msg === 'peepall') classic.peepAll(level.signals.filter((x) => x.symbol !== '-').map((x) => x.index));
       else if (e.msg === 'shuffle') {
         board.shuffle();
         level.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));

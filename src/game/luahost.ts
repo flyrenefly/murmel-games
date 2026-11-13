@@ -77,8 +77,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       const re = glob(pattern);
       const refs: string[] = [];
       // fl_ref objects stand for named floors, which Lua addresses as cells (c:fl:x:y)
-      for (const o of objects.objects) if (!o.gone && o.name && o.cls !== 'floorref' && re.test(o.name)) refs.push(`o:${o.id}`);
-      for (const [ref, a] of attrs) if (a.name && re.test(a.name) && host.exists(ref)) refs.push(ref);
+      for (const o of objects.objects) if (!o.gone && o.name && re.test(o.name)) refs.push(o.cls === 'floorref' ? `c:fl:${o.col}:${o.row}` : `o:${o.id}`);
+      for (const [ref, a] of attrs) if (a.name && re.test(a.name) && host.exists(ref) && !refs.includes(ref)) refs.push(ref);
       return refs;
     },
     at(l, x, y) {

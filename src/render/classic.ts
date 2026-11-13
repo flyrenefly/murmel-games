@@ -333,6 +333,11 @@ export class ClassicView {
     if (this.level && this.img) this.staticLayer = this.renderStatic(this.level, this.img);
   }
 
+  /** OxydStone "peepall": flavor e stones show their colours. */
+  peepAll(indices: number[]): void {
+    for (const i of indices) if (this.stones[i]) this.stones[i].opened = true;
+  }
+
   setStoneState(index: number, state: StoneState): void {
     const s = this.stones[index];
     if (!s || s.state === state) return;

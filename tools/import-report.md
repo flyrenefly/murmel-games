@@ -1,6 +1,6 @@
 # Enigma-Import
 
-945 von 1322 Levels übernommen (18 Pakete).
+950 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -8,8 +8,8 @@
 | Lua-Rückruf | 113 | 5 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: st_oxyd | 106 | 0 |
-| Lua: :shuffleOxyd | 106 | 0 |
-| Lua-Init | 100 | 3 |
+| Lua: :shuffleOxyd | 106 | 2 |
+| Lua-Init | 95 | 2 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -21,17 +21,16 @@
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Lua: abyss() | 20 | 0 |
 | Lua: fill_floor() | 17 | 0 |
+| Objekt ot_timer (Lua-Init) | 17 | 1 |
 | Lua: draw_stones() | 14 | 0 |
+| Lua: :add | 10 | 5 |
 | Lua: :drawRect | 9 | 4 |
-| Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 3 |
 | Lua: set_attrib() | 7 | 0 |
-| Lua: lib.math | 7 | 1 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: :can_go_south | 6 | 0 |
@@ -42,11 +41,11 @@
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Lua: st_oxyd_d | 5 | 1 |
-| Pferd mit Aktion oder Steuerung | 4 | 1 |
+| Pferd mit Aktion oder Steuerung | 4 | 2 |
 | Lua: :setfire | 4 | 1 |
 | Wurmloch ohne Ziel | 4 | 1 |
+| Lua: lib.math | 4 | 0 |
 | Lua: :set | 3 | 0 |
-| Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
@@ -74,7 +73,6 @@
 | Pferd mit Zielen | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Lua: :peepall | 2 | 1 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |
@@ -161,4 +159,3 @@
 | Lua: :can_go_west | 1 | 0 |
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
-| Lua: wo["ConserveLevel"] | 1 | 1 |

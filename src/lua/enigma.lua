@@ -201,7 +201,7 @@ local function send(o, msg, value)
 end
 
 local methods = {}
-for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel"}) do
+for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle"}) do
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end
@@ -587,6 +587,19 @@ for _, m in ipairs({"shuffleOxyd", "world", "_register"}) do
   wmethods[m] = function()
     if not INIT then unsupported("wo:" .. m) end
   end
+end
+
+-- libmath: lib.math.permutation(n) – the numbers 1..n in random order
+lib = lib or {}
+lib.math = lib.math or {}
+function lib.math.permutation(n)
+  local p = {}
+  for i = 1, n do p[i] = i end
+  for i = n, 2, -1 do
+    local j = math.random(1, i)
+    p[i], p[j] = p[j], p[i]
+  end
+  return p
 end
 
 -- api2init.lua: random = math.random
