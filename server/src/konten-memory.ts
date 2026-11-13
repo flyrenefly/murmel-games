@@ -1,4 +1,5 @@
 import type { Account, AccountStore, Passkey } from './konten.ts';
+import { berlinDay } from './stats.ts';
 
 /**
  * AccountStore in memory, for tests without PostgreSQL. konten.test.ts runs the same flows against
@@ -11,6 +12,8 @@ export function memoryStore(): AccountStore {
   const tokens = new Map<string, { email: string; created: Date; expires: Date; used: boolean }>();
   const sessions = new Map<string, { accountId: number; expires: Date }>();
   const passkeys = new Map<string, Passkey & { accountId: number }>();
+  const signIns = new Map<string, { signIns: number; accounts: number }>();
+  const seen = new Set<string>();
   const challenges = new Map<string, { purpose: string; challenge: string; accountId: number | null; expires: Date }>();
   let nextId = 1;
   const strip = ({ accountId: _a, ...p }: Passkey & { accountId: number }): Passkey => ({ ...p });
@@ -109,6 +112,25 @@ export function memoryStore(): AccountStore {
     },
     async cleanup(now) {
       for (const [k, s] of sessions) if (s.expires <= now) sessions.delete(k);
+    },
+    async recordSignIn(accountId, day) {
+      for (const k of seen) if (k.slice(0, 10) < day) seen.delete(k);
+      const fresh = !seen.has(`${day}:${accountId}`);
+      seen.add(`${day}:${accountId}`);
+      const d = signIns.get(day) ?? { signIns: 0, accounts: 0 };
+      signIns.set(day, { signIns: d.signIns + 1, accounts: d.accounts + (fresh ? 1 : 0) });
+    },
+    async accountHistory(since) {
+      const created = new Map<string, number>();
+      for (const a of accounts.values()) {
+        const day = berlinDay(a.createdAt);
+        if (day >= since) created.set(day, (created.get(day) ?? 0) + 1);
+      }
+      return {
+        blocked: [...accounts.values()].filter((a) => a.blocked).length,
+        created: [...created].sort().map(([day, count]) => ({ day, count })),
+        signIns: [...signIns].filter(([day]) => day >= since).sort().map(([day, v]) => ({ day, ...v })),
+      };
     },
     async overview() {
       const all = [...accounts.values()];

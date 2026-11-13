@@ -62,7 +62,7 @@ const backends: { name: string; skip: boolean; store: () => Promise<AccountStore
     name: 'PostgreSQL',
     skip: !sql,
     store: async () => {
-      await sql!`truncate accounts, login_tokens, sessions, webauthn_challenges, passkeys, account_identities restart identity cascade`;
+      await sql!`truncate accounts, login_tokens, sessions, webauthn_challenges, passkeys, account_identities, signin_day, signin_seen restart identity cascade`;
       return accountStore(sql!);
     },
   },
@@ -217,6 +217,31 @@ for (const backend of backends) {
       const later = app({ admins: [] });
       const again = await signInByMail(later, 'chef@example.de');
       assert.equal((await me(later, again)).konto.rolle, 'player');
+    });
+
+    test('Admin-Statistik der Konten: Anmeldungen je Tag, verschiedene Konten, neue Konten', async () => {
+      const a = app({ admins: ['chef@example.de'] });
+      const chef = await signInByMail(a, 'chef@example.de');
+      await signInByMail(a, 'chef@example.de'); // same account again
+      await signInByMail(a, 'spieler@example.de');
+      clock = new Date('2026-11-14T08:00:00Z');
+      await signInByMail(a, 'spieler@example.de');
+
+      const view = (cookie?: string) => a.inject({ method: 'GET', url: '/api/admin/konten?tage=366', headers: cookie ? { cookie: `${COOKIE}=${cookie}` } : {} });
+      assert.equal((await view()).statusCode, 401);
+      const res = await view(chef);
+      assert.equal(res.statusCode, 200);
+      const body = res.json();
+      assert.equal(body.accounts, 2);
+      assert.equal(body.blocked, 0);
+      assert.deepEqual(body.signIns, [
+        { day: '2026-11-13', signIns: 3, accounts: 2 },
+        { day: '2026-11-14', signIns: 1, accounts: 1 },
+      ]);
+      // created_at is the real time of the database: only the total is checked
+      assert.equal(body.created.reduce((n: number, d: { count: number }) => n + d.count, 0), 2);
+      // the overview is unchanged
+      assert.deepEqual(Object.keys(body).sort(), ['accounts', 'admins', 'blocked', 'created', 'passkeys', 'signIns']);
     });
 
     test('Passkey: nach Mail-Login einrichten, abmelden, mit Passkey wieder anmelden', async () => {
