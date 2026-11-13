@@ -58,7 +58,10 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|ice_heating|swamp_heating)/;
+const SPECIAL_FLOORS = /^fl_(ice_heating|swamp_heating)/;
+/** ForwardFloor: base floor per flavor (models-2d.lua backgrounds) – the conveyor is an object fl_forward. */
+const FORWARD_BASE = { darkgray: 'fl_darkgray', platinum: 'fl_platinum', rough: 'fl_rough', bright: 'fl_bright', bridgewood: 'fl_bridge_bw_closed' };
+const FORWARD = /^fl_forward(?:_(darkgray|platinum|rough|bright|bridgewood))?(?:_([nesw]))?$/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -102,7 +105,8 @@ const OBJECTS = [
   [/^it_bag$/, ['it_bag']],
   [/^it_surprise$/, ['it_surprise', 'it_umbrella', 'it_spring', 'it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_coffee', 'it_hammer']],
   [/^st_portal(_horse|_pearl)?$/, ['st_portal_horse', 'sh_portal_horse']],
-  [/^st_scissors$/, ['st_scissors', 'sh_round']],
+  [/^st_scissors$/, ['st_scissors', 'sh_round', 'st_break_plain']],
+  [/^st_(document|pebble)$/, ['st_document', 'st_pebble', 'sh_round', 'st_break_plain']],
   [/^st_rubberband$/, ['st_rubberband', 'sh_round']],
   [/^st_flash$/, ['st_flash', 'sh_solid']],
   [/^st_magic(_brick|_oxyda|_oxydc)?$/, ['st_brick', 'st_oxyda', 'st_oxydc', 'sh_solid', 'st_rawglass', 'st_lightglass', 'sh_rawglass']],
@@ -116,6 +120,7 @@ const OBJECTS = [
   [/^it_trap$/, ['it_trap']],
   [/^it_explosion(_nil|_hollow|_crack|_debris)?$/, ['it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss']],
   [/^fl_ref$/, []],
+  [/^st_ref$/, []],
   [/^st_jamb(_black|_white)?$/, ['st_jamb_black', 'st_jamb_white', 'sh_jamb']],
   [/^st_yinyang(_instant|_active|_inactive)?$/, ['st_yinyang', 'st_yinyang_inactive', 'sh_round']],
   [/^st_spitter$/, ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
@@ -155,6 +160,7 @@ const OBJECTS = [
   [/^st_laser(_[nesw])?$/, ['st_laser', 'sh_rounded', 'it_laser']],
   [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
   [/^fl_scales$/, ['fl_scales']],
+  [/^fl_forward$/, ['fl_forward']],
   [/^fl_bridge$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
@@ -197,6 +203,7 @@ const API1_ACTIONS = [
   [/^st_stoneimpulse/, 'trigger'], [/^st_switch/, 'onoff'], [/^st_volcano/, 'trigger'],
 ];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
+
 
 const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
 
@@ -265,7 +272,7 @@ for (const f of readdirSync(exportDir)) {
 }
 
 /** Actors Murmel can play. */
-const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black', 'ac_bug', 'ac_horse']);
+const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black', 'ac_bug', 'ac_horse', 'ac_marble_glass']);
 /** Images of the other actors (models-2d.lua: killers look like pearls). */
 function actorImages(k, color) {
   if (k === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
@@ -274,6 +281,7 @@ function actorImages(k, color) {
   if (k === 'ac_top') return ['ac_top', 'sh_top'];
   if (k.startsWith('ac_killer')) return [color === '0' || (color === undefined && k === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (k === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
+  if (k === 'ac_marble_glass') return ['ac_marble_glass', 'ac_marble_glass_fall', 'ac_marble_glass_jump'];
   if (/^ac_pearl(_white|_black)?$/.test(k)) {
     const c = k === 'ac_pearl_black' || color === '0' ? 'black' : 'white';
     return [`ac_pearl_${c}`, `ac_pearl_${c}_fall`, 'sh_pearl', 'sh_pearl_fall'];
@@ -378,7 +386,7 @@ function runtimeKind(kind) {
   if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
   if (kind.startsWith('fl_')) {
     if (kind === 'fl_fake_abyss' || kind === 'fl_fake') return 'fl_fake_abyss'; // FakeFloor: looks like abyss
-    if (SPECIAL_FLOORS.test(kind)) return null;
+    if (SPECIAL_FLOORS.test(kind) || FORWARD.test(kind)) return null;
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
   if (objectImages(kind)) return 'object';
@@ -442,14 +450,18 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const blacks = actors.filter((k) => k === 'ac_marble_black').length;
   // further black marbles are steered together with the first (all of player 1)
   // a single white marble (no black one, no pearls) is the main ball as well
-  const soloWhite = blacks === 0 && !actors.some((k) => /^ac_pearl/.test(k)) && actors.filter((k) => k === 'ac_marble_white').length === 1;
-  if (blacks === 0 && !actors.some((k) => /^ac_pearl/.test(k)) && !soloWhite) reject('Akteure: nicht genau eine schwarze Murmel');
+  // the glass marble (owner YIN, controllers 1) is built only as the single main ball
+  const glasses = actors.filter((k) => k === 'ac_marble_glass').length;
+  if (glasses > 1 || (glasses && (blacks || actors.some((k) => /^ac_pearl/.test(k))))) reject('Akteur ac_marble_glass');
+  const soloWhite = blacks === 0 && !glasses && !actors.some((k) => /^ac_pearl/.test(k)) && actors.filter((k) => k === 'ac_marble_white').length === 1;
+  if (blacks === 0 && !glasses && !actors.some((k) => /^ac_pearl/.test(k)) && !soloWhite) reject('Akteure: nicht genau eine schwarze Murmel');
   // A white marble is steered with the yin-yang, which Enigma hands out in single play only
   // for levels that also allow network play (player::LevelLoaded with TwoPlayerGame).
   const whites = actors.filter((k) => k === 'ac_marble_white').length;
   // Without network play there is no yin-yang: white marbles (controllers 2) are passive balls.
   const passiveWhite = whites >= 1 && !/el:network="true"/.test(xml);
-  if (whites > 1 && !passiveWhite) reject('mehrere weiße Murmeln');
+  // With network play several white marbles are steered together (like further black ones); a marble
+  // without owner (owner=DEFAULT, controllers=CTRL_NONE) belongs to no player and is never steered.
   // Rubber bands need the export with their values (enigma-web level-export since 11.11. evening).
   const banded = w.actors.some((a) => a.o.rubbers) || w.cells.some((c) => c.some((o) => o && o.rubbers));
   if (banded && !Array.isArray(w.rubberbands)) reject('Gummiband (alter Export)');
@@ -526,7 +538,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       // ScalesFloor: the base floor of its flavor, plus an object fl_scales that acts like a trigger
       // Named floors can receive messages (fire, flood): an object fl_ref for them
-      if (fl.name && !/^fl_(bridge|scales|thief)/.test(fl.k)) objs.push({ x, y, k: 'fl_ref', a: { $id: fl.$id, name: fl.name } });
+      if (fl.name && !/^fl_(bridge|scales|thief|forward)/.test(fl.k)) objs.push({ x, y, k: 'fl_ref', a: { $id: fl.$id, name: fl.name } });
       // ThiefFloor: fl_bluegray with an object fl_thief for the thief
       if (fl.k === 'fl_thief') {
         objs.push({ ...objectDef(x, y, fl), k: 'fl_thief' });
@@ -544,6 +556,16 @@ function convertLevel(pack, meta, xml, exp, lua) {
           imgs.add('fl_scales');
           fl.k = base;
         }
+      }
+      // ForwardFloor: the base floor of its flavor plus an object fl_forward (state = direction W 0 S 1 E 2 N 3)
+      const forward = FORWARD.exec(fl.k);
+      if (forward) {
+        const flavor = fl.flavor || forward[1] || 'darkgray';
+        const def = objectDef(x, y, fl);
+        const dir = forward[2] ? { w: 0, s: 1, e: 2, n: 3 }[forward[2]] : 0;
+        objs.push({ ...def, k: 'fl_forward', a: { $state: String(dir), ...def.a, flavor } });
+        imgs.add('fl_forward');
+        fl.k = FORWARD_BASE[flavor] ?? 'fl_darkgray';
       }
       // FakeFloor: looks like abyss (DefAlias fl_fake_abyss = fl_abyss) but carries the marble
       if (fl.k === 'fl_fake' || fl.k === 'fl_fake_abyss') {
@@ -570,6 +592,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       const force = floorForce(fl, slopeForce);
       if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
+      // OBJBIT_MOVABLE (export $movable since enigma-web 420a9755): mirrors, rotators, death stones read
+      // `movable`; a plain stone made movable is pushed like its _movable kind
+      if (st && st.$movable === 'true') {
+        if (st.movable === undefined || st.movable === '') st.movable = 'true';
+        const base = STONE_BASE.exec(st.k)?.[1] ?? st.k;
+        if (!objectImages(st.k) && objectImages(`${base}_movable`)) st.k = `${base}_movable`;
+      }
       if (st) {
         const ox = OXYD.exec(st.k);
         if (ox) {
@@ -744,7 +773,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
           // Object::performAction ignores a target that names nothing ("no longer valid target"),
           // unless it is a Lua function (maybe from a library) or an ot_ object we do not have.
           const unknown = act !== 'callback' && !/<el:dependency/.test(xml) && !(lua?.code ?? '').includes(`"${t}"`) && !/[*?]/.test(t);
-          if (named) reject(`Stein ${named.k.replace(/_[nesw]+$/, '')}`);
+          // a plain (map) stone killed by an action: an object st_ref for it
+          const cell = named && act === 'kill' && !objectImages(named.k) && !OXYD.test(named.k) && (STONES.has(named.k) || STONE_BASE.test(named.k)) ? [...allCells(w)].find((c) => c.o === named) : null;
+          if (cell) objs.push({ x: cell.x, y: cell.y, k: 'st_ref', a: { $id: named.$id, name: named.name } });
+          else if (named) reject(`Stein ${named.k.replace(/_[nesw]+$/, '')}`);
           else if (actor) reject('Akteur als Ziel');
           else if (!unknown) reject('Lua-Rückruf');
         } else if (!ACTIONS.has(act)) {
@@ -831,16 +863,21 @@ function convertLevel(pack, meta, xml, exp, lua) {
       else fixed.set(d.symbol, (fixed.get(d.symbol) ?? 0) + 1);
     }
     const unpaired = [...fixed.values()].filter((n) => n % 2).length;
-    if (unpaired > auto) reject('ungerade Zahl Oxyd-Steine');
+    // initColors leaves unpaired colours alone: a meditation level is won by its pearls anyway
+    if (unpaired > auto && !meditation) reject('ungerade Zahl Oxyd-Steine');
   }
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
-  const a = w.actors.find((x) => x.o.k === 'ac_marble_black') ?? w.actors.find((x) => /^ac_pearl/.test(x.o.k)) ?? w.actors.find((x) => x.o.k === 'ac_marble_white');
+  const a = w.actors.find((x) => x.o.k === 'ac_marble_black') ?? w.actors.find((x) => /^ac_pearl/.test(x.o.k)) ?? w.actors.find((x) => x.o.k === 'ac_marble_glass') ?? w.actors.find((x) => x.o.k === 'ac_marble_white');
   const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== '')) };
   if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
     const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
+    if (/^ac_marble_(white|black)$/.test(x.o.k) && x.o.owner === undefined) {
+      attrs.passive = 'true';
+      attrs.ownerless = 'true';
+    }
     actorImages(x.o.k, attrs.color).forEach((i) => usedImages.add(i));
     return { k: x.o.k, x: Math.round(x.x * 1000) / 1000, y: Math.round(x.y * 1000) / 1000, ...(Object.keys(attrs).length ? { a: attrs } : {}) };
   });

@@ -23,6 +23,11 @@ describe('parseLevel', () => {
     expect(() => parseLevel(base(['#####', '#@AA#', '#A..#', '#####']))).toThrow(LevelError);
   });
 
+  it('keeps an unpaired Oxyd colour in a meditation level (won by its pearls)', () => {
+    const l = parseLevel({ ...base(['#####', '#@.A#', '#...#', '#####']), actors: [{ k: 'ac_pearl', x: 2.5, y: 2.5 }], objects: [{ x: 3, y: 2, k: 'it_meditation_hollow' }] });
+    expect(l.signals.map((s) => s.symbol)).toEqual(['A']);
+  });
+
   it('rejects missing start and unknown characters', () => {
     expect(() => parseLevel(base(['####', '#AA#', '####']))).toThrow(/Startpunkt/);
     expect(() => parseLevel(base(['####', '#@?#', '#AA#', '####']))).toThrow(/unbekanntes Zeichen/);

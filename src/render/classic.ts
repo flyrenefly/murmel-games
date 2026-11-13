@@ -156,6 +156,7 @@ export function actorImages(kind: string, color?: string): string[] {
   if (kind === 'ac_horse') return ['ac_horse', 'sh_horse'];
   if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (kind === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
+  if (kind === 'ac_marble_glass') return ['ac_marble_glass', 'ac_marble_glass_fall', 'ac_marble_glass_jump'];
   if (/^ac_pearl(_white|_black)?$/.test(kind)) {
     const c = kind === 'ac_pearl_black' || color === '0' ? 'black' : 'white';
     return [`ac_pearl_${c}`, `ac_pearl_${c}_fall`, 'sh_pearl', 'sh_pearl_fall'];
@@ -212,6 +213,7 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_laser')) return ['st_laser', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_crack')) return ['it_crack_abyss', 'it_crack_water'];
   if (kind === 'fl_scales') return ['fl_scales'];
+  if (kind === 'fl_forward') return ['fl_forward'];
   if (kind === 'fl_bridge') return ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed'];
   if (kind.startsWith('st_mirror')) return ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser'];
   if (kind.startsWith('it_vortex')) return ['it_vortex'];
@@ -224,7 +226,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
   if (kind === 'st_monoflop' || kind.startsWith('st_laserflop')) return ['st_monoflop', 'sh_round'];
-  if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
+  if (kind === 'st_scissors') return ['st_scissors', 'sh_round', 'st_break_plain'];
+  if (kind === 'st_document' || kind === 'st_pebble') return [kind, 'sh_round', 'st_break_plain'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
   if (/^st_jamb/.test(kind)) return ['st_jamb_black', 'st_jamb_white', 'sh_jamb'];
@@ -574,6 +577,13 @@ export class ClassicView {
     }
     // fl_scales: overlay on the base floor, released 0 / pressed 1 (models-2d.lua)
     for (const o of world.objects) if (o.cls === 'scales' && !o.gone && visible(o)) this.frame('fl_scales', o.state, ox + o.col * T, oy + o.row * T);
+    // fl_forward: arrows over the base floor, sheet of 4 directions (n e s w) × 6 frames (110, 90 × 5 ms)
+    const fwd = img.fl_forward;
+    if (fwd) {
+      const t = this.now % 560;
+      const f = t < 110 ? 0 : 1 + Math.floor((t - 110) / 90);
+      for (const o of world.objects) if (o.cls === 'forward' && !o.gone && visible(o)) ctx.drawImage(fwd, (3 - (o.state & 3)) * T, f * T, T, T, ox + o.col * T, oy + o.row * T, T, T);
+    }
     // fl_bridge opening/closing animation over the floor
     for (const o of world.objects) {
       if (o.cls !== 'bridge' || o.gone || !visible(o)) continue;
@@ -581,7 +591,7 @@ export class ClassicView {
       if (look) this.frame(look.image, look.frame, ox + o.col * T, oy + o.row * T);
     }
     for (const o of world.objects) {
-      if (o.gone || o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'floorref' || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
+      if (o.gone || o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'floorref' || o.cls === 'forward' || o.cls === 'stoneref' || !visible(o)) continue; // picked up, sunk, removed by Lua, or no cell (ot_timer)
       const px = ox + o.col * T;
       const py = oy + o.row * T;
       if (o.cls === 'trigger' && o.attrs.invisible !== 'true') this.frame('it_trigger', o.state ? 1 : 0, px, py);
@@ -657,7 +667,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || o.cls === 'floorref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable' || o.cls === 'cross' || o.cls === 'squashed' || o.cls === 'bottle' || o.cls === 'pipe' || o.cls === 'surprise' || o.cls === 'trap') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || o.cls === 'floorref' || o.cls === 'forward' || o.cls === 'stoneref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable' || o.cls === 'cross' || o.cls === 'squashed' || o.cls === 'bottle' || o.cls === 'pipe' || o.cls === 'surprise' || o.cls === 'trap') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
@@ -912,10 +922,13 @@ export class ClassicView {
       else this.image('st_portal_horse', px, py);
       return;
     }
-    if (o.cls === 'scissors') {
-      // st_scissors: frame 0; snip: frame 1 for 130 ms
+    if (o.cls === 'scissors' || o.cls === 'rps') {
+      // st_scissors: frame 0; snip: frame 1 for 130 ms; st_document, st_pebble: one image.
+      // Breaking (pebble, paper, scissors): st_break_plain, 10 frames à 50 ms
       const age = o.pulse === undefined ? -1 : world.ageOf(o.pulse);
       if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.breaking !== undefined) this.frame('st_break_plain', Math.min(9, Math.floor(world.ageOf(o.breaking) / 50)), px, py);
+      else if (o.cls === 'rps') this.image(o.kind, px, py);
       else this.frame('st_scissors', age >= 0 && age < 130 ? 1 : 0, px, py);
       return;
     }
@@ -1183,7 +1196,7 @@ export class ClassicView {
   private drawMarble(ox: number, oy: number, m: { x: number; y: number; fall: number; color: number; sink: number; jump?: number }): void {
     const { ctx } = this;
     const img = this.img!;
-    const name = m.color === 1 && img.ac_marble_white ? 'ac_marble_white' : 'ac_marble_black';
+    const name = m.color === 1 && img.ac_marble_white ? 'ac_marble_white' : m.color === 2 && img.ac_marble_glass ? 'ac_marble_glass' : 'ac_marble_black';
     const cx = Math.round(ox + m.x * T);
     const cy = Math.round(oy + m.y * T);
     if (m.fall >= 0) {
