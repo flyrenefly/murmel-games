@@ -138,7 +138,8 @@ interface Body {
   readonly prev: { x: number; y: number };
   readonly vel: { x: number; y: number };
   readonly radius: number;
-  readonly mass: number;
+  /** Mass (marbles: + the it_weight items they carry). */
+  mass: number;
   normals: number[]; // contact normals of the last step (x, y pairs)
   touching: Set<number>;
   nowTouching: Set<number>;

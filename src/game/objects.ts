@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht' };
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
@@ -490,7 +490,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_death') return 'deathitem';
   if (/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/.test(kind)) return 'burnable';
   if (/^it_extinguisher(_full|_medium|_empty)?$/.test(kind)) return 'tool';
-  if (/^it_(coffee|coffee_drop|spade|brush|cherry|banana|pin|glasses|glasses_broken)$/.test(kind)) return 'tool';
+  if (/^it_(coffee|coffee_drop|spade|brush|cherry|banana|pin|glasses|glasses_broken|weight)$/.test(kind)) return 'tool';
   if (/^it_bottle(_idle|_broken)?$/.test(kind)) return 'bottle';
   if (kind === 'it_cross') return 'cross';
   if (kind === 'it_squashed') return 'squashed';
@@ -2992,7 +2992,8 @@ export class ObjectWorld {
     const stone = this.env.stoneAt(o.col, o.row) || this.at(o.col, o.row).some((x) => !x.gone && !isItem(x) && x.kind !== 'st_stoneimpulse_hollow');
     let mass = 0;
     this.marbles.forEach((m, i) => {
-      if (m.init && m.col === o.col && m.row === o.row) mass += this.isPearl(i) ? 0.7 : 1;
+      // ScalesFloor "_update_mass": the actor with the weights it carries (it_weight mass 10)
+      if (m.init && m.col === o.col && m.row === o.row) mass += (this.isPearl(i) ? 0.7 : 1) + 10 * (this.inventories[this.ownerOf(i)] ?? this.inventory).filter((k) => k === 'it_weight').length;
     });
     const on = stone || mass >= numAttr(o.attrs.min, 1.8) ? 1 : 0;
     if (o.scales === undefined) {

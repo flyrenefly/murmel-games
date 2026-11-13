@@ -618,6 +618,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_charge_plus / _minus / _zero** (`SimpleStones.cc` ChargeStone, `world.cc`): Anstoßen gibt der Kugel
   die Ladung des Steins (+1, −1, 0, oder Attribut `charge`). Geladene Akteure ziehen sich an oder stoßen
   sich ab: Kraft ElectricForce (15) · q1 · q2 / Abstand entlang ihrer Verbindungslinie.
+- **it_weight** (`SimpleItems.cc` Weight): jedes Gewicht im Inventar macht die Kugel 10 schwerer (träger, stärker
+  bei Stößen, schwerer auf Waagen); es lässt sich nicht ablegen (ITEM_KEEP).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

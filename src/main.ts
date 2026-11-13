@@ -685,6 +685,8 @@ function frame(now: number): void {
         m.shielded = (shield[i] ?? 0) > 0;
         m.invisible = (invis[i] ?? 0) > 0;
         m.drunk = (drunk[i] ?? 0) > 0;
+        // Actor "_update_mass": the inventory's weights (it_weight, mass 10) add to the marble
+        m.mass = (m.pearl ? 0.7 : 1) + 10 * (objects.inventories[ownerOf(i)] ?? objects.inventory).filter((k) => k === 'it_weight').length;
         m.spikes = (objects.inventories[ownerOf(i)] ?? objects.inventory).includes('it_pin'); // Actor "_update_pin"
       });
     }
@@ -869,6 +871,8 @@ function dropItem(): boolean {
     }
     return true;
   }
+  // Weight::activate: ITEM_KEEP – it cannot be dropped
+  if (first === 'it_weight') return true;
   // Bottle::activate: "_booze" – drunk for 5 s more, then the bottle is dropped (ITEM_DROP)
   if (first === 'it_bottle_idle' || first === 'it_bottle') {
     drunk[i] = (drunk[i] ?? 0) + 5;

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-878 von 1322 Levels übernommen (18 Pakete).
+883 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -27,8 +27,7 @@
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
-| Gegenstand it_trap | 14 | 1 |
-| Gegenstand it_weight | 14 | 5 |
+| Gegenstand it_trap | 14 | 2 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
 | Gegenstand it_pencil | 10 | 2 |
@@ -41,7 +40,7 @@
 | Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
-| Gegenstand it_surprise | 7 | 3 |
+| Gegenstand it_surprise | 7 | 4 |
 | Wurmloch ohne Ziel | 7 | 1 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -92,7 +91,7 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_yinyang | 2 | 0 |
 | Lua: :peepall | 2 | 1 |
-| Lua: it_pencil | 2 | 0 |
+| Lua: it_pencil | 2 | 1 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |

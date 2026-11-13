@@ -191,7 +191,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return [kind];
   if (kind === 'it_death') return ['it_death'];
   if (/^it_(coffee|coffee_drop)$/.test(kind)) return ['it_coffee'];
-  if (/^it_(spade|brush|cherry|banana|cross|squashed|pin)$/.test(kind)) return [kind, 'it_squashed'];
+  if (/^it_(spade|brush|cherry|banana|cross|squashed|pin|weight)$/.test(kind)) return [kind, 'it_squashed'];
   if (/^it_glasses/.test(kind)) return ['it_glasses', 'it_glasses_broken', 'st_death'];
   if (/^it_bottle/.test(kind)) return ['it_bottle_idle', 'it_bottle_broken'];
   if (kind.startsWith('it_burnable') || kind.startsWith('it_extinguisher')) return FIRE_IMAGES;
