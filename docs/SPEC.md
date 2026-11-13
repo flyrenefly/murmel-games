@@ -630,6 +630,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   er; im Sprung fällt er herunter.
 - **it_trap** (`TrapItem.cc`): unsichtbare Falle; eine Kugel auf dem Boden fällt hinein, die Falle öffnet sich
   (8 Bilder) und bleibt sichtbar. **fl_adhesionless**: Boden ohne Haftung (die Maus wirkt nicht).
+- **st_death_movable** (`DeathStone.cc`): Todesstein, den Stöße anderer Steine (Impulse) verschieben.
+  Abweichung: Kugeln mit Schutzschild schieben ihn noch nicht.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

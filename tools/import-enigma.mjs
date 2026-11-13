@@ -73,7 +73,7 @@ const OBJECTS = [
   [/^st_grate(_cross|_framed)?$/, ['st_grate_cross', 'sh_grate_cross', 'st_grate_framed', 'sh_grate_framed']],
   [/^st_timer$/, ['st_timer', 'sh_round']],
   [/^st_(fake_)?quake$/, ['st_quake', 'st_oxydb', 'sh_round']],
-  [/^st_death(_invisible)?$/, ['st_death', 'sh_round']],
+  [/^st_death(_invisible|_movable)?$/, ['st_death', 'sh_round']],
   [/^it_wormhole(_on|_off)?$/, ['it_wormhole']],
   [/^it_seed(_wood)?$/, ['it_seed', 'st_box_wood', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed']],
   [/^it_seed_hay$/, ['it_seed', 'st_box_hay', 'sh_round', 'fl_hay']],

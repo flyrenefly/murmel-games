@@ -586,7 +586,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_spring(_keep|_drop)?$/.test(kind)) return 'spring';
   // A named Oxyd stone as message target; the stone itself is part of the level map.
   if (kind === 'st_oxyd_ref') return 'oxydref';
-  if (kind === 'st_death' || kind === 'st_death_invisible') return 'death';
+  if (kind === 'st_death' || kind === 'st_death_invisible' || kind === 'st_death_movable') return 'death';
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
   if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
@@ -1304,7 +1304,7 @@ export class ObjectWorld {
         if (o.kind === 'st_stoneimpulse_movable') this.push(o, dx, dy);
         this.startImpulse(o, d);
       }
-      else if (o.cls === 'box') this.push(o, dx, dy);
+      else if (o.cls === 'box' || (o.cls === 'death' && (o.kind === 'st_death_movable' || truthy(o.attrs.movable)))) this.push(o, dx, dy); // DeathStone MOVABLE: moved by impulses
       else if (o.cls === 'swap') this.swapStone(o, dx, dy);
       else if (o.cls === 'pull') this.swapStone(o, -dx, -dy, true);
       else if (o.cls === 'turnstilearm') this.armImpulse(o, d, -1);

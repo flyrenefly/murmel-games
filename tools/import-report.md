@@ -1,6 +1,6 @@
 # Enigma-Import
 
-900 von 1322 Levels übernommen (18 Pakete).
+903 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -47,7 +47,6 @@
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_death_movable | 5 | 3 |
 | Stein st_jamb_black | 5 | 2 |
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
