@@ -543,6 +543,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
   Hauptkugel (Spieler 2, sein Inventar).
+- **st_stoneimpulse_steady**: pulsiert immer wieder, solange Laserlicht darauf fällt. **it_explosion(_nil/…)** als
+  Gegenstände im Level oder per Skript. Wurmlöcher ohne Ziel werden nur abgelehnt, wenn ein Skript eines setzt.
 - **st_flat_breakable / _cracked / _burnable / _breaking, st_plaster_breakable / _movable** (`FlatStone.cc`,
   `PlasterStone.cc`): als Bruchsteine mit der st_flat_break-Animation (6 × 50 ms). Hammer bricht
   breakable und cracked; Laser bricht breakable; Explosion/Zünden bricht breakable und cracked; Feuer

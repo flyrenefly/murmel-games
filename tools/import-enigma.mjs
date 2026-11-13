@@ -80,7 +80,7 @@ const OBJECTS = [
   [/^it_seed_greenbrown$/, ['it_seed', 'st_greenbrown', 'sh_round']],
   [/^(it_seed_volcano|st_volcano(_idle|_active|_new|_growing)?)$/, ['it_seed', 'st_volcano_growing', 'st_quake', 'st_quake_break', 'st_flat', 'sh_round', 'sh_solid']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
-  [/^st_stoneimpulse(_hollow|_movable)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
+  [/^st_stoneimpulse(_hollow|_movable|_steady)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
   [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
@@ -601,7 +601,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (t) dest = [t.x + 0.5, t.y + 0.5];
     }
     // WormHole::actor_hit without a destination: it only attracts (unless a script sets one later)
-    if (!dest && (src.destination || /destination/.test(lua?.code ?? ''))) reject('Wurmloch ohne Ziel');
+    if (!dest && (src.destination || /it_wormhole[^}\n]*destination|\.destination\s*=|\[\s*"destination"\s*\]\s*=/.test(lua?.code ?? ''))) reject('Wurmloch ohne Ziel');
     else if (dest) o.a.dest = `${dest[0]},${dest[1]}`;
   }
   // Cracks: wo["Fragility"]/["CrackSpreading"] of the level script as their defaults

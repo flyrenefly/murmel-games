@@ -1,6 +1,6 @@
 # Enigma-Import
 
-954 von 1322 Levels übernommen (18 Pakete).
+957 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -42,7 +42,6 @@
 | Lua: st_oxyd_d | 5 | 1 |
 | Pferd mit Aktion oder Steuerung | 4 | 2 |
 | Lua: :setfire | 4 | 1 |
-| Wurmloch ohne Ziel | 4 | 2 |
 | Lua: lib.math | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
@@ -121,13 +120,13 @@
 | Lua: send_message_named() | 1 | 0 |
 | Lua: floor() | 1 | 0 |
 | Lua: oxyd_shuffle() | 1 | 0 |
+| Wurmloch ohne Ziel | 1 | 0 |
 | Lua: res.composer | 1 | 0 |
 | Lua: mymaze() | 1 | 0 |
 | Lua: lib.maze | 1 | 0 |
 | Lua: SetDefaultAttribs() | 1 | 0 |
 | Lizenz: special | 1 | 1 |
 | Lua: gsub() | 1 | 0 |
-| Stein st_stoneimpulse_steady | 1 | 0 |
 | Lua: lib.lua | 1 | 0 |
 | Lua: st_puzzle_yellow_es | 1 | 0 |
 | Lua: st_puzzle_yellow_sw | 1 | 0 |

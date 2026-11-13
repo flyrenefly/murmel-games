@@ -606,7 +606,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_oneway(_black|_white)?(_[nesw])?$/.test(kind)) return 'oneway';
   if (/^st_puzzle(_blue|_yellow)?$/.test(kind)) return 'puzzle';
   if (/^it_wormhole(_on|_off)?$/.test(kind)) return 'wormhole';
-  if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow' || kind === 'st_stoneimpulse_movable') return 'impulse';
+  if (kind === 'st_stoneimpulse' || kind === 'st_stoneimpulse_hollow' || kind === 'st_stoneimpulse_movable' || kind === 'st_stoneimpulse_steady') return 'impulse';
   return null;
 }
 
@@ -3966,6 +3966,8 @@ export class ObjectWorld {
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
       if (o.cls === 'volcano' && !o.gone) this.volcanoStep(o);
+      // StoneImpulse steady: pulses again and again while laser light falls on it
+      if (o.cls === 'impulse' && !o.gone && !o.impulse && (o.kind === 'st_stoneimpulse_steady' || truthy(o.attrs.steady ?? 'false')) && this.lit.has(o.row * this.width + o.col)) this.startImpulse(o, -1);
       if (o.cls === 'spitter' && !o.gone) this.spitterStep(o);
       if (o.cls === 'yystone' && !o.gone && o.state === 1) {
         o.pulse ??= this.now;

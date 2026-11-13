@@ -694,7 +694,7 @@ export class ClassicView {
           const im = this.img!.sh_stoneimpulse_hollow;
           if (im) this.ctx.drawImage(im, 0, f * 41, 41, 41, px, py, 41, 41);
         } else this.image('sh_round', px, py);
-      } else this.frame(hollow ? 'st_stoneimpulse_hollow' : 'st_stoneimpulse', f, px, py);
+      } else this.frame(hollow ? 'st_stoneimpulse_hollow' : 'st_stoneimpulse', f === 0 && o.kind === 'st_stoneimpulse_steady' ? 5 : f, px, py); // steady: images[6]
       return;
     }
     if (o.cls === 'puzzle') {
