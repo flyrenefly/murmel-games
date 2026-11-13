@@ -137,9 +137,11 @@
         verwendet keine Tracking-Werkzeuge fremder Anbieter und keine Werbung, lädt keine Inhalte von fremden
         Servern (keine externen Schriften, Skripte oder Videos) und verlangt keine Anmeldung; ein Konto ist
         freiwillig. Personenbezogene Daten fallen beim Abruf der Seite durch den Webserver, kurzzeitig für
-        unsere eigene, anonyme Spielstatistik und beim Spielen zu zweit, und, wenn Sie eines anlegen, für Ihr
+        unsere eigene, anonyme Spielstatistik und beim Spielen zu zweit, wenn Sie die Erinnerung an das Tageslevel
+        einschalten (Web Push, über den Push-Dienst Ihres Browserherstellers), und, wenn Sie eines anlegen, für Ihr
         Konto, Ihre Forumsbeiträge, Ihre Einträge in den Bestenlisten, Ihre veröffentlichten Levels und, wenn Sie
-        angemeldet spielen, Ihren Spielfortschritt an (siehe unten).
+        angemeldet spielen, Ihren Spielfortschritt an (siehe unten). Nur wenn Sie die Erinnerung einschalten, wird
+        der Push-Dienst Ihres Browserherstellers tätig.
       </p>
 
       <h2>Hosting und Server-Protokolle</h2>
@@ -435,6 +437,48 @@
         sowie Art. 6 Abs. 1 lit. f DSGVO für die Begrenzungen zum Schutz vor Missbrauch.
       </p>
 
+      <h2>Erinnerung an das Tageslevel (Web Push)</h2>
+      <p>
+        Auf Wunsch schickt Murmel Ihnen eine Mitteilung, sobald um Mitternacht ein neues Tageslevel bereitsteht,
+        und, wenn Sie das wählen, montags für die neue Wochenaufgabe. Die Erinnerung ist freiwillig, braucht kein
+        Konto und gilt nur für den Browser, in dem Sie sie einschalten. Ihr Browser fragt erst nach Ihrer
+        Erlaubnis, wenn Sie die Erinnerung selbst einschalten.
+      </p>
+      <p>
+        Beim Einschalten erzeugt Ihr Browser ein Abonnement bei seinem Push-Dienst. Davon speichern wir auf unserem
+        Server in Deutschland nur, was für den Versand nötig ist: die Zustelladresse beim Push-Dienst (eine lange,
+        zufällige Adresse), zwei Schlüssel, mit denen wir die Mitteilung verschlüsseln, Ihre Auswahl (Tageslevel,
+        Wochenaufgabe) und den Zeitpunkt des Einschaltens. Wir speichern dazu weder Ihre IP-Adresse noch ein Konto
+        oder Gerätemerkmale. Zum Schutz vor Missbrauch begrenzen wir die Zahl der Änderungen je IP-Adresse; dafür
+        wird die IP-Adresse höchstens eine Stunde im Arbeitsspeicher gehalten und nicht gespeichert. Beim Öffnen
+        des Spiels gleicht Ihr Browser das Abonnement mit unserem Server ab, falls er es erneuert hat.
+      </p>
+      <p>
+        Die Mitteilung selbst stellt nicht unser Server zu, sondern der Push-Dienst des Herstellers Ihres Browsers:
+        bei Chrome, Edge (Android), Opera und anderen Chromium-Browsern Google Firebase Cloud Messaging (Google
+        Ireland Limited bzw. Google LLC, USA), bei Firefox der Mozilla-Push-Dienst (Mozilla Corporation, USA), bei
+        Safari auf Mac, iPhone und iPad der Apple Push Notification Service (Apple Inc., USA) und bei Edge unter
+        Windows der Windows-Push-Dienst (Microsoft Corporation, USA). Welcher Dienst das ist, bestimmt Ihr Browser,
+        nicht wir. Der Inhalt der Mitteilung (z. B. „Neues Tageslevel: Brücken“) ist Ende-zu-Ende verschlüsselt;
+        der Push-Dienst sieht ihn nicht. Er erfährt aber, dass und wann unser Server Ihrem Browser eine Mitteilung
+        schickt, und verarbeitet dafür die Daten Ihres Abonnements; dabei kann es zu einer Übermittlung in die USA
+        kommen. Für die Übermittlung an diese Anbieter stützen sich diese nach unserem Kenntnisstand auf das
+        EU-US Data Privacy Framework bzw. Standardvertragsklauseln. Näheres regeln die Datenschutzbestimmungen des
+        jeweiligen Browserherstellers.
+      </p>
+      <p>
+        Sie können die Erinnerung jederzeit in der Liste „Levelpakete“ unter „Erinnerung“ ausschalten. Dann löschen
+        wir Ihr Abonnement sofort. Entziehen Sie die Erlaubnis stattdessen in den Einstellungen Ihres Browsers oder
+        löschen Sie die Website-Daten, meldet der Push-Dienst das Abonnement als erloschen, und wir löschen es beim
+        nächsten Versand automatisch.
+      </p>
+      <p>
+        Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO; für den Zugriff auf Ihr Gerät
+        § 25 Abs. 1 TDDDG), die Sie durch das Einschalten und die Erlaubnis im Browser erteilen und jederzeit mit
+        Wirkung für die Zukunft widerrufen können, indem Sie die Erinnerung ausschalten. Für die Begrenzungen zum
+        Schutz vor Missbrauch: Art. 6 Abs. 1 lit. f DSGVO.
+      </p>
+
       <h2>Speicherung im Browser</h2>
       <p>
         Das Spiel speichert Einstellungen und Spielfortschritt (gewählter Grafikstil, Mausgeschwindigkeit,
@@ -443,7 +487,8 @@
         mit <code>murmel.</code>). Damit das Spiel auch ohne Internetverbindung funktioniert, legt der Browser
         außerdem Programmdateien, Grafiken, Klänge und die geöffneten Levelpakete in seinem Cache-Speicher ab
         (Service Worker). Außerdem speichert das Spiel je Level die Aufzeichnung Ihres besten Laufs, damit Sie
-        gegen sich selbst als Geist spielen können (IndexedDB, Datenbank <code>murmel-geister</code>). Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
+        gegen sich selbst als Geist spielen können (IndexedDB, Datenbank <code>murmel-geister</code>). Ob Sie die Erinnerung eingeschaltet haben, merkt sich das Spiel ebenfalls im lokalen Speicher
+        (<code>murmel.erinnerung</code>); das Abonnement selbst verwaltet Ihr Browser. Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
         Spielfortschritt mit Ihrem Konto abgeglichen (siehe „Fortschritt auf allen Geräten“). Mit
         „Fortschritt → Sichern“ können Sie Ihren Fortschritt als Datei auf Ihr Gerät herunterladen; auch diese
         Datei wird nicht an uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion

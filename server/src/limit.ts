@@ -12,6 +12,16 @@ export class RateLimit {
     this.windowMs = windowMs;
   }
 
+  /** Drops every window that has ended (and with it the key, e.g. an IP address). */
+  prune(now: number): void {
+    for (const [k, v] of this.hits) if (now - v.start >= this.windowMs) this.hits.delete(k);
+  }
+
+  /** Number of keys held (tests). */
+  get size(): number {
+    return this.hits.size;
+  }
+
   /** Counts one request; false when the key already used up its window. */
   take(key: string, now: number): boolean {
     if (this.hits.size > 10_000) {

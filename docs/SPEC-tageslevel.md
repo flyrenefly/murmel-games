@@ -68,7 +68,7 @@ Ohne Spielcode (`GAME_DIR`) antwortet `GET` mit 503; das Spiel zeigt dann keine 
 | T1 | `server/src/tageslevel.ts`: Zeiträume, Auswahl (rein, getestet), Routen; Migration `011_tageslevel.sql`; Stores DB und Speicher; Levelkatalog aus dem Prüfprozess | `node --test`, DB-Teil in der CI |
 | T2 | Spiel: `src/tageslevel.ts`, Zeilen in der Levelliste, Startwert, Siegzeile | vitest, Edge headless mit nachgebildeter API |
 | T3 | Datenschutz: Satz im Abschnitt „Bestenlisten“ – **erst nach Freigabe** | – |
-| T4 (später) | Erinnerung per Web Push – eigene Entscheidung und Datenschutz | – |
+| T4 | Erinnerung per Web Push: eigene Spec `docs/SPEC-webpush.md` | siehe dort |
 
 ## Grenzen
 

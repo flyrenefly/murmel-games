@@ -66,3 +66,41 @@ self.addEventListener('fetch', (event) => {
   }
   event.respondWith(caches.match(req, { ignoreSearch: true, ignoreVary: true }).then((hit) => hit ?? fetch(req)));
 });
+
+// Erinnerung an das Tageslevel (docs/SPEC-webpush.md): the server sends { titel, text, url } at
+// Berlin midnight. A newer reminder replaces an older one (same tag).
+self.addEventListener('push', (event) => {
+  let d = {};
+  try {
+    d = event.data ? event.data.json() : {};
+  } catch {
+    /* not JSON: the default text */
+  }
+  const ziel = new URL(typeof d.url === 'string' ? d.url : './#tageslevel', self.registration.scope);
+  event.waitUntil(
+    self.registration.showNotification(typeof d.titel === 'string' ? d.titel : 'Murmel', {
+      body: typeof d.text === 'string' ? d.text : 'Neues Tageslevel',
+      tag: 'murmel-tageslevel',
+      lang: 'de',
+      data: { url: ziel.origin === self.location.origin ? ziel.href : url('./#tageslevel') },
+    }),
+  );
+});
+
+// A click opens today's level: in a window of the game if one is open, otherwise in a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const ziel = event.notification.data?.url ?? url('./#tageslevel');
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
+      const start = new URL(url('./')).pathname;
+      const spiel = list.find((c) => [start, `${start}index.html`].includes(new URL(c.url).pathname));
+      if (spiel) {
+        await spiel.focus();
+        spiel.postMessage({ murmel: 'tageslevel' });
+        return;
+      }
+      await self.clients.openWindow(ziel);
+    }),
+  );
+});
