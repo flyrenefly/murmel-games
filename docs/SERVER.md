@@ -144,6 +144,30 @@ fließen in die Todo-Liste ein. Gebaut wird der Baustein direkt nach `konten` (N
 - **Sicherheit:** Eingaben prüfen, Begrenzung der Anfragen je IP/Konto, Upload-Größen begrenzen,
   keine Geheimnisse im Repo (GitHub-Secrets).
 
+### 8.0 Spielerstatistik (`statistik`, Nutzerentscheidung 13.11.2026: eigene Zähler)
+
+- **Was gezählt wird:** je Tag (Berliner Kalendertag) eindeutige Spieler, Levelstarts und gelöste
+  Levels, dazu Starts/Gelöst je Level. Ein „Spieler“ ist, wer an dem Tag mindestens ein Level startet.
+- **Spiel:** `src/stats.ts` schickt beim ersten Start eines Laufs und beim Lösen `{type, level}` per
+  `navigator.sendBeacon` an `POST /api/event`. Kein Cookie, keine gespeicherte Kennung. Still bei
+  `localhost`, bei „Do Not Track“ und „Global Privacy Control“; offline und auf dem IONOS-Webspace
+  läuft die Meldung ins Leere (404), das Spiel merkt davon nichts.
+- **Server:** `server/src/app.ts` (Endpunkte), `server/src/db.ts`, Tabellen in
+  `server/migrations/002_statistik.sql`. Eindeutige Spieler über einen Prüfwert (HMAC-SHA256 aus IP
+  und Browserkennung mit einem Tagesschlüssel, 16 Byte). Mit dem ersten Ereignis eines neuen Tages
+  werden die Schlüssel und Prüfwerte der Vortage gelöscht; danach gibt es nur noch Zahlen.
+  Die IP-Adresse wird nicht gespeichert. Hinter Caddy gilt genau ein Proxy-Schritt als
+  vertrauenswürdig (`req.ip` = von Caddy gesehene Adresse).
+- **Ansehen:** `https://murmel.games/statistik.html` (noindex, nicht im Offline-Speicher) fragt
+  `GET /api/statistik?tage=N` mit `Authorization: Bearer <STATS_TOKEN>`. Ohne `STATS_TOKEN` in
+  `/opt/murmel/.env` bleibt die Statistik geschlossen (401). Das Token legt der Nutzer fest
+  (z. B. `openssl rand -hex 24`); es steht nie im Repo.
+- **Grenzen:** Mehrere Personen hinter derselben IP mit gleichem Browser zählen als einer; ein
+  Browserwechsel am selben Tag als zwei. Gezählt wird erst, wenn `murmel.games` auf den Server zeigt.
+- **Datenschutzerklärung:** Absatz zur Statistik vor dem ersten Zählen ergänzen (Nutzerfreigabe).
+- **Tests:** `server/src/app.test.ts` (Endpunkte, Prüfwert, Token), `server/src/db.test.ts` gegen
+  echtes PostgreSQL (in der CI als Dienst, lokal übersprungen), `src/stats.test.ts`.
+
 ### 8.1 Erstausstattung und Ausbau
 
 | | Start | Begründung |

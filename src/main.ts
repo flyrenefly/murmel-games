@@ -16,6 +16,7 @@ import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 import { kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { reportEvent } from './stats';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -207,7 +208,10 @@ function startPlaying(): void {
   sfx.unlock();
   overlay.hidden = true;
   mode = 'play';
-  if (startTime === 0) startTime = performance.now();
+  if (startTime === 0) {
+    startTime = performance.now();
+    reportEvent('start', level.id); // anonymous statistics: once per run
+  }
   input.requestLock();
 }
 
@@ -480,6 +484,7 @@ function onWin(): void {
   const s = session;
   mode = 'won';
   solved.add(level.id);
+  reportEvent('solve', level.id);
   store.set('solved', [...solved]);
   const prevBest = progress.levels[level.id]?.best;
   progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());

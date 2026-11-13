@@ -49,7 +49,8 @@ function offline(): Plugin {
       outDir = resolve(c.root, c.build.outDir);
     },
     closeBundle() {
-      const skip = /^(\.htaccess|sw\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      // statistik.html is an internal page that needs the server anyway: not precached
+      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
@@ -77,6 +78,7 @@ export default defineConfig({
       input: { main: resolve(__dirname, 'index.html'), ueber: resolve(__dirname, 'ueber.html'),
         impressum: resolve(__dirname, 'impressum.html'),
         datenschutz: resolve(__dirname, 'datenschutz.html'),
+        statistik: resolve(__dirname, 'statistik.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

@@ -35,6 +35,8 @@ services:
       MAIL_FROM: ${MAIL_FROM:-}
       DATABASE_URL: postgres://murmel:${POSTGRES_PASSWORD}@db:5432/murmel
       MURMEL_VERSION: ${MURMEL_VERSION}
+      # Lesezugang zur Statistik (/statistik.html); leer = Statistik geschlossen
+      STATS_TOKEN: ${STATS_TOKEN:-}
     depends_on:
       db:
         condition: service_healthy

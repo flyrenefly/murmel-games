@@ -81,7 +81,8 @@ for (const backend of backends) {
     const app = (opts: { mail?: boolean; admins?: string[] } = {}): FastifyInstance =>
       buildApp({
         version: 't',
-        db: { ping: async () => {} },
+        db: { ping: async () => {}, recordEvent: async () => {}, statistics: async () => ({ days: [], levels: [] }) },
+        statsToken: 'geheim',
         accounts: { store, mailer: opts.mail === false ? null : mailer, origin: ORIGIN, adminEmails: opts.admins ?? [], now: () => clock },
       });
 
@@ -205,6 +206,12 @@ for (const backend of backends) {
       const ok = await view(chef);
       assert.equal(ok.statusCode, 200);
       assert.deepEqual(ok.json(), { accounts: 2, admins: 1, passkeys: 0 });
+
+      // Statistics: admins without STATS_TOKEN, players not
+      const stats = (cookie?: string) => a.inject({ method: 'GET', url: '/api/statistik', headers: cookie ? { cookie: `${COOKIE}=${cookie}` } : {} });
+      assert.equal((await stats()).statusCode, 401);
+      assert.equal((await stats(spieler)).statusCode, 401);
+      assert.deepEqual((await stats(chef)).json(), { days: [], levels: [] });
 
       // Removed from ADMIN_EMAILS: the next sign-in takes the role away.
       const later = app({ admins: [] });

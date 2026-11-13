@@ -19,7 +19,7 @@ const accounts = {
   origin: process.env.PUBLIC_ORIGIN || 'https://murmel.games',
   adminEmails: parseAdminEmails(process.env.ADMIN_EMAILS),
 };
-const app = buildApp({ version, db: database(sql), accounts, logger: true });
+const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, logger: true });
 if (!accounts.mailer) app.log.warn('SMTP not configured: sign-in by mail link is off');
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
 
