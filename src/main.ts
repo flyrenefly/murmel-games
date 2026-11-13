@@ -10,6 +10,7 @@ import { applyWorld, makeLuaHost } from './game/luahost';
 import { LEVELS } from './levels';
 import type { LuaHost, LuaLevel } from './lua/runtime';
 import { listPacks, packLevels, packTitle } from './packs';
+import { createRng, randomSeed } from './game/rng';
 import { type ActorSprite, CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
@@ -109,6 +110,9 @@ let luaHost: LuaHost | null = null;
 /** wo["GlobalForce"] of the current level. */
 let globalForce = { x: 0, y: 0 };
 let objects: ObjectWorld = new ObjectWorld([], 1);
+/** Start value and random sequence of the current run. */
+let runSeed = 0;
+let rng: () => number = Math.random;
 let acc = 0;
 let falls = 0;
 /** Per marble: seconds into the fall animation, -1 = not falling. */
@@ -133,7 +137,7 @@ function buildRenderer(): void {
   } else view.build(level, style as ThemeId, board.states);
 }
 
-async function loadLevel(pack: string, i: number): Promise<void> {
+async function loadLevel(pack: string, i: number, seed?: number): Promise<void> {
   try {
     packList = await packLevels(pack);
     packName = await packTitle(pack);
@@ -147,7 +151,10 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   levelIndex = i;
   store.set('pack', pack);
   store.set('level', i);
-  level = parseLevel(packList[i]);
+  // one random sequence per run (docs/SPEC-aufzeichnung.md): every random choice of the level uses it
+  runSeed = seed ?? randomSeed();
+  rng = createRng(runSeed);
+  level = parseLevel(packList[i], rng);
   board = new PairBoard(level.signals.map((s) => s.symbol));
   physics?.dispose();
   const lv = level;
@@ -182,9 +189,10 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       physics?.setSolid(c, r, kind !== null && !hollow);
       classic.floorChanged();
     },
-  }, Math.random, lv.compat);
+  }, rng, lv.compat);
   if (lv.world.FallenPuzzle) objects.fallenPuzzle = lv.world.FallenPuzzle;
   physics = new PhysicsWorld(level, objects);
+  physics.random = rng;
   // the player of the main ball (a single white marble belongs to player 2)
   objects.player = ownerOf(physics.current);
   // wo["GlobalForce"] (server::ConstantForce) acts on every actor, like the item forces.
@@ -243,10 +251,10 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     const shuffleOxyd = (): void => {
       if (level !== lv) return;
       colorSignals();
-      board.shuffle();
+      board.shuffle(rng);
       lv.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
     };
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random, addOxyd, shuffleOxyd }, world, force);
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: rng, addOxyd, shuffleOxyd }, world, force);
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? []);
     if (level !== lv) return; // another level was loaded meanwhile
     lua = l;
@@ -529,7 +537,7 @@ function onContact(c: Contact): void {
 
 /** OxydStone::initColors: stones made by Lua get their colours with wo:shuffleOxyd or their first hit. */
 function colorSignals(): void {
-  if (colorNewSignals(level, Math.random)) level.signals.forEach((s) => board.setSymbol(s.index, s.symbol));
+  if (colorNewSignals(level, rng)) level.signals.forEach((s) => board.setSymbol(s.index, s.symbol));
 }
 
 function hitSignal(index: number): void {
@@ -685,7 +693,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
       else if (e.msg === 'closeall') handlePairEvents(board.closeAll());
       else if (e.msg === 'peepall') classic.peepAll(level.signals.filter((x) => x.symbol !== '-').map((x) => x.index));
       else if (e.msg === 'shuffle') {
-        board.shuffle();
+        board.shuffle(rng);
         level.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
       }
     } else if (e.type === 'oxyd') {
@@ -1184,15 +1192,16 @@ requestAnimationFrame((t) => {
 
 // Expose a tiny hook for automated browser tests.
 (window as unknown as { murmel: unknown }).murmel = {
-  state: () => ({ mode, level: level.id, rubbers: physics?.rubbers.length ?? 0, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
+  state: () => ({ mode, level: level.id, seed: runSeed, rubbers: physics?.rubbers.length ?? 0, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
   swap: swapMarble,
   drop: dropItem,
   /** Test helper: hold or release the drop button (player::InhibitPickup). */
   hold: (on: boolean) => (objects.inhibitPickup = on),
   luaError: () => lua?.lastError ?? null,
   /** Test hook: load a level of a pack and start playing. */
-  load: async (pack: string, i: number) => {
-    await loadLevel(pack, i);
+  /** Test helper: start a level; with a seed the run uses that random sequence. */
+  load: async (pack: string, i: number, seed?: number) => {
+    await loadLevel(pack, i, seed);
     startPlaying();
   },
   /** Test helper: call a Lua function of the level like a callback. */
