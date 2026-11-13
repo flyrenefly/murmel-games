@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone' | 'jamb';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone' | 'jamb' | 'floorref';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -560,6 +560,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_surprise') return 'surprise';
   if (kind === 'st_surprise') return 'stsurprise';
   if (kind === 'st_spitter') return 'spitter';
+  if (kind === 'fl_ref') return 'floorref';
   if (/^st_jamb(_black|_white)?$/.test(kind)) return 'jamb';
   if (/^st_yinyang(_instant|_active|_inactive)?$/.test(kind)) return 'yystone';
   if (kind === 'it_trap') return 'trap';
@@ -713,7 +714,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -721,7 +722,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief') return;
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -4207,6 +4208,32 @@ export class ObjectWorld {
 
   private message(o: GameObject, msg: string, value: boolean, num?: number): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
+    // "kill": the object is gone
+    if (msg === 'kill') {
+      this.remove(o);
+      return;
+    }
+    if (o.cls === 'floorref') {
+      // Floor messages: fire (setfire, forcefire, stopfire, heat, ignite); a FloodStream floor starts flooding
+      const f: FireFlags = { message: true, first: false, last: false };
+      const c = o.col;
+      const r = o.row;
+      if (msg === 'forcefire') this.forceFire(c, r);
+      else if (msg === 'setfire') this.tryIgnite(c, r, -1, f);
+      else if (msg === 'ignite') this.floorIgnite(c, r);
+      else if (msg === 'heat') this.tryHeating(c, r, -1, f);
+      else if (msg === 'stopfire') {
+        const it = this.itemAt(c, r);
+        if (it?.cls === 'burnable' && (burnState(it) === 'ignited' || burnState(it) === 'burning')) {
+          // Floor::stop_fire(message): no transformation, ash unless noash
+          this.remove(it);
+          if (!this.fireType(c, r, 'noash')) this.add('it_burnable_ash', 'burnable', c, r);
+        }
+      } else if ((msg === 'toggle' || msg === 'on' || (msg === 'signal' && value)) && (this.env.floorAt(c, r) === 'fl_water' || /^fl_(wood|hay|rock)_framed/.test(this.env.floorAt(c, r)))) {
+        this.startFlood(c, r, this.floodInterval(c, r));
+      }
+      return;
+    }
     // "ignite": burnable items set their floor on fire, dynamite and bombs burn, cracks crack
     if (msg === 'ignite' && (o.cls === 'burnable' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'crack')) {
       if (o.cls === 'burnable') this.floorIgnite(o.col, o.row);

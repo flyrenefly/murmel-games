@@ -1,11 +1,11 @@
 # Enigma-Import
 
-931 von 1322 Levels übernommen (18 Pakete).
+935 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 8 |
-| Lua-Rückruf | 114 | 6 |
+| Lua-Rückruf | 113 | 5 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
@@ -111,15 +111,13 @@
 | Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
 | Lua: ferry_movement() | 1 | 0 |
-| Aktion kill | 1 | 0 |
-| Lua: st_lightglass_hollow | 1 | 0 |
+| Lua: st_lightglass_hollow | 1 | 1 |
 | Lua: fakeoxyd() | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
 | Lua: fl_fake_trigger | 1 | 0 |
 | Lua: wo["ElectricStrength"] | 1 | 1 |
 | Lua: hammer() | 1 | 0 |
-| Stein fl_hay | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
 | Lua: create_world() | 1 | 0 |
 | Lua: strchar() | 1 | 0 |
@@ -128,7 +126,6 @@
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 1 |
 | Lua: draw_items() | 1 | 0 |
-| Stein fl_concrete | 1 | 1 |
 | Lua: send_message_named() | 1 | 0 |
 | Lua: floor() | 1 | 0 |
 | Lua: oxyd_shuffle() | 1 | 0 |
@@ -148,7 +145,6 @@
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
-| Stein fl_water | 1 | 1 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 1 |
 | Überraschung mit =w | 1 | 1 |
@@ -169,4 +165,3 @@
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
 | Lua: wo["ConserveLevel"] | 1 | 1 |
-| Stein fl_tigris | 1 | 1 |

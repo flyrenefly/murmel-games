@@ -114,6 +114,7 @@ const OBJECTS = [
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
   [/^it_trap$/, ['it_trap']],
+  [/^fl_ref$/, []],
   [/^st_jamb(_black|_white)?$/, ['st_jamb_black', 'st_jamb_white', 'sh_jamb']],
   [/^st_yinyang(_instant|_active|_inactive)?$/, ['st_yinyang', 'st_yinyang_inactive', 'sh_round']],
   [/^st_spitter$/, ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
@@ -179,7 +180,7 @@ const OBJECTS = [
   [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
-const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback', 'ignite', 'inner_pull']);
+const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback', 'ignite', 'inner_pull', 'kill', 'forcefire', 'setfire', 'stopfire', 'heat']);
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
@@ -470,6 +471,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
         fl.k = `${img}_${fl.$state === '0' ? 'closed' : 'open'}`;
       }
       // ScalesFloor: the base floor of its flavor, plus an object fl_scales that acts like a trigger
+      // Named floors can receive messages (fire, flood): an object fl_ref for them
+      if (fl.name && !/^fl_(bridge|scales|thief)/.test(fl.k)) objs.push({ x, y, k: 'fl_ref', a: { $id: fl.$id, name: fl.name } });
       // ThiefFloor: fl_bluegray with an object fl_thief for the thief
       if (fl.k === 'fl_thief') {
         objs.push({ ...objectDef(x, y, fl), k: 'fl_thief' });

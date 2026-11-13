@@ -604,6 +604,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Fenster "inner_pull"** (`WindowStone::tryMoveWindowFace`, Aktion z. B. eines Vierfachschalters mit Richtung):
   die gegenüberliegende Scheibe wandert auf die gezogene Seite, falls dort keine ist und kein Hindernis daneben;
   ein aufnehmbarer Gegenstand im Feld rutscht mit (oder wird zerquetscht). Abweichung: Kugeln werden nicht mitgeschoben.
+- **Benannte Böden als Ziele** (fl_ref): Aktionen forcefire, setfire, stopfire, heat, ignite an Böden; toggle/on/signal
+  startet die Flut auf Wasser- und gerahmten Böden. **Aktion kill**: das Zielobjekt verschwindet.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist
