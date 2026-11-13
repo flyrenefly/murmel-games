@@ -1,6 +1,6 @@
 # Enigma-Import
 
-940 von 1322 Levels übernommen (18 Pakete).
+943 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,7 +9,7 @@
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: st_oxyd | 106 | 0 |
 | Lua: :shuffleOxyd | 106 | 0 |
-| Lua-Init | 103 | 6 |
+| Lua-Init | 100 | 3 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
