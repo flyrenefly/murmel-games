@@ -544,7 +544,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Dunkelglas, Perlensteine, blaue Fenster und bewegliches Rohglas; abgelegt oder von einem Stein
   getroffen wird sie (wie die Banane) zu it_squashed. it_cross: bleibt eine Kugel `interval` (10 s)
   darauf, führt es seine Aktion mit true aus; Verlassen bricht ab. Abweichungen: Banane wird unter
-  Laserlicht noch nicht zur Kirsche; it_weight fehlt.
+  Laserlicht zur Kirsche (Banana::processLight); it_weight fehlt.
+- **fl_yinyang_yin / _yang (_invisible)** (`SimpleFloors.cc` YinyangFloor): Reibung 5,2, Haftung 2,0; die Maus
+  wirkt nur, solange der passende Spieler am Zug ist (Yin = schwarze, Yang = weiße Kugel). Bild aus dem
+  2er-Blatt (sichtbar, unsichtbar).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

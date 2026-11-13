@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|thief|yinyang|fake_trigger|adhesionless|ice_heating|swamp_heating|water_source)/;
+const SPECIAL_FLOORS = /^fl_(forward|thief|fake_trigger|adhesionless|ice_heating|swamp_heating|water_source)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -419,13 +419,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
         fl.k = 'fl_fake_abyss';
         imgs.add('fl_abyss');
       }
-      const flImg = DEADLY.has(fl.k) ? fl.k : fl.k === 'fl_fake_abyss' ? fl.k : imageFor(fl.k);
+      // YinyangFloor: the kind is kept (the renderer picks yin/yang and the invisible subimage)
+      if (/^fl_yinyang/.test(fl.k)) imgs.add(/yang/.test(fl.k) ? 'fl_yinyang_yang' : 'fl_yinyang_yin');
+      const flImg = DEADLY.has(fl.k) ? fl.k : fl.k === 'fl_fake_abyss' || /^fl_yinyang/.test(fl.k) ? fl.k : imageFor(fl.k);
       if (!flImg) {
         reject(`Boden ohne Bild ${fl.k}`);
         continue;
       }
-      imgs.add(flImg);
-      const def = { floor: DEADLY.has(fl.k) ? fl.k : fl.k.startsWith('fl_slope') ? fl.k : flImg };
+      if (!/^fl_yinyang/.test(fl.k)) imgs.add(flImg);
+      const def = { floor: DEADLY.has(fl.k) ? fl.k : fl.k.startsWith('fl_slope') || fl.k.startsWith('fl_yinyang') ? fl.k : flImg };
       // Floor fire attributes; initfire: the floor starts burning (Floor "_init" → force_fire)
       const fire = {};
       for (const a of ['burnable', 'ignitable', 'secure', 'eternal', 'noash', 'fastfire']) if (fl[a] !== undefined && fl[a] !== '') fire[a] = String(fl[a]);

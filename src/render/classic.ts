@@ -1069,6 +1069,9 @@ function floorImage(kind: string, img: Images): [string, number | undefined, num
     return ['fl_slope', n % 4, Math.floor(n / 4)];
   }
   if (kind === 'fl_wood_framed_h') return ['fl_wood_framed', 0];
+  // fl_yinyang_yin/_yang: sheet of 2 – visible, invisible
+  const yy = /^fl_yinyang(?:_(yin|yang))?(_invisible)?$/.exec(kind);
+  if (yy) return [`fl_yinyang_${yy[1] ?? 'yin'}`, yy[2] ? 1 : 0];
   if (kind === 'fl_fake_abyss') return ['fl_abyss', undefined]; // FakeFloor
   if (kind === 'fl_wood_framed_v') return ['fl_wood_framed', 1];
   if (img[kind]) return [kind, undefined];

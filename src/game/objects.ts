@@ -1406,6 +1406,7 @@ export class ObjectWorld {
       if (o.gone || !lit.has(o.row * W + o.col)) continue;
       if (o.cls === 'dynamite') this.burn(o);
       else if (o.cls === 'bomb') this.bombExplode(o);
+      else if (o.kind === 'it_banana') o.kind = 'it_cherry'; // Banana::processLight
     }
     // BreakStone::processLight: any light breaks it (not st_break_bug), also at the start
     for (const o of this.objects) if (o.cls === 'breakstone' && !o.gone && lightBreaks(breakType(o)) && lit.has(o.row * W + o.col)) this.breakStone(o);

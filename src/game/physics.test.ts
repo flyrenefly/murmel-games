@@ -382,3 +382,16 @@ describe('swamp (fl_swamp)', () => {
     expect(w.marbles[0].sink).toBe(0);
   });
 });
+
+describe('fl_yinyang', () => {
+  it('yang floor ignores the mouse of the black marble, yin floor lets it act', () => {
+    const lv = (floor: string) =>
+      parseLevel({ id: 't', title: 'T', author: 'x', license: 'GPL', map: ['#####', '#@YA#', '#A..#', '#####'], legend: { '@': { floor, start: true }, Y: { floor } } });
+    for (const [floor, moves] of [['fl_yinyang_yang', false], ['fl_yinyang_yin', true]] as const) {
+      const w = new PhysicsWorld(lv(floor));
+      w.addMouseForce(DEFAULT_MOUSE_SPEED * 10, 0);
+      run(w, 0.01);
+      expect(w.position.x > 1.5).toBe(moves);
+    }
+  });
+});

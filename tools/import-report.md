@@ -1,17 +1,17 @@
 # Enigma-Import
 
-730 von 1322 Levels übernommen (18 Pakete).
+736 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 3 |
 | Lua-Rückruf | 117 | 3 |
-| keine Oxyd-Steine | 111 | 0 |
+| keine Oxyd-Steine | 111 | 1 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
 | Lua-Init | 102 | 3 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_mail | 54 | 2 |
+| Stein st_mail | 54 | 3 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
@@ -28,12 +28,11 @@
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_glasses | 27 | 2 |
 | Gegenstand it_pipe_sw | 24 | 0 |
-| Boden fl_yinyang_yin | 23 | 4 |
-| Stein st_ghost_break | 23 | 1 |
+| Stein st_ghost_break | 23 | 2 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_magic_brick | 20 | 4 |
+| Stein st_magic_brick | 20 | 5 |
 | Gegenstand it_bottle_idle | 20 | 2 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
@@ -45,7 +44,7 @@
 | Stein st_portal_horse | 15 | 2 |
 | Stein st_polarswitch | 15 | 4 |
 | Stein st_barrier | 15 | 4 |
-| Stein st_magic_oxydc | 14 | 4 |
+| Stein st_magic_oxydc | 14 | 5 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_bottle_broken | 14 | 1 |
@@ -53,7 +52,6 @@
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 3 |
 | Stein st_disco_light | 14 | 4 |
-| Boden fl_yinyang_yang | 13 | 0 |
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
@@ -61,8 +59,8 @@
 | Stein st_ghost_purplemarble | 12 | 4 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
-| Stein st_brake | 11 | 0 |
-| Aktion turn | 10 | 3 |
+| Stein st_brake | 11 | 1 |
+| Aktion turn | 10 | 4 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_pin | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 2 |
@@ -75,7 +73,7 @@
 | Lua-Init (Weltwert) | 8 | 1 |
 | Stein st_monoflop | 8 | 3 |
 | Lua: :orientate | 7 | 2 |
-| Aktion openclose | 7 | 2 |
+| Aktion openclose | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 1 |
@@ -84,7 +82,7 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
-| Akteure: nicht genau eine schwarze Murmel | 6 | 1 |
+| Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
 | Stein st_disco_dark | 6 | 0 |
@@ -231,7 +229,6 @@
 | Lua: st_rubberband | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
-| Lua: fl_yinyang_yin | 1 | 0 |
 | Lua: st_mail_n | 1 | 0 |
 | Lua: it_pipe_ew | 1 | 0 |
 | Lua: it_pipe_ns | 1 | 0 |

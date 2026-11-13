@@ -242,6 +242,9 @@ export class PhysicsWorld {
     const c = Math.floor(pos.x);
     const r = Math.floor(pos.y);
     const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.cells[r * this.width + c].floor : 'fl_gray';
+    // YinyangFloor::process_mouseforce: the mouse acts only while its player (yin black, yang white) is current
+    const yy = /^fl_yinyang(_yin|_yang)?/.exec(kind);
+    if (yy && (yy[1] === '_yang' ? 1 : 0) !== (this.marbles[this.cur]?.color ?? 0)) return { ...floorProps(kind), adhesion: 0 };
     return floorProps(kind);
   }
 
