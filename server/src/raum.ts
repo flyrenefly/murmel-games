@@ -224,13 +224,28 @@ export function upgradeIp(req: IncomingMessage): string {
   return last || req.socket.remoteAddress || 'unbekannt';
 }
 
+const wsPfade = new WeakMap<object, Set<string>>();
+
+/**
+ * Registers a WebSocket path of this app (/api/raum, /api/wettkampf); the returned test tells whether
+ * some handler takes a path. Each upgrade handler drops only requests no handler takes.
+ */
+export function wsPfad(app: FastifyInstance, path: string): (p: string) => boolean {
+  let set = wsPfade.get(app.server);
+  if (!set) wsPfade.set(app.server, (set = new Set()));
+  set.add(path);
+  const s = set;
+  return (p) => s.has(p);
+}
+
 /** GET /api/raum as a WebSocket on the API's HTTP server. */
 export function raumRoutes(app: FastifyInstance, hub: RoomHub): void {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
+  const bekannt = wsPfad(app, '/api/raum');
   const onUpgrade = (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const path = (req.url ?? '').split('?')[0];
     if (path !== '/api/raum') {
-      socket.destroy();
+      if (!bekannt(path)) socket.destroy();
       return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => attach(ws, upgradeIp(req)));
