@@ -1247,18 +1247,28 @@ export class ClassicView {
     ctx.fillText(this.status.right, VIEW_W - 16, y + BAR_H / 2 + 1);
   }
 
-  /** Integer upscaling of the 640×480 picture, centred in the window. */
+  /** Upscaling of the 640×480 picture, centred in the window (see displayScale). */
   resize(): void {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const fit = Math.min(w / VIEW_W, h / VIEW_H);
-    const dpr = window.devicePixelRatio || 1;
-    // Integer scale in device pixels keeps every pixel the same size.
-    const deviceScale = fit * dpr >= 1 ? Math.floor(fit * dpr) : fit * dpr;
-    const css = deviceScale / dpr;
+    const css = displayScale(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
     this.canvas.style.width = `${VIEW_W * css}px`;
     this.canvas.style.height = `${VIEW_H * css}px`;
   }
+}
+
+/**
+ * CSS scale of the 640×480 picture in a window of w × h CSS pixels. On ordinary screens the scale
+ * is a whole number of device pixels, so every pixel has the same size. On high-density screens
+ * (phones, dpr ≥ 2) rounding down would shrink the picture far too much (iPhone portrait: 1.83 → 1,
+ * 213 instead of 390 px wide); there uneven pixels are invisible, so the picture fills the window
+ * unless a whole number keeps at least 95 % of that size.
+ */
+export function displayScale(w: number, h: number, dpr: number): number {
+  const fit = Math.min(w / VIEW_W, h / VIEW_H);
+  const device = fit * dpr;
+  if (device < 1) return fit;
+  const whole = Math.floor(device);
+  if (dpr >= 2 && whole < device * 0.95) return fit;
+  return whole / dpr;
 }
 
 /**
