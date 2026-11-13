@@ -873,6 +873,36 @@ function dropItem(): boolean {
     }
     return true;
   }
+  // RubberbandItem::activate: a band to anchor2 (an actor "a:n", a named object, "@@pattern" the nearest);
+  // scissor cuts the others first. Without an anchor, or connected already, it is dropped.
+  if (first.startsWith('it_rubberband')) {
+    const a = objects.carriedAttrs(first);
+    const num = (v: string | undefined) => (v === undefined || v === '' ? undefined : Number(v));
+    const def = { strength: num(a.strength) ?? 10, length: num(a.length), threshold: num(a.threshold), min: num(a.min), max: num(a.max) };
+    const scissor = a.scissor === 'true' || a.scissor === '1';
+    let done = false;
+    const am = /^a:(\d+)$/.exec(a.anchor2 ?? '');
+    if (am) {
+      const n = Number(am[1]);
+      const j = n === 0 ? 0 : level.actors[n - 1]?.k === 'ac_marble_white' ? ph.marbles.findIndex((o, k) => k > 0 && !o.pearl && o.color === 1) : -1;
+      if (j >= 0 && j !== i && !ph.rubbers.some((r) => (r.a1 === m && r.a2 === ph.marbles[j]) || (r.a2 === m && r.a1 === ph.marbles[j]))) {
+        if (scissor) ph.cutRubbers(i);
+        ph.addRubberBetween(i, j, def);
+        done = true;
+      }
+    } else if (a.anchor2) {
+      const t = objects.findAnchor(a.anchor2, m.pos.x, m.pos.y);
+      if (t && !ph.hasRubberTo(i, t.x, t.y)) {
+        if (scissor) ph.cutRubbers(i);
+        ph.addRubber(i, t.x, t.y, def, () => objects.anchorAt(t.id));
+        done = true;
+      }
+    }
+    if (done) objects.useFirst();
+    else if (objects.canDropAt(m.pos.x, m.pos.y)) objects.dropItem(m.pos.x, m.pos.y);
+    updateItems();
+    return true;
+  }
   // Pencil::activate: a cross under the marble (ITEM_KILL); flying it is dropped
   if (first === 'it_pencil') {
     if (m.jump > 0) objects.dropItem(m.pos.x, m.pos.y);

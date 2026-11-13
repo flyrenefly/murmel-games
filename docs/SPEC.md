@@ -583,6 +583,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_rubberband** (`RubberbandStone.cc`): Anstoßen spannt ein Gummiband von der Kugel zur Steinmitte
   (strength, length, threshold, max), falls noch keins zu diesem Stein besteht; `scissor` (Vorgabe true)
   schneidet vorher die anderen Bänder. Abweichung: mit Zauberstab verschieben fehlt.
+- **it_rubberband** (`RubberbandItem.cc`): benutzt spannt es ein Band zu `anchor2` (eine Kugel, ein benanntes
+  Objekt, "@@Muster" das nächste passende; `scissor` schneidet vorher die anderen) und ist verbraucht; ohne
+  Anker oder bei schon bestehendem Band wird es abgelegt. Seine Attribute reisen im Inventar mit.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist

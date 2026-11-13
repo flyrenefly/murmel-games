@@ -116,6 +116,7 @@ const OBJECTS = [
   [/^it_trap$/, ['it_trap']],
   [/^st_surprise$/, ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow']],
   [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],
+  [/^it_rubberband$/, ['it_rubberband']],
   [/^it_glasses(_broken)?$/, ['it_glasses', 'it_glasses_broken', 'st_death']],
   [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],
@@ -178,7 +179,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|length|threshold|max|orientation|charge|selection|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|length|threshold|max|orientation|charge|selection|anchor2|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 // api1init.lua MessageRenaming: receiver kind → old message Murmel translates
 const API1_ACTIONS = [
@@ -757,6 +758,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
     actorIndex.set('#' + x.o.$id, i);
     if (x.o.name) actorIndex.set(x.o.name, i);
   });
+  // it_rubberband: an actor anchor becomes "a:<index>"; other anchors stay names (objects, "@@pattern")
+  for (const o of objs) {
+    if (o.k !== 'it_rubberband') continue;
+    if (!o.a.anchor2) continue;
+    if (actorIndex.has(o.a.anchor2)) o.a.anchor2 = `a:${actorIndex.get(o.a.anchor2)}`;
+  }
   const rubbers = [];
   for (const rb of w.rubberbands ?? []) {
     const i1 = actorIndex.get(rb.anchor1);

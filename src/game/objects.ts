@@ -23,7 +23,7 @@ const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'm
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3, surprise: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht', it_surprise: 'Überraschung', it_pencil: 'Stift' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht', it_surprise: 'Überraschung', it_pencil: 'Stift', it_rubberband: 'Gummiband' };
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
@@ -516,7 +516,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_death') return 'deathitem';
   if (/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/.test(kind)) return 'burnable';
   if (/^it_extinguisher(_full|_medium|_empty)?$/.test(kind)) return 'tool';
-  if (/^it_(coffee|coffee_drop|spade|brush|cherry|banana|pin|glasses|glasses_broken|weight|pencil)$/.test(kind)) return 'tool';
+  if (/^it_(coffee|coffee_drop|spade|brush|cherry|banana|pin|glasses|glasses_broken|weight|pencil|rubberband)$/.test(kind)) return 'tool';
   if (/^it_bottle(_idle|_broken)?$/.test(kind)) return 'bottle';
   if (kind === 'it_cross') return 'cross';
   if (kind === 'it_squashed') return 'squashed';
@@ -1502,8 +1502,8 @@ export class ObjectWorld {
         this.unplace(o);
         let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
         // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
-        if (o.cls === 'surprise') {
-          kind = `it_surprise#${++this.carriedId}`;
+        if (o.cls === 'surprise' || o.kind === 'it_rubberband') {
+          kind = `${o.kind}#${++this.carriedId}`;
           this.carried.set(kind, o.attrs);
         }
         // Inventory::add_item: into a bag in front that is not full
@@ -1549,6 +1549,13 @@ export class ObjectWorld {
 
   /** Item::drop: an item of this kind lands in the cell (with its on_drop effects). */
   private dropKind(kind: string, col: number, row: number): void {
+    if (kind.startsWith('it_rubberband')) {
+      // the item keeps its attributes (anchor2, strength …) on the floor
+      const o = this.add('it_rubberband', 'tool', col, row);
+      o.attrs = { ...(this.carried.get(kind) ?? {}) };
+      this.carried.delete(kind);
+      return;
+    }
     if (kind.startsWith('it_surprise')) {
       // SurpriseItem::on_drop: its action, then it becomes a random item of its selection
       const o = this.add('it_surprise', 'surprise', col, row);
@@ -2080,6 +2087,36 @@ export class ObjectWorld {
    */
   glassesBits(): number {
     return this.inventory.includes('it_glasses') ? 1 | 2 | 16 : 0;
+  }
+
+/** Attributes of a carried item (inventory kind "it_rubberband#n"). */
+  carriedAttrs(kind: string): Record<string, string> {
+    return this.carried.get(kind) ?? {};
+  }
+
+  /** The first inventory item is used up (ITEM_KILL). */
+  useFirst(): void {
+    const k = this.inventory.shift();
+    if (k) this.carried.delete(k);
+  }
+
+  /** An object by name, or "@@pattern": the one matching nearest to x/y (RubberbandItem anchor2). */
+  findAnchor(name: string, x: number, y: number): { x: number; y: number; id: string } | null {
+    const nearest = name.startsWith('@@');
+    const p = nearest ? name.slice(2) : name;
+    const re = new RegExp('^' + p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+    let best: GameObject | null = null;
+    let bd = Infinity;
+    for (const o of this.objects) {
+      if (o.gone || !o.name || !re.test(o.name)) continue;
+      const d = Math.hypot(o.col + 0.5 - x, o.row + 0.5 - y);
+      if (!nearest) return { x: o.col + 0.5, y: o.row + 0.5, id: o.id };
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    return best ? { x: best.col + 0.5, y: best.row + 0.5, id: best.id } : null;
   }
 
   /** BrakeStone::explode: gone, it_explosion_nil in its place. */

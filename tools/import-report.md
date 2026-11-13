@@ -1,12 +1,12 @@
 # Enigma-Import
 
-913 von 1322 Levels übernommen (18 Pakete).
+916 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 3 |
 | Lua-Rückruf | 116 | 6 |
-| keine Oxyd-Steine | 111 | 2 |
+| keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
 | Lua-Init | 103 | 4 |
@@ -27,13 +27,12 @@
 | Lua: draw_stones() | 14 | 0 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
-| Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 3 |
 | Stein st_spitter | 9 | 2 |
 | Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
-| Lua-Init (Weltwert) | 8 | 2 |
+| Lua-Init (Weltwert) | 8 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
 | Lua: document() | 6 | 0 |
@@ -178,4 +177,4 @@
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
 | Lua: wo["ConserveLevel"] | 1 | 0 |
-| Stein fl_tigris | 1 | 0 |
+| Stein fl_tigris | 1 | 1 |
