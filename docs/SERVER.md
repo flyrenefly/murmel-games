@@ -98,8 +98,8 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 
 ## 8. Betrieb, Datenschutz, Kosten
 
-- **Server:** kleiner VPS (2 vCPU, 2–4 GB RAM), ca. 4–8 €/Monat. Eigener Server für Murmel,
-  **getrennt von WH-Control** (Hobbyprojekt nicht auf Firmeninfrastruktur; siehe offene Fragen).
+- **Server:** eigener VPS für Murmel, **getrennt von WH-Control** (Hobbyprojekt nicht auf
+  Firmeninfrastruktur; siehe offene Fragen). Ausstattung und Ausbau siehe 8.1.
 - **Deploy:** GitHub Actions baut ein Container-Image, Rollout per SSH; Rückweg = vorheriges Image.
 - **Sicherung:** nächtlicher Datenbank-Dump, verschlüsselt außer Haus, Rücksicherung getestet.
 - **Überwachung:** Erreichbarkeitsprüfung + Mail bei Ausfall.
@@ -108,6 +108,37 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
   der EU; Protokolle ohne volle IP, 7 Tage.
 - **Sicherheit:** Eingaben prüfen, Begrenzung der Anfragen je IP/Konto, Upload-Größen begrenzen,
   keine Geheimnisse im Repo (GitHub-Secrets).
+
+### 8.1 Erstausstattung und Ausbau
+
+| | Start | Begründung |
+|---|---|---|
+| CPU | 2 vCPU | API braucht wenig; Hauptlast ist das Nachspielen von Läufen (Bestenliste) und die nächtliche Lösbarkeitsprüfung (~1300 Levels, geschätzt 30–60 min auf einem Kern) |
+| RAM | 4 GB | Node, PostgreSQL, Reverse-Proxy, Docker bequem; 2 GB wäre knapp |
+| Speicher | 80–120 GB NVMe | Spiel ~17 MB, Datenbank anfangs MB; Rest Puffer für Images, Aufzeichnungen, lokale Sicherungen |
+| System | Ubuntu LTS + Docker | gleicher Aufbau wie die übrigen Server |
+| Netz | feste IPv4 + IPv6, Traffic laut Tarif prüfen | je neuer Spieler ~4 MB Grundausstattung plus geöffnete Pakete |
+
+Das Spiel rechnet im Browser; der Server sieht nur kleine Anfragen. Diese Ausstattung reicht für
+einige tausend Spieler am Tag. Teuer werden erst das Nachspielen und Mehrspieler mit dem Server
+als Schiedsrichter (`wettkampf`), weil dort der Server die Physik je Raum rechnet.
+
+**Anbieter:** IONOS liegt nahe (Konto, Domain und DNS sind schon dort; einfache Umschaltung auf den
+Webspace-Notbetrieb). Ältere Übersichten nennen für 2 vCPU/4 GB ca. 6 €/Monat; aktuelle Preise im
+IONOS-Kundenkonto prüfen (Stand 13.11.2026 keine belastbare Preisliste gefunden).
+
+**Hochrüsten:** Ein IONOS-VPS lässt sich per Upgrade um CPU, RAM und Speicher erweitern; der Server
+ist dabei einige Minuten nicht erreichbar. Zurückstufen ist nicht vorgesehen – daher klein
+anfangen. Quelle: IONOS-Hilfe „Important information on upgrading your VPS“
+(ionos.co.uk/help/server-cloud-infrastructure/general-information-vps/important-information-on-upgrading-your-vps/).
+
+**Ausbaupfad bei stark steigender Spielerzahl**
+1. Hochstufen (mehr CPU/RAM) – in Minuten erledigt.
+2. Statische Dateien entlasten: Spiel aus einem CDN oder weiter vom IONOS-Webspace, Server nur API.
+3. Datenbank auslagern (eigener Server oder verwaltete Datenbank).
+4. Rechenarbeit trennen: Nachspielen/Lösbarkeitsprüfung auf einem Arbeits-Server, Mehrspieler-Räume
+   auf weiteren Servern; ab hier ggf. IONOS-Cloud-Server mit flexiblen Ressourcen (Bedingungen
+   vorher prüfen).
 
 ## 9. Variante: alles auf den eigenen Server (Empfehlung, sobald `api-basis` kommt)
 
