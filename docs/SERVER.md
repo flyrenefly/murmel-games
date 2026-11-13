@@ -1,7 +1,7 @@
 # Server-Konzept: Konten, Bestenlisten, Spieler-Levels, Mehrspieler
 
-Stand 13.11.2026, **Entwurf zur Freigabe**. Gebaut wird erst, wenn die Bausteine-Übersicht
-(Abschnitt 3) und die offenen Fragen (Abschnitt 11) entschieden sind.
+Stand 13.11.2026. **Entschieden: große Version mit eigenem Server** (Abschnitt 11). Vor dem Bau
+werden die Bauphasen (Abschnitt 3) freigegeben; jeder Baustein bekommt eine eigene Spezifikation.
 
 ## 1. Ziel
 
@@ -37,28 +37,49 @@ api.murmel.games  ── kleiner VPS (Docker) ──  Datenbank + nächtliche Si
 - **Ohne Server:** Fällt die API aus, spielt jeder weiter wie heute; Konto-Funktionen zeigen
   „gerade nicht erreichbar“ und holen später nach.
 
-## 3. Bausteine-Übersicht (zur Freigabe)
+## 3. Bausteine-Übersicht (Nutzerentscheidung 13.11.2026: große Version mit eigenem Server)
 
 | Baustein (id) | Aufgabe | Hängt ab von |
 |---|---|---|
 | `lokal` | Bestzeiten, Statistik, Fortschritt sichern/laden – nur im Browser | – |
-| `api-basis` | Server, Datenbank, Sicherung, Überwachung, Deploy | – |
-| `konten` | Anmeldung ohne Passwort, Profil, Konto löschen | `api-basis` |
-| `sync` | Fortschritt und Bestzeiten geräteübergreifend abgleichen | `konten`, `lokal` |
-| `bestenliste` | Zeiten je Level, Rangliste, Prüfung gegen Schummeln | `konten`, `lokal` |
+| `aufzeichnung` | Deterministischer Zufall je Lauf, Eingabeaufzeichnung, Nachspielen ohne Grafik (Node) | – |
 | `editor` | Leveleditor im Browser, Teilen per Link | – |
-| `spielerlevels` | Levels hochladen, suchen, spielen, bewerten, melden | `konten`, `editor` |
-| `mehrspieler` | Zu zweit über WebRTC, Raum per Code | `api-basis` (Konto optional) |
+| `api-basis` | IONOS-VPS, PostgreSQL, Reverse-Proxy, Sicherung, Überwachung, Deploy | – |
+| `umzug` | Spiel vom eigenen Server, IONOS-Webspace als Notbetrieb mit Umschaltung | `api-basis` |
+| `konten` | Mail-Link, Passkey, Google/Apple/GitHub; Profil; Konto löschen | `api-basis` |
+| `sync` | Fortschritt und Bestzeiten geräteübergreifend | `konten`, `lokal` |
+| `bestenliste` | Zeiten je Level, Ranglisten, Prüfung per Nachspielen | `konten`, `aufzeichnung` |
+| `loesbarkeit` | Nächtliches Nachspielen aller Levels mit gespeicherten Lösungen | `api-basis`, `aufzeichnung` |
+| `geister` | Geister-Läufe, Lösungen ansehen, Tipps | `bestenliste` |
+| `spielerlevels` | Hochladen (nur selbst gelöst), Suche, Bewertung, Melden | `konten`, `editor`, `aufzeichnung` |
+| `tageslevel` | Tageslevel, Wochenaufgabe, Rangliste, Web-Push | `bestenliste` |
+| `levelseiten` | Eine Seite je Level mit Vorschaubild für Suchmaschinen | `umzug` |
+| `mehrspieler` | Zu zweit über WebRTC, Raum per Code | `api-basis` |
+| `wettkampf` | Server als Schiedsrichter: mehr Spieler, Zuschauer, Wettrennen | `mehrspieler`, `aufzeichnung` |
+| `enigma-upload` | Enigma-Leveldatei hochladen und umwandeln | `spielerlevels` |
+| `auswertung` | Datensparsam: wo Spieler scheitern oder abbrechen | `api-basis` |
+| `cloudstand` | Spielstand mitten im Level in der Cloud | `sync` |
 
-Reihenfolge: `lokal` und `editor` (ohne Server, sofort möglich) → `api-basis` → `konten` →
-`sync` + `bestenliste` → `spielerlevels` → `mehrspieler`.
+**Bauphasen**
+
+| Phase | Bausteine | Server nötig |
+|---|---|---|
+| A | `lokal`, `aufzeichnung`, `editor` | nein – sofort möglich, nutzt auch ohne Konto |
+| B | `api-basis`, `umzug`, `konten` | ja (VPS-Bestellung durch den Nutzer) |
+| C | `sync`, `bestenliste`, `loesbarkeit` | ja |
+| D | `geister`, `spielerlevels`, `tageslevel`, `levelseiten` | ja |
+| E | `mehrspieler`, `wettkampf`, `enigma-upload`, `auswertung`, `cloudstand` | ja |
+
+`aufzeichnung` ist der Schlüsselbaustein: Bestenliste, Lösbarkeitsprüfung, Geister, Tipps,
+Spieler-Levels und Wettkampf bauen darauf auf.
 
 Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md`).
 
 ## 4. Konten (`konten`)
 
-- **Anmeldung ohne Passwort:** Login-Link per Mail; zusätzlich **Passkey** (Fingerabdruck/Face ID)
-  für schnelles Anmelden. Murmel speichert keine Passwörter.
+- **Anmeldung ohne Passwort:** Login-Link per Mail, **Passkey** (Fingerabdruck/Face ID) und
+  **Google, Apple, GitHub** (OpenID Connect/OAuth). Murmel speichert keine Passwörter; ein Konto kann
+  mehrere Anmeldewege verknüpfen.
 - **Daten je Konto:** Mailadresse, frei wählbarer Anzeigename, Erstellungsdatum. Keine Klarnamen.
 - **Sitzung:** sicheres HttpOnly-Cookie auf `api.murmel.games` oder kurzlebiges Token; Abmelden
   auf allen Geräten möglich.
@@ -140,7 +161,7 @@ anfangen. Quelle: IONOS-Hilfe „Important information on upgrading your VPS“
    auf weiteren Servern; ab hier ggf. IONOS-Cloud-Server mit flexiblen Ressourcen (Bedingungen
    vorher prüfen).
 
-## 9. Variante: alles auf den eigenen Server (Empfehlung, sobald `api-basis` kommt)
+## 9. Komplettumzug auf den eigenen Server (entschieden 13.11.2026)
 
 Statt Spiel auf IONOS + API auf dem VPS liegt **alles auf dem eigenen Server**; der IONOS-Webspace
 bleibt als **statischer Notbetrieb** (wie beim WH-Website-Notbetrieb: fällt der Server aus, liefert
@@ -185,19 +206,25 @@ Größter Nutzen zuerst: **`loesbarkeit`** (löst das größte offene Qualitäts
 geprüft, ob Levels laden) und **`geister`** – beide bauen auf der Eingabeaufzeichnung auf, die für
 die Bestenlisten ohnehin entsteht.
 
-## 11. Offene Fragen (Entscheidung durch den Nutzer)
+## 11. Entscheidungen und offene Fragen
 
-1. **Bausteine und Reihenfolge** aus Abschnitt 3 so freigeben? Oder erst `lokal` + `editor` ohne Server?
-2. **Wo läuft der Server?** Eigener kleiner VPS (Vorschlag, z. B. netcup oder IONOS) oder auf
-   vorhandener Infrastruktur?
-3. **Anmeldung:** Mail-Link + Passkey (Vorschlag) – zusätzlich Anmelden mit Google/Apple/GitHub gewünscht?
-4. **Mailversand:** über die IONOS-Adresse von murmel.games oder über einen Versanddienst?
-5. **Moderation** der Spieler-Levels: von Hand freigeben oder nach Bewertungen automatisch?
-6. **Datenbank:** PostgreSQL von Anfang an (Vorschlag) oder SQLite, bis es mehr Spieler gibt?
-7. **Subdomain** `api.murmel.games` (DNS bei IONOS) – darf ich sie anlegen, wenn es so weit ist?
-   (Entfällt bei der Variante aus Abschnitt 9: dann zeigt `murmel.games` selbst auf den Server.)
-8. **Komplettumzug** (Abschnitt 9) mit IONOS als Notbetrieb – ja, sobald `api-basis` gebaut wird?
-9. **Größere Vorhaben** (Abschnitt 10): welche davon, und `loesbarkeit` + `geister` zuerst?
+**Entschieden (Nutzer, 13.11.2026)**
+- Große Version mit eigenem Server, Komplettumzug mit IONOS-Webspace als Notbetrieb (Abschnitt 9).
+- Anbieter: **IONOS-VPS**, Start 2 vCPU / 4 GB / 80–120 GB NVMe (Abschnitt 8.1).
+- Anmeldung: **Mail-Link + Passkey, zusätzlich Google, Apple und GitHub**.
+- Spieler-Levels: **automatisch sichtbar**, wenn vom Autor gelöst; gemeldete Levels werden
+  ausgeblendet und vom Nutzer geprüft.
+- Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
+- Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
+
+**Noch offen**
+1. **Bauphasen** aus Abschnitt 3 freigeben (Phase A beginnt ohne Server)?
+2. **Mailversand** für Login-Links: über das IONOS-Postfach von murmel.games (Vorschlag für den
+   Start) oder einen Versanddienst?
+3. **VPS-Bestellung** bei IONOS macht der Nutzer selbst (Kauf); danach SSH-Schlüssel für den Deploy.
+4. **DNS-Umstellung** von `murmel.games` auf den Server erst auf ausdrücklichen Auftrag.
+5. **Fremdanmeldung:** Für Apple ist ein kostenpflichtiges Apple-Developer-Konto nötig (das von
+   WH-Control nutzen oder ein eigenes?); Google und GitHub brauchen je eine eigene App-Anmeldung.
 
 ## 12. Grenzen (für alle Bausteine)
 
