@@ -32,6 +32,8 @@ activate() { # activate VERSION – Spiel umhängen, API-Image tauschen, prüfen
   ln -sfn "releases/$v" "$ROOT/www/current.tmp" && mv -T "$ROOT/www/current.tmp" "$ROOT/www/current"
   setenv MURMEL_VERSION "$v"
   docker compose up -d --remove-orphans
+  # ein geändertes Caddyfile übernimmt Caddy nur nach einem Neuladen
+  docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || log "Caddy-Neuladen gescheitert"
   for _ in $(seq 1 30); do
     if docker compose exec -T api wget -qO- http://127.0.0.1:3000/api/health 2>/dev/null | grep -q "\"version\":\"$v\""; then
       log "aktiv: $v"; return 0
