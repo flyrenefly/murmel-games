@@ -210,6 +210,8 @@ export function objectImages(kind: string): string[] {
   if (kind.startsWith('st_rotator')) return ['st_rotator_cw', 'st_rotator_ccw', 'sh_round'];
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
+  if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
+  if (kind === 'st_barrier') return ['st_barrier', 'sh_solid'];
   if (/^st_(flat_(breakable|breaking|cracked|burnable)|plaster_breakable)$/.test(kind)) return ['st_flat', 'st_flat_cracked', 'st_flat_fire', 'st_plaster', 'st_flat_break', 'sh_solid'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
   if (kind.startsWith('it_dynamite')) return ['it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss'];
@@ -783,6 +785,24 @@ export class ClassicView {
       else {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
+      }
+      return;
+    }
+    if (o.cls === 'polarswitch') {
+      if (pass === 'shadow') this.image('sh_rawglass', px, py);
+      else this.image(o.state === 1 ? 'st_lightglass' : 'st_darkglass', px, py);
+      return;
+    }
+    if (o.cls === 'barrier') {
+      // st_barrier_<item>: the barrier with its item drawn on top
+      if (pass === 'shadow') this.image('sh_solid', px, py);
+      else {
+        this.image('st_barrier', px, py);
+        const f = o.attrs.flavor || 'all';
+        if (f !== 'all') {
+          const name = objectImages(f)[0];
+          if (name) this.frame(name, 0, px, py);
+        }
       }
       return;
     }

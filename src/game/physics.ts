@@ -63,6 +63,8 @@ export interface Toucher {
   color: number;
   /** An invisible marble (it_cherry): passes glass stones and blue windows. */
   invisible?: boolean;
+  /** Shielded (it_umbrella): st_barrier with it_umbrella rebounds it. */
+  shielded?: boolean;
 }
 
 /** A marble: black (the player's) or white (second marble, swapped with the yin-yang). */
@@ -139,7 +141,7 @@ interface Body {
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
   /** color: 0 black, 1 white (marbles, pearls, killers), 2 = no colour. */
-  blockAt(col: number, row: number, color?: number, invisible?: boolean): number;
+  blockAt(col: number, row: number, color?: number, invisible?: boolean, by?: number, shielded?: boolean): number;
 }
 
 export class PhysicsWorld {
@@ -356,7 +358,7 @@ export class PhysicsWorld {
       const f = forces.get(m);
       if (!f) return;
       this.advance(m, f);
-      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible });
+      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded });
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
       else if (!m.shielded) this.sinkStep(m, i, onContact);
     });
@@ -481,7 +483,7 @@ export class PhysicsWorld {
           this.contactBox(b, col, row, kind, onContact, who);
           continue;
         }
-        const faces = this.blockers?.blockAt(col, row, who.color, who.invisible) ?? 0;
+        const faces = this.blockers?.blockAt(col, row, who.color, who.invisible, who.by, who.shielded) ?? 0;
         if (faces === 0) continue;
         if (faces === ALL_FACES) {
           this.contactBox(b, col, row, -3, onContact, who);

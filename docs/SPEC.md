@@ -548,6 +548,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **fl_yinyang_yin / _yang (_invisible)** (`SimpleFloors.cc` YinyangFloor): Reibung 5,2, Haftung 2,0; die Maus
   wirkt nur, solange der passende Spieler am Zug ist (Yin = schwarze, Yang = weiße Kugel). Bild aus dem
   2er-Blatt (sichtbar, unsichtbar).
+- **st_polarswitch** (`PolarSwitchStone.cc`): Glas, das beim Anstoßen (und per on/off/toggle/signal)
+  zwischen hell (an, laserdurchlässig) und dunkel wechselt und dabei seine Aktion ausführt; unsichtbare
+  Kugeln gehen hindurch.
+- **st_barrier** (`BarrierStone.cc`): Kugeln, die den Gegenstand der Sorte (`flavor`, Art oder Oberart) bei
+  sich tragen, prallen ab, alle anderen fahren hindurch; "all" hält jede Kugel mit Gegenständen auf;
+  it_umbrella gilt auch mit Schutzschild, it_cherry auch unsichtbar. Gezeichnet als st_barrier mit dem
+  Gegenstand darauf. Abweichung: it_drop gegen Rotoren fehlt (Gegner fahren immer durch).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

@@ -1418,3 +1418,26 @@ describe('simple items', () => {
     expect(w.blockAt(3, 0, 0, true)).toBe(0);
   });
 });
+
+describe('polar switch and barrier', () => {
+  it('a polar switch toggles on hit, performs its action and lets invisible marbles pass', () => {
+    const w = world([door(5), { x: 3, y: 0, k: 'st_polarswitch', a: { target: 'door1', action: 'open' } }]);
+    expect(w.blockAt(3, 0, 0)).toBe(ALL_FACES);
+    expect(w.blockAt(3, 0, 0, true)).toBe(0);
+    w.hit(3, 0, 0, -1, 0, -3);
+    expect(w.objects[1].state).toBe(1);
+    w.update(500);
+    expect(w.objects[0].state).toBe(1);
+  });
+
+  it('a barrier rebounds marbles carrying its item and lets others pass', () => {
+    const w = world([{ x: 3, y: 0, k: 'st_barrier', a: { flavor: 'it_hammer' } }, { x: 5, y: 0, k: 'st_barrier', a: {} }]);
+    expect(w.blockAt(3, 0, 0, false, 0)).toBe(0);
+    expect(w.blockAt(5, 0, 0, false, 0)).toBe(0);
+    w.inventory.push('it_spade');
+    expect(w.blockAt(3, 0, 0, false, 0)).toBe(0);
+    expect(w.blockAt(5, 0, 0, false, 0)).toBe(ALL_FACES); // "all": any item
+    w.inventory.push('it_hammer');
+    expect(w.blockAt(3, 0, 0, false, 0)).toBe(ALL_FACES);
+  });
+});

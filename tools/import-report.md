@@ -1,6 +1,6 @@
 # Enigma-Import
 
-736 von 1322 Levels übernommen (18 Pakete).
+744 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -37,13 +37,11 @@
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
-| Akteur ac_bug | 18 | 3 |
+| Akteur ac_bug | 18 | 4 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
-| Stein st_polarswitch | 15 | 4 |
-| Stein st_barrier | 15 | 4 |
 | Stein st_magic_oxydc | 14 | 5 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
@@ -89,7 +87,7 @@
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_death_movable | 5 | 0 |
+| Stein st_death_movable | 5 | 1 |
 | Stein st_jamb_black | 5 | 1 |
 | Gummiband an bewegtem oder unbekanntem Anker | 4 | 4 |
 | Stein st_charge_zero | 4 | 0 |
@@ -222,8 +220,13 @@
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 0 |
 | Lua: it_pipe | 1 | 0 |
+| Stein st_barrier (it_pipe) | 1 | 0 |
+| Stein st_barrier (it_pipe_ns) | 1 | 0 |
+| Stein st_barrier (it_pencil) | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
+| Stein st_barrier (it_drop) | 1 | 0 |
+| Stein st_barrier (it_bottle) | 1 | 0 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_rubberband | 1 | 0 |
@@ -257,6 +260,5 @@
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
 | Lua: wo["ConserveLevel"] | 1 | 0 |
-| Lua: st_barrier | 1 | 0 |
 | Lua: it_bottle | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |

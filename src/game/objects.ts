@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed']);
@@ -455,6 +455,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
   if (kind === 'st_ice') return 'ice';
+  if (kind === 'st_polarswitch') return 'polarswitch';
+  if (kind === 'st_barrier') return 'barrier';
   if (kind === 'st_knight') return 'knight';
   if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
   if (/^it_shogun(_s|_m|_l)?$/.test(kind)) return 'shogundot';
@@ -619,8 +621,22 @@ export class ObjectWorld {
    * Which faces of a cell block the marble: 0 = free, ALL_FACES = solid,
    * otherwise the face bits (door d).
    */
-  blockAt(col: number, row: number, color = 2, invisible = false): number {
+  blockAt(col: number, row: number, color = 2, invisible = false, by = -1, shielded = false): number {
     for (const o of this.at(col, row)) {
+      // PolarSwitchStone::collision_response: invisible actors pass
+      if (o.cls === 'polarswitch' && !o.gone) {
+        if (invisible) continue;
+        return ALL_FACES;
+      }
+      // BarrierStone::collision_response: rebounds actors carrying its item (all: any item), else they pass
+      if (o.cls === 'barrier' && !o.gone) {
+        if (by < 0) continue;
+        const inv = this.inventories[this.ownerOf(by)] ?? this.inventory;
+        const f = o.attrs.flavor || 'all';
+        const holds = f === 'all' ? inv.length > 0 : inv.some((k) => k === f || k.startsWith(f + '_')) || (f === 'it_umbrella' && shielded) || (f === 'it_cherry' && invisible);
+        if (holds) return ALL_FACES;
+        continue;
+      }
       // invisible actors pass blue windows (WindowStone) and raw glass (GlassStone, not light/dark movable)
       if (invisible && ((o.cls === 'window' && !truthy(o.attrs.secure)) || o.kind === 'st_rawglass_movable')) continue;
       if (o.cls === 'door') {
@@ -650,6 +666,11 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'polarswitch') {
+        // PolarSwitchStone::actor_hit: toggle
+        this.setPolar(o, 1 - o.state);
+        return;
+      }
       if (o.cls === 'keyswitch') {
         this.hitKeySwitch(o, by);
         return;
@@ -1332,6 +1353,8 @@ export class ObjectWorld {
     if (o.cls === 'door') return o.state === 1 && !o.moving;
     if (o.cls === 'puzzle') return isHollow(o);
     if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
+    if (o.cls === 'polarswitch') return o.state === 1; // PolarSwitchStone::is_transparent when ON
+    if (o.cls === 'barrier') return false;
     return false;
   }
 
@@ -1618,6 +1641,13 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+  /** PolarSwitchStone::setState: light glass (ON, transparent) or dark glass; performs its action. */
+  private setPolar(o: GameObject, s: number): void {
+    if (o.state === s) return;
+    o.state = s;
+    this.performAction(o, s === 1);
   }
 
   // ---------- fire (floors.cc fire system, BurnableItem.cc, Extinguisher.cc) ----------
@@ -3388,6 +3418,14 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'polarswitch') {
+      // StateObject messages: on, off, toggle, signal
+      if (msg === 'on' || msg === 'open') this.setPolar(o, 1);
+      else if (msg === 'off' || msg === 'close') this.setPolar(o, 0);
+      else if (msg === 'toggle') this.setPolar(o, 1 - o.state);
+      else if (msg === 'signal') this.setPolar(o, value ? 1 : 0);
+      return;
+    }
     if (o.cls === 'passage') {
       // PassageStone: signal toggles the colour (any value); otherwise StateObject messages
       if (msg === 'signal' || msg === 'toggle') o.state = 1 - o.state;

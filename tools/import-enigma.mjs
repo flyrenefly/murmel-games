@@ -92,6 +92,8 @@ const OBJECTS = [
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
   [/^it_sword$/, ['it_sword']],
+  [/^st_polarswitch$/, ['st_lightglass', 'st_darkglass', 'sh_rawglass']],
+  [/^st_barrier$/, ['st_barrier', 'sh_solid']],
   [/^it_(coffee|coffee_drop)$/, ['it_coffee']],
   [/^it_(spade|brush|cherry|banana|cross|squashed)$/, ['it_spade', 'it_brush', 'it_cherry', 'it_banana', 'it_cross', 'it_squashed']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],
@@ -460,6 +462,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
           if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && st.selection) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
+          // st_barrier_<item>: the item's images, if Murmel has the item
+          if (st.k === 'st_barrier' && st.flavor && st.flavor !== 'all') {
+            const im = objectImages(st.flavor);
+            if (im) im.forEach((i) => imgs.add(i));
+            else reject(`Stein st_barrier (${st.flavor})`);
+          }
         } else if (FAKE_OXYD.test(st.k)) {
           def.stone = `st_oxyd${FAKE_OXYD.exec(st.k)[1].replace('e', 'b')}`;
           imgs.add(def.stone);
