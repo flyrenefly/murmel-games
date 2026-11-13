@@ -50,8 +50,8 @@ function offline(): Plugin {
       outDir = resolve(c.root, c.build.outDir);
     },
     closeBundle() {
-      // statistik.html, forum.html, loesbarkeit.html and bestenliste.html need the server anyway: not precached
-      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached
+      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
@@ -96,6 +96,7 @@ export default defineConfig({
         loesbarkeit: resolve(__dirname, 'loesbarkeit.html'),
         bestenliste: resolve(__dirname, 'bestenliste.html'),
         editor: resolve(__dirname, 'editor.html'),
+        spielerlevels: resolve(__dirname, 'spielerlevels.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

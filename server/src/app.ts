@@ -5,6 +5,7 @@ import { type GhostStore, ghostRoutes } from './geister.ts';
 import { type AccountOptions, accountRoutes } from './konten.ts';
 import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
 import { raumRoutes, type RoomHub } from './raum.ts';
+import { type PlayerLevelStore, playerFileFor, playerLevelRoutes } from './spielerlevels.ts';
 import { type SyncStore, syncRoutes } from './sync.ts';
 import { berlinDay, LEVEL_ID, type StatEvent, type Statistics, type StatType, tokenMatches } from './stats.ts';
 
@@ -36,6 +37,8 @@ export interface AppOptions {
   leaderboard?: { store: LeaderboardStore; checker: Checker };
   /** Geister: leaderboard runs as ghosts, with the players' consent (needs accounts and leaderboard). */
   ghosts?: GhostStore;
+  /** Spieler-Levels (needs accounts): upload, release, list, ratings. Uses the leaderboard's checker and queue. */
+  playerLevels?: { store: PlayerLevelStore; checker?: Checker };
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
   statsToken?: string;
   /** Clock (tests). */
@@ -54,7 +57,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, sync, raum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, playerLevels, sync, raum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -73,8 +76,14 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   if (accounts) accountRoutes(app, accounts);
   if (accounts && forum) forumRoutes(app, { store: forum, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
   if (accounts && solvability) solvabilityRoutes(app, solvability);
-  if (accounts && leaderboard) leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: accounts.now ?? now, solutions: solvability });
-  if (accounts && leaderboard && ghosts) ghostRoutes(app, { store: ghosts, leaderboard: leaderboard.store, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
+  const clock = accounts?.now ?? now;
+  const playerFile = playerLevels && playerFileFor(playerLevels.store);
+  const queue = accounts && leaderboard ? leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: clock, solutions: solvability, playerFile }) : undefined;
+  const levelChecker = playerLevels?.checker ?? leaderboard?.checker;
+  if (accounts && playerLevels && levelChecker) {
+    playerLevelRoutes(app, { store: playerLevels.store, checker: levelChecker, queue, version, origin: accounts.origin, mailer: accounts.mailer, adminEmails: accounts.adminEmails, now: clock });
+  }
+  if (accounts && leaderboard && ghosts) ghostRoutes(app, { store: ghosts, leaderboard: leaderboard.store, accounts: accounts.store, origin: accounts.origin, now: clock });
   if (accounts && sync) syncRoutes(app, { store: sync, origin: accounts.origin, now: accounts.now ?? now });
   if (raum) raumRoutes(app, raum);
 
