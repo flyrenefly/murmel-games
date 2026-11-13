@@ -8,7 +8,7 @@ export type { LuaHost };
 export { LuaLevel };
 
 /** Enigma libraries a level may name in lua.libs (src/lua/lib). */
-const LIBS: Record<string, string> = { libpento };
+export const LIBS: Record<string, string> = { libpento };
 
 /**
  * fengari-web is fengari's browser build: the plain package decides by `typeof process`
