@@ -589,6 +589,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   noch abgelehnt.
 - **st_portal_horse / _pearl** (`PortalStone.cc`): schwebender Stein, nur das Pferd (bzw. die weiße Perle)
   fährt hindurch, alle anderen prallen ab.
+- **Gummibänder an beweglichen Steinen** (Kisten, Felsbrocken, Puzzle …): das Bandende folgt dem
+  Steinobjekt (über seine $id); ist der Stein weg, bleibt es an der letzten Stelle.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

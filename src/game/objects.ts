@@ -1761,6 +1761,12 @@ export class ObjectWorld {
     this.performAction(o, true);
   }
 
+  /** Centre of a stone object by its id, following its move animation (rubber band anchors). */
+  anchorAt(id: string): { x: number; y: number } | null {
+    const o = this.objects.find((x) => x.id === id && !x.gone);
+    return o ? { x: o.col + 0.5, y: o.row + 0.5 } : null;
+  }
+
   /** ScissorsStone: the cut succeeded – perform the action (true). */
   scissorsCut(col: number, row: number): void {
     const o = this.at(col, row).find((x) => x.cls === 'scissors' && !x.gone);

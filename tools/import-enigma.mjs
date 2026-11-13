@@ -719,16 +719,19 @@ function convertLevel(pack, meta, xml, exp, lua) {
   for (const rb of w.rubberbands ?? []) {
     const i1 = actorIndex.get(rb.anchor1);
     let b = actorIndex.get(rb.anchor2);
+    let anchorStone = null;
     if (b === undefined) {
       const st = [...allCells(w)].find((c) => c.o.k.startsWith('st_') && ('#' + c.o.$id === rb.anchor2 || c.o.name === rb.anchor2));
-      // Bands to stones that move (boxes, puzzles …) would need the stone position each step.
-      if (st && !/^st_(box|puzzle|stoneimpulse|brownie|boulder|rotator|swap|pull|turnstile)/.test(st.o.k)) b = [st.x + 0.5, st.y + 0.5];
+      // Bands to stones that move (boxes, boulders …) follow the stone object (its $id) each step.
+      if (st) b = [st.x + 0.5, st.y + 0.5];
+      if (st && /^st_(box|puzzle|stoneimpulse|brownie|boulder|rotator|swap|pull|turnstile)/.test(st.o.k)) anchorStone = st.o.$id;
     }
     if (i1 === undefined || b === undefined) {
       reject('Gummiband an bewegtem oder unbekanntem Anker');
       continue;
     }
     const def = { a: i1, b };
+    if (anchorStone) def.stone = anchorStone;
     for (const key of ['strength', 'length', 'threshold', 'min', 'max']) {
       const v = Number(rb[key]);
       if (rb[key] !== '' && Number.isFinite(v)) def[key] = Math.round(v * 10000) / 10000;

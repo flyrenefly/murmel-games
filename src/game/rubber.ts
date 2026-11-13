@@ -8,6 +8,8 @@ export interface RubberDef {
   a: number;
   /** Second anchor: actor index, or the centre of a stone [x, y]. */
   b: number | [number, number];
+  /** The stone anchor moves (box, boulder …): its object id ($id); the band follows it. */
+  stone?: string;
   strength?: number;
   length?: number;
   threshold?: number;

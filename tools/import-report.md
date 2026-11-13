@@ -1,6 +1,6 @@
 # Enigma-Import
 
-817 von 1322 Levels übernommen (18 Pakete).
+822 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -67,7 +67,6 @@
 | Boden fl_adhesionless | 6 | 2 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
-| Gummiband an bewegtem oder unbekanntem Anker | 5 | 5 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 2 |
 | Stein st_jamb_black | 5 | 1 |

@@ -148,6 +148,8 @@ interface Body {
 export interface Blockers {
   /** color: 0 black, 1 white (marbles, pearls, killers), 2 = no colour. */
   blockAt(col: number, row: number, color?: number, invisible?: boolean, by?: number, shielded?: boolean, actor?: string): number;
+  /** Centre of a stone object (rubber band anchor), null if it is gone. */
+  anchorAt?(id: string): { x: number; y: number } | null;
 }
 
 export class PhysicsWorld {
@@ -227,7 +229,18 @@ export class PhysicsWorld {
       const a1 = bodies[r.a];
       const a2 = typeof r.b === 'number' ? bodies[r.b] : null;
       if (!a1 || (typeof r.b === 'number' && !a2)) continue;
-      const fixed = typeof r.b === 'number' ? null : { x: r.b[0], y: r.b[1] };
+      let fixed: { x: number; y: number } | null = typeof r.b === 'number' ? null : { x: r.b[0], y: r.b[1] };
+      if (fixed && r.stone && blockers?.anchorAt) {
+        // a moving stone anchor: the band end follows the stone (last position once it is gone)
+        const last = { ...fixed };
+        const id = r.stone;
+        const at = () => {
+          const p = blockers.anchorAt!(id);
+          if (p) Object.assign(last, p);
+          return last;
+        };
+        fixed = { get x() { return at().x; }, get y() { return at().y; } };
+      }
       this.rubbers.push(new Rubberband(r, a1, a2, fixed));
       for (const b of [a1, a2]) if (b) this.bandCount.set(b, (this.bandCount.get(b) ?? 0) + 1);
     }
