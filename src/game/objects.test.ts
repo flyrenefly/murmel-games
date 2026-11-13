@@ -1660,3 +1660,19 @@ describe('spitter', () => {
     expect(w.objects.some((o) => o.cls === 'explosion' && o.col === 5 && o.row === 2)).toBe(true);
   });
 });
+
+describe('jamb', () => {
+  it('a jamb passes a signal from its row to the neighbours in that row (1) and the others (0)', () => {
+    const w = world([
+      { x: 1, y: 2, k: 'st_switch', a: { target: 'j', action: 'signal' } },
+      { x: 2, y: 2, k: 'st_jamb_black', a: { name: 'j' } },
+      { x: 3, y: 2, k: 'st_door_a' },
+      { x: 2, y: 1, k: 'st_door_a' },
+    ]);
+    w.hit(1, 2, 0, -1, 0, -3, 0, 0, 0);
+    w.update(500);
+    w.update(1000);
+    expect(w.objects[2].state).toBe(1); // east door opens
+    expect(w.objects[3].state).toBe(0); // north door stays closed
+  });
+});

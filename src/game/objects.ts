@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone' | 'jamb';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -560,6 +560,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_surprise') return 'surprise';
   if (kind === 'st_surprise') return 'stsurprise';
   if (kind === 'st_spitter') return 'spitter';
+  if (/^st_jamb(_black|_white)?$/.test(kind)) return 'jamb';
   if (/^st_yinyang(_instant|_active|_inactive)?$/.test(kind)) return 'yystone';
   if (kind === 'it_trap') return 'trap';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
@@ -754,7 +755,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter' || o.cls === 'yystone') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter' || o.cls === 'yystone' || o.cls === 'jamb') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -2266,6 +2267,9 @@ export class ObjectWorld {
     this.events.push({ type: 'swapPlayer' });
     this.performAction(o, true);
   }
+
+  /** The object whose action is being performed (Message::sender), e.g. for st_jamb. */
+  private sender: GameObject | null = null;
 
   /** Milliseconds since a time of the object clock. */
   ageOf(t: number): number {
@@ -4249,6 +4253,19 @@ export class ObjectWorld {
       else if (msg === 'signal') o.state = Math.max(0, Math.min(2, o.state + (value ? -2 : 2)));
       return;
     }
+    if (o.cls === 'jamb') {
+      // JambStone "signal" from a stone (not an item): the neighbours in the sender's row (or column) get 1,
+      // the other two 0
+      const from = this.sender;
+      if (msg === 'signal' && from && !isItem(from)) {
+        const row = from.row === o.row;
+        for (const [dx, dy, horiz] of [[1, 0, true], [-1, 0, true], [0, -1, false], [0, 1, false]] as const) {
+          const n = this.stoneObjectAt(o.col + dx, o.row + dy);
+          if (n) this.message(n, 'signal', horiz === row, horiz === row ? 1 : 0);
+        }
+      }
+      return;
+    }
     if (o.cls === 'polarswitch') {
       // StateObject messages: on, off, toggle, signal
       if (msg === 'on' || msg === 'open') this.setPolar(o, 1);
@@ -4437,6 +4454,7 @@ export class ObjectWorld {
       if (num !== undefined && o.cls === 'fourswitch') num = 3 - num; // FourSwitch::invertActionValue
     }
     const s = o.state;
+    this.sender = o;
     const targets = splitTokens(o.attrs[`target_${s}`] ?? o.attrs.target);
     const actions = splitTokens(o.attrs[`action_${s}`] ?? o.attrs.action);
     targets.forEach((t, i) => {

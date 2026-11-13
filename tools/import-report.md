@@ -1,11 +1,11 @@
 # Enigma-Import
 
-928 von 1322 Levels übernommen (18 Pakete).
+930 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 6 |
-| Lua-Rückruf | 116 | 6 |
+| Lua-Rückruf | 114 | 6 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
@@ -41,7 +41,6 @@
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_jamb_black | 5 | 2 |
 | Pferd mit Aktion oder Steuerung | 4 | 1 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
@@ -59,6 +58,7 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
+| Aktion hit | 3 | 2 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: res.autotile | 2 | 0 |
@@ -162,7 +162,6 @@
 | Lua: st_granite_hollow | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
 | Boden fl_forward | 1 | 0 |
-| Stein st_jamb_white | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Lua: ac_rotor | 1 | 0 |

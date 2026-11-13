@@ -226,6 +226,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
+  if (/^st_jamb/.test(kind)) return ['st_jamb_black', 'st_jamb_white', 'sh_jamb'];
   if (/^st_yinyang/.test(kind)) return ['st_yinyang', 'st_yinyang_inactive', 'sh_round'];
   if (kind === 'st_spitter') return ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
   if (kind === 'st_surprise') return ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow'];
@@ -841,6 +842,11 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'jamb') {
+      if (pass === 'shadow') this.image('sh_jamb', px, py);
+      else this.image(o.kind === 'st_jamb_white' || o.attrs.color === '1' ? 'st_jamb_white' : 'st_jamb_black', px, py);
       return;
     }
     if (o.cls === 'yystone') {

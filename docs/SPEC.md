@@ -598,6 +598,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_yinyang (_instant/_active/_inactive)** (`SimpleStones.cc` YinyangStone): Anstoßen (oder eine Kanonenkugel)
   dreht ein ruhendes (6 × 140 ms), dann wechselt die gesteuerte Kugel (instant: sofort) und es führt seine
   Aktion aus; danach ist es inaktiv, mit `loop` wieder ruhend.
+- **st_jamb_black / _white** (`JambStone.cc`): fester Türpfosten; ein "signal" von einem Stein gibt er an die
+  Nachbarsteine weiter: in der Zeile (bzw. Spalte) des Absenders mit 1, an die beiden anderen mit 0.
+  Abweichung: Signale von Gegenständen mit Akteur-Farbe (Sensoren) fehlen.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist
