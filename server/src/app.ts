@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type AccountOptions, accountRoutes } from './konten.ts';
+import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
 import { berlinDay, LEVEL_ID, type StatEvent, type Statistics, type StatType, tokenMatches } from './stats.ts';
 
 /** What the API needs from the database (the real one: src/db.ts). */
@@ -21,6 +22,8 @@ export interface AppOptions {
   accounts?: AccountOptions;
   /** Forum (needs accounts); without it the routes are absent. */
   forum?: ForumStore;
+  /** Lösbarkeitsprüfung: solutions and nightly results for admins (needs accounts). */
+  solvability?: SolvabilityStore;
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
   statsToken?: string;
   /** Clock (tests). */
@@ -29,7 +32,7 @@ export interface AppOptions {
   logger?: boolean;
 }
 
-export function buildApp({ version, db, statsToken, accounts, forum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -47,6 +50,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, now = () =>
   // Accounts first: their hook sets req.account for every /api route (admins see the statistics).
   if (accounts) accountRoutes(app, accounts);
   if (accounts && forum) forumRoutes(app, { store: forum, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
+  if (accounts && solvability) solvabilityRoutes(app, solvability);
 
   // Statistics: the game reports level starts and solves (navigator.sendBeacon, no cookie).
   app.post<{ Body: { type: StatType; level: string } }>(
