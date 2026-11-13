@@ -7,7 +7,8 @@ Routen, Versand mit 404/410, einmal je Zeitraum; PostgreSQL-Teil in der CI), vit
 iPhone/iPad, Erlaubnis vor Abo, Abmelden, Schlüsselwechsel), Build mit `push`/`notificationclick` in
 `sw.js`, Vorschau im Browser mit nachgebildeter API (Zeile „Erinnerung“, Karte, verweigerte Erlaubnis).
 **Nicht geprüft:** echte Zustellung über FCM, Mozilla und Apple (braucht Schlüssel auf dem Server).
-Datenschutztext: Entwurf liegt bei der Koordination, Freigabe offen.
+Datenschutztext: Abschnitt „Erinnerung an das Tageslevel (Web Push)“ vom Nutzer freigegeben (13.11.2026, Einwilligung
+nach Art. 6 Abs. 1 lit. a DSGVO) und in `datenschutz.html` eingetragen.
 
 ## Ziel
 
@@ -40,7 +41,8 @@ ein Neustart nicht doppelt schickt.
   sonst 400. Der Server schickt an diese Adresse – ohne Liste könnte jemand ihn an beliebige Ziele
   (auch interne) Anfragen senden lassen.
 - Grenzen: Endpoint höchstens 1 KB, Schlüssel in fester Länge (65 bzw. 16 Byte); 20 Schreibzugriffe je
-  IP und Stunde (nur im Speicher, wie die anderen Grenzen); höchstens 100 000 Abos insgesamt.
+  IP in 55 Minuten (nur im Speicher; abgelaufene Einträge löscht die API jede Minute, eine IP bleibt also
+  höchstens eine Stunde, wie in der Datenschutzerklärung zugesagt); höchstens 100 000 Abos insgesamt.
 
 ## Versand
 
@@ -101,7 +103,7 @@ abonnieren; das Spiel erkennt den neuen Schlüssel beim nächsten Laden und abon
 |---|---|---|
 | W1 | `server/src/webpush.ts`: VAPID, Verschlüsselung, Versand, Routen, Zeitgeber; Stores DB/Speicher; Migration 013 | `node --test` (RFC-8291-Beispiel, VAPID-Signatur, Routen, Versand mit 404/410, einmal je Zeitraum), DB-Teil in der CI |
 | W2 | Spiel: `src/webpush.ts`, Zeile und Karte, `#tageslevel`; Service Worker `push`, `notificationclick` | vitest |
-| W3 | Datenschutz: Abschnitt „Erinnerung an das Tageslevel (Web Push)“ – **erst nach Freigabe** | – |
+| W3 | Datenschutz: Abschnitt „Erinnerung an das Tageslevel (Web Push)“ – freigegeben und eingetragen | – |
 
 ## Grenzen
 

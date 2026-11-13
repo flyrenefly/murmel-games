@@ -37,6 +37,11 @@ export interface Vapid {
 
 export const MAX_SUBSCRIPTIONS = 100_000;
 export const WRITES_PER_HOUR = 20;
+/**
+ * The window of that limit: 55 minutes, and ended windows are dropped every minute, so an IP address
+ * stays in memory at most an hour (privacy policy „Erinnerung an das Tageslevel“).
+ */
+export const WRITE_WINDOW_MS = 55 * 60_000;
 const ENDPOINT_MAX = 1024;
 
 const b64 = (b: Buffer | Uint8Array) => Buffer.from(b).toString('base64url');
@@ -153,7 +158,10 @@ export interface PushOptions {
 }
 
 export function pushRoutes(app: FastifyInstance, { store, vapid, origin, now }: PushOptions): void {
-  const writes = new RateLimit(WRITES_PER_HOUR, 3_600_000);
+  const writes = new RateLimit(WRITES_PER_HOUR, WRITE_WINDOW_MS);
+  const pruning = setInterval(() => writes.prune(now().getTime()), 60_000);
+  pruning.unref();
+  app.addHook('onClose', async () => clearInterval(pruning));
 
   app.get('/api/push', async (_req, reply) => {
     reply.header('Cache-Control', 'no-store');

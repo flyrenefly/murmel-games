@@ -4,8 +4,9 @@ import { after, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.ts';
 import { connect } from './db.ts';
+import { RateLimit } from './limit.ts';
 import { migrate } from './migrate.ts';
-import { encrypt, generateVapidKeys, message, nextDelay, parseSubscription, type PushSubscription, sendDue, vapidAuthorization, vapidFromEnv, verifyVapid } from './webpush.ts';
+import { encrypt, generateVapidKeys, WRITE_WINDOW_MS, WRITES_PER_HOUR, message, nextDelay, parseSubscription, type PushSubscription, sendDue, vapidAuthorization, vapidFromEnv, verifyVapid } from './webpush.ts';
 import { pushStore } from './webpush-db.ts';
 import { memoryPushStore } from './webpush-memory.ts';
 
@@ -207,6 +208,17 @@ describe('Push-API', () => {
     assert.deepEqual(store.all(), []);
     // unknown endpoint: still 204 (nothing to tell)
     assert.equal((await app.inject({ method: 'DELETE', url: '/api/push/abo', payload: { endpoint: 'x' } })).statusCode, 204);
+  });
+
+  test('Grenze: IP-Adressen bleiben höchstens eine Stunde im Speicher', () => {
+    const l = new RateLimit(WRITES_PER_HOUR, WRITE_WINDOW_MS);
+    l.take('203.0.113.7', 0);
+    l.prune(WRITE_WINDOW_MS - 1);
+    assert.equal(l.size, 1);
+    // pruned every minute: gone at the latest one minute after the window ended
+    l.prune(WRITE_WINDOW_MS);
+    assert.equal(l.size, 0);
+    assert.ok(WRITE_WINDOW_MS + 60_000 <= 3_600_000);
   });
 
   test('höchstens 20 Änderungen je Adresse und Stunde', async () => {
