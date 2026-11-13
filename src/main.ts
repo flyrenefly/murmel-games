@@ -167,11 +167,13 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       const cell = cellAt(lv, c, r);
       return !!cell?.stone && (!!cell.hollow || /^st_(rawglass|lightglass|redfiber)/.test(cell.stone));
     },
-    setStaticStone: (c, r, kind) => {
+    setStaticStone: (c, r, kind, hollow) => {
       const cell = cellAt(lv, c, r);
       if (!cell) return;
       cell.stone = kind;
-      physics?.setSolid(c, r, kind !== null);
+      if (hollow) cell.hollow = true;
+      else delete cell.hollow;
+      physics?.setSolid(c, r, kind !== null && !hollow);
       classic.floorChanged();
     },
   }, Math.random, lv.compat);

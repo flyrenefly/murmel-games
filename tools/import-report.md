@@ -1,6 +1,6 @@
 # Enigma-Import
 
-903 von 1322 Levels übernommen (18 Pakete).
+905 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -33,7 +33,7 @@
 | Stein st_spitter | 9 | 1 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
-| Lua-Init (Weltwert) | 8 | 1 |
+| Lua-Init (Weltwert) | 8 | 2 |
 | Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
@@ -51,7 +51,6 @@
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
-| Stein st_surprise | 4 | 2 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
@@ -81,7 +80,7 @@
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Stein st_yinyang | 2 | 0 |
+| Stein st_yinyang | 2 | 1 |
 | Lua: :peepall | 2 | 1 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |

@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -332,7 +332,7 @@ export interface ObjectEnv {
   /** Plain stone of the map in a cell (null = none; 'st_oxyd' for Oxyd stones). */
   staticStone?(col: number, row: number): string | null;
   /** Change the plain stone of a cell (st_swap exchanging places with a wall). */
-  setStaticStone?(col: number, row: number, kind: string | null): void;
+  setStaticStone?(col: number, row: number, kind: string | null, hollow?: boolean): void;
   /** The plain stone of a cell lets laser light through (Stone::is_transparent: glass, hollow). */
   transparentAt?(col: number, row: number): boolean;
   /** A fire attribute of the cell's floor (burnable, secure, eternal, noash, fastfire, ignitable), if set. */
@@ -547,6 +547,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_thief') return 'thief';
   if (kind === 'fl_thief') return 'flthief';
   if (kind === 'it_surprise') return 'surprise';
+  if (kind === 'st_surprise') return 'stsurprise';
   if (kind === 'it_trap') return 'trap';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
@@ -740,7 +741,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -784,6 +785,15 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'stsurprise') {
+        // SurpriseStone::actor_hit: its action, then a random stone of its selection replaces it
+        this.performAction(o, true);
+        if (o.gone) return;
+        const sel = (o.attrs.selection ?? '').split(/[,;]/).map((t) => t.trim()).filter(Boolean);
+        const list = sel.length ? sel : ['st_grate_cross', 'st_death', 'st_surprise', 'st_lightglass_hollow', 'st_knight', 'st_thief', 'st_flat_breakable', 'st_flat_breaking', 'st_puzzle_yellow'];
+        this.transformStone(o, list[Math.floor(this.random() * list.length)]);
+        return;
+      }
       if (o.cls === 'charge') {
         // ChargeStone::actor_hit: the actor gets its charge; animation 140 ms
         o.pulse = this.now;
@@ -1970,8 +1980,14 @@ export class ObjectWorld {
     const cls = objectClass(kind);
     if (cls) {
       const n = this.add(kind, cls, o.col, o.row);
-      n.state = initialState(kind, {});
-    } else this.env.setStaticStone?.(o.col, o.row, kind);
+      if (kind === 'st_puzzle_yellow') n.attrs = { color: '3' };
+      n.state = initialState(kind, n.attrs);
+      this.shatterAt(o.col, o.row);
+    } else if (kind.endsWith('_hollow')) this.env.setStaticStone?.(o.col, o.row, kind.replace(/_hollow$/, ''), true);
+    else {
+      this.env.setStaticStone?.(o.col, o.row, kind);
+      this.shatterAt(o.col, o.row);
+    }
   }
 
 /** MonoFlopStone::setState(1): off → on with its action; on → the timer starts again. */
@@ -3734,7 +3750,7 @@ export class ObjectWorld {
       if (o.cls === 'bridge' && !o.gone) this.bridgeStep(o);
       if (o.cls === 'rotator' && !o.gone) this.rotatorStep(o);
       if (o.cls === 'blocker' && !o.gone) this.blockerStep(o);
-      if (o.cls === 'breakstone' && !o.gone && o.breaking === undefined && o.kind === 'st_flat_breaking') o.breaking = 0;
+      if (o.cls === 'breakstone' && !o.gone && o.breaking === undefined && o.kind === 'st_flat_breaking') o.breaking = this.now;
       if (o.cls === 'breakstone' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= breakMs(o)) this.remove(o);
       if (o.cls === 'ice' && !o.gone && o.breaking !== undefined && this.now - o.breaking >= 5 * 50) {
         // IceBlock::animcb (BREAKING): CoverFloor fl_ice here and on the four neighbours (not abyss)

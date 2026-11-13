@@ -632,6 +632,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (8 Bilder) und bleibt sichtbar. **fl_adhesionless**: Boden ohne Haftung (die Maus wirkt nicht).
 - **st_death_movable** (`DeathStone.cc`): Todesstein, den Stöße anderer Steine (Impulse) verschieben.
   Abweichung: Kugeln mit Schutzschild schieben ihn noch nicht.
+- **st_surprise** (`SurpriseStone.cc`): Anstoßen führt seine Aktion aus, dann wird er zu einem zufälligen Stein aus
+  `selection` (Vorgabe: Gitter, Todesstein, Überraschung, hohles Hellglas, Ritter, Dieb, Flach- und
+  zerbrechender Flachstein, gelbes Puzzle); eine Kugel darin zerschellt (außer bei hohlen Steinen).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

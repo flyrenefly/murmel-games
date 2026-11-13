@@ -114,6 +114,7 @@ const OBJECTS = [
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
   [/^it_trap$/, ['it_trap']],
+  [/^st_surprise$/, ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow']],
   [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],
   [/^it_glasses(_broken)?$/, ['it_glasses', 'it_glasses_broken', 'st_death']],
   [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
@@ -514,6 +515,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
           if ((/^st_(box|stoneimpulse|brownie)/.test(st.k) || st.k.endsWith("_movable")) && st.selection) reject(`Stein ${st.k} (verbunden)`);
           objs.push(objectDef(x, y, st));
           objectImages(st.k).forEach((i) => imgs.add(i));
+          // st_surprise: a custom selection must be stones Murmel has
+          if (st.k === 'st_surprise' && st.selection) for (const t of tokens(st.selection)) {
+            const im = objectImages(t) ?? (STONES.has(t) ? [t] : null);
+            if (t.startsWith('=') || !im) reject(`Überraschungsstein mit ${t}`);
+            else im.forEach((i) => imgs.add(i));
+          }
           // st_barrier_<item>: the item's images, if Murmel has the item
           if (st.k === 'st_barrier' && st.flavor && st.flavor !== 'all') {
             const im = objectImages(st.flavor);

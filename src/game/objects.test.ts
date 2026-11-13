@@ -1634,3 +1634,11 @@ describe('trap and API 1 messages', () => {
     expect(w.objects[0].state).toBe(1 - before);
   });
 });
+
+describe('surprise stone', () => {
+  it('turns into a stone of its selection when hit', () => {
+    const w = world([{ x: 3, y: 0, k: 'st_surprise', a: { selection: 'st_death' } }]);
+    w.hit(3, 0, 0, -1, 0, -3, 0, 0, 0);
+    expect(w.objects.filter((o) => !o.gone).map((o) => o.kind)).toEqual(['st_death']);
+  });
+});
