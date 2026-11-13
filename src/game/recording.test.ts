@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decodeInput, encodeInput, quantize, Recorder, type StepInput } from './recording';
 
-const still: StepInput = { fx: 0, fy: 0, actions: [] };
+const still: StepInput = { fx: 0, fy: 0, ax: 0, ay: 0, actions: [] };
 
 describe('quantize', () => {
   it('rundet auf 1/1024 und liefert ganze Zahlen', () => {
@@ -39,7 +39,7 @@ describe('Recorder', () => {
     const r = new Recorder();
     const used = r.step(0.123456, -0.98765);
 
-    expect(used).toEqual([quantize(0.123456) / 1024, quantize(-0.98765) / 1024]);
+    expect(used).toEqual([quantize(0.123456) / 1024, quantize(-0.98765) / 1024, 0, 0]);
   });
 });
 
@@ -48,9 +48,9 @@ describe('encodeInput / decodeInput', () => {
     const steps: StepInput[] = [
       still,
       still,
-      { fx: 0.5, fy: 0, actions: ['drop'] },
-      { fx: 0.5, fy: 0, actions: [] },
-      { fx: -1, fy: 0.25, actions: ['rotate', 'swap'] },
+      { fx: 0.5, fy: 0, ax: 0, ay: 0, actions: ['drop'] },
+      { fx: 0.5, fy: 0, ax: 0, ay: 0, actions: [] },
+      { fx: -1, fy: 0.25, ax: 0, ay: 0, actions: ['rotate', 'swap'] },
       still,
     ];
     const r = new Recorder();
@@ -69,6 +69,24 @@ describe('encodeInput / decodeInput', () => {
     expect(() => decodeInput({ v: 1, steps: 1, input: [[1, 'hack']] })).toThrow();
     expect(() => decodeInput({ v: 1, steps: 1, input: [[1, 0]] })).toThrow();
     expect(() => decodeInput({ v: 2, steps: 0, input: [] })).toThrow();
+  });
+
+  it('nimmt die Achsenkraft (Tasten, Neigen) mit, nur wenn sie nicht 0 ist', () => {
+    const r = new Recorder();
+    r.step(0, 0);
+    r.step(0, 0, 0.5, -1);
+    r.step(0, 0, 0.5, -1);
+
+    expect(r.input()).toEqual([[1, 0, 0], [2, 0, 0, 512, -1024]]);
+    expect([...decodeInput(encodeInput(r))].map((s) => [s.ax, s.ay])).toEqual([[0, 0], [0.5, -1], [0.5, -1]]);
+  });
+
+  it('kennt die Aktion use (Klick oder Leertaste)', () => {
+    const r = new Recorder();
+    r.action('use');
+    r.step(0, 0);
+
+    expect([...decodeInput(encodeInput(r))][0].actions).toEqual(['use']);
   });
 
   it('lehnt eine Aufzeichnung ab, deren Schrittzahl nicht zur Eingabe passt', () => {
