@@ -15,6 +15,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
+    "@simplewebauthn/browser": "14.0.0",
     "fengari-web": "^0.1.4",
     "three": "^0.187.0"
   },

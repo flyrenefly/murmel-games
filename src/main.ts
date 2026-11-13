@@ -14,6 +14,7 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
+import { kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -56,6 +57,7 @@ const ovText = $('ov-text');
 const ovButtons = $('ov-buttons');
 const levelList = $('level-list');
 const toast = $('toast');
+const ovForm = $('ov-form');
 
 const sfx = new Sfx();
 const view = new View(canvas3d);
@@ -192,6 +194,8 @@ function showOverlay(title: string, text: string, buttons: [string, () => void][
     }),
   );
   levelList.hidden = true;
+  ovForm.hidden = true;
+  ovForm.replaceChildren();
   overlay.hidden = false;
 }
 
@@ -228,6 +232,7 @@ function showStart(): void {
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
     [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
+    [kontoLabel(), openKonto],
   ]);
 }
 
@@ -237,7 +242,16 @@ function showPause(): void {
     ['Weiterspielen', startPlaying],
     ['Neustart', restart],
     ['Levels', showLevels],
+    [kontoLabel(), openKonto],
   ]);
+}
+
+// ---------- account (optional, src/konto-ui.ts) ----------
+const kontoHost: KontoHost = { showOverlay, form: ovForm, back: showStart };
+function openKonto(): void {
+  mode = 'menu';
+  input.releaseLock();
+  void kontoOeffnen(kontoHost);
 }
 
 function escapeHtml(t: string): string {
@@ -611,6 +625,8 @@ window.addEventListener('click', () => {
   if (mode === 'play' && !input.locked && !isTouch) input.requestLock();
 });
 window.addEventListener('keydown', (e) => {
+  // Typing in a form field (account dialog) is no game shortcut.
+  if (e.target instanceof HTMLInputElement) return;
   // Esc/P pause even when the browser gave no pointer lock (then Esc does not
   // unlock anything). P also resumes; Esc does not, because a locked browser
   // may deliver the same Esc that already opened the pause via pointerlockchange.
@@ -656,7 +672,13 @@ for (const [k, v] of Object.entries(store.get<Record<string, string[]>>('solvedP
 for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 
 await loadLevel(packId, levelIndex);
-showStart();
+// Accounts are optional: the status call runs in the background; a mail link opens its dialog.
+void kontoLaden().then(() => {
+  for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
+});
+if (!mailLinkPruefen(kontoHost)) showStart();
+// A mail link opened in a tab that already plays
+window.addEventListener('hashchange', () => void mailLinkPruefen(kontoHost));
 $('loading').remove();
 requestAnimationFrame((t) => {
   last = t;

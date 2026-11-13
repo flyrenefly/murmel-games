@@ -8,15 +8,18 @@
   },
   "scripts": {
     "start": "node src/index.ts",
-    "test": "node --test \"src/**/*.test.ts\"",
+    "test": "node --test --test-concurrency=1 \"src/**/*.test.ts\"",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@simplewebauthn/server": "14.0.3",
     "fastify": "5.12.8",
+    "nodemailer": "10.3.1",
     "postgres": "4.1.1"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
+    "@types/nodemailer": "8.0.2",
     "typescript": "7.0.2"
   }
 }

@@ -67,6 +67,8 @@ export default defineConfig({
   // Relative paths so the build works in any webspace folder.
   base: './',
   plugins: [cspSafeFengari(), offline()],
+  // npm run dev: the API (server/, port 3000) under the same address as on the server
+  server: { proxy: { '/api': 'http://localhost:3000' } },
   build: {
     target: 'es2022',
     assetsInlineLimit: 0,
