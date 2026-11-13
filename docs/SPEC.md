@@ -541,6 +541,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Auflöser; Kartenobjekte, Leserichtungen und res.*-Auflöser fehlen. Der Import erkennt die gesetzten Kacheln an den
   Kartenzeichen und Variablen der Aufrufe.
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
+- **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
+  Hauptkugel (Spieler 2, sein Inventar).
 - **st_flat_breakable / _cracked / _burnable / _breaking, st_plaster_breakable / _movable** (`FlatStone.cc`,
   `PlasterStone.cc`): als Bruchsteine mit der st_flat_break-Animation (6 × 50 ms). Hammer bricht
   breakable und cracked; Laser bricht breakable; Explosion/Zünden bricht breakable und cracked; Feuer

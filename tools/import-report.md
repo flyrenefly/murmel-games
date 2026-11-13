@@ -1,6 +1,6 @@
 # Enigma-Import
 
-950 von 1322 Levels übernommen (18 Pakete).
+952 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -36,7 +36,6 @@
 | Lua: :can_go_south | 6 | 0 |
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
-| Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
@@ -55,7 +54,7 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Akteur ac_marble_glass | 3 | 0 |
+| Akteur ac_marble_glass | 3 | 1 |
 | Stein st_document | 3 | 0 |
 | Lua: res.autotile | 2 | 0 |
 | Lua: st_greenbrown_hollow | 2 | 0 |
@@ -75,6 +74,7 @@
 | nur Netzwerkspiel | 2 | 2 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
+| Akteure: nicht genau eine schwarze Murmel | 2 | 0 |
 | Lua: :fl | 1 | 0 |
 | Lua: :grid | 1 | 0 |
 | Lua: timer_action() | 1 | 0 |

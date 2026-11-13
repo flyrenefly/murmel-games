@@ -198,7 +198,9 @@ export class PhysicsWorld {
     // Without a black marble the first pearl is ball 0 (it stays a pearl).
     const mp = level.mainPearl;
     this.marbles = [
-      mp
+      mp?.k === 'ac_marble_white'
+        ? makeMarble(1, level.start.x, level.start.y) // a single white marble is the main ball
+        : mp
         ? makeMarble(mp.k === 'ac_pearl_black' || mp.a?.color === '0' ? 0 : 1, level.start.x, level.start.y, true, { x: Number(mp.a?.velocity_x) || 0, y: Number(mp.a?.velocity_y) || 0 })
         : makeMarble(0, level.start.x, level.start.y),
     ];
