@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b12" media="(prefers-color-scheme: dark)" />
+    <title>Rangliste – Murmel</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      /* Tokens wie forum.html und loesbarkeit.html */
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f6f2;
+        --fg: #1d1c1a;
+        --muted: #5d5a54;
+        --accent: #1f5fa8;
+        --card: #ffffff;
+        --line: #e3e0d8;
+        --me: #e6eef9;
+        --bad: #b3261e;
+        --gold: #8a6a00;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0b12;
+          --fg: #e9e7e1;
+          --muted: #a6a29a;
+          --accent: #7fb2ff;
+          --card: #15151f;
+          --line: #2a2a38;
+          --me: #1c2d47;
+          --bad: #ff8a80;
+          --gold: #e8c76a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 17px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-text-size-adjust: 100%;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+      }
+      nav a,
+      a {
+        color: var(--accent);
+      }
+      nav {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+      h1 {
+        font-size: 28px;
+        line-height: 1.2;
+        margin: 8px 0 4px;
+        overflow-wrap: anywhere;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      #status:empty {
+        display: none;
+      }
+      #status {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 16px;
+      }
+      /* Der eigene Platz: groß, damit man ihn sofort findet */
+      .me {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 20px 0;
+      }
+      .me[hidden] {
+        display: none;
+      }
+      .me b {
+        font-size: 34px;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .me .grow {
+        flex: 1 1 auto;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .num {
+        text-align: right;
+        white-space: nowrap;
+      }
+      td.rank {
+        width: 3.5em;
+        font-weight: 600;
+      }
+      /* Plätze 1–3: Zahl in Gold, die Platzzahl bleibt lesbar (nicht nur Farbe) */
+      tr.top td.rank {
+        color: var(--gold);
+      }
+      tr.mine td {
+        background: var(--me);
+        font-weight: 600;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 0 8px;
+        margin-left: 6px;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+      }
+      .name {
+        overflow-wrap: anywhere;
+      }
+      .noname {
+        color: var(--muted);
+        font-style: italic;
+      }
+      td.date {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      button {
+        font: inherit;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+        cursor: pointer;
+      }
+      button.danger {
+        color: var(--bad);
+      }
+      button.small {
+        min-height: 36px;
+        padding: 4px 10px;
+        font-size: 15px;
+      }
+      .empty {
+        padding: 24px 16px;
+        margin: 0;
+      }
+      footer {
+        margin-top: 16px;
+        font-size: 15px;
+      }
+      @media (max-width: 480px) {
+        th.date,
+        td.date {
+          display: none;
+        }
+        th,
+        td {
+          padding: 10px 8px;
+        }
+      }
+    </style>
+    <script type="module" src="/src/bestenliste-seite.ts"></script>
+  </head>
+  <body>
+    <main>
+      <nav><a href="./">← Zurück zum Spiel</a></nav>
+      <h1 id="title">Rangliste</h1>
+      <p id="sub" class="muted">Zeiten je Level, jede durch Nachspielen auf dem Server geprüft.</p>
+      <p id="status" role="status" aria-live="polite">Lade …</p>
+      <section id="me" class="me" hidden></section>
+      <div id="list" class="card" hidden>
+        <table>
+          <caption class="muted" style="position: absolute; left: -9999px">Die besten 100 Zeiten</caption>
+          <thead>
+            <tr><th scope="col">Platz</th><th scope="col">Name</th><th scope="col" class="num">Zeit</th><th scope="col" class="date">Datum</th><th scope="col"><span style="position: absolute; left: -9999px">Aktionen</span></th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <footer class="muted">Es zählen nur Läufe angemeldeter Spieler; bei gleicher Zeit liegt vorn, wer sie zuerst geschafft hat. Den Anzeigenamen wählst du im <a href="forum.html">Forum</a>.</footer>
+    </main>
+  </body>
+</html>

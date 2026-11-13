@@ -17,6 +17,9 @@ let stand: KontoStand | null = null;
 /** Menu label: "Anmelden" or "Konto" (known after the first status call). */
 export const kontoLabel = (): string => (stand?.angemeldet ? 'Konto' : 'Anmelden');
 
+/** Signed in and not blocked: runs go to the leaderboard (docs/SPEC-bestenliste.md). */
+export const darfEinreichen = (): boolean => stand?.angemeldet === true && !stand.konto.gesperrt;
+
 /** Signed in as admin (e.g. "Als Lösung speichern" after a win, docs/SPEC-loesbarkeit.md). */
 export const istAdmin = (): boolean => stand?.angemeldet === true && stand.konto.rolle === 'admin';
 
