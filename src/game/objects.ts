@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3, surprise: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht', it_surprise: 'Überraschung' };
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
@@ -522,6 +522,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
   if (kind === 'fl_thief') return 'flthief';
+  if (kind === 'it_surprise') return 'surprise';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
   if (kind === 'st_polarswitch') return 'polarswitch';
@@ -1455,7 +1456,12 @@ export class ObjectWorld {
         }
         o.gone = true;
         this.unplace(o);
-        const kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
+        let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
+        // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
+        if (o.cls === 'surprise') {
+          kind = `it_surprise#${++this.carriedId}`;
+          this.carried.set(kind, o.attrs);
+        }
         // Inventory::add_item: into a bag in front that is not full
         if (intoBag) inv[0] = bagKind([kind, ...bagContents(inv[0])]);
         else inv.unshift(kind);
@@ -1493,8 +1499,27 @@ export class ObjectWorld {
     return true;
   }
 
+  /** Attributes of carried items (inventory kind "it_surprise#n"). */
+  private carried = new Map<string, Record<string, string>>();
+  private carriedId = 0;
+
   /** Item::drop: an item of this kind lands in the cell (with its on_drop effects). */
   private dropKind(kind: string, col: number, row: number): void {
+    if (kind.startsWith('it_surprise')) {
+      // SurpriseItem::on_drop: its action, then it becomes a random item of its selection
+      const o = this.add('it_surprise', 'surprise', col, row);
+      o.attrs = { ...(this.carried.get(kind) ?? {}) };
+      this.carried.delete(kind);
+      this.performAction(o, true);
+      if (o.gone) return;
+      const sel = (o.attrs.selection ?? '').split(/[,;]/).map((t) => t.trim()).filter(Boolean);
+      const list = sel.length ? sel : ['it_umbrella', 'it_spring_keep', 'it_dynamite', 'it_coffee', 'it_hammer'];
+      const next = list[Math.floor(this.random() * list.length)];
+      const cls = objectClass(next);
+      this.remove(o);
+      if (cls) this.add(next, cls, col, row);
+      return;
+    }
     if (isBag(kind)) {
       const bag = this.add('it_bag', 'bag', col, row);
       bag.loot = bagContents(kind);

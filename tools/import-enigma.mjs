@@ -100,6 +100,7 @@ const OBJECTS = [
   [/^(st|it)_brake$/, ['st_brake', 'sh_brake', 'it_explosion']],
   [/^it_pipe(_[nesw]{1,2})?$/, ['it_pipe']],
   [/^it_bag$/, ['it_bag']],
+  [/^it_surprise$/, ['it_surprise', 'it_umbrella', 'it_spring', 'it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_coffee', 'it_hammer']],
   [/^st_portal(_horse|_pearl)?$/, ['st_portal_horse', 'sh_portal_horse']],
   [/^st_scissors$/, ['st_scissors', 'sh_round']],
   [/^st_rubberband$/, ['st_rubberband', 'sh_round']],
@@ -174,7 +175,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|length|threshold|max|orientation|charge|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|length|threshold|max|orientation|charge|selection|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff'], [/^fl_bridge/, 'openclose']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
@@ -401,6 +402,11 @@ function convertLevel(pack, meta, xml, exp, lua) {
       // it_laserbeam: Enigma's beams of the initial world – Murmel calculates them itself
       // Bottle with a message ("text": shown as a document when used) is not built
       if (it && /^it_bottle/.test(it.k) && it.text) reject('Flasche mit Text');
+      // it_surprise: its selection must be items Murmel has ("=tile" needs Lua)
+      if (it && it.k === 'it_surprise' && it.selection) for (const t of tokens(it.selection)) {
+        if (t.startsWith('=') || !objectImages(t)) reject(`Überraschung mit ${t}`);
+        else objectImages(t).forEach((i) => imgs.add(i));
+      }
       if (it && it.k !== 'it_laserbeam') {
         const im = objectImages(it.k);
         if (im) {

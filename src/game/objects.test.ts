@@ -1604,3 +1604,16 @@ describe('bag', () => {
     expect(w.objects.find((o) => o.cls === 'bag' && !o.gone)?.loot).toEqual(['it_hammer']);
   });
 });
+
+describe('surprise', () => {
+  it('a dropped surprise performs its action and becomes an item of its selection', () => {
+    const w = new ObjectWorld([door(5), { x: 2, y: 0, k: 'it_surprise', a: { target: 'door1', action: 'open', selection: 'it_hammer' } }], W, {}, undefined, () => 0);
+    w.marbleAt(0, 0);
+    w.actorStep(2.5, 0.5, 0);
+    expect(w.inventory[0]).toMatch(/^it_surprise#/);
+    w.dropItem(3.5, 0.5);
+    w.update(500);
+    expect(w.objects[0].state).toBe(1);
+    expect(w.objects.find((o) => !o.gone && o.kind === 'it_hammer')?.col).toBe(3);
+  });
+});

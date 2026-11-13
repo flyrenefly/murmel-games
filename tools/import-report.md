@@ -1,6 +1,6 @@
 # Enigma-Import
 
-886 von 1322 Levels übernommen (18 Pakete).
+888 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -40,7 +40,6 @@
 | Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
-| Gegenstand it_surprise | 7 | 4 |
 | Wurmloch ohne Ziel | 7 | 1 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -172,13 +171,15 @@
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 1 |
 | Stein st_barrier (it_pencil) | 1 | 0 |
+| Überraschung mit =w | 1 | 1 |
+| Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
 | Stein st_barrier (it_drop) | 1 | 0 |
+| Überraschung mit =i | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
-| Lua: it_surprise | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |

@@ -621,6 +621,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   sich ab: Kraft ElectricForce (15) · q1 · q2 / Abstand entlang ihrer Verbindungslinie.
 - **it_weight** (`SimpleItems.cc` Weight): jedes Gewicht im Inventar macht die Kugel 10 schwerer (träger, stärker
   bei Stößen, schwerer auf Waagen); es lässt sich nicht ablegen (ITEM_KEEP).
+- **it_surprise** (`SurpriseItem.cc`): abgelegt führt es seine Aktion aus und wird zu einem zufälligen
+  Gegenstand aus `selection` (Vorgabe Schirm, Feder, Dynamit, Kaffee, Hammer; ohne dessen Ablegewirkung).
+  Ziel und Auswahl reisen im Inventar mit. Auswahl mit "=Kachel" (Lua) fehlt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

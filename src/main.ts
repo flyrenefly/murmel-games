@@ -971,7 +971,7 @@ function updateItems(): void {
   hudItems.hidden = n === 0;
   btnDrop.hidden = n === 0;
   btnRotate.hidden = n < 2;
-  const names = inv.map((k) => (isBag(k) ? `Sack (${bagContents(k).length})` : (ITEM_NAMES[k] ?? k)));
+  const names = inv.map((k) => (isBag(k) ? `Sack (${bagContents(k).length})` : (ITEM_NAMES[k.replace(/#\d+$/, '')] ?? k)));
   const rest = new Map<string, number>();
   for (const s of names.slice(1)) rest.set(s, (rest.get(s) ?? 0) + 1);
   hudItems.textContent = n ? [`Hand: ${names[0]}`, ...[...rest].map(([s, c]) => (c > 1 ? `${s} ${c}` : s))].join(' · ') : '';

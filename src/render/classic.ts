@@ -193,6 +193,7 @@ export function objectImages(kind: string): string[] {
   if (/^it_(coffee|coffee_drop)$/.test(kind)) return ['it_coffee'];
   if (/^it_(spade|brush|cherry|banana|cross|squashed|pin|weight)$/.test(kind)) return [kind, 'it_squashed'];
   if (/^it_glasses/.test(kind)) return ['it_glasses', 'it_glasses_broken', 'st_death'];
+  if (kind === 'it_surprise') return ['it_surprise', 'it_umbrella', 'it_spring', 'it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_coffee', 'it_hammer'];
   if (/^it_bottle/.test(kind)) return ['it_bottle_idle', 'it_bottle_broken'];
   if (kind.startsWith('it_burnable') || kind.startsWith('it_extinguisher')) return FIRE_IMAGES;
   if (kind.startsWith('it_strip')) return ['it_strip'];
@@ -574,6 +575,7 @@ export class ClassicView {
       else if (o.cls === 'yinyang') this.frame('it_yinyang', 0, px, py); // DefTiles: it_yinyang, it_yangyin
       else if (o.cls === 'tool' && o.kind.startsWith('it_coffee')) this.frame('it_coffee', Math.floor(this.now / 150) % 4, px, py);
       else if (o.cls === 'cross') this.image('it_cross', px, py);
+      else if (o.cls === 'surprise') this.image('it_surprise', px, py);
       else if (o.cls === 'pipe') {
         // it_pipe tiles: e s es sw ew w n ne nw ns (models-2d.lua, first row)
         const b = pipeBits(o);
@@ -633,7 +635,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable' || o.cls === 'cross' || o.cls === 'squashed' || o.cls === 'bottle' || o.cls === 'pipe') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable' || o.cls === 'cross' || o.cls === 'squashed' || o.cls === 'bottle' || o.cls === 'pipe' || o.cls === 'surprise') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
