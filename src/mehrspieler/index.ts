@@ -210,6 +210,8 @@ export function zuZweit(host: SpielHost) {
       if (s === 'verbunden') c.senden({ t: 'hallo', version: __MURMEL_VERSION__ });
       if (s === 'verbunden' && gastgeber()) void rundeStarten();
       if (s === 'abgebrochen' && phase !== 'aus') abbruch();
+      // host: the guest left; the room stays open and the guest can come back with the same code
+      if (s === 'raum' && gastgeber() && (phase === 'spiel' || phase === 'ende')) host.showToast(`Dein Mitspieler ist weg. Mit dem Code ${c.code} kann er wieder beitreten.`, 4000);
     };
     c.onNachricht = (n) => v === c && empfangen(n);
     c.onFehler = (g) => g === 'verfallen' && host.showToast(FEHLERTEXT.verfallen, 3000);
@@ -430,6 +432,9 @@ export function zuZweit(host: SpielHost) {
     const knoepfe: [string, () => void][] = gastgeber() ? nachDemSpiel() : [['Zu zweit verlassen', () => (trennen(), host.showStart())]];
     host.showOverlay(titel, `Deine Zeit ${mein}${sein}${e === null ? '<br><span class="zz-warte">Warte auf deinen Mitspieler …</span>' : ''}`, knoepfe);
   }
+
+  // Dev server only: the end-to-end test (tools/e2e-mehrspieler.mjs) looks inside
+  if (import.meta.env.DEV) (window as unknown as { __zuZweit: object }).__zuZweit = { session: host.session, phase: () => phase, status: () => v?.status ?? 'getrennt', code: () => v?.code ?? '' };
 
   // ---------- hooks for main.ts ----------
   return {

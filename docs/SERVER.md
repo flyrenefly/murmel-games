@@ -118,6 +118,33 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
   Yin-Yang-/Zwei-Murmel-Levels.
 - Kein Konto nötig; Räume verfallen nach 30 min ohne Aktivität.
 
+**Stufe 1 gebaut (Branch `mehrspieler`, 13.11.2026):** Spezifikation `docs/SPEC-mehrspieler.md`.
+Räume und Vermittlung `server/src/raum.ts` (WebSocket `/api/raum`, nur im Speicher), eigener
+TURN-Server coturn (Dienst `turn` in `deploy/server/compose.yml`, `deploy/server/turnserver.conf`),
+Spiel `src/mehrspieler/` mit beiden Spielarten (gemeinsam, Wettrennen). Die Browser verbinden sich nur
+über TURN (`iceTransportPolicy: 'relay'`); keiner sieht die IP-Adresse des anderen.
+
+**Betrieb TURN:**
+- `/opt/murmel/.env`: `TURN_SECRET` (auf dem Server mit `openssl rand` erzeugt, nie im Repo) und
+  `TURN_IP=85.215.139.111` (Listen- und Relay-Adresse); optional `TURN_URLS` (sonst
+  `turn:<erste SITE_ADDRESS>:3478` über UDP und TCP). Sicherung vor der Änderung:
+  `.env.bak-20261113-155731-vor-turn`.
+- Ports, in ufw mit Kommentar „turn“: 3478/udp, 3478/tcp, 49160–49200/udp. **Zusätzlich** müssen sie in
+  der IONOS-Firewall-Richtlinie des Servers (Cloud Panel → Netzwerk → Firewall-Richtlinien) offen sein,
+  sonst kommt kein Paket an.
+- Prüfen von außen: `node tools/turn-probe.mjs murmel.games` (STUN und TCP; mit Zugangsdaten auf stdin
+  auch ein echtes Relay über einen Port 49160–49200, Aufruf im Kopf des Skripts).
+- Der Dienst startet beim nächsten Rollout (`docker compose up -d` in `release.sh`); `release.sh`
+  kopiert `turnserver.conf` mit nach `/opt/murmel/`.
+- **Rückweg:** `cd /opt/murmel && docker compose stop turn && docker compose rm -f turn`, dann
+  `sudo ufw delete allow 3478/udp`, `sudo ufw delete allow 3478/tcp`, `sudo ufw delete allow 49160:49200/udp`
+  und die IONOS-Regeln entfernen. Ohne TURN meldet das Spiel beim Raum „Der Verbindungsserver ist gerade
+  nicht erreichbar“; das Einzelspiel ist nicht betroffen. Ganz aus: zusätzlich `TURN_SECRET` aus `.env`
+  löschen (die API gibt dann keine TURN-Daten aus, der Dienst schläft).
+- **Lokal:** `PORT=3182 node server/src/raum-dev.ts` (Raumdienst ohne Datenbank) und
+  `MURMEL_API=http://127.0.0.1:3182 npx vite --port 5182`. Ohne TURN verbindet nur das Dev-Build direkt.
+  Ende-zu-Ende-Test mit zwei Tabs: `npm run test:e2e:zuzweit`.
+
 ## 7.1 Forum (`forum`)
 
 Wunsch des Nutzers (13.11.2026): Spieler können Verbesserungen, Fehler usw. posten; die Beiträge

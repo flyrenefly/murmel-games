@@ -123,8 +123,19 @@ oder kaputte Nachrichten werden verworfen):
 - Beide laden dasselbe Level mit demselben Startwert (`seed` aus `start`) und rechnen selbst.
 - Jeder sendet ≈ 15-mal pro Sekunde seine Position; der andere sieht sie als halbdurchsichtigen
   **Geist** (Murmel in der Farbe des Partners, im klassischen Stil und in 3D).
-- Wer löst, sendet `ziel { schritte }`. Sieger ist, wessen `ziel` zuerst ankommt; die Anzeige
-  zeigt beide Zeiten. Eigene Bestzeiten zählen wie im Einzelspiel.
+- Wer löst, sendet `ziel { schritte }`. **Sieger ist, wer in weniger Spielzeit löst**
+  (Physikschritte seit „los“, beide starten im selben Moment). Das ergibt auf beiden Seiten dasselbe
+  Ergebnis, auch wenn sich Nachrichten kreuzen. Entschieden ist es, sobald beide im Ziel sind oder die
+  Spielzeit des anderen die eigene Zielzeit überschreitet. Neustart im Rennen: gleiches Level, gleicher
+  Startwert, die Uhr läuft weiter.
+- Mehrspieler-Läufe zählen nicht in Fortschritt, Bestzeiten und Lösungsstatistik (keine gültige
+  Einzelspiel-Aufzeichnung).
+
+### 5.4a Grenzen der Stufe 1
+- Rechnet der Gastgeber in einem Hintergrund-Tab, steht das Spiel (Browser liefern dort keine
+  Animationsbilder).
+- Die Aufhebesperre (Maustaste gedrückt) gilt nur für den Gastgeber.
+- Nach einem Neuverbinden beginnt das Level im gemeinsamen Spiel neu.
 
 ### 5.5 Oberfläche
 - Startmenü: neuer Knopf **„Zu zweit“** → Dialog mit „Raum öffnen“ / „Beitreten“.

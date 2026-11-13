@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test:tools": "node --test \"tools/**/*.test.mjs\"",
     "check:levels": "node tools/check-load.mjs",
-    "check:solutions": "node tools/check-solutions.mjs"
+    "check:solutions": "node tools/check-solutions.mjs",
+    "test:e2e:zuzweit": "node tools/e2e-mehrspieler.mjs"
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
