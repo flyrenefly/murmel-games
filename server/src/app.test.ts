@@ -148,3 +148,10 @@ test('berlinDay und tokenMatches', () => {
   assert.equal(tokenMatches('abc', 'Bearer abc'), true);
   assert.equal(tokenMatches('abc', 'Bearer abcd'), false);
 });
+
+test('das Anfrage-Protokoll enthält keine IP-Adresse und keine Query', async () => {
+  const { LOG_OPTIONS } = await import('./app.ts');
+  const logged = LOG_OPTIONS.serializers.req({ method: 'GET', url: '/api/bestenliste/level?id=murmel:01', ip: '203.0.113.7', socket: { remoteAddress: '203.0.113.7' } } as never);
+  assert.deepEqual(logged, { method: 'GET', url: '/api/bestenliste/level' });
+  assert.doesNotMatch(JSON.stringify(logged), /203\.0\.113/);
+});

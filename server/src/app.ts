@@ -38,9 +38,19 @@ export interface AppOptions {
   logger?: boolean;
 }
 
+/**
+ * Request log without personal data (privacy policy „Hosting und Server-Protokolle“): only method and
+ * path, no IP address, host, port or query string. Errors keep their message and stack.
+ */
+export const LOG_OPTIONS = {
+  serializers: {
+    req: (req: { method?: string; url?: string }) => ({ method: req.method, url: (req.url ?? '').split('?')[0] }),
+  },
+};
+
 export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, sync, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
-  const app = Fastify({ logger, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
+  const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
   // Operations: is the API up and does the database answer? Details stay in the server log.
   app.get('/api/health', async (req, reply) => {
