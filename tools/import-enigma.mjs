@@ -92,6 +92,8 @@ const OBJECTS = [
   [/^it_hammer$/, ['it_hammer']],
   [/^it_floppy$/, ['it_floppy']],
   [/^it_sword$/, ['it_sword']],
+  [/^it_(coffee|coffee_drop)$/, ['it_coffee']],
+  [/^it_(spade|brush|cherry|banana|cross|squashed)$/, ['it_spade', 'it_brush', 'it_cherry', 'it_banana', 'it_cross', 'it_squashed']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],
   [/^it_extinguisher(_full|_medium|_empty)?$/, FIRE_IMAGES],
   [/^it_umbrella$/, ['it_umbrella']],
@@ -152,7 +154,7 @@ const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', '
 // Attributes the Murmel objects use; everything else (Lua helpers like _foo) is dropped.
 /** World attributes of Enigma's life rule (player.cc), read once at level start. */
 const LIFE_WORLD = ['ConserveLevel', 'ProvideExtralifes', 'InfiniteReincarnation'];
-const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|_\w+)$/;
+const KEEP_ATTR = /^(\$id|\$state|\$connections|name|target(_\d+)?|action(_\d+)?|inverse|color|instant|flavor|text|invisible|faces|interval|loop|orientation|strength|range|dest|safeaction|\$hollow|\$flavor|scissor|autoopen|autoclose|dests|hit_strength|hit_distortion_\w+|essential|exit|code|secure|counterclock|movable|transparent|fragility|spreading|min|interval_[sml]|stock|fellows|mass|_\w+)$/;
 // API 1 message names Murmel translates (objects.ts API1_RENAMING): receiver kind → message.
 const API1_ACTIONS = [[/^st_door/, 'openclose'], [/^st_switch/, 'onoff']];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');

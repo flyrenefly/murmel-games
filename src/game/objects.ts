@@ -16,14 +16,14 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3 };
 /** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)' };
+export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane' };
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -330,6 +330,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** it_cross: an actor inside (last seen), and when the alarm rings. */
+  cross?: { seen: number; inside: boolean; at: number };
   /** Explosion, debris, burning dynamite or bomb: start of its animation. */
   blast?: number;
   /** Bomb hit by a stone: explodes at this time (Bomb::ignite, 0.01 s). */
@@ -424,6 +426,9 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_death') return 'deathitem';
   if (/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/.test(kind)) return 'burnable';
   if (/^it_extinguisher(_full|_medium|_empty)?$/.test(kind)) return 'tool';
+  if (/^it_(coffee|coffee_drop|spade|brush|cherry|banana)$/.test(kind)) return 'tool';
+  if (kind === 'it_cross') return 'cross';
+  if (kind === 'it_squashed') return 'squashed';
   if (/^it_strip(_[nesw]+)?$/.test(kind)) return 'strip';
   if (/^it_puller(_[nesw])?$/.test(kind)) return 'puller';
   if (/^st_actorimpulse(_invisible)?$/.test(kind)) return 'actorimpulse';
@@ -614,8 +619,10 @@ export class ObjectWorld {
    * Which faces of a cell block the marble: 0 = free, ALL_FACES = solid,
    * otherwise the face bits (door d).
    */
-  blockAt(col: number, row: number, color = 2): number {
+  blockAt(col: number, row: number, color = 2, invisible = false): number {
     for (const o of this.at(col, row)) {
+      // invisible actors pass blue windows (WindowStone) and raw glass (GlassStone, not light/dark movable)
+      if (invisible && ((o.cls === 'window' && !truthy(o.attrs.secure)) || o.kind === 'st_rawglass_movable')) continue;
       if (o.cls === 'door') {
         if (o.state === 1 && !o.moving) continue;
         return doorFaces(o);
@@ -1172,6 +1179,19 @@ export class ObjectWorld {
         this.events.push({ type: 'shatter', marble });
         if (o.blast === undefined || this.now - o.blast >= 400) o.blast = this.now;
       }
+      // CrossItem::actor_enter: a marble starts the alarm (interval, default 10 s)
+      for (const o of this.at(Math.floor(x), Math.floor(y))) {
+        if (o.cls !== 'cross' || o.gone) continue;
+        const c = (o.cross ??= { seen: 0, inside: false, at: 0 });
+        c.seen = this.now;
+        if (!c.inside) {
+          c.inside = true;
+          if (o.state === 0) {
+            o.state = 1;
+            c.at = this.now + (Number(o.attrs.interval) || 10) * 1000;
+          }
+        }
+      }
       // BurnableItem::actor_hit: fire (ignited, burning) shatters
       for (const o of this.at(Math.floor(x), Math.floor(y))) {
         if (o.cls === 'burnable' && !o.gone && (burnState(o) === 'ignited' || burnState(o) === 'burning')) this.events.push({ type: 'shatter', marble });
@@ -1247,6 +1267,11 @@ export class ObjectWorld {
     if (o.cls === 'seed') this.startGrowing(o);
     if (o.cls === 'flag') this.flagRespawn[flagColor(kind)] = { x: col + 0.5, y: row + 0.5 };
     if (o.cls === 'dynamite' || o.cls === 'puller') this.burn(o); // Dynamite/PullerItem::on_drop
+    if (kind === 'it_cherry') {
+      // Cherry::on_drop
+      o.kind = 'it_squashed';
+      o.cls = 'squashed';
+    }
     return true;
   }
 
@@ -1792,6 +1817,24 @@ export class ObjectWorld {
     if (s === 'burning') return { image: 'it_burnable_burning', frame: Math.min(7, Math.floor(age / 100)) };
     if (s === 'ash' || s === 'fireproof') return { image: `it_burnable_${s}`, frame: -1 };
     return null;
+  }
+
+/**
+   * Brush::activate: "_brush" to the item under the marble – ash, foam, squashed cherries and
+   * crosses are cleaned away. The brush is dropped afterwards (ITEM_DROP).
+   */
+  brushAt(x: number, y: number): void {
+    const it = this.itemAt(Math.floor(x), Math.floor(y));
+    if (!it) return;
+    if ((it.cls === 'burnable' && (burnState(it) === 'ash' || burnState(it) === 'fireproof')) || it.cls === 'squashed' || it.cls === 'cross') this.remove(it);
+  }
+
+  /** Spade::activate: "shovel" to the item under the marble (meditation hollows and hills). False: no item – dropped. */
+  spadeAt(x: number, y: number): boolean {
+    const it = this.itemAt(Math.floor(x), Math.floor(y));
+    if (!it) return false;
+    if (it.cls === 'meditation') this.shovel(it);
+    return true;
   }
 
   /** Extinguisher::extinguish: burnable items become fireproof; free cells get foam. */
@@ -2967,6 +3010,11 @@ export class ObjectWorld {
       else if (o.cls === 'bomb' && !o.gone && o.blast === undefined && o.igniteAt === undefined) o.igniteAt = this.now + 10; // Bomb::on_stonehit
       else if (o.cls === 'seed' && !o.gone) this.startGrowing(o);
       else if (o.cls === 'meditation' && !o.gone) this.shovel(o);
+      else if ((o.kind === 'it_cherry' || o.kind === 'it_banana') && !o.gone) {
+        // Cherry/Banana::on_stonehit
+        o.kind = 'it_squashed';
+        o.cls = 'squashed';
+      }
     }
   }
 
@@ -3112,6 +3160,17 @@ export class ObjectWorld {
       }
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
+      if (o.cls === 'cross' && !o.gone && o.cross) {
+        // CrossItem::actor_leave cancels the alarm; CrossItem::alarm performs the action
+        if (o.cross.inside && this.now - o.cross.seen > 150) {
+          o.cross.inside = false;
+          if (o.state === 1) o.state = 0;
+        }
+        if (o.state === 1 && this.now >= o.cross.at) {
+          o.state = 0;
+          this.performAction(o, true);
+        }
+      }
       if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
       if (o.cls === 'shogundot' && !o.gone) this.shogunDotStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-710 von 1322 Levels übernommen (17 Pakete).
+730 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,44 +9,37 @@
 | keine Oxyd-Steine | 111 | 0 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
-| Lua-Init | 102 | 2 |
+| Lua-Init | 102 | 3 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_mail | 54 | 1 |
+| Stein st_mail | 54 | 2 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
-| Gegenstand it_cherry | 43 | 3 |
 | Lizenz: keine Angabe | 42 | 42 |
 | Lua: set_floor() | 39 | 0 |
 | Lua: set_item() | 37 | 0 |
-| Gegenstand it_brush | 37 | 1 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
 | Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Gegenstand it_coffee_drop | 28 | 5 |
 | Stein st_scissors | 28 | 2 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
 | Gegenstand it_glasses | 27 | 2 |
-| Gegenstand it_cross | 26 | 4 |
 | Gegenstand it_pipe_sw | 24 | 0 |
-| Gegenstand it_squashed | 24 | 2 |
-| Boden fl_yinyang_yin | 23 | 1 |
-| Stein st_ghost_break | 23 | 0 |
+| Boden fl_yinyang_yin | 23 | 4 |
+| Stein st_ghost_break | 23 | 1 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Stein st_magic_brick | 20 | 4 |
-| Gegenstand it_bottle_idle | 20 | 1 |
+| Gegenstand it_bottle_idle | 20 | 2 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Akteur ac_bug | 18 | 3 |
-| Gegenstand it_spade | 17 | 4 |
 | Lua: fill_floor() | 17 | 0 |
-| Gegenstand it_banana | 17 | 0 |
 | Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
@@ -64,14 +57,14 @@
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| Lua: :drawRect | 12 | 3 |
-| Stein st_ghost_purplemarble | 12 | 0 |
+| Lua: :drawRect | 12 | 4 |
+| Stein st_ghost_purplemarble | 12 | 4 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 0 |
 | Aktion turn | 10 | 3 |
-| Gegenstand it_pencil | 10 | 1 |
-| Gegenstand it_pin | 10 | 1 |
+| Gegenstand it_pencil | 10 | 2 |
+| Gegenstand it_pin | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 2 |
 | Gegenstand it_drop | 10 | 1 |
 | Stein st_spitter | 9 | 1 |
@@ -85,7 +78,7 @@
 | Aktion openclose | 7 | 2 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
-| Wurmloch ohne Ziel | 7 | 0 |
+| Wurmloch ohne Ziel | 7 | 1 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: :can_go_south | 6 | 0 |
@@ -106,7 +99,6 @@
 | Lua: :setfire | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
-| Lua: it_cross | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
@@ -121,7 +113,6 @@
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
 | Lua: dynamite() | 3 | 0 |
-| Lua: it_cherry | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: :set | 2 | 0 |
@@ -132,12 +123,13 @@
 | Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
+| Aktion ignite | 2 | 1 |
 | mehrere weiße Murmeln | 2 | 0 |
 | Aktion turnback | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
-| Stein st_magic_oxyda | 2 | 0 |
-| Stein st_portal_pearl | 2 | 1 |
+| Stein st_magic_oxyda | 2 | 1 |
+| Stein st_portal_pearl | 2 | 2 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
@@ -146,10 +138,8 @@
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 1 |
 | Lua: it_pencil | 2 | 0 |
-| Lua: it_squashed | 2 | 0 |
 | Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
-| Lua: it_coffee | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |
 | Lua: :grid | 1 | 0 |
@@ -176,8 +166,6 @@
 | Lua: hollow() | 1 | 0 |
 | Stein it_seed_volcano | 1 | 0 |
 | Lua: st_spitter | 1 | 0 |
-| Aktion ignite | 1 | 0 |
-| Lua: it_brush | 1 | 0 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
 | Lua: random_element() | 1 | 0 |

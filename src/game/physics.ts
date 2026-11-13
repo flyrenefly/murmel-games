@@ -61,6 +61,8 @@ export type Contact =
 export interface Toucher {
   by: number;
   color: number;
+  /** An invisible marble (it_cherry): passes glass stones and blue windows. */
+  invisible?: boolean;
 }
 
 /** A marble: black (the player's) or white (second marble, swapped with the yin-yang). */
@@ -80,6 +82,8 @@ export interface Marble extends Body {
   passive: boolean;
   /** Protected by an umbrella: does not sink (BasicBall::sink with has_shield). */
   shielded?: boolean;
+  /** Invisible (it_cherry): glass lets it pass, rotors do not see it. */
+  invisible?: boolean;
   /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
   follow?: boolean;
   /** "essential" actor: its final death restarts the level. */
@@ -135,7 +139,7 @@ interface Body {
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
   /** color: 0 black, 1 white (marbles, pearls, killers), 2 = no colour. */
-  blockAt(col: number, row: number, color?: number): number;
+  blockAt(col: number, row: number, color?: number, invisible?: boolean): number;
 }
 
 export class PhysicsWorld {
@@ -324,7 +328,8 @@ export class PhysicsWorld {
       const [ffx, ffy] = this.floorForce(m.pos);
       add(m, (this.axisForce.x + mx) * k + ffx, (this.axisForce.y + my) * k + ffy, friction);
     });
-    const targets = this.marbles.flatMap((m, i) => (m.active ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));
+    // Rotors.cc: only visible actors are chased
+    const targets = this.marbles.flatMap((m, i) => (m.active && !m.invisible ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));
     for (const e of this.enemies) {
       const { friction, adhesion } = this.floorProps(e.pos);
       const [ffx, ffy] = this.floorForce(e.pos);
@@ -348,7 +353,7 @@ export class PhysicsWorld {
       const f = forces.get(m);
       if (!f) return;
       this.advance(m, f);
-      this.collide(m, onContact, { by: i, color: m.color });
+      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible });
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
       else if (!m.shielded) this.sinkStep(m, i, onContact);
     });
@@ -466,12 +471,14 @@ export class PhysicsWorld {
     const r1 = Math.floor(b.pos.y + r);
     for (let row = r0; row <= r1; row++) {
       for (let col = c0; col <= c1; col++) {
-        const kind = this.solidAt(col, row);
+        let kind = this.solidAt(col, row);
+        // GlassStone::collision_response: invisible actors pass raw, light and dark glass and beads
+        if (kind === -2 && who.invisible && /^st_(rawglass|lightglass|darkglass|beads)/.test(this.cells[row * this.width + col]?.stone ?? '')) kind = -1;
         if (kind !== -1) {
           this.contactBox(b, col, row, kind, onContact, who);
           continue;
         }
-        const faces = this.blockers?.blockAt(col, row, who.color) ?? 0;
+        const faces = this.blockers?.blockAt(col, row, who.color, who.invisible) ?? 0;
         if (faces === 0) continue;
         if (faces === ALL_FACES) {
           this.contactBox(b, col, row, -3, onContact, who);

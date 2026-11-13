@@ -536,6 +536,15 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   ("_fire" auf dem Feld, "heat" daneben) bricht burnable. Bilder st_flat, st_flat_cracked, st_flat_fire,
   st_plaster. st_plaster_movable wird wie eine Kiste geschoben. Abweichungen: Stift/Pinsel (brennbar
   machen) und Laser auf feste st_flat (werden rissig) fehlen; st_flat_moveburnable fehlt.
+- **Einfache Gegenstände** (`SimpleItems.cc`, `CrossItem.cc`, `Balls.cc`): it_coffee (Tasse, 4 × 150 ms,
+  wird nur abgelegt); it_banana (wird abgelegt); it_spade schickt "shovel" an den Gegenstand unter der
+  Kugel (Meditationsmulden), ohne Gegenstand fällt er ab; it_brush entfernt Asche, Schaum, zerquetschte
+  Kirschen und Kreuze und fällt dann ab; it_cherry macht die Kugel 8 s unsichtbar (mehrfach addiert,
+  Tod beendet es): nicht gezeichnet, Rotoren jagen sie nicht, sie geht durch Roh-, Hell- und
+  Dunkelglas, Perlensteine, blaue Fenster und bewegliches Rohglas; abgelegt oder von einem Stein
+  getroffen wird sie (wie die Banane) zu it_squashed. it_cross: bleibt eine Kugel `interval` (10 s)
+  darauf, führt es seine Aktion mit true aus; Verlassen bricht ab. Abweichungen: Banane wird unter
+  Laserlicht noch nicht zur Kirsche; it_weight fehlt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

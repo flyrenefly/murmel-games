@@ -1385,3 +1385,36 @@ describe('flat and plaster stones', () => {
     expect(w.objects[0].gone).toBe(true);
   });
 });
+
+describe('simple items', () => {
+  it('it_cross performs its action after the marble stayed for the interval; leaving cancels', () => {
+    const w = world([door(5), { x: 2, y: 0, k: 'it_cross', a: { target: 'door1', action: 'open', interval: '2' } }]);
+    w.actorStep(2.5, 0.5, 0);
+    w.update(1000);
+    w.update(100); // left the cross: alarm cancelled
+    w.update(2000);
+    expect(w.objects[0].state).toBe(0);
+    for (let t = 0; t < 21; t++) {
+      w.actorStep(2.5, 0.5, 0);
+      w.update(100);
+    }
+    w.update(600);
+    expect(w.objects[0].state).toBe(1);
+  });
+
+  it('the brush cleans ash and squashed cherries; a dropped cherry is squashed', () => {
+    const w = world([{ x: 2, y: 0, k: 'it_burnable_ash' }, { x: 4, y: 0, k: 'it_squashed' }]);
+    w.brushAt(2.5, 0.5);
+    w.brushAt(4.5, 0.5);
+    expect(w.objects.map((o) => o.gone)).toEqual([true, true]);
+    w.inventory.push('it_cherry');
+    w.dropItem(6.5, 0.5);
+    expect(w.objects[2].kind).toBe('it_squashed');
+  });
+
+  it('invisible marbles pass blue windows, visible ones are blocked', () => {
+    const w = world([{ x: 3, y: 0, k: 'st_window_w' }]);
+    expect(w.blockAt(3, 0, 0)).not.toBe(0);
+    expect(w.blockAt(3, 0, 0, true)).toBe(0);
+  });
+});

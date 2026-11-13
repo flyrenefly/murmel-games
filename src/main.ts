@@ -86,6 +86,8 @@ let pendingRestart: 'new' | 'keep' | null = null;
 /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */
 const enigmaRules = (): boolean => level.id.startsWith('enigma:');
 const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_extralife').length;
+/** BasicBall invisibility (it_cherry): seconds left per marble. */
+let invis: number[] = [];
 /** BasicBall shield (it_umbrella): seconds of protection left per marble. */
 let shield: number[] = [];
 /** Marbles a vortex has swallowed: since when (ms of play), -1 = not. */
@@ -197,6 +199,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   deadForever = physics.marbles.map(() => false);
   inVortex = physics.marbles.map(() => 0);
   shield = physics.marbles.map(() => 0);
+  invis = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -487,6 +490,7 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   if (!physics || !(falling[i] < 0)) return;
   if ((shield[i] ?? 0) > 0) return; // BasicBall::change_state_noshield
   const shatter = how === true;
+  invis[i] = 0; // BasicBall: dead marbles are visible again
   deathKind[i] = how === 'sink' ? 'sink' : shatter ? 'shatter' : 'fall';
   falling[i] = 0;
   physics.setActive(false, i);
@@ -652,7 +656,11 @@ function frame(now: number): void {
     if (mode === 'play') {
       playSeconds += dt;
       shield = shield.map((s) => Math.max(0, s - dt));
-      physics?.marbles.forEach((m, i) => (m.shielded = (shield[i] ?? 0) > 0));
+      invis = invis.map((s) => Math.max(0, s - dt));
+      physics?.marbles.forEach((m, i) => {
+        m.shielded = (shield[i] ?? 0) > 0;
+        m.invisible = (invis[i] ?? 0) > 0;
+      });
     }
     if (falling[physics.current] < 0 && mode === 'play') {
       physics.addMouseForce(mdx * mouseSpeed, mdy * mouseSpeed);
@@ -738,7 +746,7 @@ function frame(now: number): void {
     x: e.prev.x + (e.pos.x - e.prev.x) * a,
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
-  actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i]));
+  actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i] && !((invis[i] ?? 0) > 0)));
   // Rubber bands: flat list x1, y1, x2, y2 (interpolated like the actors).
   const lerp = (b: { pos: { x: number; y: number }; prev: { x: number; y: number } }) => [b.prev.x + (b.pos.x - b.prev.x) * a, b.prev.y + (b.pos.y - b.prev.y) * a];
   const bands: number[] = [];
@@ -748,6 +756,7 @@ function frame(now: number): void {
     classic.status.right = `${pairsText()}${falls ? ` · Abstürze ${falls}` : ''}`;
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
+    classic.hideMarble = (invis[ci] ?? 0) > 0; // BasicBall::update_model hides an invisible marble
     classic.updateRubbers(bands);
     classic.updateHalos(marbles.flatMap((m, i) => ((shield[i] ?? 0) > 0 && !deadForever[i] ? [{ x: m.x, y: m.y, rest: shield[i], small: !!m.pearl }] : [])));
     classic.render(dt);
@@ -831,6 +840,26 @@ function dropItem(): boolean {
       marbleJumps(i);
       updateItems();
     }
+    return true;
+  }
+  // Cherry::activate: "_invisibility" – 8 s more; the cherry is used up (ITEM_KILL)
+  if (first === 'it_cherry') {
+    objects.inventory.shift();
+    updateItems();
+    invis[i] = (invis[i] ?? 0) + 8;
+    return true;
+  }
+  // Brush::activate: "_brush" to the item here, then dropped (ITEM_DROP)
+  if (first === 'it_brush') {
+    objects.brushAt(m.pos.x, m.pos.y);
+    if (objects.canDropAt(m.pos.x, m.pos.y)) objects.dropItem(m.pos.x, m.pos.y);
+    updateItems();
+    return true;
+  }
+  // Spade::activate: "shovel" to the item here (ITEM_KEEP); without an item it is dropped
+  if (first === 'it_spade') {
+    if (!objects.spadeAt(m.pos.x, m.pos.y)) objects.dropItem(m.pos.x, m.pos.y);
+    updateItems();
     return true;
   }
   // Extinguisher::activate: foam around the marble (ITEM_KEEP); empty, it is dropped (ITEM_DROP)

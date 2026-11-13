@@ -1,5 +1,11 @@
 [
  {
+  "pack": "tutorial_advanced",
+  "title": "Advanced Tutorial",
+  "count": 1,
+  "of": 1
+ },
+ {
   "pack": "tutorial_basic",
   "title": "Basic Tutorial",
   "count": 19,
@@ -14,7 +20,7 @@
  {
   "pack": "enigma_i",
   "title": "Enigma I",
-  "count": 89,
+  "count": 90,
   "of": 100
  },
  {
@@ -32,49 +38,49 @@
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 58,
+  "count": 61,
   "of": 100
  },
  {
   "pack": "enigma_v",
   "title": "Enigma V",
-  "count": 59,
+  "count": 60,
   "of": 100
  },
  {
   "pack": "enigma_vi",
   "title": "Enigma VI",
-  "count": 48,
+  "count": 50,
   "of": 100
  },
  {
   "pack": "enigma_vii",
   "title": "Enigma VII",
-  "count": 57,
+  "count": 59,
   "of": 100
  },
  {
   "pack": "enigma_viii",
   "title": "Enigma VIII",
-  "count": 54,
+  "count": 57,
   "of": 100
  },
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 56,
+  "count": 58,
   "of": 100
  },
  {
   "pack": "enigma_x",
   "title": "Enigma X",
-  "count": 51,
+  "count": 53,
   "of": 100
  },
  {
   "pack": "enigma_xi",
   "title": "Enigma XI",
-  "count": 34,
+  "count": 35,
   "of": 100
  },
  {
@@ -86,7 +92,7 @@
  {
   "pack": "enigma_advent_10",
   "title": "Advent 2010",
-  "count": 7,
+  "count": 9,
   "of": 24
  },
  {

@@ -184,6 +184,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_yinyang') return ['it_yinyang'];
   if (kind === 'it_ring' || kind === 'it_spoon' || kind === 'it_wrench' || kind === 'it_hammer' || kind === 'it_floppy' || kind === 'it_sword' || kind === 'it_umbrella') return [kind];
   if (kind === 'it_death') return ['it_death'];
+  if (/^it_(coffee|coffee_drop)$/.test(kind)) return ['it_coffee'];
+  if (/^it_(spade|brush|cherry|banana|cross|squashed)$/.test(kind)) return [kind, 'it_squashed'];
   if (kind.startsWith('it_burnable') || kind.startsWith('it_extinguisher')) return FIRE_IMAGES;
   if (kind.startsWith('it_strip')) return ['it_strip'];
   if (kind.startsWith('it_puller')) return ['it_puller', 'it_explosion'];
@@ -250,6 +252,8 @@ export class ClassicView {
   private staticLayer: HTMLCanvasElement | null = null;
   private stones: StoneAnim[] = [];
   private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0, jump: -1, pearl: false };
+  /** The current marble is invisible (it_cherry). */
+  hideMarble = false;
   private actors: ActorSprite[] = [];
   private rubbers: number[] = [];
   private now = 0;
@@ -355,7 +359,9 @@ export class ClassicView {
 
     this.drawActors(ox, oy);
     // The current ball: a pearl when the level has no black marble (mainPearl)
-    if (this.marble.pearl) this.drawPearl(Math.round(ox + this.marble.x * T), Math.round(oy + this.marble.y * T), this.marble.color, this.marble.fall);
+    if (this.hideMarble) {
+      // invisible: nothing drawn
+    } else if (this.marble.pearl) this.drawPearl(Math.round(ox + this.marble.x * T), Math.round(oy + this.marble.y * T), this.marble.color, this.marble.fall);
     else this.drawMarble(ox, oy, this.marble);
     // BasicBall::update_halo: halo / halo-blink (2 frames à 30 ms), small ones for pearls
     for (const h of this.halos) {
@@ -527,6 +533,9 @@ export class ClassicView {
       else if (o.cls === 'spring') this.image('it_spring', px, py);
       else if (o.cls === 'extralife') this.image('it_extralife', px, py);
       else if (o.cls === 'yinyang') this.frame('it_yinyang', 0, px, py); // DefTiles: it_yinyang, it_yangyin
+      else if (o.cls === 'tool' && o.kind.startsWith('it_coffee')) this.frame('it_coffee', Math.floor(this.now / 150) % 4, px, py);
+      else if (o.cls === 'cross') this.image('it_cross', px, py);
+      else if (o.cls === 'squashed') this.image('it_squashed', px, py);
       else if (o.cls === 'tool' && o.kind.startsWith('it_extinguisher')) this.frame('it_extinguisher', o.kind === 'it_extinguisher_empty' ? 2 : o.kind === 'it_extinguisher_medium' ? 1 : 0, px, py);
       else if (o.cls === 'tool') this.image(o.kind, px, py);
       else if (o.cls === 'burnable') {
@@ -578,7 +587,7 @@ export class ClassicView {
     }
     for (const pass of ['shadow', 'stone'] as const) {
       for (const o of world.objects) {
-        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable') continue;
+        if (o.gone || o.col < 0 || o.cls === 'oxydref' || !visible(o) || o.cls === 'trigger' || o.cls === 'document' || o.cls === 'wormhole' || o.cls === 'meditation' || o.cls === 'landmine' || o.cls === 'seed' || o.cls === 'wand' || o.cls === 'spring' || o.cls === 'extralife' || o.cls === 'yinyang' || o.cls === 'vortex' || o.cls === 'tool' || o.cls === 'flag' || o.cls === 'springboard' || o.cls === 'magnet' || o.cls === 'sensor' || o.cls === 'key' || o.cls === 'crack' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'coin' || o.cls === 'bag' || o.cls === 'shogundot' || o.cls === 'deathitem' || o.cls === 'puller' || o.cls === 'strip' || o.cls === 'burnable' || o.cls === 'cross' || o.cls === 'squashed') continue;
         this.drawObjectStone(world, o, ox + o.col * T, oy + o.row * T, pass);
       }
     }
