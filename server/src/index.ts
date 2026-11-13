@@ -7,6 +7,7 @@ import { parseAdminEmails } from './konten.ts';
 import { forumStore } from './forum-db.ts';
 import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
+import { playerLevelStore } from './spielerlevels-db.ts';
 import { syncStore } from './sync-db.ts';
 import { mailerFromEnv } from './mail.ts';
 import { migrate } from './migrate.ts';
@@ -29,6 +30,8 @@ const checker = gameChecker(gameDir);
 const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
   // the game code of the active version, read-only (compose.yml); without it submitting answers 503
   leaderboard: { store: leaderboardStore(sql), checker },
+  // Spieler-Levels: same checker process and queue as the leaderboard
+  playerLevels: { store: playerLevelStore(sql) },
   sync: syncStore(sql),
   logger: true,
 });

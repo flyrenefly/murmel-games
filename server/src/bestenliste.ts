@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { requireAccount, requireSignedIn } from './konten.ts';
 import { RateLimit } from './limit.ts';
@@ -47,7 +48,17 @@ export interface Checker {
    * version. `steps` are the replayed ones.
    */
   check(rec: Recording): Promise<{ status: 'geloest' | 'nicht-geloest' | 'fehler' | 'unbekannt'; steps: number; levelHash?: string; error?: string }>;
+  /** Replays a recording of a given (already checked) level, e.g. a player level (docs/SPEC-spielerlevels.md). */
+  checkFile?(file: LevelJson, rec: Recording): Promise<{ status: 'geloest' | 'nicht-geloest' | 'fehler'; steps: number; error?: string }>;
+  /**
+   * An uploaded editor level: only editor content (sanitizeLevel, never Lua), then the solution must win.
+   * 'ungueltig' = the level itself is refused (error says why); `file` is the checked level to store.
+   */
+  checkLevel?(raw: unknown, rec: Recording): Promise<{ status: 'geloest' | 'nicht-geloest' | 'fehler' | 'ungueltig'; steps: number; file?: LevelJson; error?: string }>;
 }
+
+/** A LevelFile as JSON (the server has no game types). */
+export type LevelJson = Record<string, unknown>;
 
 // ---------- limits ----------
 
@@ -81,6 +92,9 @@ export function parseRun(body: unknown): Recording | string {
 
 // ---------- queue ----------
 
+/** What the queue keeps per job: 'wartet' until the job is done (leaderboard runs and player levels share it). */
+export type QueueState = { status: 'wartet' } | { status: 'angenommen' | 'abgelehnt'; [key: string]: unknown };
+
 export type JobState =
   | { status: 'wartet' }
   | { status: 'angenommen'; lauf: number; zeit: number; neu: boolean; platz: number | null; von: number }
@@ -89,8 +103,8 @@ export type JobState =
 interface Job {
   id: string;
   accountId: number;
-  run: () => Promise<JobState>;
-  state: JobState;
+  run: () => Promise<QueueState>;
+  state: QueueState;
   doneAt: number;
 }
 
@@ -115,7 +129,7 @@ export class CheckQueue {
     return n;
   }
 
-  add(accountId: number, run: () => Promise<JobState>): string {
+  add(accountId: number, run: () => Promise<QueueState>): string {
     this.prune();
     const id = `${Date.now().toString(36)}${(++this.seq).toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     const job: Job = { id, accountId, run, state: { status: 'wartet' }, doneAt: 0 };
@@ -140,7 +154,7 @@ export class CheckQueue {
       this.running++;
       job
         .run()
-        .catch((): JobState => ({ status: 'abgelehnt', grund: 'Die Prüfung ist fehlgeschlagen. Bitte versuch es später noch einmal.' }))
+        .catch((): QueueState => ({ status: 'abgelehnt', grund: 'Die Prüfung ist fehlgeschlagen. Bitte versuch es später noch einmal.' }))
         .then((state) => {
           job.state = state;
           job.doneAt = this.now();
@@ -169,15 +183,25 @@ export interface LeaderboardOptions {
   parallel?: number;
   /** Lösbarkeitsprüfung: a checked win of an admin is also stored as a solution for the nightly run. */
   solutions?: SolvabilityStore;
+  /**
+   * Player levels (docs/SPEC-spielerlevels.md): the checked level for an id 'spieler:<n>' if the account
+   * may play it, else null. Without it, runs of player levels are refused like unknown levels.
+   */
+  playerFile?: (level: string, account: { id: number; role: string }) => Promise<LevelJson | null>;
+  /** Shared queue (player levels use the same checker process). */
+  queue?: CheckQueue;
   now?: () => Date;
 }
 
-const sameVersion = (a: string, b: string) => a.length >= 7 && b.length >= 7 && (a.startsWith(b) || b.startsWith(a));
+/** SHA-256 of a level's JSON, like levelHash in tools/lib/levels.mjs. */
+export const levelHashOf = (file: LevelJson): string => createHash('sha256').update(JSON.stringify(file)).digest('hex');
+
+export const sameVersion = (a: string, b: string) => a.length >= 7 && b.length >= 7 && (a.startsWith(b) || b.startsWith(a));
 
 /** /api/bestenliste: submit (account), result, rankings (open), own places (account), delete (owner or admin). */
 export function leaderboardRoutes(app: FastifyInstance, opts: LeaderboardOptions): CheckQueue {
   const { store, checker, version, origin, now = () => new Date() } = opts;
-  const queue = new CheckQueue(opts.parallel ?? 1, () => now().getTime());
+  const queue = opts.queue ?? new CheckQueue(opts.parallel ?? 1, () => now().getTime());
   const perHour = new RateLimit(SUBMISSIONS_PER_HOUR, HOUR);
 
   app.addHook('onRequest', async (req, reply) => {
@@ -188,7 +212,8 @@ export function leaderboardRoutes(app: FastifyInstance, opts: LeaderboardOptions
 
   /** Replays the run and, if it wins, keeps it when it is the account's best. */
   async function judge(accountId: number, admin: boolean, rec: Recording, clientVersion: string | null): Promise<JobState> {
-    const r = await checker.check(rec);
+    const player = rec.level.startsWith('spieler:');
+    const r = player ? await checkPlayer(accountId, admin, rec) : await checker.check(rec);
     if (r.status === 'unbekannt') return { status: 'abgelehnt', grund: 'Dieses Level gibt es in der aktuellen Spielversion nicht.' };
     if (r.status !== 'geloest') {
       if (clientVersion && !sameVersion(clientVersion, version)) return { status: 'abgelehnt', grund: 'Dein Spiel ist nicht auf dem neuesten Stand – bitte die Seite neu laden.' };
@@ -196,13 +221,21 @@ export function leaderboardRoutes(app: FastifyInstance, opts: LeaderboardOptions
       return { status: 'abgelehnt', grund: r.status === 'fehler' ? 'Der Lauf ließ sich nicht nachspielen.' : 'Beim Nachspielen wurde das Level nicht gelöst.' };
     }
     // admins only (docs/SPEC-bestenliste.md): the checked win also serves the nightly Lösbarkeitsprüfung
-    if (admin && opts.solutions) {
+    if (admin && opts.solutions && !player) {
       await opts.solutions.addSolution({ level: rec.level, recordingHash: recordingHash(rec), recording: rec, steps: rec.steps, accountId }).catch(() => {});
     }
     const kept = await store.submit({ accountId, level: rec.level, steps: r.steps, levelHash: r.levelHash ?? '', version, recording: rec, now: now() });
     const { total, entries } = await store.ranking(rec.level, 0, accountId);
     const me = entries.find((e) => e.accountId === accountId);
     return { status: 'angenommen', lauf: r.steps, zeit: kept.steps, neu: kept.improved, platz: me?.rank ?? null, von: total };
+  }
+
+  /** A run of a player level: replayed with the stored, checked level (its id never changes its content). */
+  async function checkPlayer(accountId: number, admin: boolean, rec: Recording): Promise<Awaited<ReturnType<Checker['check']>>> {
+    const file = opts.playerFile && checker.checkFile ? await opts.playerFile(rec.level, { id: accountId, role: admin ? 'admin' : 'player' }) : null;
+    if (!file) return { status: 'unbekannt', steps: 0 };
+    const r = await checker.checkFile!(file, rec);
+    return { ...r, levelHash: levelHashOf(file) };
   }
 
   app.post<{ Body: Record<string, unknown> }>('/api/bestenliste', { preHandler: requireAccount, bodyLimit: BODY_LIMIT }, async (req, reply) => {
