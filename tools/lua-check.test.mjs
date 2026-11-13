@@ -74,3 +74,9 @@ test('libmap geladen: ohne schlüsselverändernde Operationen zählen nur die Sc
   assert.deepEqual(runtimeKinds(code, false, undefined, true), ['st_granite']);
   assert.deepEqual(runtimeKinds(code.replace('m .. (m ^ MAP_ROT_CW)', 'm:replace("A", "O")'), false, undefined, true).sort(), ['st_granite', 'st_oxyd']);
 });
+
+test('Laufzeit-Arten: Ersatzschlüssel von res.random und ti-Verweise zählen mit, auskommentierte nicht', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["h1"] = {"fl_sand"}\nti["hG"] = ti["h1"] .. {"it_trap"}\n--ti["hX"] = ti["h1"] .. {"st_chameleon"}\nlocal r = res.random(ti, "h#", {{"hG", 1}})\nfunction f()\n    wo:drawRect(po(1, 1), po(1, 1), "h#", r)\nend';
+  assert.deepEqual(runtimeKinds(code).sort(), ['fl_sand', 'it_trap']);
+});

@@ -280,6 +280,24 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
       for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
     }
   }
+  // keys longer than one character (drawMap(ti, p, "  ", {"u y "}): "u ", "y ")
+  for (const d of drawCalls(body)) for (const k of d.keys) keys.add(k);
+  // res.random during play: the tiles of every key its call names (hits, superkeys, replacements)
+  if (/:\s*draw(?:Map|Rect|Border)\s*\(/.test(body) && /\bres\.random\s*\(/.test(code)) {
+    for (const m of code.matchAll(/\bres\.random\s*\(/g)) {
+      let depth = 1;
+      let i = m.index + m[0].length;
+      const start = i;
+      while (i < code.length && depth > 0) {
+        if (code[i] === '"') i = code.indexOf('"', i + 1);
+        else if (code[i] === '(') depth++;
+        else if (code[i] === ')') depth--;
+        if (i < 0) break;
+        i++;
+      }
+      for (const s of code.slice(start, i < 0 ? code.length : i).matchAll(/"([^"]*)"/g)) keys.add(s[1]);
+    }
+  }
   // maps from wo:newMap kept in variables (parts[kind] ^ rotation): the keys of their rows when every
   // map is made from literal rows (wo:newMap(" ", part1), local part1 = {"  A ", …}), else any ti entry
   if (/:\s*drawMap\s*\(/.test(body) && /wo:newMap/.test(code)) {
@@ -292,10 +310,19 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
       for (const k of d[2].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
     }
   }
-  for (const ch of keys) {
+  // a key's tile, also through the ti entries it builds on (ti["hG"] = ti["h1"] .. {"it_trap"})
+  const seen = new Set();
+  const live = code.replace(/^\s*--[^\n]*/gm, ''); // not commented-out entries
+  const addKey = (ch) => {
+    if (seen.has(ch)) return;
+    seen.add(ch);
     const key = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
-  }
+    for (const d of live.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) {
+      for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+      for (const r of d[1].matchAll(/ti\[\s*"([^"]*)"\s*\]/g)) addKey(r[1]);
+    }
+  };
+  for (const ch of keys) addKey(ch);
   for (const m of body.matchAll(/ti\[\s*"([^"]+)"\s*\]/g)) {
     const key = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
