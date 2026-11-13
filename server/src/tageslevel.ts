@@ -129,7 +129,8 @@ export interface DailyOptions {
   now: () => Date;
 }
 
-export function dailyRoutes(app: FastifyInstance, opts: DailyOptions): void {
+/** Registers the routes; returns the task of a period (chosen now if needed), for the reminders. */
+export function dailyRoutes(app: FastifyInstance, opts: DailyOptions): (art: Art, zeitraum: string) => Promise<DailyTask> {
   const { store, checker, queue, solvability, origin, now } = opts;
   const perHour = new RateLimit(SUBMISSIONS_PER_HOUR, 60 * MINUTE);
 
@@ -201,4 +202,5 @@ export function dailyRoutes(app: FastifyInstance, opts: DailyOptions): void {
     });
     return reply.code(202).send({ id });
   });
+  return taskFor;
 }

@@ -12,6 +12,8 @@ import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
 import { playerLevelStore } from './spielerlevels-db.ts';
 import { syncStore } from './sync-db.ts';
+import { vapidFromEnv } from './webpush.ts';
+import { pushStore } from './webpush-db.ts';
 import { mailerFromEnv } from './mail.ts';
 import { migrate } from './migrate.ts';
 import { RoomHub, turnUrls } from './raum.ts';
@@ -41,11 +43,14 @@ const gameDir = process.env.GAME_DIR || '/game';
 const checker = gameChecker(gameDir);
 // Wettkampf (docs/SPEC-wettkampf.md): the referee plays the races with the same game code; WETTKAMPF=aus turns it off
 const wettkampf = process.env.WETTKAMPF === 'aus' ? undefined : new WettkampfHub({ rechner: wettkampfRechner(gameDir) });
+// Erinnerung per Web Push (docs/SPEC-webpush.md): VAPID keys from /opt/murmel/.env; without them it is off
+const vapid = vapidFromEnv(process.env);
 const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
   // the game code of the active version, read-only (compose.yml); without it submitting answers 503
   leaderboard: { store: leaderboardStore(sql), checker },
   ghosts: ghostStore(sql),
   daily: dailyStore(sql),
+  push: vapid.vapid ? { store: pushStore(sql), vapid: vapid.vapid, timer: true } : undefined,
   // Spieler-Levels: same checker process and queue as the leaderboard
   playerLevels: { store: playerLevelStore(sql) },
   sync: syncStore(sql),
@@ -56,6 +61,7 @@ const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS
 if (!checker.available()) app.log.warn({ gameDir }, 'no game code: leaderboard submissions are off');
 if (!turnSecret) app.log.warn('TURN_SECRET not set: rooms work, but browsers get no TURN server');
 for (const w of providers.warnings) app.log.warn(w);
+if (vapid.warning) app.log.warn(vapid.warning);
 app.log.info({ providers: activeProviders(providers.config) }, 'sign-in providers');
 if (!accounts.mailer) app.log.warn('SMTP not configured: sign-in by mail link is off');
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
