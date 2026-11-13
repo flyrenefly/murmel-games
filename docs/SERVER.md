@@ -163,6 +163,18 @@ anfangen. Quelle: IONOS-Hilfe „Important information on upgrading your VPS“
 
 ## 9. Komplettumzug auf den eigenen Server (entschieden 13.11.2026)
 
+**Erledigt am 13.11.2026:** `murmel.games` und `www.murmel.games` zeigen per A-Eintrag (TTL 5 min)
+auf den VPS `85.215.139.111`; IPv6-Einträge entfernt (der VPS hat keine IPv6). Caddy liefert beide
+Namen mit Let's-Encrypt-Zertifikat aus, `www` leitet auf `murmel.games` um. Mail-Einträge (MX, SPF,
+DKIM, DMARC) unverändert. Der Server rollt jeden grünen Commit auf `main` selbst aus
+(`murmel-update.timer`); GitHub Actions spielt das Spiel weiterhin zusätzlich auf den IONOS-Webspace,
+der damit aktuell bleibt.
+
+**Rückweg auf den Webspace (Notbetrieb, von Hand):** IONOS → Domains & SSL → murmel.games →
+„Verwendungsart anpassen“ → Webspace `/murmel-games`. Das stellt die alten Einträge
+(A `217.160.0.80`, AAAA `2001:8d8:100f:f000::2ef`) wieder her; wirksam nach höchstens 5 min.
+Eine automatische Umschaltung (Zeuge) ist noch nicht gebaut.
+
 Statt Spiel auf IONOS + API auf dem VPS liegt **alles auf dem eigenen Server**; der IONOS-Webspace
 bleibt als **statischer Notbetrieb** (wie beim WH-Website-Notbetrieb: fällt der Server aus, liefert
 IONOS das Spiel weiter, nur Konto-Funktionen pausieren).

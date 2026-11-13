@@ -28,3 +28,8 @@
 		file_server
 	}
 }
+
+# Eine Adresse für alle: www leitet auf murmel.games um (wie früher die .htaccess des Webspace).
+www.murmel.games {
+	redir https://murmel.games{uri} permanent
+}

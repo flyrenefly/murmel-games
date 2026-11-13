@@ -200,6 +200,9 @@ export class PhysicsWorld {
   private field: ((x: number, y: number, flying: boolean) => [number, number]) | null = null;
   readonly mass = 1;
 
+  /** Random numbers of the run (src/game/rng.ts); replays need the same sequence. */
+  random: () => number = Math.random;
+
   constructor(
     level: Level,
     private readonly blockers: Blockers | null = null,
@@ -420,7 +423,7 @@ export class PhysicsWorld {
         // Bug: a plain actor without a will – only floor forces and collisions move it
         add(e, ffx, ffy, friction);
       } else {
-        const [cx, cy] = e.chaseForce(targets, dt);
+        const [cx, cy] = e.chaseForce(targets, dt, this.random);
         add(e, cx + ffx, cy + ffy, friction);
       }
     }
