@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.ts';
 import { connect } from './db.ts';
-import { cleanName, cleanText, type ForumStore, POSTS_PER_HOUR, TOPICS_PER_HOUR } from './forum.ts';
+import { ACTIONS_PER_15_MIN, cleanName, cleanText, type ForumStore, POSTS_PER_HOUR, TOPICS_PER_HOUR } from './forum.ts';
 import { forumStore } from './forum-db.ts';
 import { memoryForumStore } from './forum-memory.ts';
 import { type AccountStore, COOKIE, hash } from './konten.ts';
@@ -77,8 +77,8 @@ for (const backend of backends) {
       if (name) assert.equal(await forum.setDisplayName(a.id, name), true);
       return { cookie: token, id: a.id };
     }
-    const req = (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, cookie?: string, payload?: object) =>
-      app.inject({ method, url, payload, headers: { origin: ORIGIN, ...(cookie ? { cookie: `${COOKIE}=${cookie}` } : {}) } });
+    const req = (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, cookie?: string, payload?: object, ip = '127.0.0.1') =>
+      app.inject({ method, url, payload, remoteAddress: ip, headers: { origin: ORIGIN, ...(cookie ? { cookie: `${COOKIE}=${cookie}` } : {}) } });
     async function newTopic(cookie: string, body: object = {}) {
       const res = await req('POST', '/api/forum/themen', cookie, { kategorie: 'fehler', titel: 'Murmel fällt durch', text: 'Im Level 3 fällt die Murmel durch den Boden.', ...body });
       assert.equal(res.statusCode, 201, res.body);
@@ -265,6 +265,64 @@ for (const backend of backends) {
       assert.equal((await req('GET', `/api/forum/themen/${id}`)).statusCode, 404);
     });
 
+    test('Grenzen je Konto für Stimmen und Meldungen; Längen in Zeichen wie PostgreSQL', async () => {
+      const u = await user('u@example.de');
+      const emoji = await req('POST', '/api/forum/themen', u.cookie, { kategorie: 'frage', titel: '😀a', text: 'x' });
+      assert.equal(emoji.statusCode, 400, 'zwei Zeichen, obwohl JavaScript drei zählt');
+      const id = await newTopic(u.cookie, { titel: '😀😀😀' });
+      // the account window (ACTIONS_PER_15_MIN) closes before the IP window (40)
+      let last = 200;
+      let n = 0;
+      for (; n < ACTIONS_PER_15_MIN + 1 && last === 200; n++) last = (await req('POST', `/api/forum/themen/${id}/stimme`, u.cookie, { an: n % 2 === 0 })).statusCode;
+      assert.equal(last, 429);
+      assert.equal(n, ACTIONS_PER_15_MIN + 1);
+      assert.match((await req('POST', `/api/forum/themen/${id}/stimme`, u.cookie, { an: true })).json().error, /Klicks/);
+    });
+
+    test('Eigene Beiträge löschen gibt das Stundenfenster nicht wieder frei', async () => {
+      const u = await user('u@example.de');
+      const v = await user('v@example.de');
+      const id = await newTopic(u.cookie);
+      // a new IP for every pair of requests: only the account window may stop v
+      for (let i = 0; i < POSTS_PER_HOUR; i++) {
+        const ip = `203.0.113.${i + 1}`;
+        const res = await req('POST', `/api/forum/themen/${id}/antworten`, v.cookie, { text: `v${i}` }, ip);
+        assert.equal(res.statusCode, 201, res.body);
+        assert.equal((await req('DELETE', `/api/forum/beitraege/${res.json().id}`, v.cookie, undefined, ip)).statusCode, 200);
+      }
+      const res = await req('POST', `/api/forum/themen/${id}/antworten`, v.cookie, { text: 'noch einer' }, '198.51.100.1');
+      assert.equal(res.statusCode, 429);
+      assert.match(res.json().error, /pro Stunde/);
+    });
+
+    test('Melden in einem ausgeblendeten Thema geht nicht (404)', async () => {
+      const u = await user('u@example.de');
+      const v = await user('v@example.de');
+      const admin = await user('chef@example.de', { admin: true, name: 'Chef' });
+      const id = await newTopic(u.cookie);
+      const reply = (await req('POST', `/api/forum/themen/${id}/antworten`, v.cookie, { text: 'Antwort' })).json().id;
+      const first = (await req('GET', `/api/forum/themen/${id}`)).json().beitraege[0].id;
+      await req('PUT', `/api/forum/beitraege/${first}/ausgeblendet`, admin.cookie, { ausgeblendet: true });
+      assert.equal((await req('POST', `/api/forum/beitraege/${reply}/melden`, u.cookie, { grund: 'x' })).statusCode, 404);
+    });
+
+    if (backend.name === 'PostgreSQL') {
+      test('Konto löschen nimmt Themen (samt Antworten), Beiträge, Stimmen und Meldungen mit', async () => {
+        const u = await user('u@example.de');
+        const v = await user('v@example.de');
+        const own = await newTopic(u.cookie, { titel: 'Von u' });
+        const other = await newTopic(v.cookie, { titel: 'Von v' });
+        await req('POST', `/api/forum/themen/${own}/antworten`, v.cookie, { text: 'v antwortet u' });
+        const r = (await req('POST', `/api/forum/themen/${other}/antworten`, u.cookie, { text: 'u antwortet v' })).json().id;
+        await req('POST', `/api/forum/themen/${other}/stimme`, u.cookie, { an: true });
+        await req('POST', `/api/forum/beitraege/${r}/melden`, v.cookie, { grund: 'x' });
+        await accounts.deleteAccount(u.id);
+        assert.deepEqual((await req('GET', '/api/forum/themen')).json().themen.map((t: { titel: string; stimmen: number; antworten: number }) => [t.titel, t.stimmen, t.antworten]), [['Von v', 0, 0]]);
+        const n = await sql!`select (select count(*)::int from forum_posts where account_id = ${u.id}) as p, (select count(*)::int from forum_reports) as r, (select count(*)::int from forum_votes) as v`;
+        assert.deepEqual({ ...n[0] }, { p: 0, r: 0, v: 0 });
+      });
+    }
+
     test('Admin-Beiträge tragen das Kennzeichen Team, Status setzen nur mit gültigem Wert', async () => {
       const admin = await user('chef@example.de', { admin: true, name: 'Chef' });
       const id = await newTopic(admin.cookie);
@@ -288,10 +346,12 @@ for (const backend of backends) {
       const foreign = await app.inject({ method: 'POST', url: `/api/forum/themen/${id}/antworten`, payload: { text: 'x' }, headers: { origin: 'https://boese.example', cookie: `${COOKIE}=${u.cookie}` } });
       assert.equal(foreign.statusCode, 403);
 
-      // the IP window counts all writes (votes are cheap, so they show it)
+      // the IP window counts all writes, whichever account sends them
+      const many = [await user('w1@example.de'), await user('w2@example.de'), await user('w3@example.de')];
       let last = 200;
-      for (let i = 0; i < 60 && last !== 429; i++) last = (await req('POST', `/api/forum/themen/${id}/stimme`, u.cookie, { an: i % 2 === 0 })).statusCode;
+      for (let i = 0; i < 60 && last !== 429; i++) last = (await req('POST', `/api/forum/themen/${id}/stimme`, many[i % 3].cookie, { an: i % 2 === 0 })).statusCode;
       assert.equal(last, 429);
+      assert.match((await req('POST', `/api/forum/themen/${id}/stimme`, many[0].cookie, { an: true })).json().error, /Zu viele Anfragen/);
       // admins moderate without the IP window (same IP in inject)
       const admin = await user('chef@example.de', { admin: true, name: 'Chef' });
       for (let i = 0; i < 45; i++) assert.equal((await req('PUT', `/api/forum/themen/${id}/status`, admin.cookie, { status: i % 2 ? 'offen' : 'geplant' })).statusCode, 200);

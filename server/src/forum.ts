@@ -98,6 +98,10 @@ const HOUR = 60 * MINUTE;
 /** Per account and hour. */
 export const TOPICS_PER_HOUR = 5;
 export const POSTS_PER_HOUR = 20;
+/** Votes, reports and name changes per account and 15 minutes. */
+export const ACTIONS_PER_15_MIN = 30;
+/** Length as PostgreSQL's char_length counts it (code points, not UTF-16 units). */
+const chars = (s: string) => [...s].length;
 const PAGE = 30;
 
 /**
@@ -172,6 +176,10 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
   const { store, accounts, origin, now = () => new Date() } = opts;
   // Per IP, over all writes (topics, replies, votes, reports, admin actions).
   const ipLimit = new RateLimit(40, 15 * MINUTE);
+  // Per account, in memory: deleting posts does not free the window again.
+  const topicLimit = new RateLimit(TOPICS_PER_HOUR, HOUR);
+  const postLimit = new RateLimit(POSTS_PER_HOUR, HOUR);
+  const actionLimit = new RateLimit(ACTIONS_PER_15_MIN, 15 * MINUTE);
 
   app.addHook('onRequest', async (req, reply) => {
     if (!req.url.startsWith('/api/forum') || req.method === 'GET' || req.method === 'HEAD') return;
@@ -198,11 +206,25 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
       reply.code(429).send({ error: `Höchstens ${TOPICS_PER_HOUR} neue Themen pro Stunde. Bitte versuch es später noch einmal.` });
       return false;
     }
-    if ((await store.countPosts(a, since)) >= POSTS_PER_HOUR) {
+    // Stored rows survive a restart; the memory windows also count posts that were deleted again.
+    const t = now().getTime();
+    const key = String(a);
+    if (topic && !topicLimit.take(key, t)) {
+      reply.code(429).send({ error: `Höchstens ${TOPICS_PER_HOUR} neue Themen pro Stunde. Bitte versuch es später noch einmal.` });
+      return false;
+    }
+    if ((await store.countPosts(a, since)) >= POSTS_PER_HOUR || !postLimit.take(key, t)) {
       reply.code(429).send({ error: `Höchstens ${POSTS_PER_HOUR} Beiträge pro Stunde. Bitte versuch es später noch einmal.` });
       return false;
     }
     return true;
+  }
+
+  /** Votes, reports, name changes: a window per account (on top of the IP window). */
+  async function accountActions(req: FastifyRequest, reply: FastifyReply) {
+    if (req.account && !actionLimit.take(String(req.account.id), now().getTime())) {
+      return reply.code(429).send({ error: 'Zu viele Klicks. Bitte warte ein paar Minuten.' });
+    }
   }
 
   /** Visible topic or 404 (hidden ones only for admins). */
@@ -225,7 +247,7 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
 
   app.put<{ Body: { name: string } }>(
     '/api/forum/name',
-    { preHandler: requireAccount, schema: { body: { type: 'object', required: ['name'], additionalProperties: false, properties: { name: { type: 'string', maxLength: 60 } } } } },
+    { preHandler: [requireAccount, accountActions], schema: { body: { type: 'object', required: ['name'], additionalProperties: false, properties: { name: { type: 'string', maxLength: 60 } } } } },
     async (req, reply) => {
       const name = cleanName(req.body.name);
       if (!name) return reply.code(400).send({ error: 'Der Name braucht 3 bis 24 Zeichen: Buchstaben, Ziffern, Leerzeichen, Punkt, Strich. Namen wie „Admin“ oder „Team“ sind vergeben.' });
@@ -284,8 +306,8 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
     async (req, reply) => {
       const title = cleanText(req.body.titel).replace(/\s+/g, ' ');
       const body = cleanText(req.body.text);
-      if (title.length < 3 || title.length > 120) return reply.code(400).send({ error: 'Der Titel braucht 3 bis 120 Zeichen.' });
-      if (body.length < 1 || body.length > 5000) return reply.code(400).send({ error: 'Der Text braucht 1 bis 5000 Zeichen.' });
+      if (chars(title) < 3 || chars(title) > 120) return reply.code(400).send({ error: 'Der Titel braucht 3 bis 120 Zeichen.' });
+      if (chars(body) < 1 || chars(body) > 5000) return reply.code(400).send({ error: 'Der Text braucht 1 bis 5000 Zeichen.' });
       const level = req.body.level && LEVEL.test(req.body.level) ? req.body.level : null;
       const version = req.body.version && VERSION.test(req.body.version) ? req.body.version : null;
       if (!(await perHour(req, reply, true))) return reply;
@@ -305,7 +327,7 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
       const t = await visibleTopic(req, reply, req.params.id);
       if (!t) return reply;
       const body = cleanText(req.body.text);
-      if (body.length < 1 || body.length > 5000) return reply.code(400).send({ error: 'Der Text braucht 1 bis 5000 Zeichen.' });
+      if (chars(body) < 1 || chars(body) > 5000) return reply.code(400).send({ error: 'Der Text braucht 1 bis 5000 Zeichen.' });
       if (!(await perHour(req, reply, false))) return reply;
       const a = req.account!;
       const postId = await store.addPost({ topicId: t.id, accountId: a.id, team: a.role === 'admin', body, now: now() });
@@ -316,7 +338,7 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
   // Thumbs up: one account, one vote. { an: false } takes it back.
   app.post<{ Params: { id: number }; Body: { an: boolean } }>(
     '/api/forum/themen/:id/stimme',
-    { preHandler: requireAccount, schema: { params: id, body: { type: 'object', required: ['an'], additionalProperties: false, properties: { an: { type: 'boolean' } } } } },
+    { preHandler: [requireAccount, accountActions], schema: { params: id, body: { type: 'object', required: ['an'], additionalProperties: false, properties: { an: { type: 'boolean' } } } } },
     async (req, reply) => {
       const t = await visibleTopic(req, reply, req.params.id);
       if (!t) return reply;
@@ -328,11 +350,12 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
 
   app.post<{ Params: { id: number }; Body: { grund?: string } | undefined }>(
     '/api/forum/beitraege/:id/melden',
-    { preHandler: requireAccount, schema: { params: id, body: { type: ['object', 'null'], additionalProperties: false, properties: { grund: { type: 'string', maxLength: 400 } } } } },
+    { preHandler: [requireAccount, accountActions], schema: { params: id, body: { type: ['object', 'null'], additionalProperties: false, properties: { grund: { type: 'string', maxLength: 400 } } } } },
     async (req, reply) => {
       const p = await store.post(req.params.id);
       if (!p || (p.hidden && !isAdmin(req))) return reply.code(404).send({ error: 'Diesen Beitrag gibt es nicht (mehr).' });
-      await store.report(p.id, req.account!.id, cleanText(req.body?.grund ?? '').slice(0, 300), now());
+      if (!(await visibleTopic(req, reply, p.topicId))) return reply;
+      await store.report(p.id, req.account!.id, [...cleanText(req.body?.grund ?? '')].slice(0, 300).join(''), now());
       return { gemeldet: true };
     },
   );
