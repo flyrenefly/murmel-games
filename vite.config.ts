@@ -94,6 +94,7 @@ export default defineConfig({
         statistik: resolve(__dirname, 'statistik.html'),
         forumseite: resolve(__dirname, 'forum.html'),
         loesbarkeit: resolve(__dirname, 'loesbarkeit.html'),
+        editor: resolve(__dirname, 'editor.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

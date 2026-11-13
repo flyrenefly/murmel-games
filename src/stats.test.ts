@@ -21,6 +21,12 @@ describe('anonymous statistics', () => {
     expect(sent).toEqual([]);
   });
 
+  it('does not count levels from links (editor)', () => {
+    const sent: string[] = [];
+    reportEvent('start', 'link:0a1b2c3d', { hostname: 'murmel.games', sendBeacon: (u) => (sent.push(u), true) });
+    expect(sent).toEqual([]);
+  });
+
   it('never throws, even when the browser refuses', () => {
     expect(() =>
       reportEvent('start', 'x', {

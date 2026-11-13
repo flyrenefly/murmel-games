@@ -45,5 +45,11 @@ export function packLevels(id: string): Promise<LevelFile[]> {
 }
 
 export async function packTitle(id: string): Promise<string> {
+  if (id === 'link') return 'Geteiltes Level';
   return (await listPacks()).find((p) => p.id === id)?.title ?? id;
+}
+
+/** A level from a link (src/editor/game-link.ts) as the one-level pack "link". */
+export function setLinkPack(file: LevelFile): void {
+  loaded.set('link', Promise.resolve([file]));
 }
