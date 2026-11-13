@@ -292,6 +292,9 @@ for (const backend of backends) {
       let last = 200;
       for (let i = 0; i < 60 && last !== 429; i++) last = (await req('POST', `/api/forum/themen/${id}/stimme`, u.cookie, { an: i % 2 === 0 })).statusCode;
       assert.equal(last, 429);
+      // admins moderate without the IP window (same IP in inject)
+      const admin = await user('chef@example.de', { admin: true, name: 'Chef' });
+      for (let i = 0; i < 45; i++) assert.equal((await req('PUT', `/api/forum/themen/${id}/status`, admin.cookie, { status: i % 2 ? 'offen' : 'geplant' })).statusCode, 200);
     });
   });
 }

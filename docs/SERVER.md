@@ -131,6 +131,13 @@ fließen in die Todo-Liste ein. Gebaut wird der Baustein direkt nach `konten` (N
 - **Spam-Schutz:** Begrenzung je Konto und IP; keine Bilder-Uploads in der ersten Stufe.
 - **Datenschutz:** Die Datenschutzerklärung bekommt einen eigenen Abschnitt, vorher vom Nutzer freigegeben.
 
+**Erste Stufe gebaut (Branch `forum`, 13.11.2026):** Migration `004_forum.sql`, API `server/src/forum.ts`
+(`/api/forum/…`), Seite `forum.html`, Knopf „Fehler melden“ im Pausenmenü (Level-Kennung + Spielversion
+aus dem Build). Im Forum steht ein **Anzeigename** (`accounts.display_name`, eindeutig), nie die Mailadresse.
+Grenzen: 5 Themen und 20 Beiträge je Konto und Stunde, 40 Schreibanfragen je IP in 15 min (Admins
+ausgenommen). Ausgeblendete Beiträge sehen nur Admins; ein ausgeblendeter erster Beitrag blendet das Thema
+aus. Eigene Beiträge lassen sich löschen (der erste löscht das Thema); „Konto löschen“ nimmt alle Beiträge mit.
+
 ## 8. Betrieb, Datenschutz, Kosten
 
 - **Server:** eigener VPS für Murmel, **getrennt von WH-Control** (Hobbyprojekt nicht auf

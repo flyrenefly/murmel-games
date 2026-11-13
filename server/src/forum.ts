@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { type AccountStore, requireAccount, requireAdmin } from './konten.ts';
 import { RateLimit } from './limit.ts';
+import { LEVEL_ID } from './stats.ts';
 
 // ---------- data model ----------
 
@@ -120,7 +121,7 @@ export function cleanName(raw: unknown): string | null {
   return NAME.test(n) && !/admin|murmel|team|moderat/i.test(n) ? n : null;
 }
 
-const LEVEL = /^[\w.:/-]{1,120}$/;
+const LEVEL = new RegExp(LEVEL_ID);
 const VERSION = /^[\w.-]{1,40}$/;
 
 function topicJson(t: Topic, voted: boolean, admin: boolean) {
@@ -176,7 +177,8 @@ export function forumRoutes(app: FastifyInstance, opts: ForumOptions): void {
     if (!req.url.startsWith('/api/forum') || req.method === 'GET' || req.method === 'HEAD') return;
     // CSRF: writes only from the game's own page (the cookie is SameSite=Strict as well).
     if (req.headers.origin !== undefined && req.headers.origin !== origin) return reply.code(403).send({ error: 'fremde Herkunft' });
-    if (!ipLimit.take(req.ip, now().getTime())) return reply.code(429).send({ error: 'Zu viele Anfragen. Bitte warte ein paar Minuten.' });
+    // req.account comes from the accounts hook (registered first). Admins moderate without the IP window.
+    if (req.account?.role !== 'admin' && !ipLimit.take(req.ip, now().getTime())) return reply.code(429).send({ error: 'Zu viele Anfragen. Bitte warte ein paar Minuten.' });
   });
 
   const isAdmin = (req: FastifyRequest) => req.account?.role === 'admin';
