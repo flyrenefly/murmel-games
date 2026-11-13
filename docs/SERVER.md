@@ -1,7 +1,7 @@
 # Server-Konzept: Konten, Bestenlisten, Spieler-Levels, Mehrspieler
 
 Stand 13.11.2026, **Entwurf zur Freigabe**. Gebaut wird erst, wenn die Bausteine-Übersicht
-(Abschnitt 3) und die offenen Fragen (Abschnitt 9) entschieden sind.
+(Abschnitt 3) und die offenen Fragen (Abschnitt 11) entschieden sind.
 
 ## 1. Ziel
 
@@ -109,7 +109,52 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 - **Sicherheit:** Eingaben prüfen, Begrenzung der Anfragen je IP/Konto, Upload-Größen begrenzen,
   keine Geheimnisse im Repo (GitHub-Secrets).
 
-## 9. Offene Fragen (Entscheidung durch den Nutzer)
+## 9. Variante: alles auf den eigenen Server (Empfehlung, sobald `api-basis` kommt)
+
+Statt Spiel auf IONOS + API auf dem VPS liegt **alles auf dem eigenen Server**; der IONOS-Webspace
+bleibt als **statischer Notbetrieb** (wie beim WH-Website-Notbetrieb: fällt der Server aus, liefert
+IONOS das Spiel weiter, nur Konto-Funktionen pausieren).
+
+```
+murmel.games ──► eigener VPS: Reverse-Proxy ─┬─ Spiel (statische Dateien)
+                                             ├─ /api  (Konten, Zeiten, Levels)
+                                             └─ /ws   (Mehrspieler)
+        Ausfall ──► IONOS-Webspace (statische Kopie, offline-fähiges Spiel)
+```
+
+**Vorteile**
+- Spiel und API unter **derselben Adresse**: keine Freigaben zwischen Domains (CORS), einfache und
+  sichere Anmelde-Cookies, der Service Worker kann auch Kontodaten zwischenspeichern.
+- **Saubere Versionen:** jede Version wird auf einmal live (statt Datei für Datei per SFTP), Rückweg
+  mit einem Befehl.
+- **Volle Kontrolle über die Auslieferung:** Brotli, HTTP/3, genaue Cache-Regeln, strenge
+  Sicherheitsheader (CSP), COOP/COEP für schnellere WebAssembly-Rechnung mit mehreren Kernen.
+- **Dauerverbindungen (WebSockets)** für Mehrspieler und Live-Funktionen.
+- **Vom Server erzeugte Inhalte**, z. B. eine Seite je Level mit Vorschaubild.
+
+**Nachteile:** eigener Betrieb (Updates, Sicherheit, Backups, Überwachung); ohne Notbetrieb wäre ein
+Serverausfall ein Totalausfall. Der Umzug selbst braucht eine DNS-Umstellung (nur auf ausdrücklichen
+Auftrag) und eine Umschaltung wie beim WH-Notbetrieb (Zeuge/Prüfung, die bei Ausfall auf IONOS zeigt).
+
+## 10. Größere Vorhaben, die ein eigener Server ermöglicht
+
+| Vorhaben (id) | Inhalt | Grundlage |
+|---|---|---|
+| `geister` | Gegen den eigenen oder den besten Lauf als durchscheinende Murmel spielen; fremde Lösungen ansehen | Eingabeaufzeichnung (`bestenliste`) |
+| `tipps` | Bei langem Hängen den nächsten Schritt aus einer gespeicherten Lösung zeigen | gespeicherte Lösungen |
+| `loesbarkeit` | Jede Nacht alle ~1300 Levels mit gespeicherten Lösungen ohne Grafik nachspielen; meldet, wenn eine Änderung ein Level unlösbar macht | Nachspielen im Server, Lösungen |
+| `wettkampf` | Mehrspieler mit Server als Schiedsrichter: mehr als zwei Spieler, Zuschauer, Wettrennen im selben Level | `mehrspieler`, Physik im Server |
+| `tageslevel` | Tageslevel und Wochenaufgabe mit eigener Rangliste, Erinnerung per Push | `bestenliste`, Web Push |
+| `levelseiten` | Eine Seite je Level mit Vorschaubild, Beschreibung, Bestzeit – Einstiege über Suchmaschinen | Server-Rendering |
+| `enigma-upload` | Spieler laden eine Enigma-Leveldatei hoch, der Server wandelt sie mit dem Importer um | `tools/import-enigma.mjs` |
+| `auswertung` | Datensparsam, ohne Fremdanbieter: wo Spieler scheitern oder abbrechen → bessere Reihenfolge und Schwierigkeit der Pakete (Datenschutzerklärung anpassen) | eigene Protokolle |
+| `cloudstand` | Spielstand mitten im Level in der Cloud, auf einem anderen Gerät weiterspielen | `sync`, Spielstand-Format |
+
+Größter Nutzen zuerst: **`loesbarkeit`** (löst das größte offene Qualitätsproblem: heute wird nur
+geprüft, ob Levels laden) und **`geister`** – beide bauen auf der Eingabeaufzeichnung auf, die für
+die Bestenlisten ohnehin entsteht.
+
+## 11. Offene Fragen (Entscheidung durch den Nutzer)
 
 1. **Bausteine und Reihenfolge** aus Abschnitt 3 so freigeben? Oder erst `lokal` + `editor` ohne Server?
 2. **Wo läuft der Server?** Eigener kleiner VPS (Vorschlag, z. B. netcup oder IONOS) oder auf
@@ -119,8 +164,11 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 5. **Moderation** der Spieler-Levels: von Hand freigeben oder nach Bewertungen automatisch?
 6. **Datenbank:** PostgreSQL von Anfang an (Vorschlag) oder SQLite, bis es mehr Spieler gibt?
 7. **Subdomain** `api.murmel.games` (DNS bei IONOS) – darf ich sie anlegen, wenn es so weit ist?
+   (Entfällt bei der Variante aus Abschnitt 9: dann zeigt `murmel.games` selbst auf den Server.)
+8. **Komplettumzug** (Abschnitt 9) mit IONOS als Notbetrieb – ja, sobald `api-basis` gebaut wird?
+9. **Größere Vorhaben** (Abschnitt 10): welche davon, und `loesbarkeit` + `geister` zuerst?
 
-## 10. Grenzen (für alle Bausteine)
+## 12. Grenzen (für alle Bausteine)
 
 - **Immer:** Spiel bleibt ohne Konto und offline voll spielbar; Tests vor jedem Commit; jede
   Server-Änderung mit Rückweg.
