@@ -32,6 +32,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Lösbarkeit (docs/SPEC-loesbarkeit.md): jedes Level startet und läuft 5 s ohne Fehler,
+      # jede Lösung unter solutions/ gewinnt noch – sonst kommt die Änderung nicht auf main.
+      - run: npm run test:tools
+      - run: npm run check:levels
+      - run: npm run check:solutions
       - run: npm run build
       # Server (API): eigene Abhängigkeiten, Typprüfung und Tests
       - run: npm ci --ignore-scripts

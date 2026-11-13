@@ -10,7 +10,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:tools": "node --test \"tools/**/*.test.mjs\"",
+    "check:levels": "node tools/check-load.mjs",
+    "check:solutions": "node tools/check-solutions.mjs"
   },
   "license": "GPL-3.0-or-later",
   "type": "module",

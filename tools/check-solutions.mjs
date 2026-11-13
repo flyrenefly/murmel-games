@@ -53,7 +53,7 @@ const replayed = await runChecks(
 const results = entries.map((e) => {
   if (e.error) return { file: e.name, level: null, status: 'fehler', steps: 0, recordedSteps: null, error: e.error };
   const r = replayed[runnable.indexOf(e)];
-  return { file: e.name, pack: e.level.pack, ...r, ...(e.changed ? { levelChanged: true } : {}) };
+  return { file: e.name, pack: e.level.pack, levelHash: levelHash(e.level.file), ...r, ...(e.changed ? { levelChanged: true } : {}) };
 });
 
 const label = { geloest: 'gelöst', 'nicht-geloest': 'NICHT GELÖST', fehler: 'FEHLER' };

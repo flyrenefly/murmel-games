@@ -72,7 +72,8 @@ Bleibt etwas kaputt, kommt keine weitere Mail; die Ansicht zeigt es weiter an.
   Häkchen „Mein Lauf darf zur Lösbarkeitsprüfung genutzt werden“ und ein Absatz in der
   Datenschutzerklärung kommen dann mit Freigabe des Nutzers dazu.
 
-**Entscheidung des Nutzers:** _offen_
+**Entscheidung des Nutzers (13.11.2026): Repo + Admins** wie empfohlen – (c) und (a) jetzt, (b) erst mit
+`bestenliste` und eigener Freigabe der Datenschutzerklärung.
 
 ## Nachtlauf auf dem Server
 
@@ -128,7 +129,7 @@ solutions           (id, level, level_hash, recording jsonb, steps, account_id �
 
 - **Immer:** Spiel bleibt ohne Konto und offline voll spielbar; die Prüfung ändert kein Spielverhalten;
   Tests zuerst; Nachtlauf mit niedrigster Priorität; Rückweg = Timer abschalten.
-- **Erst fragen:** Herkunft der Lösungen (L7), Spieler-Läufe (b) und jede Änderung der
+- **Erst fragen:** Spieler-Läufe (b) und jede Änderung der
   Datenschutzerklärung, Schema-Änderungen nach Migration 005.
 - **Nie:** Spielerläufe ohne Einwilligung speichern, Daten außerhalb der EU, Geheimnisse im Repo,
   Mails an andere als `ADMIN_EMAILS`.
@@ -144,6 +145,5 @@ solutions           (id, level, level_hash, recording jsonb, steps, account_id �
 
 ## Offene Fragen
 
-1. Herkunft der Lösungen (L7) – siehe oben.
-2. Sollen Lua-Fehler der Ladeprobe (heute 3 Levels) in der CI als Fehler zählen? Vorschlag: nein, nur
+1. Sollen Lua-Fehler der Ladeprobe (heute 3 Levels) in der CI als Fehler zählen? Vorschlag: nein, nur
    anzeigen; neue Lua-Fehler erscheinen in der Admin-Ansicht.
