@@ -37,6 +37,8 @@ export const LIBS = {
   'lib/liblua': { name: 'liblua', kinds: [] },
   'lib/libmath': { name: 'libmath', kinds: [], deps: ['lib/liblua'] },
   'lib/natmaze': { name: 'natmaze', kinds: [] },
+  // maps (wo:newMap, map .. map, "k" * map, map:sub/paste/replace …): replaces the shim's subset
+  'lib/libmap': { name: 'libmap', kinds: [], deps: ['lib/liblua'] },
 };
 export function libCode(name) {
   return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
@@ -143,7 +145,7 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && !fields.has(m[1]) && !fns.has(`:${m[1]}`) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
   // wo:drawMap/drawRect/drawBorder during play: only with resolvers the shim builds (ti, res.autotile,
   // res.random, res.pento; wo:newMap with map ^ transformation), no libmap, and only keys ti knows
-  for (const d of drawCalls(reached.replace(/--[^\n]*/g, ''))) if (!drawOk(d, code)) problems.add(`:${d.method}`);
+  for (const d of drawCalls(reached.replace(/--[^\n]*/g, ''))) if (!drawOk(d, code, fns)) problems.add(`:${d.method}`);
   // wo:add during play: only items into an inventory (YIN/YANG), rubber bands, timers and counters
   const raw = reached.replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
@@ -198,16 +200,19 @@ export function drawCalls(text) {
 }
 
 /** Whether the shim can run a draw call during play: its resolvers are built and ti knows its keys. */
-export function drawOk(call, code) {
-  if (/\blib\.map\b/.test(call.args)) return false;
+export function drawOk(call, code, fns = new Set()) {
+  // libmap's functions only with libmap loaded (lib.map.get among the level's functions)
+  const libmap = fns.has('lib.map.get');
+  if (!libmap && /\blib\.map\b/.test(call.args)) return false;
   const names = new Set([...call.args.matchAll(/\bres\.(\w+)/g)].map((r) => r[1]));
   let plainTi = true;
   for (const id of new Set(call.args.replace(/"[^"]*"/g, '').match(/\b[A-Za-z_]\w*\b/g) ?? [])) {
     // a resolver kept in a variable (local resolver = res.random(ti, …)) or a map from wo:newMap
     for (const d of code.matchAll(new RegExp(`(?:^|[^.\\w])${id}\\s*=(?!=)\\s*([^\\n]*)`, 'g'))) {
-      if (/\blib\.map\b/.test(d[1])) return false;
+      if (!libmap && /\blib\.map\b/.test(d[1])) return false;
       for (const r of d[1].matchAll(/\bres\.(\w+)/g)) names.add(r[1]);
-      if (/wo:newMap/.test(d[1])) plainTi = false;
+      // a map: from wo:newMap, or with libmap from map operations ("B" * map, map:sub …)
+      if (/wo:newMap/.test(d[1]) || (libmap && /\bmap\b|\*|\.\.|:sub\b|:paste\b|:replace\b/i.test(d[1]))) plainTi = false;
     }
   }
   if ([...names].some((n) => !RESOLVERS.has(n))) return false;
@@ -240,7 +245,7 @@ export function newMapKeys(code) {
 }
 
 /** Kinds (st_/fl_/it_/ac_) that callbacks may create: literals in the bodies and in ti entries they use. */
-export function runtimeKinds(code, api1 = false, entries = undefined) {
+export function runtimeKinds(code, api1 = false, entries = undefined, libmap = false) {
   const body = bodies(code, api1 ? entries : undefined);
   const kinds = new Set([...body.matchAll(/"((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
   if (api1) {
@@ -278,7 +283,8 @@ export function runtimeKinds(code, api1 = false, entries = undefined) {
   // maps from wo:newMap kept in variables (parts[kind] ^ rotation): the keys of their rows when every
   // map is made from literal rows (wo:newMap(" ", part1), local part1 = {"  A ", …}), else any ti entry
   if (/:\s*drawMap\s*\(/.test(body) && /wo:newMap/.test(code)) {
-    const mapKeys = newMapKeys(code);
+    // with libmap, maps change by other operations too ("r" * map adds a prefix): any ti entry
+    const mapKeys = libmap ? null : newMapKeys(code);
     for (const d of code.matchAll(/ti\[\s*"([^"]*)"\s*\]\s*=([^\n]*)/g)) {
       if (mapKeys && !mapKeys.has(d[1])) continue;
       for (const k of d[2].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);

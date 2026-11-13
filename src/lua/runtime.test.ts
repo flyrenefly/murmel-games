@@ -267,3 +267,29 @@ end`,
     expect(w.force()).toBe('41,11');
   });
 });
+
+describe('libmap', () => {
+  it('replaces the shim maps: "k" * map, map:replace, map .. map, map ^ transformation, drawn during play', async () => {
+    const [liblua, libmap] = await Promise.all([import('./lib/liblua.lua?raw'), import('./lib/libmap.lua?raw')]);
+    const w = fakeHost([{ ref: 's', l: 'it', x: 1, y: 1, a: {} }]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await LuaLevel.create(
+      `ti["r#"] = {"st_granite"}\nti["rx"] = {"st_brick"}\nti["r "] = {"fl_sand"}
+local m = wo:newMap(" ", {"# ", " #"})
+local wide = m .. wo:newMap(" ", {"x", "x"})
+wide:replace(" ", "#")
+local big = "r" * (wide ^ MAP_ROT_CW)
+function f() wo:drawMap(ti, po(0, 0), big) end`,
+      w.host,
+      shim,
+      await import('fengari'),
+      [liblua.default, libmap.default],
+    );
+    expect(lua.lastError).toBe('');
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    // wide = {"##x", "##x"}; turned clockwise: 2 wide, 3 high, the x row at the bottom
+    expect(set).toEqual(['0,0,st_granite', '1,0,st_granite', '0,1,st_granite', '1,1,st_granite', '0,2,st_brick', '1,2,st_brick']);
+  });
+});

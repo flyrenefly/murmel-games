@@ -56,3 +56,14 @@ test('drawCalls: Zeichenketten in Indexausdrücken sind kein Ignorierschlüssel'
   assert.deepEqual(d.keys, ['!']);
   assert.deepEqual(drawCalls('wo:drawMap(ti, no["anchor"]+ENE, " ", {"**", "*  *"})')[0].keys, ['*']);
 });
+
+test('libmap geladen: Karten aus Kartenoperationen dürfen im Rückruf gezeichnet werden, und jede Kachel zählt', async () => {
+  const { libFunctions, levelLibs, runtimeKinds } = await import('./lua-check.mjs');
+  const libs = levelLibs('<el:dependency el:path="lib/libmap"/>');
+  assert.deepEqual(libs.map((l) => l.name), ['liblua', 'libmap']);
+  const code = 'ti["r#"] = {"st_granite"}\nlocal part = {"#"}\nlocal m = wo:newMap(" ", part)\nlocal big = "r" * m\nfunction f()\n    wo:drawMap(ti, po(0, 0), lib.map.sub(big, po(0, 0), po(0, 0)))\nend';
+  assert.deepEqual(luaProblems(code, luaFunctions(code)).includes(':drawMap'), true);
+  assert.deepEqual(luaProblems(code, new Set([...luaFunctions(code), ...libFunctions(libs)])), []);
+  // "r" * map makes keys the literal rows do not have
+  assert.deepEqual(runtimeKinds(code, false, undefined, true), ['st_granite']);
+});

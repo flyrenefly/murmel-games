@@ -829,7 +829,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
-    for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks), ...lua.libs.flatMap((l) => l.kinds)]) {
+    for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds)]) {
       const v = runtimeKind(k);
       if (!runtimeOk(v)) {
         reject(`Lua: ${k}`);

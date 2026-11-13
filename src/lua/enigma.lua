@@ -36,9 +36,10 @@ end
 local POS, POLIST, OBJ, GROUP, TILE = {}, {}, {}, {}, {}
 POS.__name, POLIST.__name, OBJ.__name, GROUP.__name, TILE.__name = "position", "polist", "object", "group", "tile"
 
+-- libraries name their types in _type (libmap: lib.map.metatable._type = "map")
 local function etype_of(v)
   local mt = getmetatable(v)
-  return mt and mt.__name or type(v)
+  return mt and (mt.__name or (type(mt) == "table" and rawget(mt, "_type"))) or type(v)
 end
 
 -- Lua 5.1 prints 8.0 as "8", Lua 5.3 as "8.0": keep whole coordinates integers, since
@@ -65,6 +66,8 @@ POS.__index = function(p, k)
   if k == "grid" then return newpos(math.floor(p.x), math.floor(p.y)) end
   return nil
 end
+-- pos:grid() (libmap): p.grid is the grid position, calling it returns that position
+POS.__call = function(p) return p end
 local function haslist(a, b) return etype_of(a) == "polist" or etype_of(b) == "polist" end
 POS.__add = function(a, b)
   if haslist(a, b) then return POLIST.__add(a, b) end
@@ -277,6 +280,11 @@ function methods.get_cluster(self)
     for _, r in ipairs(M.cluster(self._ref)) do l[#l + 1] = obj(r) end
   end
   return newgroup(l)
+end
+-- obj:grid() (libmap): the grid position of the object
+function methods.grid(self)
+  local p = topos(self)
+  return p and newpos(math.floor(p.x), math.floor(p.y))
 end
 function methods.xy(self)
   local p = topos(self)
@@ -709,10 +717,12 @@ function wmethods.fl(_, p) return fl(p) end
 function wmethods.st(_, p) return st(p) end
 function wmethods.it(_, p) return it(p) end
 
-for _, m in ipairs({"world", "_register"}) do
-  wmethods[m] = function()
-    if not INIT then unsupported("wo:" .. m) end
-  end
+function wmethods.world()
+  if not INIT then unsupported("wo:world") end
+end
+-- wo:_register(name, f) (libmap registers wo:newMap): f(world, …) becomes a world method
+function wmethods._register(_, name, f)
+  wmethods[name] = f
 end
 -- wo:shuffleOxyd() during play (Oxyd stones made by Lua get their colours here); in init mode
 -- the export already holds the colours.
@@ -1024,6 +1034,10 @@ function etype(v)
   local t = etype_of(v)
   if t == "object" then return v._ref and "object" or "nil" end
   return t
+end
+-- lua.cc usertype: the Enigma type of a value (position, object, group, polist …)
+function usertype(v)
+  return etype(v)
 end
 
 -------------------------------------------------------------------------------
