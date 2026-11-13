@@ -152,6 +152,7 @@ export function actorImages(kind: string, color?: string): string[] {
   if (kind === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
   if (kind === 'ac_top') return ['ac_top', 'sh_top'];
   if (kind === 'ac_bug') return ['ac_bug', 'sh_pearl'];
+  if (kind === 'ac_horse') return ['ac_horse', 'sh_horse'];
   if (kind.startsWith('ac_killer')) return [color === '0' || (color === undefined && kind === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (kind === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
   if (/^ac_pearl(_white|_black)?$/.test(kind)) {
@@ -216,6 +217,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
   if (kind === 'st_monoflop') return ['st_monoflop', 'sh_round'];
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
+  if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (kind === 'st_rubberband') return ['st_rubberband', 'sh_round'];
   if (kind === 'st_flash') return ['st_flash', 'sh_solid'];
   if (/^st_magic/.test(kind)) return ['st_brick', 'st_oxyda', 'st_oxydc', 'sh_solid', 'st_rawglass', 'st_lightglass', 'sh_rawglass'];
@@ -811,6 +813,12 @@ export class ClassicView {
       }
       return;
     }
+    if (o.cls === 'portal') {
+      // st_portal_*: model st_portal_horse, shadow sh_portal_horse
+      if (pass === 'shadow') this.image('sh_portal_horse', px, py);
+      else this.image('st_portal_horse', px, py);
+      return;
+    }
     if (o.cls === 'scissors') {
       // st_scissors: frame 0; snip: frame 1 for 130 ms
       const age = o.pulse === undefined ? -1 : world.ageOf(o.pulse);
@@ -1026,6 +1034,14 @@ export class ClassicView {
       }
       if (a.kind === 'marble') {
         this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0, jump: a.jump ?? -1 });
+        continue;
+      }
+      if (a.kind === 'horse') {
+        // ac_horse: SpriteImage (0.5, 0.18), shadow sh_horse
+        const sh = img.sh_horse;
+        if (sh) ctx.drawImage(sh, cx - sh.width / 2 + 4, cy - sh.height * 0.18 + 4);
+        const im = img.ac_horse;
+        if (im) ctx.drawImage(im, cx - im.width / 2, cy - im.height * 0.18);
         continue;
       }
       if (a.kind === 'bug') {

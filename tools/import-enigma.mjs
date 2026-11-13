@@ -94,6 +94,7 @@ const OBJECTS = [
   [/^it_sword$/, ['it_sword']],
   [/^st_polarswitch$/, ['st_lightglass', 'st_darkglass', 'sh_rawglass']],
   [/^st_monoflop$/, ['st_monoflop', 'sh_round']],
+  [/^st_portal(_horse|_pearl)?$/, ['st_portal_horse', 'sh_portal_horse']],
   [/^st_scissors$/, ['st_scissors', 'sh_round']],
   [/^st_rubberband$/, ['st_rubberband', 'sh_round']],
   [/^st_flash$/, ['st_flash', 'sh_solid']],
@@ -238,11 +239,12 @@ for (const f of readdirSync(exportDir)) {
 }
 
 /** Actors Murmel can play. */
-const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black', 'ac_bug']);
+const ACTORS = new Set(['ac_marble_black', 'ac_marble_white', 'ac_pearl', 'ac_pearl_white', 'ac_pearl_black', 'ac_rotor', 'ac_top', 'ac_killer', 'ac_killer_white', 'ac_killer_black', 'ac_bug', 'ac_horse']);
 /** Images of the other actors (models-2d.lua: killers look like pearls). */
 function actorImages(k, color) {
   if (k === 'ac_rotor') return ['ac_rotor', 'sh_rotor'];
   if (k === 'ac_bug') return ['ac_bug', 'sh_pearl'];
+  if (k === 'ac_horse') return ['ac_horse', 'sh_horse'];
   if (k === 'ac_top') return ['ac_top', 'sh_top'];
   if (k.startsWith('ac_killer')) return [color === '0' || (color === undefined && k === 'ac_killer_black') ? 'ac_pearl_black' : 'ac_pearl_white', 'sh_pearl'];
   if (k === 'ac_marble_white') return ['ac_marble_white', 'ac_marble_white_fall'];
@@ -360,6 +362,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
+  // Horse: only the passive one is built – destinations (not in the export), actions and owners are not
+  for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) if (h.o.target || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
+  if (actors.includes('ac_horse') && /ac_horse"[^}]*destination|horse[^}\n]*\.destination|"destination"/.test(xml)) reject('Pferd mit Zielen');
   // No black marble but pearls: the first pearl is the main ball (mainPearl)
   const blacks = actors.filter((k) => k === 'ac_marble_black').length;
   // further black marbles are steered together with the first (all of player 1)

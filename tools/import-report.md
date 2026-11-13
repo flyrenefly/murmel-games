@@ -1,11 +1,11 @@
 # Enigma-Import
 
-808 von 1322 Levels übernommen (18 Pakete).
+817 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 3 |
-| Lua-Rückruf | 116 | 4 |
+| Lua-Rückruf | 116 | 5 |
 | keine Oxyd-Steine | 111 | 1 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
@@ -24,7 +24,6 @@
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Akteur ac_horse | 27 | 4 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
@@ -34,11 +33,11 @@
 | Lua: :add | 18 | 5 |
 | Lua: fill_floor() | 17 | 0 |
 | Gegenstand it_seed_volcano | 16 | 3 |
-| Stein st_portal_horse | 15 | 3 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_trap | 14 | 1 |
-| Gegenstand it_weight | 14 | 1 |
+| Gegenstand it_weight | 14 | 2 |
+| Pferd mit Zielen | 13 | 2 |
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
@@ -50,11 +49,11 @@
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 2 |
 | Stein st_spitter | 9 | 1 |
-| Flut | 9 | 5 |
+| Flut | 9 | 6 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |
-| Lua: :orientate | 7 | 3 |
+| Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
 | Gegenstand it_surprise | 7 | 2 |
@@ -72,6 +71,7 @@
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 2 |
 | Stein st_jamb_black | 5 | 1 |
+| Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
@@ -104,7 +104,6 @@
 | Lua: st_darkglass_hollow | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
-| Stein st_portal_pearl | 2 | 2 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
 | Lua: laser() | 2 | 0 |
@@ -169,7 +168,7 @@
 | zu viele Feldarten | 1 | 0 |
 | Stein st_rawglass | 1 | 0 |
 | Lua: draw_items() | 1 | 0 |
-| Stein fl_concrete | 1 | 0 |
+| Stein fl_concrete | 1 | 1 |
 | Gegenstand it_pipe_e | 1 | 0 |
 | Lua: send_message_named() | 1 | 0 |
 | Lua: floor() | 1 | 0 |
@@ -190,7 +189,6 @@
 | Lua: st_puzzle_yellow_e | 1 | 0 |
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
-| Lua: st_portal | 1 | 0 |
 | Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 0 |

@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle']);
@@ -483,6 +483,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_monoflop') return 'monoflop';
   if (kind === 'st_flash') return 'flash';
   if (kind === 'st_scissors') return 'scissors';
+  if (/^st_portal(_horse|_pearl|_glass)?$/.test(kind)) return 'portal';
   if (kind === 'st_rubberband') return 'rubberstone';
   if (kind === 'st_knight') return 'knight';
   if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
@@ -648,8 +649,14 @@ export class ObjectWorld {
    * Which faces of a cell block the marble: 0 = free, ALL_FACES = solid,
    * otherwise the face bits (door d).
    */
-  blockAt(col: number, row: number, color = 2, invisible = false, by = -1, shielded = false): number {
+  blockAt(col: number, row: number, color = 2, invisible = false, by = -1, shielded = false, actor = ''): number {
     for (const o of this.at(col, row)) {
+      // PortalStone::collision_response: only its actor passes (horse; pearl: the white pearl)
+      if (o.cls === 'portal' && !o.gone) {
+        const f = o.attrs.flavor || /^st_portal_(\w+)$/.exec(o.kind)?.[1] || 'horse';
+        if ((f === 'horse' && actor === 'horse') || (f === 'pearl' && actor === 'pearl_white')) continue;
+        return ALL_FACES;
+      }
       if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
@@ -1440,7 +1447,7 @@ export class ObjectWorld {
     if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
     if (o.cls === 'polarswitch') return o.state === 1; // PolarSwitchStone::is_transparent when ON
     if (o.cls === 'ghost') return ghostFlavor(o) !== 'purplemarble'; // GhostStone::is_transparent
-    if (o.cls === 'disco') return true; // DiscoStone::is_floating
+    if (o.cls === 'disco' || o.cls === 'portal') return true; // DiscoStone/PortalStone::is_floating
     if (o.cls === 'barrier') return false;
     return false;
   }

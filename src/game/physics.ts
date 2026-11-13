@@ -65,6 +65,8 @@ export interface Toucher {
   invisible?: boolean;
   /** Shielded (it_umbrella): st_barrier with it_umbrella rebounds it. */
   shielded?: boolean;
+  /** Which actor (st_portal): 'horse', 'pearl_white' or empty. */
+  actor?: string;
 }
 
 /** A marble: black (the player's) or white (second marble, swapped with the yin-yang). */
@@ -145,7 +147,7 @@ interface Body {
 /** Dynamic blockers (doors, switches): blocking faces of a cell, 0 = free. */
 export interface Blockers {
   /** color: 0 black, 1 white (marbles, pearls, killers), 2 = no colour. */
-  blockAt(col: number, row: number, color?: number, invisible?: boolean, by?: number, shielded?: boolean): number;
+  blockAt(col: number, row: number, color?: number, invisible?: boolean, by?: number, shielded?: boolean, actor?: string): number;
 }
 
 export class PhysicsWorld {
@@ -355,7 +357,7 @@ export class PhysicsWorld {
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
         add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR + ffx, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR + ffy, friction);
-      } else if (e.kind === 'bug') {
+      } else if (e.kind === 'bug' || e.kind === 'horse') {
         // Bug: a plain actor without a will – only floor forces and collisions move it
         add(e, ffx, ffy, friction);
       } else {
@@ -375,7 +377,7 @@ export class PhysicsWorld {
       const f = forces.get(m);
       if (!f) return;
       this.advance(m, f);
-      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded });
+      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded, actor: m.pearl && m.color === 1 ? 'pearl_white' : '' });
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
       else if (!m.shielded) this.sinkStep(m, i, onContact);
     });
@@ -383,7 +385,7 @@ export class PhysicsWorld {
       this.advance(e, forces.get(e)!);
       // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
       // by -2: the bug (BreakStone st_break_bug breaks under it)
-      this.collide(e, onContact, { by: e.kind === 'bug' ? -2 : -1, color: e.kind === 'killer' ? e.color : 2 });
+      this.collide(e, onContact, { by: e.kind === 'bug' ? -2 : -1, color: e.kind === 'killer' ? e.color : 2, actor: e.kind });
     }
   }
 
@@ -472,8 +474,8 @@ export class PhysicsWorld {
         if (relspeed < 0) continue; // moving apart
         // Marbles come first: a1 is a marble whenever one of the two is.
         const mi = this.marbles.indexOf(a1 as Marble);
-        // a bug does not hurt (it has no on_collision)
-        if (mi >= 0 && j >= marbles.length && (a2 as Enemy).kind !== 'bug') onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
+        // a bug or horse does not hurt (no on_collision)
+        if (mi >= 0 && j >= marbles.length && (a2 as Enemy).kind !== 'bug' && (a2 as Enemy).kind !== 'horse') onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
         const dmu = a1.mass === a2.mass ? a1.mass : (2 * a1.mass * a2.mass) / (a1.mass + a2.mass);
         const j1 = (dmu * relspeed) / a1.mass;
         const j2 = (dmu * relspeed) / a2.mass;
@@ -502,7 +504,7 @@ export class PhysicsWorld {
           this.contactBox(b, col, row, kind, onContact, who);
           continue;
         }
-        const faces = this.blockers?.blockAt(col, row, who.color, who.invisible, who.by, who.shielded) ?? 0;
+        const faces = this.blockers?.blockAt(col, row, who.color, who.invisible, who.by, who.shielded, who.actor) ?? 0;
         if (faces === 0) continue;
         if (faces === ALL_FACES) {
           this.contactBox(b, col, row, -3, onContact, who);
