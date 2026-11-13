@@ -271,8 +271,8 @@
       </p>
       <p>
         Wir speichern je Konto und Level nur Ihren besten Lauf: Zeit, Datum, Spielversion und dessen
-        Aufzeichnung. Die Aufzeichnung ist nicht öffentlich; sie dient dazu, die Zeit zu belegen und später erneut
-        zu prüfen. Ein schnellerer Lauf ersetzt den alten samt Aufzeichnung, langsamere Läufe werden nach der
+        Aufzeichnung. Die Aufzeichnung ist nicht öffentlich, es sei denn, Sie geben Ihre Läufe als Geist frei
+        (siehe „Geister“); sie dient dazu, die Zeit zu belegen und später erneut zu prüfen. Ein schnellerer Lauf ersetzt den alten samt Aufzeichnung, langsamere Läufe werden nach der
         Prüfung nicht gespeichert. Gespeichert bleibt der Eintrag, bis Sie ihn löschen oder Ihr Konto löschen.
         Zum Schutz vor Missbrauch begrenzen wir die Zahl der Läufe je Konto und Stunde; das Ergebnis einer
         Prüfung halten wir bis zu 10 Minuten im Arbeitsspeicher.
@@ -288,6 +288,18 @@
         Rechtsgrundlage ist die Bereitstellung der von Ihnen gewünschten Funktion (Art. 6 Abs. 1 lit. b DSGVO),
         für den Schutz vor Missbrauch unser berechtigtes Interesse an fairen Ranglisten (Art. 6 Abs. 1 lit. f
         DSGVO). Die Daten werden auf unserem Server in Deutschland verarbeitet.
+      </p>
+
+      <h2>Geister</h2>
+      <p>
+        Wenn Sie in Ihrem Konto „Meine Läufe als Geist zeigen“ einschalten, können andere Spieler gegen Ihre
+        Läufe aus den Bestenlisten spielen: Das Spiel lädt dann die Aufzeichnung Ihres besten Laufs eines Levels
+        und zeigt ihn als durchscheinende Murmel, zusammen mit Platz, Anzeigenamen und Zeit. Die Einstellung ist
+        ausgeschaltet, bis Sie sie einschalten; wir speichern dazu nur, dass und seit wann sie eingeschaltet ist.
+        Schalten Sie sie aus, sind Ihre Aufzeichnungen sofort nicht mehr abrufbar; ein Browser, der einen Lauf
+        schon geladen hat, kann ihn höchstens 5 Minuten zwischenspeichern. Gesperrte Konten erscheinen nie als
+        Geist. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit mit dem
+        Schalter widerrufen können.
       </p>
 
       <h2>Spieler-Levels</h2>
@@ -362,7 +374,8 @@
         Filter der Levelliste) im lokalen Speicher Ihres Browsers (<code>localStorage</code>, Einträge beginnend
         mit <code>murmel.</code>). Damit das Spiel auch ohne Internetverbindung funktioniert, legt der Browser
         außerdem Programmdateien, Grafiken, Klänge und die geöffneten Levelpakete in seinem Cache-Speicher ab
-        (Service Worker). Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
+        (Service Worker). Außerdem speichert das Spiel je Level die Aufzeichnung Ihres besten Laufs, damit Sie
+        gegen sich selbst als Geist spielen können (IndexedDB, Datenbank <code>murmel-geister</code>). Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
         Spielfortschritt mit Ihrem Konto abgeglichen (siehe „Fortschritt auf allen Geräten“). Mit
         „Fortschritt → Sichern“ können Sie Ihren Fortschritt als Datei auf Ihr Gerät herunterladen; auch diese
         Datei wird nicht an uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion

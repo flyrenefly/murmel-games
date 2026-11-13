@@ -1,5 +1,6 @@
 // Account dialogs inside the game's menu card: sign in (passkey or mail link), account page.
 import { type Konto, KontoApi, type KontoStand, loginTokenFromHash, passkeyFehler, passkeysMoeglich } from './konto';
+import { freigabeLaden, freigabeSetzen } from './geister';
 
 /** What the dialogs need from the game (src/main.ts). */
 export interface KontoHost {
@@ -225,7 +226,7 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet = false): void 
   } else {
     section.append(el('p', { className: 'konto-hinweis', textContent: 'Dieser Browser unterstützt keine Passkeys.' }));
   }
-  parts.push(section, meldung);
+  parts.push(section, meldung, geisterAbschnitt());
   if (passkeysMoeglich() && !konto.passkeys.length) quietBack(host);
 
   parts.push(
@@ -239,6 +240,36 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet = false): void 
   );
   host.form.replaceChildren(...parts);
   host.form.hidden = false;
+}
+
+/** Geister (docs/SPEC-geister.md): the own leaderboard runs as ghosts for others – off unless switched on. */
+function geisterAbschnitt(): HTMLElement {
+  const box = el('input', { type: 'checkbox', id: 'konto-geist', disabled: true });
+  box.setAttribute('role', 'switch');
+  const meldung = el('div');
+  void freigabeLaden().then((an) => {
+    if (an === null) return void meldung.replaceChildren(status('Die Einstellung ist gerade nicht erreichbar.', 'fehler'));
+    box.checked = an;
+    box.disabled = false;
+  });
+  box.addEventListener('click', (e) => e.stopPropagation());
+  box.addEventListener('change', async () => {
+    box.disabled = true;
+    if (await freigabeSetzen(box.checked)) meldung.replaceChildren();
+    else {
+      box.checked = !box.checked;
+      meldung.replaceChildren(status('Das hat nicht geklappt. Bitte versuch es später noch einmal.', 'fehler'));
+    }
+    box.disabled = false;
+  });
+  return el(
+    'section',
+    { className: 'konto-abschnitt' },
+    el('h2', { textContent: 'Geister' }),
+    el('label', { className: 'konto-schalter', htmlFor: 'konto-geist' }, box, el('span', { textContent: 'Meine Läufe als Geist zeigen' })),
+    el('p', { className: 'konto-hinweis', textContent: 'Andere können dann gegen deine Läufe aus der Bestenliste spielen – als durchscheinende Murmel mit deinem Anzeigenamen. Ausschalten macht sie sofort wieder privat.' }),
+    meldung,
+  );
 }
 
 async function passkeyEinrichten(host: KontoHost, meldung: HTMLElement): Promise<void> {
