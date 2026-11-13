@@ -51,8 +51,11 @@ export function luaProblems(code, fns) {
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
   const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*connections\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_rubberband"/g)].length;
   if (adds > ok) problems.add(':add');
+  // function parameters may hold functions (local f in "function scan(f)")
+  for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());
   for (const m of body.matchAll(/(^|[^.:\w])([A-Za-z_]\w*)\s*\(/g)) {
     const n = m[2];
+    if (/:\s*$/.test(body.slice(0, m.index + m[1].length))) continue; // obj: close() is a method call
     if (!FUNCS.has(n) && !KEYWORDS.has(n) && !fns.has(n) && !locals.has(n)) problems.add(`${n}()`);
   }
   // lib.math.permutation is provided (enigma.lua); other libraries and resolvers are not

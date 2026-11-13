@@ -1,6 +1,6 @@
 # Enigma-Import
 
-961 von 1322 Levels übernommen (18 Pakete).
+963 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -72,7 +72,6 @@
 | Lua: :grid | 1 | 0 |
 | Lua: timer_action() | 1 | 0 |
 | Lua: solidfloor() | 1 | 0 |
-| Lua: func() | 1 | 0 |
 | Lua: get_map_size() | 1 | 0 |
 | Lua: kill_stone() | 1 | 0 |
 | Lua: add_multicell() | 1 | 0 |
@@ -88,16 +87,12 @@
 | Lua: tinsert() | 1 | 0 |
 | Lua: getkey() | 1 | 0 |
 | Lua: :encode | 1 | 0 |
-| Lua: test() | 1 | 0 |
-| Lua: close() | 1 | 1 |
 | Lua: hollow() | 1 | 0 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
 | Lua: random_element() | 1 | 0 |
-| Lua: test_link() | 1 | 0 |
 | Lua: fl_bridge | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
-| Lua: setter() | 1 | 0 |
 | Lua: ferry_movement() | 1 | 0 |
 | Lua: st_lightglass_hollow | 1 | 1 |
 | Lua: fakeoxyd() | 1 | 0 |
@@ -130,7 +125,6 @@
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
-| Lua: f() | 1 | 1 |
 | Überraschung mit =w | 1 | 1 |
 | Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
