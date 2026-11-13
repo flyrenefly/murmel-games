@@ -144,10 +144,10 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   // wo:drawMap/drawRect/drawBorder during play: only with resolvers the shim builds (ti, res.autotile,
   // res.random, res.pento; wo:newMap with map ^ transformation), no libmap, and only keys ti knows
   for (const d of drawCalls(reached.replace(/--[^\n]*/g, ''))) if (!drawOk(d, code)) problems.add(`:${d.method}`);
-  // wo:add during play: only items into an inventory (YIN/YANG) and rubber bands
+  // wo:add during play: only items into an inventory (YIN/YANG), rubber bands, timers and counters
   const raw = reached.replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
-  const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*connections\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_rubberband"/g)].length;
+  const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*connections\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter)"/g)].length;
   if (adds > ok) problems.add(':add');
   // function parameters may hold functions (local f in "function scan(f)")
   for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());

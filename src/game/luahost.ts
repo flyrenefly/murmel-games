@@ -239,6 +239,17 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (inv.length < 13) inv.unshift(String(kind));
       w.redraw();
     },
+    /**
+     * wo:add({"ot_timer"/"ot_counter", …}) during play: a gadget without a cell, as the importer
+     * makes them from the init (TimerGadget ON unless state is OFF; CounterGadget state 0).
+     */
+    addObject(kind, attrs) {
+      if (kind !== 'ot_timer' && kind !== 'ot_counter') throw new Error(`Murmel kann ${kind} nicht hinzufügen`);
+      const decl = { ...attrs };
+      if (decl.name) decl.name = uniqueName(decl.name);
+      decl.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
+      objects.create(kind, -1, -1, decl);
+    },
     /** wo:add({"ot_rubberband", anchor1 = a marble, anchor2 = a stone or marble}) during play. */
     addRubber(a1, a2, strength, length, threshold, min, max) {
       const marbleOf = (ref: string | null): number => {

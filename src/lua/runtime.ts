@@ -27,6 +27,8 @@ export interface LuaHost {
   add?(kind: string, attrs: Record<string, string>): void;
   /** wo:add(YIN/YANG, {"it_…"}) during play. */
   addInventory?(player: number, kind: string): void;
+  /** wo:add({"ot_timer"/"ot_counter", …}) during play: a new object without a cell. */
+  addObject?(kind: string, attrs: Record<string, string>): void;
   /** wo:add({"ot_rubberband", …}) during play: anchor refs and the band's attributes. */
   addRubber?(a1: string | null, a2: string | null, strength: string | null, length: string | null, threshold: string | null, min: string | null, max: string | null): void;
   /** PuzzleStone "get_cluster": refs of the stones of the fragment. */
@@ -232,6 +234,15 @@ export class LuaLevel {
           if (v !== null) attrs[arg(i) ?? ''] = v;
         }
         host.add?.(arg(1) ?? '', attrs);
+        return 0;
+      },
+      addobject: () => {
+        const attrs: Record<string, string> = {};
+        for (let i = 2; i + 1 <= lua.lua_gettop(L); i += 2) {
+          const v = arg(i + 1);
+          if (v !== null) attrs[arg(i) ?? ''] = v;
+        }
+        host.addObject?.(arg(1) ?? '', attrs);
         return 0;
       },
       addinventory: () => {

@@ -577,7 +577,7 @@ end
 
 function wmethods.add(_, a, b)
   if not INIT then
-    -- during play: an item into a player's inventory, or a rubber band
+    -- during play: an item into a player's inventory, a timer or counter, or a rubber band
     if type(a) == "number" and type(b) == "table" and type(b[1]) == "string" then
       local k = b[1]
       -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
@@ -586,6 +586,11 @@ function wmethods.add(_, a, b)
       return
     end
     local d = b or a
+    -- a timer or counter gadget (TimerGadget, CounterGadget): an object without a cell
+    if type(d) == "table" and (d[1] == "ot_timer" or d[1] == "ot_counter") then
+      M.addobject(d[1], table.unpack(declargs(d)))
+      return
+    end
     if type(d) == "table" and d[1] == "ot_rubberband" then
       M.addrubber(refof(d.anchor1), refof(d.anchor2), d.strength, d.length, d.threshold, d.min, d.max)
       return

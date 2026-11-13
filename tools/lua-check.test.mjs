@@ -44,6 +44,13 @@ test('Karten aus wo:newMap: nur die Schlüssel ihrer Zeilen, sonst jede Kachel',
   assert.deepEqual(runtimeKinds(code.replace('wo:newMap(" ", part1)', 'wo:newMap(" ", build())')).sort(), ['st_granite', 'st_oxyd']);
 });
 
+test('wo:add im Rückruf: Timer und Zähler ja, Drähte nein', () => {
+  const timer = 'function f()\n    wo:add({"ot_timer", interval = 0.5, loop = false, target = "laser#*"})\nend';
+  assert.deepEqual(problems(timer), []);
+  assert.deepEqual(problems(timer.replace('ot_timer', 'ot_counter')), []);
+  assert.deepEqual(problems('function f()\n    wo:add({"ot_wire", anchor1 = "a", anchor2 = "b"})\nend'), [':add']);
+});
+
 test('drawCalls: Zeichenketten in Indexausdrücken sind kein Ignorierschlüssel', () => {
   const [d] = drawCalls('wo:drawMap(ti, sender+sender["_pos"], " ", {"!!", " !"})');
   assert.deepEqual(d.keys, ['!']);
