@@ -256,6 +256,8 @@ OBJ.__newindex = function(o, k, v)
   M.set(o._ref, k, encode(v))
 end
 OBJ.__eq = function(a, b) return a._ref == b._ref end
+-- lua.cc objectExistence: -obj is true when the object exists
+OBJ.__unm = function(o) return o._ref ~= nil and M.exists(o._ref) end
 -- lua.cc addPositions: object + object/group joins groups, otherwise positions are added
 local function objorgroup(v) return etype_of(v) == "object" or etype_of(v) == "group" end
 OBJ.__add = function(a, b)
