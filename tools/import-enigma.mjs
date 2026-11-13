@@ -103,6 +103,8 @@ const OBJECTS = [
   [/^st_barrier$/, ['st_barrier', 'sh_solid']],
   [/^it_(coffee|coffee_drop)$/, ['it_coffee']],
   [/^it_(spade|brush|cherry|banana|cross|squashed)$/, ['it_spade', 'it_brush', 'it_cherry', 'it_banana', 'it_cross', 'it_squashed']],
+  [/^it_pin$/, ['it_pin']],
+  [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],
   [/^it_extinguisher(_full|_medium|_empty)?$/, FIRE_IMAGES],
   [/^it_umbrella$/, ['it_umbrella']],
@@ -384,6 +386,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     for (let x = 0; x < w.w; x++) {
       const [fl, st, it] = w.cells[y * w.w + x];
       // it_laserbeam: Enigma's beams of the initial world – Murmel calculates them itself
+      // Bottle with a message ("text": shown as a document when used) is not built
+      if (it && /^it_bottle/.test(it.k) && it.text) reject('Flasche mit Text');
       if (it && it.k !== 'it_laserbeam') {
         const im = objectImages(it.k);
         if (im) {

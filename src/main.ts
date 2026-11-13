@@ -88,6 +88,8 @@ const enigmaRules = (): boolean => level.id.startsWith('enigma:');
 const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_extralife').length;
 /** BasicBall invisibility (it_cherry): seconds left per marble. */
 let invis: number[] = [];
+/** BasicBall drunk time (it_bottle): seconds left per marble. */
+let drunk: number[] = [];
 /** BasicBall shield (it_umbrella): seconds of protection left per marble. */
 let shield: number[] = [];
 /** Marbles a vortex has swallowed: since when (ms of play), -1 = not. */
@@ -200,6 +202,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   inVortex = physics.marbles.map(() => 0);
   shield = physics.marbles.map(() => 0);
   invis = physics.marbles.map(() => 0);
+  drunk = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -491,6 +494,7 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   if ((shield[i] ?? 0) > 0) return; // BasicBall::change_state_noshield
   const shatter = how === true;
   invis[i] = 0; // BasicBall: dead marbles are visible again
+  drunk[i] = 0;
   deathKind[i] = how === 'sink' ? 'sink' : shatter ? 'shatter' : 'fall';
   falling[i] = 0;
   physics.setActive(false, i);
@@ -672,9 +676,12 @@ function frame(now: number): void {
       playSeconds += dt;
       shield = shield.map((s) => Math.max(0, s - dt));
       invis = invis.map((s) => Math.max(0, s - dt));
+      drunk = drunk.map((s) => Math.max(0, s - dt));
       physics?.marbles.forEach((m, i) => {
         m.shielded = (shield[i] ?? 0) > 0;
         m.invisible = (invis[i] ?? 0) > 0;
+        m.drunk = (drunk[i] ?? 0) > 0;
+        m.spikes = (objects.inventories[ownerOf(i)] ?? objects.inventory).includes('it_pin'); // Actor "_update_pin"
       });
     }
     if (falling[physics.current] < 0 && mode === 'play') {
@@ -855,6 +862,13 @@ function dropItem(): boolean {
       marbleJumps(i);
       updateItems();
     }
+    return true;
+  }
+  // Bottle::activate: "_booze" – drunk for 5 s more, then the bottle is dropped (ITEM_DROP)
+  if (first === 'it_bottle_idle' || first === 'it_bottle') {
+    drunk[i] = (drunk[i] ?? 0) + 5;
+    if (objects.canDropAt(m.pos.x, m.pos.y)) objects.dropItem(m.pos.x, m.pos.y);
+    updateItems();
     return true;
   }
   // Cherry::activate: "_invisibility" – 8 s more; the cherry is used up (ITEM_KILL)

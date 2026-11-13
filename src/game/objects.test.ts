@@ -1487,3 +1487,16 @@ describe('monoflop and flash', () => {
     expect(w.events.find((e) => e.type === 'flash')).toEqual({ type: 'flash', marble: 0, fx: 40, fy: 20 });
   });
 });
+
+describe('bottle', () => {
+  it('a bottle is picked up; a broken one shatters the marble, cannot be taken and the brush cleans it', () => {
+    const w = world([{ x: 2, y: 0, k: 'it_bottle_idle' }, { x: 4, y: 0, k: 'it_bottle_broken' }]);
+    w.actorStep(2.5, 0.5, 0);
+    expect(w.inventory).toEqual(['it_bottle_idle']);
+    w.actorStep(4.5, 0.5, 0);
+    expect(w.objects[1].gone).toBe(false);
+    expect(w.events.some((e) => e.type === 'shatter')).toBe(true);
+    w.brushAt(4.5, 0.5);
+    expect(w.objects[1].gone).toBe(true);
+  });
+});

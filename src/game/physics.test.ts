@@ -407,3 +407,15 @@ describe('rubber bands at runtime', () => {
     expect(w.cutRubbers(0)).toBe(false);
   });
 });
+
+describe('it_pin', () => {
+  it('spikes add friction: the marble slows down faster', () => {
+    const a = new PhysicsWorld(level);
+    const b = new PhysicsWorld(level);
+    b.marbles[0].spikes = true;
+    for (const w of [a, b]) w.setVelocity(3, 0);
+    run(a, 0.2);
+    run(b, 0.2);
+    expect(b.velocity.x).toBeLessThan(a.velocity.x);
+  });
+});

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-798 von 1322 Levels übernommen (18 Pakete).
+805 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -30,38 +30,35 @@
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Gegenstand it_bottle_idle | 20 | 3 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Gegenstand it_pipe_nw | 19 | 0 |
 | Lua: :add | 18 | 5 |
 | Lua: fill_floor() | 17 | 0 |
-| Gegenstand it_seed_volcano | 16 | 2 |
-| Stein st_portal_horse | 15 | 2 |
+| Gegenstand it_seed_volcano | 16 | 3 |
+| Stein st_portal_horse | 15 | 3 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
-| Gegenstand it_bottle_broken | 14 | 1 |
 | Gegenstand it_trap | 14 | 1 |
 | Gegenstand it_weight | 14 | 1 |
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
-| Lua: :drawRect | 12 | 4 |
+| Lua: :drawRect | 12 | 5 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Stein st_brake | 11 | 2 |
 | Gegenstand it_pencil | 10 | 2 |
-| Gegenstand it_pin | 10 | 3 |
 | Gegenstand it_rubberband | 10 | 3 |
-| Gegenstand it_drop | 10 | 1 |
+| Gegenstand it_drop | 10 | 2 |
 | Stein st_spitter | 9 | 1 |
-| Flut | 9 | 4 |
+| Flut | 9 | 5 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |
 | Lua: :orientate | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
-| Lua: lib.math | 7 | 0 |
-| Gegenstand it_surprise | 7 | 1 |
+| Lua: lib.math | 7 | 1 |
+| Gegenstand it_surprise | 7 | 2 |
 | Wurmloch ohne Ziel | 7 | 1 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
@@ -209,7 +206,6 @@
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
 | Stein st_barrier (it_drop) | 1 | 0 |
-| Stein st_barrier (it_bottle) | 1 | 0 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
@@ -230,7 +226,6 @@
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
-| Lua: it_bottle_broken | 1 | 0 |
 | Gegenstand it_pipe_w | 1 | 0 |
 | Gegenstand it_pipe_n | 1 | 0 |
 | Gegenstand it_pipe_s | 1 | 0 |
@@ -242,5 +237,4 @@
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
 | Lua: wo["ConserveLevel"] | 1 | 0 |
-| Lua: it_bottle | 1 | 0 |
 | Stein fl_tigris | 1 | 0 |

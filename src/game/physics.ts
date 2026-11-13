@@ -86,6 +86,10 @@ export interface Marble extends Body {
   shielded?: boolean;
   /** Invisible (it_cherry): glass lets it pass, rotors do not see it. */
   invisible?: boolean;
+  /** Drunk (it_bottle): the mouse force turns by a changing angle (World::drunkenMouseforce). */
+  drunk?: boolean;
+  /** Carries it_pin: friction + 7 (World::advance_actor, spikes). */
+  spikes?: boolean;
   /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
   follow?: boolean;
   /** "essential" actor: its final death restarts the level. */
@@ -260,6 +264,8 @@ export class PhysicsWorld {
 
   /** wo["FrictionStrength"] (server::FrictionFactor); negative values accelerate. */
   frictionFactor = 1;
+  /** Level time in seconds (server::LevelTime) for the drunken mouse force. */
+  private clock = 0;
 
   /** A stone appeared (true) or vanished in a cell at runtime (Lua callbacks). */
   setSolid(col: number, row: number, solid: boolean): void {
@@ -308,6 +314,11 @@ export class PhysicsWorld {
     }
     this.actorContacts(onContact);
 
+    this.clock += dt;
+    // World::drunkenMouseforce: rotate by π·(0.3·base1 + 0.15·base2), changing each second and fifth of a second
+    const t1 = Math.floor(this.clock);
+    const t2 = Math.floor(5 * this.clock);
+    const drunkAngle = Math.PI * (0.3 * ((t1 * Math.PI) % 2 - 1) + 0.15 * ((t2 * Math.PI) % 2 - 1));
     // 1. Forces of every moving body (World::move_actors).
     const forces = new Map<Body, BodyForce & { friction: number }>();
     const add = (b: Body, fx: number, fy: number, friction: number, flying = false) => {
@@ -331,7 +342,10 @@ export class PhysicsWorld {
       const cur = this.marbles[this.cur];
       const k = i === this.cur || m.pearl || (m.follow && cur && cur.color === 0) ? adhesion : 0;
       const [ffx, ffy] = this.floorForce(m.pos);
-      add(m, (this.axisForce.x + mx) * k + ffx, (this.axisForce.y + my) * k + ffy, friction);
+      let ux = this.axisForce.x + mx;
+      let uy = this.axisForce.y + my;
+      if (m.drunk) [ux, uy] = [ux * Math.cos(drunkAngle) - uy * Math.sin(drunkAngle), ux * Math.sin(drunkAngle) + uy * Math.cos(drunkAngle)];
+      add(m, ux * k + ffx, uy * k + ffy, friction + (m.spikes ? 7 : 0));
     });
     // Rotors.cc: only visible actors are chased
     const targets = this.marbles.flatMap((m, i) => (m.active && !m.invisible ? [{ x: m.pos.x, y: m.pos.y, current: i === this.cur }] : []));

@@ -38,13 +38,13 @@
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 68,
+  "count": 69,
   "of": 100
  },
  {
   "pack": "enigma_v",
   "title": "Enigma V",
-  "count": 62,
+  "count": 64,
   "of": 100
  },
  {
@@ -80,7 +80,7 @@
  {
   "pack": "enigma_xi",
   "title": "Enigma XI",
-  "count": 42,
+  "count": 44,
   "of": 100
  },
  {
@@ -92,7 +92,7 @@
  {
   "pack": "enigma_advent_10",
   "title": "Advent 2010",
-  "count": 14,
+  "count": 16,
   "of": 24
  },
  {
