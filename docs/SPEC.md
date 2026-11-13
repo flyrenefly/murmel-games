@@ -601,6 +601,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_jamb_black / _white** (`JambStone.cc`): fester Türpfosten; ein "signal" von einem Stein gibt er an die
   Nachbarsteine weiter: in der Zeile (bzw. Spalte) des Absenders mit 1, an die beiden anderen mit 0.
   Abweichung: Signale von Gegenständen mit Akteur-Farbe (Sensoren) fehlen.
+- **Fenster "inner_pull"** (`WindowStone::tryMoveWindowFace`, Aktion z. B. eines Vierfachschalters mit Richtung):
+  die gegenüberliegende Scheibe wandert auf die gezogene Seite, falls dort keine ist und kein Hindernis daneben;
+  ein aufnehmbarer Gegenstand im Feld rutscht mit (oder wird zerquetscht). Abweichung: Kugeln werden nicht mitgeschoben.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist

@@ -4253,6 +4253,27 @@ export class ObjectWorld {
       else if (msg === 'signal') o.state = Math.max(0, Math.min(2, o.state + (value ? -2 : 2)));
       return;
     }
+    if (o.cls === 'window') {
+      // WindowStone "inner_pull" (direction): the opposite face moves to that side, if free
+      if (msg === 'inner_pull' && num !== undefined) {
+        const d = num & 3;
+        const faces = windowFaces(o);
+        const to = 1 << d;
+        const from = 1 << ((d + 2) % 4);
+        if (!(faces & from) || faces & to) return;
+        const n = this.stoneObjectAt(o.col + L_DX[d], o.row + L_DY[d]);
+        if (this.env.staticStone?.(o.col + L_DX[d], o.row + L_DY[d]) || (n && (n.cls !== 'window' || windowFaces(n) & from))) return;
+        o.attrs = { ...o.attrs, $connections: String(ALL_FACES ^ ((faces & ~from) | to)) };
+        // a portable item here moves along (or is squashed if the next cell has one)
+        const it = this.itemAt(o.col, o.row);
+        if (it && PICKUP_RADIUS[it.cls] !== undefined) {
+          this.remove(it);
+          if (this.itemAt(o.col + L_DX[d], o.row + L_DY[d])) this.add('it_squashed', 'squashed', o.col, o.row);
+          else this.add(it.kind, it.cls, o.col + L_DX[d], o.row + L_DY[d]).attrs = it.attrs;
+        }
+      }
+      return;
+    }
     if (o.cls === 'jamb') {
       // JambStone "signal" from a stone (not an item): the neighbours in the sender's row (or column) get 1,
       // the other two 0

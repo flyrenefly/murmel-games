@@ -1676,3 +1676,12 @@ describe('jamb', () => {
     expect(w.objects[3].state).toBe(0); // north door stays closed
   });
 });
+
+describe('window inner_pull', () => {
+  it('the opposite face moves to the pulled side', () => {
+    const w = world([{ x: 3, y: 1, k: 'st_window_w', a: { name: 'win' } }]);
+    w.sendMessage(w.objects[0], 'inner_pull', true, 2); // east
+    expect(w.blockAt(3, 1, 0) & 4).toBe(4);
+    expect(w.blockAt(3, 1, 0) & 1).toBe(0);
+  });
+});

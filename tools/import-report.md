@@ -1,10 +1,10 @@
 # Enigma-Import
 
-930 von 1322 Levels übernommen (18 Pakete).
+931 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 120 | 6 |
+| Lua: :drawMap | 120 | 8 |
 | Lua-Rückruf | 114 | 6 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
@@ -44,7 +44,6 @@
 | Pferd mit Aktion oder Steuerung | 4 | 1 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
-| Aktion inner_pull | 4 | 1 |
 | Wurmloch ohne Ziel | 4 | 1 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
