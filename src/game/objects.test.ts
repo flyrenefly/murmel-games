@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, passageLook, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
+import { parseLevel } from './level';
+import { glassBreaks, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
 
 const W = 10;
 
@@ -1704,5 +1706,171 @@ describe('jamb hit', () => {
     w.hit(2, 2, 1, -1, 0, -3, 0, 0, 0); // a white marble: nothing
     w.update(1500);
     expect(w.objects[2].state).toBe(0);
+  });
+});
+
+describe('fl_forward', () => {
+  it('pushes the stone above in its direction every interval, 80 ms after seeing it', () => {
+    const w = world([
+      { x: 3, y: 1, k: 'fl_forward', a: { $state: '2', interval: '1' } }, // east
+      { x: 3, y: 1, k: 'st_box_wood' },
+    ]);
+    const box = w.objects[1];
+    w.update(1000); // alarm: the box is remembered
+    expect(box.col).toBe(3);
+    w.update(80);
+    expect(box.col).toBe(4);
+    w.update(1000);
+    expect(box.col).toBe(4); // no longer on the floor
+  });
+
+  it('signal reverses the direction, orientate sets it, interval 0 is off', () => {
+    const w = world([
+      { x: 3, y: 1, k: 'fl_forward', a: { name: 'ff', $state: '2' } },
+      { x: 5, y: 1, k: 'fl_forward', a: { interval: '0' } },
+      { x: 5, y: 1, k: 'st_box_wood' },
+    ]);
+    w.sendMessage(w.objects[0], 'signal', true);
+    expect(w.objects[0].state).toBe(0); // west
+    w.sendMessage(w.objects[0], 'orientate', true, 3);
+    expect(w.objects[0].state).toBe(3); // north
+    w.update(3000);
+    expect(w.objects[2].col).toBe(5);
+  });
+
+  it('is a floor: it neither blocks nor counts as a stone', () => {
+    const w = world([{ x: 3, y: 1, k: 'fl_forward' }]);
+    expect(w.blockAt(3, 1)).toBe(0);
+    expect(w.stoneObjectAt(3, 1)).toBeNull();
+    expect(w.objects[0].state).toBe(0); // default west
+  });
+});
+
+describe('ac_marble_glass', () => {
+  const glassLevel = (map: string[], legend = {}) =>
+    new PhysicsWorld(parseLevel({ id: 'g', title: 'G', author: 'x', license: 'GPL', map, legend, mainPearl: { k: 'ac_marble_glass', a: { color: '2' } } }));
+  const steps = (w: PhysicsWorld, s: number, out: Contact[] = []) => {
+    for (let i = 0; i < Math.round(s / PHYSICS_DT); i++) w.step((c) => out.push(c));
+    return out;
+  };
+
+  it('is the main ball: colour 2, mass 0.5', () => {
+    const w = glassLevel(['#####', '#@.A#', '#A..#', '#####']);
+    expect(w.marbles[0].glass).toBe(true);
+    expect(w.marbles[0].color).toBe(2);
+    expect(w.marbles[0].mass).toBe(0.5);
+  });
+
+  it('shatters on a stone face above speed 4, and on a corner above a squared speed of 3', () => {
+    expect(glassBreaks(-1, 0, 4.5, 0)).toBe(true);
+    expect(glassBreaks(-1, 0, 3.5, 0)).toBe(false);
+    expect(glassBreaks(-0.6, -0.8, 1.5, 1.2)).toBe(true); // corner: 2.25 + 1.44 > 3
+    expect(glassBreaks(-0.6, -0.8, 1, 1)).toBe(false);
+    expect(glassBreaks(1, 0, 5, 0)).toBe(false); // moving away
+  });
+
+  it('a fast glass marble shatters against a wall, a slow one bounces', () => {
+    const fast = glassLevel(['#######', '#@...A#', '#A....#', '#######']);
+    fast.setVelocity(-6, 0);
+    expect(steps(fast, 0.2).filter((c) => c.kind === 'shatter').length).toBeGreaterThan(0);
+    const slow = glassLevel(['#######', '#@...A#', '#A....#', '#######']);
+    slow.setVelocity(-2, 0);
+    expect(steps(slow, 0.3).filter((c) => c.kind === 'shatter')).toEqual([]);
+  });
+
+  it('does not sink in the swamp', () => {
+    const w = glassLevel(['#######', '#@~~~A#', '#A....#', '#######'], { '~': { floor: 'fl_swamp' } });
+    expect(steps(w, 3).filter((c) => c.kind === 'sunk')).toEqual([]);
+  });
+});
+
+describe('st_document, st_pebble and st_scissors', () => {
+  it('scissors cut an adjacent document, the document then breaks (10 × 50 ms)', () => {
+    const w = world([{ x: 3, y: 1, k: 'st_scissors' }, { x: 4, y: 1, k: 'st_document' }]);
+    w.hit(3, 1, 0, -1, 0, -3, 0, 0, 0);
+    expect(w.objects[1].breaking).toBeDefined();
+    expect(w.blockAt(4, 1)).toBe(ALL_FACES);
+    w.update(500);
+    expect(w.objects[1].gone).toBe(true);
+  });
+
+  it('a document shows its text and wraps a fellow pebble; the pebble breaks adjacent scissors', () => {
+    const w = world(
+      [
+        { x: 1, y: 1, k: 'st_document', a: { text: 'doc1', fellows: 'p' } },
+        { x: 6, y: 1, k: 'st_pebble', a: { name: 'p' } },
+        { x: 3, y: 3, k: 'st_pebble' },
+        { x: 3, y: 4, k: 'st_scissors' },
+      ],
+      { doc1: 'Hallo' },
+    );
+    w.hit(1, 1, 0, -1, 0, -3, 0, 0, 0);
+    expect(w.events).toContainEqual({ type: 'text', text: 'Hallo' });
+    expect(w.objects[1].breaking).toBeDefined();
+    w.hit(3, 3, 0, 0, -1, -3, 0, 0, 0);
+    expect(w.objects[3].breaking).toBeDefined();
+    w.update(500);
+    expect(w.objects[1].gone && w.objects[3].gone).toBe(true);
+    expect(w.objects[2].gone).toBe(false);
+  });
+
+  it('a pebble hit next to a document breaks nothing (paper wraps pebble, not the other way)', () => {
+    const w = world([{ x: 3, y: 1, k: 'st_pebble' }, { x: 4, y: 1, k: 'st_document' }]);
+    w.hit(3, 1, 0, -1, 0, -3, 0, 0, 0);
+    w.update(600);
+    expect(w.objects.every((o) => !o.gone)).toBe(true);
+  });
+});
+
+describe('it_surprise with "=same"', () => {
+  it('turns into the same surprise again, keeping selection and target', () => {
+    const w = new ObjectWorld([door(5), { x: 2, y: 0, k: 'it_surprise', a: { target: 'door1', action: 'toggle', selection: '=same' } }], W, {}, undefined, () => 0);
+    w.marbleAt(0, 0);
+    w.actorStep(2.5, 0.5, 0);
+    w.dropItem(3.5, 0.5);
+    const again = w.objects.find((o) => !o.gone && o.kind === 'it_surprise');
+    expect(again?.col).toBe(3);
+    expect(again?.attrs).toMatchObject({ selection: '=same', target: 'door1' });
+  });
+});
+
+describe('st_ref (named plain stone)', () => {
+  it('"kill" removes the map stone, other messages do nothing', () => {
+    const set: string[] = [];
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {}, setStaticStone: (c, r, k) => set.push(`${c},${r},${k}`) };
+    const w = new ObjectWorld([{ x: 4, y: 2, k: 'st_ref', a: { name: 'doorA#1' } }, { x: 1, y: 1, k: 'st_switch', a: { target: 'doorA#1', action: 'kill' } }], W, {}, env);
+    w.sendMessage(w.objects[0], 'toggle', true);
+    expect(set).toEqual([]);
+    expect(w.blockAt(4, 2)).toBe(0); // the map stone itself blocks, not the reference
+    w.performAction(w.objects[1], true);
+    expect(set).toEqual(['4,2,null']);
+    expect(w.objects[0].gone).toBe(true);
+  });
+});
+
+describe('several white marbles (network levels)', () => {
+  const lv = (actors: { k: string; x: number; y: number; a?: Record<string, string> }[]) =>
+    new PhysicsWorld(parseLevel({ id: 'w', title: 'W', author: 'x', license: 'GPL', map: ['#########', '#@.....A#', '#.......#', '#A......#', '#########'], actors }));
+
+  it('a second steered white moves with the first, an ownerless one is never steered or swapped to', () => {
+    const w = lv([
+      { k: 'ac_marble_white', x: 3.5, y: 2.5 },
+      { k: 'ac_marble_white', x: 5.5, y: 2.5 },
+      { k: 'ac_marble_white', x: 6.5, y: 3.5, a: { passive: 'true', ownerless: 'true' } },
+      { k: 'ac_marble_black', x: 2.5, y: 3.5, a: { passive: 'true', ownerless: 'true' } },
+    ]);
+    const [, w1, w2, w3, b2] = w.marbles;
+    expect(w1.follow).toBeFalsy();
+    expect(w2.follow).toBe(true);
+    expect(w3.follow || b2.follow).toBeFalsy();
+    expect(w.swap()).toBe(true);
+    expect(w.marbles.indexOf(w.marbles.find((m) => m.pos === w.position)!)).toBe(1);
+    w.addMouseForce(200, 0);
+    w.step(() => {});
+    expect(w2.vel.x).toBeGreaterThan(0);
+    expect(w3.vel.x).toBe(0);
+    expect(b2.vel.x).toBe(0);
+    expect(w.swap()).toBe(true);
+    expect(w.position).toBe(w.marbles[0].pos); // back to black: w2, w3 and b2 are skipped
   });
 });

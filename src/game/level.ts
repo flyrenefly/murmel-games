@@ -177,12 +177,13 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const meditation = (!!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k))) && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
   if (signals.length === 0 && !meditation) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
 
-  assignRandomSymbols(file.id, signals, random);
+  // initColors leaves a colour without partner alone; only a meditation level stays solvable then
+  assignRandomSymbols(file.id, signals, random, meditation);
 
   const counts = new Map<string, number>();
   for (const s of signals) counts.set(s.symbol, (counts.get(s.symbol) ?? 0) + 1);
   for (const [symbol, n] of counts) {
-    if (n % 2 !== 0 && symbol !== FAKE_OXYD) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
+    if (n % 2 !== 0 && symbol !== FAKE_OXYD && !meditation) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
   }
 
   // Other objects (ot_timer) have no cell.
@@ -216,14 +217,17 @@ export const FAKE_OXYD = '-';
  * times, then get random colours in pairs (colours not taken by fixed stones); an odd one left
  * over becomes a fake Oxyd stone.
  */
-function assignRandomSymbols(id: string, signals: SignalStone[], random: () => number): void {
+function assignRandomSymbols(id: string, signals: SignalStone[], random: () => number, allowUnpaired = false): void {
   const auto = signals.filter((s) => s.symbol === '?');
   const count = new Map<string, number>();
   for (const s of signals) if (s.symbol !== '?') count.set(s.symbol, (count.get(s.symbol) ?? 0) + 1);
   const pool: string[] = [];
   for (const [sym, n] of count) {
     if (n % 2 === 0) continue;
-    if (pool.length >= auto.length) throw new LevelError(`${id}: Oxyd-Farbe ${sym} ohne Partner`);
+    if (pool.length >= auto.length) {
+      if (allowUnpaired) continue;
+      throw new LevelError(`${id}: Oxyd-Farbe ${sym} ohne Partner`);
+    }
     pool.push(sym);
   }
   if (auto.length === 0) return;
