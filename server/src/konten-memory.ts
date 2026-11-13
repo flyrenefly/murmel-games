@@ -42,6 +42,10 @@ export function memoryStore(): AccountStore {
       a.role = role;
       return { ...a };
     },
+    async account(accountId) {
+      const a = accounts.get(accountId);
+      return a ? { ...a } : null;
+    },
     async setRole(accountId, role) {
       const a = accounts.get(accountId);
       if (a) a.role = role;
