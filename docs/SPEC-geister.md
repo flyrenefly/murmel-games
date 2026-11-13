@@ -8,8 +8,8 @@ Stand 13.11.2026.
 Lösung von Level 01, Client), `node --test` (API mit Speicher-Store; PostgreSQL-Teil nur in der CI),
 Edge headless (eigener Lauf aus IndexedDB als Geist, Geist im Ziel bei genau 5808 Schritten wie die
 Lösung, „Gegen diesen Lauf“ und Vergleichszeile nach einem Sieg, Kontoschalter mit nachgebildeter API).
-Nicht geprüft: fremde Geister gegen den echten Server, Kontoschalter mit echtem Konto. G4 wartet auf
-Freigabe des Textes.
+Nicht geprüft: fremde Geister gegen den echten Server, Kontoschalter mit echtem Konto. G4: Absatz
+„Geister“ in datenschutz.html vom Nutzer freigegeben und eingetragen.
 
 ## Ziel
 

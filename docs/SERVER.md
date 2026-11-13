@@ -313,7 +313,7 @@ die Bestenlisten ohnehin entsteht.
   Autor das Level selbst gelöst hat.
 - Geister (`geister`, docs/SPEC-geister.md): **der eigene beste Lauf immer, fremde Läufe nur mit eigener
   Freigabe im Konto** („Meine Läufe als Geist zeigen“, Standard aus). G1–G3 gebaut (Branch `geister`);
-  Datenschutzabsatz wartet auf Freigabe.
+  Datenschutzabsatz „Geister“ vom Nutzer freigegeben (13.11.2026).
 - Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
 - Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
 - **Mailversand** der Login-Links über ein **IONOS-Postfach von murmel.games**. `info@murmel.games` ist
