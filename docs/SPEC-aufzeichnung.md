@@ -29,6 +29,12 @@ Lösbarkeitsprüfung, Geister, Tipps, Spieler-Levels und Wettkampf auf.
 | A4 | Aufzeichnung je Physikschritt: Kraft (x, y, auf 1/1024 gerundet) und Aktionen (Ablegen, Drehen, Wechseln, Neustart), lauflängenkomprimiert | Test: Aufzeichnen → Format → Einlesen ergibt dieselbe Eingabefolge |
 | A5 | Nachspielen: `replay(level, seed, aufzeichnung)` in Node, Werkzeug `tools/replay.mjs` | Test: zwei Läufe mit gleichem Startwert und gleichen Eingaben sind Schritt für Schritt gleich; ein im Browser aufgezeichneter Sieg wird in Node als Sieg mit gleicher Schrittzahl erkannt |
 
+**Stand 13.11.2026:** A1, A2 und A3 erledigt, A4 als Modul (`src/game/recording.ts`). A3: Die
+Simulation steckt in `src/game/session.ts` (`GameSession`, `step(eingabe)`, Oberfläche über `SessionUI`);
+`main.ts` ist die Hülle. Geprüft: 6 Session-Tests in Node (Determinismus über den ganzen Zustand,
+auch mit Lua; Fallen; Sieg), alle 1141 Levels laden im Browser, Spieltest (Bewegung, Fallen, Oxyd).
+Ausstehend: A4 in die Spielschleife einbinden, A5 Nachspielen.
+
 ## Format (Version 1)
 
 ```json
