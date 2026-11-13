@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { type Checker, type LeaderboardStore, leaderboardRoutes } from './bestenliste.ts';
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type AccountOptions, accountRoutes } from './konten.ts';
 import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
@@ -24,6 +25,8 @@ export interface AppOptions {
   forum?: ForumStore;
   /** Lösbarkeitsprüfung: solutions and nightly results for admins (needs accounts). */
   solvability?: SolvabilityStore;
+  /** Bestenliste: rankings and the replay of submitted runs (needs accounts). */
+  leaderboard?: { store: LeaderboardStore; checker: Checker };
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
   statsToken?: string;
   /** Clock (tests). */
@@ -32,7 +35,7 @@ export interface AppOptions {
   logger?: boolean;
 }
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -51,6 +54,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   if (accounts) accountRoutes(app, accounts);
   if (accounts && forum) forumRoutes(app, { store: forum, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
   if (accounts && solvability) solvabilityRoutes(app, solvability);
+  if (accounts && leaderboard) leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: accounts.now ?? now });
 
   // Statistics: the game reports level starts and solves (navigator.sendBeacon, no cookie).
   app.post<{ Body: { type: StatType; level: string } }>(
