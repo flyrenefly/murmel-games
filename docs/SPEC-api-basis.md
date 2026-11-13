@@ -76,12 +76,12 @@ außer Haus: offen (eigener Schritt, Ziel festlegen).
 
 ## Tests und Abnahme
 
-- [ ] `npm --prefix server test` grün (Gesundheitsprüfung mit und ohne Datenbank).
-- [ ] `https://054heee.cserverhost.cloud/` liefert das Spiel mit gültigem Zertifikat.
-- [ ] `https://054heee.cserverhost.cloud/api/health` liefert `ok` und `db: ok`.
-- [ ] Ports 3000 und 5432 sind von außen nicht erreichbar.
-- [ ] Rückweg einmal ausgeführt und wieder vorwärts.
-- [ ] Sicherung einmal von Hand ausgelöst, Datei vorhanden und lesbar.
+- [x] `npm --prefix server test` grün (Gesundheitsprüfung mit und ohne Datenbank).
+- [x] `https://054heee.cserverhost.cloud/` liefert das Spiel mit gültigem Zertifikat.
+- [x] `https://054heee.cserverhost.cloud/api/health` liefert `ok` und `db: ok`.
+- [x] Ports 3000 und 5432 sind von außen nicht erreichbar.
+- [x] Rückweg einmal ausgeführt und wieder vorwärts.
+- [x] Sicherung einmal von Hand ausgelöst, Datei vorhanden und lesbar.
 
 ## Grenzen
 
