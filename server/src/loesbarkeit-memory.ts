@@ -34,6 +34,9 @@ export function memorySolvabilityStore(): SolvabilityStore {
     async solutions() {
       return solutions.map(pub).reverse();
     },
+    async levelSolutions(level, limit) {
+      return solutions.filter((s) => s.level === level).sort((a, b) => a.steps - b.steps || a.id - b.id).slice(0, limit).map((s) => s.recording);
+    },
     async solutionsWithRecordings() {
       return solutions.map((s) => ({ ...pub(s), recording: s.recording })).reverse();
     },

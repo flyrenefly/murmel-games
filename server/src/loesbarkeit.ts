@@ -62,6 +62,8 @@ export interface SolvabilityStore {
   /** All stored solutions (newest first); with the recordings for the nightly run. */
   solutions(): Promise<StoredSolution[]>;
   solutionsWithRecordings(): Promise<(StoredSolution & { recording: Recording })[]>;
+  /** Tipps (docs/SPEC-tipps.md): the recordings of one level, shortest first. */
+  levelSolutions(level: string, limit: number): Promise<Recording[]>;
   /** Binds solutions to the level content they were first checked with. */
   setLevelHash(id: number, hash: string): Promise<void>;
   /** Results of the newest run that finished without its own error. */

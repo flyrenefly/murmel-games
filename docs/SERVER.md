@@ -288,7 +288,7 @@ Auftrag) und eine Umschaltung wie beim WH-Notbetrieb (Zeuge/Prüfung, die bei Au
 | Vorhaben (id) | Inhalt | Grundlage |
 |---|---|---|
 | `geister` | Gegen den eigenen oder den besten Lauf als durchscheinende Murmel spielen; fremde Lösungen ansehen | Eingabeaufzeichnung (`bestenliste`) |
-| `tipps` | Bei langem Hängen den nächsten Schritt aus einer gespeicherten Lösung zeigen | gespeicherte Lösungen |
+| `tipps` | Bei langem Hängen den nächsten Schritt aus einer gespeicherten Lösung zeigen (`docs/SPEC-tipps.md`, gebaut 13.11.2026) | gespeicherte Lösungen |
 | `loesbarkeit` | Jede Nacht alle ~1300 Levels mit gespeicherten Lösungen ohne Grafik nachspielen; meldet, wenn eine Änderung ein Level unlösbar macht | Nachspielen im Server, Lösungen |
 | `wettkampf` | Mehrspieler mit Server als Schiedsrichter: mehr als zwei Spieler, Zuschauer, Wettrennen im selben Level | `mehrspieler`, Physik im Server |
 | `tageslevel` | Tageslevel und Wochenaufgabe mit eigener Rangliste, Erinnerung per Push | `bestenliste`, Web Push |

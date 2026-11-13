@@ -37,6 +37,9 @@ export function solvabilityStore(sql: Sql): SolvabilityStore {
     async solutionsWithRecordings() {
       return (await sql<(StoredSolution & { recording: Recording })[]>`select ${solutionCols}, recording from solutions order by id desc`).map(iso);
     },
+    async levelSolutions(level, limit) {
+      return (await sql<{ recording: Recording }[]>`select recording from solutions where level = ${level} order by steps, id limit ${limit}`).map((r) => r.recording);
+    },
     async setLevelHash(id, hash) {
       await sql`update solutions set level_hash = ${hash} where id = ${id} and level_hash is null`;
     },
