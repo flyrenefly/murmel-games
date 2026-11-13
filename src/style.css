@@ -335,6 +335,38 @@ button.level small {
   opacity: 0.85;
 }
 
+/* Fortschritt auf allen Geräten: passive status line, the text says it all; the dot only echoes it */
+.card .sync-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.card .sync-status::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+
+.card .sync-status[data-art='ok']::before {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.card .sync-status[data-art='offline']::before,
+.card .sync-status[data-art='fehler']::before,
+.card .sync-status[data-art='gesperrt']::before {
+  border-color: #ffb547;
+}
+
 /* ---------- Konto (Anmelden, Kontoseite) ---------- */
 #ov-form {
   display: grid;
