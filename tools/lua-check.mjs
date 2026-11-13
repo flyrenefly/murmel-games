@@ -283,8 +283,10 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
   // maps from wo:newMap kept in variables (parts[kind] ^ rotation): the keys of their rows when every
   // map is made from literal rows (wo:newMap(" ", part1), local part1 = {"  A ", …}), else any ti entry
   if (/:\s*drawMap\s*\(/.test(body) && /wo:newMap/.test(code)) {
-    // with libmap, maps change by other operations too ("r" * map adds a prefix): any ti entry
-    const mapKeys = libmap ? null : newMapKeys(code);
+    // with libmap, operations that make new keys ("r" * map, map:replace/paste, map[pos] = key): any
+    // ti entry; joining, cutting and turning (map .. map, map:sub, map ^ t) keep the rows' keys
+    const newKeys = /"[^"\n]*"\s*\*\s*[A-Za-z_(]|[\w)\]]\s*\*\s*"|:(replace|replace_outside|paste|set_default_key|extend)\s*\(|\blib\.map\.(fuse|paste|replace|replace_outside|set|set_default_key|extend)\b/.test(code);
+    const mapKeys = libmap && newKeys ? null : newMapKeys(code);
     for (const d of code.matchAll(/ti\[\s*"([^"]*)"\s*\]\s*=([^\n]*)/g)) {
       if (mapKeys && !mapKeys.has(d[1])) continue;
       for (const k of d[2].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);

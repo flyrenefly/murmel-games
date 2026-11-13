@@ -67,3 +67,10 @@ test('libmap geladen: Karten aus Kartenoperationen dürfen im Rückruf gezeichne
   // "r" * map makes keys the literal rows do not have
   assert.deepEqual(runtimeKinds(code, false, undefined, true), ['st_granite']);
 });
+
+test('libmap geladen: ohne schlüsselverändernde Operationen zählen nur die Schlüssel der Kartenzeilen', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["A"] = {"st_granite"}\nti["O"] = {"st_oxyd"}\nlocal m = wo:newMap(" ", {"A  ", " A "})\nlocal both = m .. (m ^ MAP_ROT_CW)\nfunction f()\n    wo:drawMap(ti, po(0, 0), both)\nend';
+  assert.deepEqual(runtimeKinds(code, false, undefined, true), ['st_granite']);
+  assert.deepEqual(runtimeKinds(code.replace('m .. (m ^ MAP_ROT_CW)', 'm:replace("A", "O")'), false, undefined, true).sort(), ['st_granite', 'st_oxyd']);
+});
