@@ -8,9 +8,24 @@ export interface Konto {
   gesperrt?: boolean;
   erstellt: string;
   passkeys: { id: string; name: string; erstellt: string; zuletzt: string | null }[];
+  /** Verbundene Anmeldewege (Mail, Google, Apple, GitHub); fehlt bei älteren Servern. */
+  anmeldewege?: Anmeldeweg[];
 }
 
-export type KontoStand = { angemeldet: false; mail?: boolean } | { angemeldet: true; mail?: boolean; konto: Konto };
+/** Anmeldung über einen Anbieter (Konten Stufe 2, docs/SPEC-konten.md). */
+export type Anbieter = 'google' | 'apple' | 'github';
+export const ANBIETER_NAME: Record<Anbieter | 'mail', string> = { mail: 'Mail-Link', google: 'Google', apple: 'Apple', github: 'GitHub' };
+
+export interface Anmeldeweg {
+  anbieter: Anbieter | 'mail';
+  kennung: string;
+  email: string | null;
+  seit: string;
+}
+
+export type KontoStand =
+  | { angemeldet: false; mail?: boolean; anbieter?: Anbieter[] }
+  | { angemeldet: true; mail?: boolean; anbieter?: Anbieter[]; konto: Konto; verbunden?: Anbieter };
 
 /** Result of an account call: data, or a message that can be shown as it is. */
 export type Ergebnis<T> = { ok: true; daten: T } | { ok: false; fehler: string; status: number };
@@ -22,6 +37,35 @@ export function loginTokenFromHash(hash: string): string | null {
   const m = /^#anmelden=([A-Za-z0-9_-]{20,100})$/.exec(hash);
   return m ? m[1] : null;
 }
+
+/** Back from a provider: #anbieter=<vorgang> (finish) or #anbieter-fehler=<grund>. */
+export function anbieterRueckkehr(hash: string): { vorgang: string } | { fehler: string } | null {
+  const ok = /^#anbieter=([A-Za-z0-9_-]{20,100})$/.exec(hash);
+  if (ok) return { vorgang: ok[1] };
+  const err = /^#anbieter-fehler=([a-z]{1,20})$/.exec(hash);
+  return err ? { fehler: err[1] } : null;
+}
+
+/** Message for #anbieter-fehler=<grund> (reasons from server/src/anbieter.ts). */
+export function anbieterFehlerText(grund: string): string {
+  switch (grund) {
+    case 'abgebrochen':
+      return 'Anmeldung abgebrochen. Du kannst es jederzeit noch einmal versuchen.';
+    case 'abgelaufen':
+      return 'Die Anmeldung ist abgelaufen. Bitte versuch es noch einmal.';
+    case 'adresse':
+      return 'Der Anbieter hat keine bestätigte Mailadresse geschickt. Bestätige deine Adresse dort oder melde dich per Mail-Link an.';
+    case 'zuviele':
+      return 'Zu viele Anmeldeversuche von hier. Bitte warte ein paar Minuten.';
+    case 'pruefung':
+      return 'Die Antwort des Anbieters ließ sich nicht prüfen. Bitte versuch es noch einmal.';
+    default:
+      return 'Der Anbieter ist gerade nicht erreichbar. Bitte versuch es später noch einmal oder melde dich per Mail-Link an.';
+  }
+}
+
+/** Where the browser goes to sign in (or, when signed in, to connect) with a provider. */
+export const anbieterStart = (a: Anbieter): string => `/api/konto/${a}/start`;
 
 type Fetch = typeof fetch;
 
@@ -83,6 +127,12 @@ export class KontoApi {
   }
   passkeyEntfernen(id: string) {
     return this.call<KontoStand>('DELETE', `/passkey/${encodeURIComponent(id)}`);
+  }
+  anbieterAbschliessen(vorgang: string) {
+    return this.call<KontoStand>('POST', '/anbieter/abschliessen', { vorgang });
+  }
+  anbieterTrennen(anbieter: Anbieter, kennung: string) {
+    return this.call<KontoStand>('POST', '/anbieter/trennen', { anbieter, kennung });
   }
   abmelden(alle = false) {
     return this.call<KontoStand>('POST', '/abmelden', { alle });

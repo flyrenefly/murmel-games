@@ -425,6 +425,82 @@ button.level small {
   color: var(--muted);
 }
 
+/* Anmelden mit Apple, Google, GitHub (Konten Stufe 2). Each in its provider's own style, all the
+   same size (Apple HIG „Sign in with Apple › Displaying buttons“: no smaller than other sign-in
+   buttons). On the dark card: Apple „white“ (black logo and title), Google „light“ (#747775 outline,
+   #1F1F1F text), GitHub mark in black. Logos share one left inset so they line up. Title 18px on
+   44px (≈ 41 % of the height, Apple's proportion 43 %). Not themed: brand buttons keep their colours. */
+.anbieter-knoepfe {
+  display: grid;
+  gap: 8px;
+}
+
+#ov-form button.anbieter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 140px;
+  min-height: 44px;
+  padding: 0 48px;
+  border-radius: 10px;
+  border: 1px solid #fff;
+  background: #fff;
+  color: #000;
+  font: 500 18px/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: normal;
+}
+
+#ov-form button.anbieter-google {
+  border-color: #747775;
+  color: #1f1f1f;
+}
+
+#ov-form button.anbieter-github {
+  color: #1f2328;
+}
+
+#ov-form button.anbieter:hover:not(:disabled) {
+  background: #f2f2f2;
+}
+
+#ov-form button.anbieter:disabled {
+  opacity: 0.6;
+}
+
+.anbieter-logo {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+}
+
+.anbieter-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.anbieter-apple .anbieter-logo svg {
+  /* the Apple glyph is taller than wide: same visual weight as the round logos */
+  width: 17px;
+  height: 21px;
+}
+
+/* "Trennen" on the last way in: visibly off, the hint below says why */
+.konto-wege button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body[data-theme='retro16'] #ov-form button.anbieter {
+  border-radius: 0;
+}
+
 .konto-oder {
   display: flex;
   align-items: center;

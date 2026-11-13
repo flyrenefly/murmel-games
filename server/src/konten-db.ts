@@ -1,5 +1,5 @@
 import type { Sql } from 'postgres';
-import type { Account, AccountStore, Passkey, Role } from './konten.ts';
+import type { Account, AccountStore, Passkey, Provider, Role } from './konten.ts';
 
 interface AccountRow {
   id: string;
@@ -61,7 +61,12 @@ export function accountStore(sql: Sql): AccountStore {
             insert into accounts (email) values (${identity.email})
             on conflict (email) do update set email = accounts.email
             returning id, email::text, role, created_at, blocked_at`;
-          await tx`insert into account_identities (provider, subject, account_id) values (${identity.provider}, ${identity.subject}, ${row.id}) on conflict do nothing`;
+          await tx`
+            insert into account_identities (provider, subject, account_id, email) values (${identity.provider}, ${identity.subject}, ${row.id}, ${identity.email})
+            on conflict do nothing`;
+        } else {
+          // keep the address the provider confirmed last (shown on the account page)
+          await tx`update account_identities set email = ${identity.email} where provider = ${identity.provider} and subject = ${identity.subject}`;
         }
         if (row.role !== role) {
           await tx`update accounts set role = ${role} where id = ${row.id}`;
@@ -69,6 +74,28 @@ export function accountStore(sql: Sql): AccountStore {
         }
         return account(row);
       });
+    },
+
+    async identities(accountId) {
+      const rows = await sql<{ provider: Provider; subject: string; email: string | null; created_at: Date }[]>`
+        select provider, subject, email::text, created_at from account_identities
+        where account_id = ${accountId} order by created_at, provider, subject`;
+      return rows.map((r) => ({ provider: r.provider, subject: r.subject, email: r.email, createdAt: r.created_at }));
+    },
+
+    async linkIdentity(accountId, identity) {
+      // A method that belongs to another account stays there (no silent moving of sign-ins).
+      const rows = await sql`
+        insert into account_identities (provider, subject, account_id, email)
+        values (${identity.provider}, ${identity.subject}, ${accountId}, ${identity.email})
+        on conflict (provider, subject) do update set email = excluded.email
+        where account_identities.account_id = excluded.account_id
+        returning 1`;
+      return rows.length ? 'ok' : 'vergeben';
+    },
+
+    async unlinkIdentity(accountId, provider, subject) {
+      return (await sql`delete from account_identities where account_id = ${accountId} and provider = ${provider} and subject = ${subject} returning 1`).length > 0;
     },
 
     async account(accountId) {

@@ -121,7 +121,7 @@ for (const backend of backends) {
 
     test('Mail-Link: anfordern, einlösen, angemeldet mit sicherem Cookie; Link nur einmal gültig', async () => {
       const a = app();
-      assert.deepEqual(await me(a), { angemeldet: false, mail: true });
+      assert.deepEqual(await me(a), { angemeldet: false, mail: true, anbieter: [] });
 
       const token = await requestLink(a, ' Spieler@Example.de ');
       assert.equal(sent[0].to, 'spieler@example.de');
@@ -158,7 +158,7 @@ for (const backend of backends) {
 
     test('ohne SMTP-Werte meldet die Anmeldung klar, dass der Mailversand fehlt', async () => {
       const a = app({ mail: false });
-      assert.deepEqual(await me(a), { angemeldet: false, mail: false });
+      assert.deepEqual(await me(a), { angemeldet: false, mail: false, anbieter: [] });
       const res = await post(a, '/api/konto/mail', { email: 'x@example.de' });
       assert.equal(res.statusCode, 503);
       assert.match(res.json().error, /Mailversand ist noch nicht eingerichtet/);

@@ -43,6 +43,15 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      # Konten Stufe 2 (docs/SPEC-konten.md): Anmeldung mit Google, GitHub, Apple. Fehlt ein Wert, ist der
+      # Anbieter aus (kein Knopf, Routen 404). Der Apple-Schlüssel kommt als Datei, nicht als Variable.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      APPLE_SERVICES_ID: ${APPLE_SERVICES_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
       DATABASE_URL: postgres://murmel:${POSTGRES_PASSWORD}@db:5432/murmel
       MURMEL_VERSION: ${MURMEL_VERSION}
       # Lesezugang zur Statistik (/statistik.html); leer = Statistik geschlossen
@@ -56,6 +65,10 @@ services:
     # nimmt die API keine Läufe an, alles andere läuft.
     volumes:
       - ./game/${MURMEL_VERSION}:/game:ro
+      # Apple-Schlüssel (chmod 600, lesbar für UID 1000 = Benutzer node im Container), schreibgeschützt.
+      # Fehlt /opt/murmel/apple-signin.p8, hängt release.sh /dev/null ein (Apple aus) – sonst legte
+      # Docker an dieser Stelle ein leeres Verzeichnis als root an.
+      - ${APPLE_KEY_HOST:-./apple-signin.p8}:/run/murmel/apple-signin.p8:ro
     depends_on:
       db:
         condition: service_healthy
