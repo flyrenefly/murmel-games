@@ -106,8 +106,8 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 - **Mit Server:** hochladen nur, wenn der Autor es selbst gelöst hat (gleiche Nachspiel-Prüfung
   wie bei Bestzeiten → keine unlösbaren Levels).
 - Liste mit Suche, „neu“, „beliebt“, Bewertung 1–5, Melden-Knopf.
-- **Moderation:** neue Levels erst sichtbar nach Freigabe oder nach N positiven Bewertungen
-  (offene Frage); Lizenz der Spieler-Levels: GPL-kompatibel (Vorschlag CC BY-SA 4.0).
+- **Moderation:** neue Levels werden erst sichtbar, wenn ein Admin sie freigibt (Nutzer, 13.11.2026);
+  gemeldete Levels werden ausgeblendet. **Lizenz der Spieler-Levels: CC BY-SA 4.0** (Nutzer, 13.11.2026).
 
 ## 7. Mehrspieler (`mehrspieler`)
 
@@ -269,8 +269,10 @@ die Bestenlisten ohnehin entsteht.
 - Große Version mit eigenem Server, Komplettumzug mit IONOS-Webspace als Notbetrieb (Abschnitt 9).
 - Anbieter: **IONOS-VPS**, Start 2 vCPU / 4 GB / 80–120 GB NVMe (Abschnitt 8.1).
 - Anmeldung: **Mail-Link + Passkey, zusätzlich Google, Apple und GitHub**.
-- Spieler-Levels: **automatisch sichtbar**, wenn vom Autor gelöst; gemeldete Levels werden
-  ausgeblendet und vom Nutzer geprüft.
+- Spieler-Levels: **erst nach Freigabe durch einen Admin sichtbar** (ersetzt die frühere Wahl
+  „automatisch sichtbar, wenn vom Autor gelöst“; die Variante „nach N positiven Bewertungen“ entfällt).
+  Gemeldete Levels werden ausgeblendet. Lizenz: **CC BY-SA 4.0**. Hochladen weiterhin nur, wenn der
+  Autor das Level selbst gelöst hat.
 - Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
 - Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
 - **Mailversand** der Login-Links über ein **IONOS-Postfach von murmel.games**. `info@murmel.games` ist
@@ -285,7 +287,9 @@ die Bestenlisten ohnehin entsteht.
 - **Forum** (`forum`, Abschnitt 7.1) wird **direkt im Anschluss an `konten`** gebaut („forum nach den
   konten bauen“).
 - **Erledigt am 13.11.:** VPS bestellt (Nutzer) und eingerichtet, DNS umgestellt (Abschnitt 9),
-  Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“).
+  Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“): `aufzeichnung` und
+  `lokal` sind fertig; `bestenliste`, `sync` und `editor` laufen in eigenen Sitzungen, `spielerlevels`
+  folgt nach dem Editor.
 
 **Noch offen**
 1. **Fremdanmeldung:** Google und GitHub brauchen je eine eigene App-Anmeldung (legt der Nutzer an).
