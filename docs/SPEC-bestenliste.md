@@ -39,7 +39,13 @@ GET /api/bestenliste/pruefung/:id  ──► { status, zeit, platz, von, neu }  
 | B2 | Prüfer `server/src/bestenliste-pruefer.ts`: dauerhafter Prüfprozess (`tools/lib/check-worker.mjs` der aktiven Version unter `GAME_DIR`), Levels aus `tools/lib/levels.mjs`, Zeitlimit, Neustart nach Absturz | `node --test` mit dem echten Spielcode des Repos |
 | B3 | Warteschlange und API `server/src/bestenliste.ts` (+ `bestenliste-db.ts`, `bestenliste-memory.ts`) | `node --test` (Endpunkte, Grenzen, Ende zu Ende) |
 | B4 | Spiel: `src/bestenliste.ts` (Client), Siegmeldung, Levelliste; Seite `bestenliste.html` (`src/bestenliste-seite.ts`) | vitest `bestenliste.test.ts`, Browser |
-| B5 | Betrieb: Spielcode je Version unter `/opt/murmel/game/<version>` (`update.sh`), schreibgeschützt in den API-Container (`compose.yml`), Aufräumen mit den Releases (`release.sh`) | Rollout auf dem Server |
+| B5 | Betrieb: Spielcode je Version unter `/opt/murmel/game/<version>` (`release.sh`, aus Git wie `loesbarkeit.sh`), schreibgeschützt in den API-Container (`compose.yml`), aufgeräumt mit den Releases | Rollout auf dem Server |
+
+**Stand 13.11.2026:** B1–B5 gebaut (Branch `bestenliste`). Geprüft: `node --test` (API mit Speicher-Store, Ende zu Ende mit
+echtem Spielcode und `solutions/murmel/01.json`, PostgreSQL-Teil nur in der CI), vitest, Browser mit lokaler Test-API
+(echter Lauf eingereicht und nachgespielt, Levelliste mit Platz, Ranglistenseite hell/dunkel/375 px, Admin-Knöpfe).
+Nicht geprüft: Siegmeldung nach einem von Hand gespielten Sieg, Rollout auf dem Server (erster Rollout legt
+`/opt/murmel/game/<version>` an). Datenschutzabschnitt wartet auf Freigabe.
 
 ## Prüfen
 
@@ -69,7 +75,7 @@ GET /api/bestenliste/pruefung/:id  ──► { status, zeit, platz, von, neu }  
 | Warteschlange gesamt | 50 offene Prüfungen | 503 „gerade viel los, bitte später“ |
 | Gesperrte Konten (`blocked_at`) | reichen nichts ein (`requireAccount`); ihre Einträge erscheinen in keiner Rangliste | 403 |
 
-- **Parallelität:** ein Prüfprozess (`BESTENLISTE_JOBS`, Standard 1) mit gesenkter Priorität
+- **Parallelität:** ein dauerhafter Prüfprozess mit gesenkter Priorität
   (`os.setPriority` 10). Die API-Anfragen selbst warten nie auf das Nachspielen: Einreichen antwortet
   sofort mit 202, das Ergebnis holt der Browser ab.
 - **Prüfergebnisse** liegen nur im Speicher (10 min nach Abschluss gelöscht). Ein Neustart der API

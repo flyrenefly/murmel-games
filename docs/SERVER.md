@@ -98,6 +98,11 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
   Startwert je Lauf).
 - Ranglisten je Level (Top 100 + eigener Platz), keine globale Punktzahl am Anfang.
 
+**`bestenliste` gebaut (Branch `bestenliste`, 13.11.2026):** Spezifikation `docs/SPEC-bestenliste.md`, Migration
+`006_bestenliste.sql`, API `/api/bestenliste` (`server/src/bestenliste*.ts`), Seite `bestenliste.html`. Die API spielt
+Läufe mit dem Prüfprozess der Lösbarkeitsprüfung nach; den Spielcode der aktiven Version legt `release.sh` unter
+`/opt/murmel/game/<version>` ab (schreibgeschützt unter `/game` im Container).
+
 ## 6. Leveleditor und Spieler-Levels (`editor`, `spielerlevels`)
 
 - Editor im Browser auf Basis des vorhandenen Levelformats (`LevelFile`), Objekte aus der
