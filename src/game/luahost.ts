@@ -138,7 +138,9 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     send(ref, msg, value) {
       if (!ref.startsWith('o:')) return; // plain floors and stones ignore messages
       const o = byId(ref);
-      if (o) objects.sendMessage(o, msg, truthy(value));
+      // a number travels along (orientate EAST, signal 0/1)
+      const n = value === null || value === '' ? NaN : Number(value);
+      if (o) objects.sendMessage(o, msg, truthy(value) && n !== 0, Number.isFinite(n) ? n : undefined);
     },
     kill(ref) {
       if (ref.startsWith('o:')) {

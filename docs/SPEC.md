@@ -535,6 +535,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua wo:add während des Spiels**: `wo:add(YIN/YANG, {"it_…"})` legt einen Gegenstand ins Inventar (it_pipe mit
   `connections` als passendes Rohrstück), `wo:add({"ot_rubberband", anchor1=Kugel, anchor2=Stein/Kugel, …})`
   spannt ein Gummiband (bewegliche Steine werden verfolgt). Andere Objekte zur Laufzeit fehlen.
+- **Lua obj:orientate(dir) / obj:turnback()** (auch auf Gruppen): die Richtung reist als Zahl mit (Einbahnsteine,
+  Spiegel, Laser, Felsbrocken, Drehkreuzarme).
 - **st_flat_breakable / _cracked / _burnable / _breaking, st_plaster_breakable / _movable** (`FlatStone.cc`,
   `PlasterStone.cc`): als Bruchsteine mit der st_flat_break-Animation (6 × 50 ms). Hammer bricht
   breakable und cracked; Laser bricht breakable; Explosion/Zünden bricht breakable und cracked; Feuer

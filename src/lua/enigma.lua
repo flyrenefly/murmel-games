@@ -201,7 +201,7 @@ local function send(o, msg, value)
 end
 
 local methods = {}
-for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "signal", "grow", "explode", "shovel"}) do
+for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel"}) do
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end

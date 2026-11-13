@@ -1,6 +1,6 @@
 # Enigma-Import
 
-909 von 1322 Levels übernommen (18 Pakete).
+913 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -34,7 +34,6 @@
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 2 |
-| Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
 | Lua: document() | 6 | 0 |

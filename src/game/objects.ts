@@ -3925,8 +3925,8 @@ export class ObjectWorld {
 
   /** Animation progress 0..1 towards the target state (1 when not moving). */
   /** A message from a Lua callback (obj:open(), obj:message("toggle") …). */
-  sendMessage(o: GameObject, msg: string, value: boolean): void {
-    if (!o.gone) this.message(o, msg, value);
+  sendMessage(o: GameObject, msg: string, value: boolean, num?: number): void {
+    if (!o.gone) this.message(o, msg, value, num);
   }
 
   /** The stone (non-item) object in a cell. */
@@ -4220,6 +4220,7 @@ export class ObjectWorld {
     if (o.cls === 'oneway') {
       // OneWayStone::message: signal and flip reverse the direction.
       if (msg === 'signal' || msg === 'flip' || msg === 'toggle') o.state = (o.state + 2) % 4;
+      else if (msg === 'orientate' && num !== undefined && num >= 0 && num <= 3) o.state = num; // OneWayStone "orientate"
       return;
     }
     switch (msg) {
