@@ -8,7 +8,7 @@ import { DEFAULT_MOUSE_SPEED, JUMP_SECONDS, PHYSICS_DT, type PhysicsWorld, SINK_
 import type { LevelFile } from './game/level';
 import { FALL_SECONDS, GameSession, type SessionUI, type SoundName } from './game/session';
 import { LEVELS } from './levels';
-import { listPacks, packLevels, packTitle } from './packs';
+import { listPacks, packLevels, packTitle, setPlayerPack } from './packs';
 import { randomSeed } from './game/rng';
 import { emptyProgress, mergeProgress, parseProgress, type Progress, recordAttempt, recordPlay, recordWin, serializeProgress, summarize } from './game/progress';
 import { type ActorSprite, ClassicView } from './render/classic';
@@ -21,7 +21,9 @@ import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
-import { editorButton, LINK_PACK, openLinkFromHash } from './editor/game-link';
+import { editorButton, LINK_PACK, noteLinkWin, openLinkFromHash } from './editor/game-link';
+import { encodeLevel, LINK_PREFIX } from './editor/link';
+import { LICENSE_LABEL, listUrl, loadPlayerLevel, PLAYER_PACK } from './spielerlevels';
 import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
 import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
@@ -126,7 +128,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   i = Math.min(Math.max(0, i), packList.length - 1);
   packId = pack;
   levelIndex = i;
-  if (pack !== LINK_PACK) {
+  if (pack !== LINK_PACK && pack !== PLAYER_PACK) {
     store.set('pack', pack);
     store.set('level', i);
   }
@@ -420,7 +422,8 @@ function loadProgressFile(): void {
 
 function showStart(): void {
   mode = 'menu';
-  const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
+  const where = packId === PLAYER_PACK ? escapeHtml(packName) : `${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}`;
+  const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}</span><br>`;
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
     ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
@@ -430,10 +433,35 @@ function showStart(): void {
   addSteeringChoice(showStart);
 }
 
-/** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link. */
+/** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link; list and editor for player levels. */
 function linkButtons(): [string, () => void][] {
+  if (packId === PLAYER_PACK) return playerButtons();
   const b = packId === LINK_PACK ? editorButton() : null;
   return b ? [b] : [];
+}
+
+// ---------- Spieler-Levels (src/spielerlevels.ts, docs/SPEC-spielerlevels.md) ----------
+/** Back to the list, and the level in the editor (CC BY-SA allows changing it). */
+function playerButtons(): [string, () => void][] {
+  const file = packList[levelIndex];
+  return [
+    ['Spieler-Levels', () => location.assign(listUrl(level.id))],
+    ['Im Editor öffnen', () => void encodeLevel(file).then((data) => location.assign(`./editor.html${LINK_PREFIX}${data}`))],
+  ];
+}
+
+/** Opens a '#spieler=<n>' hash; false if the hash is no player level. */
+async function openPlayerFromHash(hash: string): Promise<boolean> {
+  const r = await loadPlayerLevel(hash);
+  if (!r) return false;
+  if (!r.ok) {
+    showToast(r.error, 4000);
+    return false;
+  }
+  setPlayerPack(r.file);
+  await loadLevel(PLAYER_PACK, 0);
+  if (r.offline) showToast('Offline: gespeicherte Fassung des Levels.', 2600);
+  return true;
 }
 
 function showPause(): void {
@@ -496,6 +524,7 @@ async function showLevels(): Promise<void> {
         () => void showPack(p.id),
       );
     }),
+    listButton('<span>›</span><b>Spieler-Levels</b><small>von Spielern gebaut · CC BY-SA 4.0</small>', packId === PLAYER_PACK, () => location.assign(listUrl())),
   );
   levelList.hidden = false;
   (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
@@ -638,13 +667,14 @@ function onWin(): void {
   const recording = s.recording();
   const board = leaderboardLine(recording, s.steps, level.id);
   const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
+  const rate: [string, () => void][] = packId === PLAYER_PACK ? [['Bewerten', () => location.assign(listUrl(level.id))]] : [];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
       `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart], ...ranking, ...asSolution]
+        ? [['Levels', showLevels], ['Nochmal', restart], ...ranking, ...rate, ...asSolution]
         : [
             ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
@@ -658,6 +688,7 @@ function onWin(): void {
 /** Won a level from a link: no progress, statistics or best time (docs/SPEC-editor.md). */
 function linkWin(s: GameSession): void {
   mode = 'won';
+  noteLinkWin(s.recording());
   sfx.win();
   input.releaseLock();
   setTimeout(() => showOverlay('Geschafft!', `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}`, [...linkButtons(), ['Nochmal', restart], ['Levels', showLevels]]), 900);
@@ -979,7 +1010,7 @@ for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 // a shared level in the link (#level=…, src/editor/game-link.ts) starts instead of the last level
 const linkStart = await openLinkFromHash(location.hash);
 if (linkStart?.ok) await loadLevel(LINK_PACK, 0);
-else await loadLevel(packId, levelIndex);
+else if (!(await openPlayerFromHash(location.hash))) await loadLevel(packId, levelIndex);
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
 void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
@@ -1001,7 +1032,7 @@ window.addEventListener('hashchange', async () => {
   if (r?.ok) {
     await loadLevel(LINK_PACK, 0);
     showStart();
-  }
+  } else if (!r && (await openPlayerFromHash(location.hash))) showStart();
 });
 $('loading').remove();
 requestAnimationFrame((t) => {
