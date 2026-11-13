@@ -4,6 +4,8 @@
 export interface Konto {
   email: string;
   rolle: 'player' | 'admin';
+  /** Von einem Admin gesperrt: anmelden und löschen geht, schreiben (z. B. im Forum) nicht. */
+  gesperrt?: boolean;
   erstellt: string;
   passkeys: { id: string; name: string; erstellt: string; zuletzt: string | null }[];
 }

@@ -181,6 +181,7 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet = false): void 
     ),
   ];
   if (neuAngemeldet) parts.push(status('Du bist angemeldet.'));
+  if (konto.gesperrt) parts.push(status('Dieses Konto ist gesperrt. Spielen geht weiter; schreiben kannst du nicht. Fragen an info@murmel.games.', 'fehler'));
 
   // Passkeys: after the first mail login the page offers one, so the next sign-in needs no mail.
   const liste = el('ul', { className: 'konto-passkeys' });

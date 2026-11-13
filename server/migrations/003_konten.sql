@@ -9,6 +9,8 @@ create table accounts (
   display_name text check (char_length(display_name) <= 40),
   -- 'admin' wird bei jeder Anmeldung aus ADMIN_EMAILS (/opt/murmel/.env) gesetzt oder entzogen
   role text not null default 'player' check (role in ('player', 'admin')),
+  -- gesperrt (z. B. im Forum): darf sich anmelden, abmelden und das Konto löschen, aber nichts schreiben
+  blocked_at timestamptz,
   created_at timestamptz not null default now()
 );
 

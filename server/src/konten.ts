@@ -21,6 +21,8 @@ export interface Account {
   email: string;
   role: Role;
   createdAt: Date;
+  /** Blocked by an admin: may sign in, sign out and delete the account, but write nothing (requireAccount). */
+  blocked: boolean;
 }
 
 export interface Passkey {
@@ -52,6 +54,8 @@ export interface AccountStore {
   /** Finds the account by identity, else by address (linking the identity), else creates it; sets the role. */
   signIn(identity: Identity, role: Role): Promise<Account>;
   setRole(accountId: number, role: Role): Promise<void>;
+  /** Blocks or unblocks an account (admins, e.g. in the forum). */
+  setBlocked(accountId: number, blocked: boolean, now: Date): Promise<void>;
   addSession(accountId: number, hash: Buffer, expires: Date): Promise<void>;
   sessionAccount(hash: Buffer, now: Date): Promise<Account | null>;
   deleteSession(hash: Buffer): Promise<void>;
@@ -129,6 +133,7 @@ function accountJson(a: Account, passkeys: Passkey[]) {
   return {
     email: a.email,
     rolle: a.role,
+    gesperrt: a.blocked,
     erstellt: a.createdAt.toISOString(),
     passkeys: passkeys.map((p) => ({ id: p.id, name: p.name, erstellt: p.createdAt.toISOString(), zuletzt: p.lastUsedAt?.toISOString() ?? null })),
   };
@@ -144,9 +149,26 @@ export function passkeyName(userAgent: string | undefined): string {
 
 declare module 'fastify' {
   interface FastifyRequest {
-    /** Signed-in account (or null); set for /api/konto and /api/admin. */
+    /** Signed-in account (or null), for every /api route except /api/health. */
     account: Account | null;
   }
+}
+
+/** Any signed-in account, blocked ones too: managing one's own account (sign out, delete). */
+export async function requireSignedIn(req: FastifyRequest, reply: FastifyReply) {
+  if (!req.account) return reply.code(401).send({ error: 'nicht angemeldet' });
+}
+
+/** Signed in and not blocked: for routes that write (forum posts, levels, times). Use as preHandler. */
+export async function requireAccount(req: FastifyRequest, reply: FastifyReply) {
+  if (!req.account) return reply.code(401).send({ error: 'nicht angemeldet' });
+  if (req.account.blocked) return reply.code(403).send({ error: 'Dieses Konto ist gesperrt.' });
+}
+
+/** Signed-in admin (role from ADMIN_EMAILS). Use as preHandler. */
+export async function requireAdmin(req: FastifyRequest, reply: FastifyReply) {
+  if (!req.account) return reply.code(401).send({ error: 'nicht angemeldet' });
+  if (req.account.role !== 'admin') return reply.code(403).send({ error: 'nur für Admins' });
 }
 
 // ---------- routes ----------
@@ -166,6 +188,9 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   const scoped = (url: string) => url.startsWith('/api/konto') || url.startsWith('/api/admin');
 
   app.addHook('onRequest', async (req, reply) => {
+    if (!req.url.startsWith('/api/') || req.url.startsWith('/api/health')) return;
+    const token = readCookie(req.headers.cookie, COOKIE);
+    req.account = token ? await store.sessionAccount(hash(token), now()) : null;
     if (!scoped(req.url)) return;
     // CSRF: state-changing calls only from the game's own page (SameSite=Strict as a second fence).
     if (req.method !== 'GET' && req.headers.origin !== undefined && req.headers.origin !== origin) {
@@ -174,17 +199,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
     if (req.method !== 'GET' && !stepLimit.take(req.ip, now().getTime())) {
       return reply.code(429).send({ error: 'Zu viele Anfragen. Bitte warte ein paar Minuten.' });
     }
-    const token = readCookie(req.headers.cookie, COOKIE);
-    req.account = token ? await store.sessionAccount(hash(token), now()) : null;
   });
-
-  const needAccount = async (req: FastifyRequest, reply: FastifyReply) => {
-    if (!req.account) return reply.code(401).send({ error: 'nicht angemeldet' });
-  };
-  const needAdmin = async (req: FastifyRequest, reply: FastifyReply) => {
-    if (!req.account) return reply.code(401).send({ error: 'nicht angemeldet' });
-    if (req.account.role !== 'admin') return reply.code(403).send({ error: 'nur für Admins' });
-  };
 
   async function startSession(reply: FastifyReply, account: Account) {
     const token = secret();
@@ -248,7 +263,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   );
 
   // Passkey on this device: options for navigator.credentials.create (signed in only).
-  app.post('/api/konto/passkey/registrieren', { preHandler: needAccount }, async (req) => {
+  app.post('/api/konto/passkey/registrieren', { preHandler: requireSignedIn }, async (req) => {
     const account = req.account!;
     const existing = await store.passkeys(account.id);
     const options = await generateRegistrationOptions({
@@ -270,7 +285,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   app.post<{ Body: { vorgang: string; antwort: RegistrationResponseJSON } }>(
     '/api/konto/passkey/registrieren/abschliessen',
     {
-      preHandler: needAccount,
+      preHandler: requireSignedIn,
       schema: { body: { type: 'object', required: ['vorgang', 'antwort'], properties: { vorgang: { type: 'string', maxLength: 100 }, antwort: { type: 'object' } } } },
     },
     async (req, reply) => {
@@ -344,7 +359,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
     },
   );
 
-  app.delete<{ Params: { id: string } }>('/api/konto/passkey/:id', { preHandler: needAccount }, async (req, reply) => {
+  app.delete<{ Params: { id: string } }>('/api/konto/passkey/:id', { preHandler: requireSignedIn }, async (req, reply) => {
     if (!(await store.deletePasskey(req.account!.id, req.params.id))) return reply.code(404).send({ error: 'Passkey nicht gefunden' });
     return { angemeldet: true, konto: accountJson(req.account!, await store.passkeys(req.account!.id)) };
   });
@@ -359,13 +374,13 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   });
 
   // Delete the account with everything that belongs to it (sessions, passkeys, sign-in methods).
-  app.delete('/api/konto', { preHandler: needAccount }, async (req, reply) => {
+  app.delete('/api/konto', { preHandler: requireSignedIn }, async (req, reply) => {
     await store.deleteAccount(req.account!.id);
     reply.header('Set-Cookie', sessionCookie('', 0));
     return { angemeldet: false };
   });
 
-  app.get('/api/admin/uebersicht', { preHandler: needAdmin }, async (_req, reply) => {
+  app.get('/api/admin/uebersicht', { preHandler: requireAdmin }, async (_req, reply) => {
     reply.header('Cache-Control', 'no-store');
     return store.overview();
   });

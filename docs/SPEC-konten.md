@@ -24,6 +24,10 @@ API (Notbetrieb auf IONOS, offline), meldet der Kontodialog „gerade nicht erre
 - Begrenzung: 5 Mail-Links je IP und 15 min, 3 je Adresse und Stunde, 60 Konto-Anfragen je IP und 15 min.
 - CSRF: ändernde Anfragen mit fremdem `Origin` → 403 (dazu SameSite=Strict).
 - Konto löschen: sofort, mit Sitzungen, Passkeys, Anmeldewegen und offenen Links.
+- Sperre (`accounts.blocked_at`, für das Forum): gesperrte Konten können sich anmelden, abmelden und
+  ihr Konto löschen, aber nicht schreiben. Für spätere Endpunkte: `requireAccount` (angemeldet, nicht
+  gesperrt), `requireAdmin`, `requireSignedIn` (auch gesperrt) aus `server/src/konten.ts`; `req.account`
+  ist auf allen `/api`-Pfaden gesetzt. Endpunkte zum Sperren baut das Forum (`AccountStore.setBlocked`).
 - Admin: Adressen in `ADMIN_EMAILS` (`/opt/murmel/.env`, nicht im Repo). Die Rolle wird bei jeder
   Anmeldung gesetzt oder entzogen. `GET /api/admin/uebersicht` (Kontenzahlen) nur für Admins.
   Statistik für Admins ohne `STATS_TOKEN`: nach dem Zusammenführen mit `statistik`.

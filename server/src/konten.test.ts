@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { buildApp } from './app.ts';
 import { connect } from './db.ts';
-import { type AccountStore, COOKIE, type Mailer, normalizeEmail, parseAdminEmails, passkeyName, readCookie } from './konten.ts';
+import { type AccountStore, COOKIE, type Mailer, normalizeEmail, parseAdminEmails, passkeyName, readCookie, requireAccount, requireAdmin } from './konten.ts';
 import { accountStore } from './konten-db.ts';
 import { memoryStore } from './konten-memory.ts';
 import { RateLimit } from './limit.ts';
@@ -301,6 +301,35 @@ for (const backend of backends) {
 
       const login = (await post(a, '/api/konto/passkey/anmelden', {})).json();
       assert.equal((await post(a, '/api/konto/passkey/anmelden/abschliessen', { vorgang: login.vorgang, antwort: device.get(login.optionen) })).statusCode, 400);
+    });
+
+    test('Gesperrtes Konto: angemeldet und löschbar, aber requireAccount verweigert; requireAdmin nur für Admins', async () => {
+      const a = app({ admins: ['chef@example.de'] });
+      // later endpoints (forum) use the exported guards
+      a.post('/api/forum/beitrag', { preHandler: requireAccount }, async (req) => ({ von: req.account!.email }));
+      a.post('/api/forum/sperren', { preHandler: requireAdmin }, async () => ({ ok: true }));
+      const spieler = await signInByMail(a, 'spieler@example.de');
+      const chef = await signInByMail(a, 'chef@example.de');
+
+      assert.equal((await post(a, '/api/forum/beitrag', {})).statusCode, 401);
+      assert.deepEqual((await post(a, '/api/forum/beitrag', {}, spieler)).json(), { von: 'spieler@example.de' });
+      assert.equal((await post(a, '/api/forum/sperren', {}, spieler)).statusCode, 403);
+      assert.equal((await post(a, '/api/forum/sperren', {}, chef)).statusCode, 200);
+
+      const id = (await store.signIn({ provider: 'mail', subject: 'spieler@example.de', email: 'spieler@example.de' }, 'player')).id;
+      await store.setBlocked(id, true, clock);
+      assert.equal((await me(a, spieler)).konto.gesperrt, true);
+      const blocked = await post(a, '/api/forum/beitrag', {}, spieler);
+      assert.equal(blocked.statusCode, 403);
+      assert.match(blocked.json().error, /gesperrt/);
+      // still signs in again (to see why, or to delete the account)
+      assert.equal((await me(a, await signInByMail(a, 'spieler@example.de'))).konto.gesperrt, true);
+
+      await store.setBlocked(id, false, clock);
+      assert.equal((await post(a, '/api/forum/beitrag', {}, spieler)).statusCode, 200);
+      await store.setBlocked(id, true, clock);
+      const del = await a.inject({ method: 'DELETE', url: '/api/konto', headers: { origin: ORIGIN, cookie: `${COOKIE}=${spieler}` } });
+      assert.equal(del.statusCode, 200);
     });
 
     test('Fremdanmeldung (später Google/Apple/GitHub) mit derselben Adresse landet im selben Konto', async () => {

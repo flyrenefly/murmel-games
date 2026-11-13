@@ -34,7 +34,7 @@ export function memoryStore(): AccountStore {
         id = [...accounts.values()].find((a) => a.email === identity.email.toLowerCase())?.id;
         if (id === undefined) {
           id = nextId++;
-          accounts.set(id, { id, email: identity.email.toLowerCase(), role: 'player', createdAt: new Date() });
+          accounts.set(id, { id, email: identity.email.toLowerCase(), role: 'player', createdAt: new Date(), blocked: false });
         }
         identities.set(`${identity.provider}:${identity.subject}`, id);
       }
@@ -45,6 +45,10 @@ export function memoryStore(): AccountStore {
     async setRole(accountId, role) {
       const a = accounts.get(accountId);
       if (a) a.role = role;
+    },
+    async setBlocked(accountId, blocked) {
+      const a = accounts.get(accountId);
+      if (a) a.blocked = blocked;
     },
     async addSession(accountId, hash, expires) {
       sessions.set(key(hash), { accountId, expires });
