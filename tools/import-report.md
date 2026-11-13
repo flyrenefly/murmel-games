@@ -1,15 +1,10 @@
 # Enigma-Import
 
-970 von 1322 Levels übernommen (18 Pakete).
+1072 von 1322 Levels übernommen (19 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 115 | 4 |
-| keine Oxyd-Steine | 111 | 3 |
-| Lua-Rückruf | 110 | 5 |
-| Lua: st_oxyd | 106 | 0 |
-| Lua: :shuffleOxyd | 106 | 2 |
-| Lua-Init | 94 | 2 |
+| Lua-Init | 90 | 2 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -24,8 +19,12 @@
 | Lua: abyss() | 20 | 0 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
-| Objekt ot_timer (Lua-Init) | 13 | 0 |
+| Objekt ot_timer (Lua-Init) | 11 | 0 |
+| Lua: st_oxyd | 10 | 3 |
+| keine Oxyd-Steine | 10 | 3 |
+| Lua-Rückruf | 10 | 5 |
 | Lua: :add | 10 | 5 |
+| Lua: :drawMap | 9 | 4 |
 | Lua: :drawRect | 9 | 4 |
 | Lua-Init (Weltwert) | 9 | 3 |
 | nicht exportiert | 9 | 9 |
@@ -66,6 +65,7 @@
 | Pferd mit Zielen | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
+| Lua: st_granite_hollow | 2 | 1 |
 | Lua: ac_top | 2 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 2 | 0 |
 | Lua: :grid | 1 | 0 |
@@ -129,7 +129,6 @@
 | Lua: wo["ShowMoves"] | 1 | 0 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
-| Lua: st_granite_hollow | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
 | Boden fl_forward | 1 | 1 |
 | FallenPuzzle | 1 | 0 |

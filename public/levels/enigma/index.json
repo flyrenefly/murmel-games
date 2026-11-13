@@ -20,13 +20,13 @@
  {
   "pack": "enigma_i",
   "title": "Enigma I",
-  "count": 93,
+  "count": 94,
   "of": 100
  },
  {
   "pack": "enigma_ii",
   "title": "Enigma II",
-  "count": 80,
+  "count": 84,
   "of": 100
  },
  {
@@ -50,7 +50,7 @@
  {
   "pack": "enigma_vi",
   "title": "Enigma VI",
-  "count": 81,
+  "count": 82,
   "of": 100
  },
  {
@@ -68,7 +68,7 @@
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 85,
+  "count": 86,
   "of": 100
  },
  {
@@ -94,6 +94,12 @@
   "title": "Advent 2010",
   "count": 20,
   "of": 24
+ },
+ {
+  "pack": "pentomino_i",
+  "title": "Pentomino I",
+  "count": 95,
+  "of": 99
  },
  {
   "pack": "labyrinths",
