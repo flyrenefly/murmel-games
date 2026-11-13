@@ -5,6 +5,7 @@ import { parseAdminEmails } from './konten.ts';
 import { forumStore } from './forum-db.ts';
 import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
+import { syncStore } from './sync-db.ts';
 import { mailerFromEnv } from './mail.ts';
 import { migrate } from './migrate.ts';
 
@@ -21,7 +22,7 @@ const accounts = {
   origin: process.env.PUBLIC_ORIGIN || 'https://murmel.games',
   adminEmails: parseAdminEmails(process.env.ADMIN_EMAILS),
 };
-const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql), logger: true });
+const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql), sync: syncStore(sql), logger: true });
 if (!accounts.mailer) app.log.warn('SMTP not configured: sign-in by mail link is off');
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
 

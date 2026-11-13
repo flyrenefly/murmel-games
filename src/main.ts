@@ -15,7 +15,8 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
-import { istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { beiKontoWechsel, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { Abgleich, statusText, type SyncStatus } from './sync';
 import { loesungSpeichern } from './loesung';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
@@ -255,6 +256,20 @@ function saveProgress(): void {
   store.set('progress', JSON.parse(serializeProgress(progress, nowIso())));
 }
 saveProgress();
+
+// Fortschritt auf allen Geräten (docs/SPEC-sync.md): only when signed in, never a dialog.
+const abgleich = new Abgleich(
+  () => progress,
+  (p) => {
+    progress = p;
+    for (const id of progress.solved) solved.add(id);
+    store.set('solved', [...solved]);
+    saveProgress();
+  },
+);
+beiKontoWechsel((angemeldet) => (angemeldet ? void abgleich.jetzt() : abgleich.abgemeldet()));
+window.addEventListener('online', () => abgleich.online());
+
 /** Runs already counted: started (attempt) and finished (play time, falls). */
 const runStarted = new WeakSet<GameSession>();
 const runCounted = new WeakSet<GameSession>();
@@ -283,10 +298,8 @@ function formatBest(steps: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')},${t % 10}`;
 }
 
-/** Statistics, and saving or loading the progress as a file. */
-function showProgress(message = ''): void {
-  mode = 'menu';
-  input.releaseLock();
+/** The statistics table of the progress page (rebuilt after a sync while the page is open). */
+function progressTable(): string {
   const sum = summarize(progress);
   const last = sum.lastPlayed ? new Date(sum.lastPlayed).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '–';
   const rows: [string, string][] = [
@@ -296,14 +309,34 @@ function showProgress(message = ''): void {
     ['Abstürze', String(sum.falls)],
     ['Zuletzt gespielt', last],
   ];
-  const table = `<dl class="stats">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
+  return `<dl class="stats" id="fortschritt-zahlen">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
+}
+
+/** Statistics, the sync status, and saving or loading the progress as a file. */
+function showProgress(message = ''): void {
+  mode = 'menu';
+  input.releaseLock();
   const note = message ? `<span class="note" role="status">${escapeHtml(message)}</span>` : '';
-  showOverlay('Fortschritt', `${table}${note}<span class="credit">Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.</span>`, [
+  const mitKonto = abgleich.status.art !== 'abgemeldet';
+  const sync = `<p id="sync-status" class="sync-status" role="status" aria-live="polite" data-art="${abgleich.status.art}">${escapeHtml(statusText(abgleich.status))}</p>`;
+  const hinweis = mitKonto
+    ? 'Dein Konto hält den Fortschritt auf allen Geräten gleich. Mit „Sichern“ zusätzlich als Datei mitnehmen.'
+    : 'Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.';
+  showOverlay('Fortschritt', `${progressTable()}${note}${sync}<span class="credit">${hinweis}</span>`, [
     ['Zurück', () => void showLevels()],
     ['Sichern', saveProgressFile],
     ['Laden', loadProgressFile],
   ]);
+  if (mitKonto && abgleich.status.art !== 'laeuft') abgleich.bald(0);
 }
+// While the progress page is open: the status line, and the numbers after a sync brought something.
+abgleich.beobachten((s: SyncStatus) => {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = statusText(s);
+  el.dataset.art = s.art;
+  if (s.art === 'ok') document.getElementById('fortschritt-zahlen')?.replaceWith(document.createRange().createContextualFragment(progressTable()));
+});
 
 function saveProgressFile(): void {
   const blob = new Blob([serializeProgress(progress, nowIso())], { type: 'application/json' });
@@ -497,6 +530,7 @@ function onWin(): void {
   const prevBest = progress.levels[level.id]?.best;
   progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());
   noteRunEnded(s); // saves the progress
+  abgleich.bald();
   const newBest = progress.levels[level.id]?.best;
   const bestLine = !prevBest
     ? ''
