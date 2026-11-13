@@ -178,7 +178,7 @@ const OBJECTS = [
   [/^st_plop$/, ['st_plop_slate', 'sh_solid']],
   [/^st_(rawglass|lightglass|darkglass)_movable$/, ['st_rawglass', 'st_lightglass', 'st_darkglass', 'sh_rawglass']],
   [/^st_invisible_movable$/, []],
-  [/^st_box(_wood(_[hv])?|_hay|_rock)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
+  [/^st_box(_wood(_[hv])?|_hay|_rock|_wood_growing|_hay_growing)?$/, ['st_box_wood', 'st_box_hay', 'st_box_rock', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock']],
 ];
 const objectImages = (k) => OBJECTS.find(([re]) => re.test(k))?.[1] ?? null;
 const ACTIONS = new Set(['', 'toggle', 'signal', 'open', 'on', 'close', 'off', 'nop', 'flip', 'shovel', 'grow', 'shuffle', 'closeall', 'orientate', 'turn', 'turnback', 'ignite', 'inner_pull', 'kill', 'forcefire', 'setfire', 'stopfire', 'heat', 'hit']);

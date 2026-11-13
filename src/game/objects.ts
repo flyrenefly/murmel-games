@@ -464,6 +464,8 @@ export interface GameObject {
   swapped?: { since: number; dir: number };
   /** Seed: growing since this time; box: grown from a seed, growing since this time. */
   growing?: number;
+  /** Picked up into an inventory (Player::pick_up): gone from the field, Lua still finds it by name. */
+  picked?: boolean;
 }
 
 export type ObjectEvent =
@@ -510,7 +512,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_trigger') return 'trigger';
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
-  if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
+  if (/^st_box(_wood(_[hv])?|_hay|_rock|_wood_growing|_hay_growing)?$/.test(kind)) return 'box';
   if (MOVABLE_STONE.test(kind)) return 'box'; // pushed like a box, but does not sink
   if (kind === 'st_timer' || kind === 'ot_timer') return 'timer'; // ot_timer: TimerGadget, no cell
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
@@ -1547,6 +1549,7 @@ export class ObjectWorld {
           continue;
         }
         o.gone = true;
+        o.picked = true;
         this.unplace(o);
         let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
         // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
@@ -3926,6 +3929,7 @@ export class ObjectWorld {
     for (const o of this.at(col, row)) {
       if (o.cls !== 'document' || o.gone) continue;
       o.gone = true;
+      o.picked = true;
       this.events.push({ type: 'sound', name: 'pickup' });
       const key = o.attrs.text ?? '';
       this.events.push({ type: 'text', text: this.texts[key] ?? key });
@@ -4148,10 +4152,17 @@ export class ObjectWorld {
   create(kind: string, col: number, row: number, attrs: Record<string, string>): GameObject | null {
     const cls = objectClass(kind);
     if (!cls) return null;
-    const o = this.add(kind === 'st_box_wood' ? (this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v') : kind, cls, col, row);
+    // BoxStone GROWING (st_box_wood_growing, st_box_hay_growing): a box that grows like one from a seed
+    const growing = /^st_box_(wood|hay)_growing$/.test(kind);
+    const base = growing ? kind.replace(/_growing$/, '') : kind;
+    const o = this.add(base === 'st_box_wood' ? (this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v') : base, cls, col, row);
     o.attrs = { ...attrs };
     o.name = attrs.name ?? '';
-    o.state = initialState(kind, attrs);
+    o.state = initialState(base, attrs);
+    if (growing) {
+      o.growing = this.now;
+      this.shatterAt(col, row);
+    }
     if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
     if (o.cls === 'puzzle') this.autoJoinCluster(o);
     this.updateTriggers(col, row);

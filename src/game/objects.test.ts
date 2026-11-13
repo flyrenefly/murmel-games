@@ -1237,6 +1237,18 @@ describe('ObjectWorld', () => {
       expect(w.events).toEqual([]);
     });
 
+    it("st_box_wood_growing set by Lua grows into a named wood box like one from a seed", () => {
+      const w = world([]);
+      const box = w.create("st_box_wood_growing", 4, 0, { name: "box1" })!;
+      expect(box.cls).toBe("box");
+      expect(box.kind).toMatch(/^st_box_wood_[hv]$/);
+      expect(box.name).toBe("box1");
+      expect(box.growing).toBeDefined();
+      expect(w.blockAt(4, 0)).toBe(ALL_FACES);
+      w.update(BOX_GROW_MS);
+      expect(box.growing).toBeUndefined();
+    });
+
     it("cannot drop where an item lies; a box pushed onto a seed or a signal makes it grow", () => {
       const w = world([{ x: 2, y: 0, k: "it_trigger" }, { x: 3, y: 1, k: "st_box_wood" }, { x: 4, y: 1, k: "it_seed_wood" }, { x: 5, y: 2, k: "it_seed", a: { name: "s" } }, { x: 1, y: 2, k: "it_trigger", a: { target: "s", action: "grow" } }]);
       w.inventory.push("it_seed_wood");

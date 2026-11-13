@@ -264,7 +264,7 @@ export function objectImages(kind: string): string[] {
     const look = movableLook(kind);
     return look ? [look.image, look.shadow] : [];
   }
-  if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
+  if (kind.startsWith('st_box')) return ['st_box_wood', 'st_box_hay', 'st_box_rock', 'st_box_wood_growing', 'sh_round', 'fl_wood_framed', 'fl_hay', 'fl_rock'];
   const sw = /^st_switch(_black|_white)?/.exec(kind);
   if (sw) return [`st_switch${sw[1] ?? ''}`, 'sh_round'];
   if (kind.startsWith('st_door')) {
