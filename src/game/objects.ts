@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone' | 'jamb' | 'floorref';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone' | 'jamb' | 'floorref' | 'forward' | 'rps' | 'stoneref';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -430,6 +430,8 @@ export interface GameObject {
   pass?: { next: number; dir: number; blocked: boolean; blink: boolean; breaking?: number };
   /** Thief: phase (none = idle), its start, the marble robbed and the loot in its bag. */
   thief?: { phase?: 'emerge' | 'retreat' | 'capture'; since?: number; victim?: number; loot: string[] };
+  /** fl_forward: next alarm, the stone seen then and when it gets the impulse (80 ms later). */
+  forward?: { next: number; stone: GameObject | null; pushAt?: number };
   /** fl_thief: marbles on the floor in the last step (actor_enter). */
   inside?: number[];
   /** Bag (it_bag): the items it holds. */
@@ -464,6 +466,8 @@ export interface GameObject {
   swapped?: { since: number; dir: number };
   /** Seed: growing since this time; box: grown from a seed, growing since this time. */
   growing?: number;
+  /** Picked up into an inventory (Player::pick_up): gone from the field, Lua still finds it by name. */
+  picked?: boolean;
 }
 
 export type ObjectEvent =
@@ -510,7 +514,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_trigger') return 'trigger';
   if (kind === 'it_document') return 'document';
   if (/^st_grate(_cross|_framed)?$/.test(kind)) return 'grate';
-  if (/^st_box(_wood(_[hv])?|_hay|_rock)?$/.test(kind)) return 'box';
+  if (/^st_box(_wood(_[hv])?|_hay|_rock|_wood_growing|_hay_growing)?$/.test(kind)) return 'box';
   if (MOVABLE_STONE.test(kind)) return 'box'; // pushed like a box, but does not sink
   if (kind === 'st_timer' || kind === 'ot_timer') return 'timer'; // ot_timer: TimerGadget, no cell
   if (kind === 'st_quake' || kind === 'st_fake_quake') return 'quake';
@@ -561,6 +565,9 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_surprise') return 'stsurprise';
   if (kind === 'st_spitter') return 'spitter';
   if (kind === 'fl_ref') return 'floorref';
+  if (kind === 'st_ref') return 'stoneref';
+  if (kind === 'fl_forward') return 'forward';
+  if (kind === 'st_document' || kind === 'st_pebble') return 'rps';
   if (/^st_jamb(_black|_white)?$/.test(kind)) return 'jamb';
   if (/^st_yinyang(_instant|_active|_inactive)?$/.test(kind)) return 'yystone';
   if (kind === 'it_trap') return 'trap';
@@ -705,6 +712,7 @@ export class ObjectWorld {
       this.objects.push(o);
       this.place(o);
       if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
+      if (o.cls === 'forward') this.forwardStep(o); // ForwardFloor::on_creation: the alarm starts now
     }
   }
 
@@ -714,7 +722,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref' || o.cls === 'forward' || o.cls === 'stoneref') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -722,7 +730,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref') return;
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief' || o.cls === 'floorref' || o.cls === 'forward' || o.cls === 'stoneref') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -756,7 +764,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter' || o.cls === 'yystone' || o.cls === 'jamb') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter' || o.cls === 'yystone' || o.cls === 'jamb' || o.cls === 'rps') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -866,11 +874,23 @@ export class ObjectWorld {
         return;
       }
       if (o.cls === 'scissors') {
-        // ScissorsStone::actor_hit: snip (130 ms) and "disconnect" the actor
-        if (by >= 0) {
+        // ScissorsStone::actor_hit: snip (130 ms) and "disconnect" the actor; adjacent and fellow stones get "_scissors"
+        if (by >= 0 && o.breaking === undefined) {
           o.pulse = this.now;
           this.events.push({ type: 'scissors', marble: by, col: o.col, row: o.row });
+          this.rpsSignal(o, '_scissors');
         }
+        return;
+      }
+      if (o.cls === 'rps') {
+        // DocumentStone::actor_hit: shows its text, neighbours and fellows get "_paper";
+        // PebbleStone::actor_hit: they get "_pebble" (not while breaking)
+        if (by < 0 || o.breaking !== undefined) return;
+        if (o.kind === 'st_document') {
+          const key = o.attrs.text;
+          if (key) this.events.push({ type: 'text', text: this.texts[key] ?? key });
+          this.rpsSignal(o, '_paper');
+        } else this.rpsSignal(o, '_pebble');
         return;
       }
       if (o.cls === 'rubberstone') {
@@ -1146,6 +1166,22 @@ export class ObjectWorld {
     return true;
   }
 
+  /**
+   * BoxStone::on_floor_change: the floor under a box became abyss, water or swamp (Lua set_floor):
+   * the box sinks and becomes a framed floor, as when pushed there.
+   */
+  floorChanged(col: number, row: number): void {
+    if (!SINK_FLOORS.has(this.env.floorAt(col, row))) return;
+    for (const o of [...this.at(col, row)]) {
+      if (o.gone || !o.kind.startsWith('st_box')) continue;
+      o.gone = true;
+      this.unplace(o);
+      this.env.setFloor(col, row, bridgeFloor(o.kind));
+      this.events.push({ type: 'floor', col, row });
+      this.updateTriggers(col, row);
+    }
+  }
+
   // ---------- puzzle stones (PuzzleStone.cc, Enigma mode) ----------
 
   private puzzleAt(col: number, row: number, color: string): GameObject | null {
@@ -1351,6 +1387,47 @@ export class ObjectWorld {
     return out;
   }
 
+  /**
+   * ForwardFloor: every `interval` s (default 0.6, 0 = off) remember the stone above, and 0.08 s
+   * later give it an impulse in the floor's direction (state W 0, S 1, E 2, N 3) if it is still there.
+   */
+  private forwardStep(o: GameObject): void {
+    const iv = o.attrs.interval === undefined || o.attrs.interval === '' ? 0.6 : Number(o.attrs.interval);
+    if (!(iv >= 0.2)) return;
+    if (!o.forward) {
+      o.forward = { next: this.now + iv * 1000, stone: null };
+      return;
+    }
+    const f = o.forward;
+    if (f.pushAt !== undefined && this.now >= f.pushAt) {
+      f.pushAt = undefined;
+      if (f.stone && this.stoneObjectAt(o.col, o.row) === f.stone) this.sendImpulse(o.col, o.row, o.state & 3);
+    }
+    if (this.now >= f.next) {
+      f.next += iv * 1000;
+      f.stone = this.stoneObjectAt(o.col, o.row);
+      f.pushAt = this.now + 80;
+    }
+  }
+
+  /** Document, pebble and scissors stones: the message goes to the four neighbouring stones and the fellows. */
+  private rpsSignal(o: GameObject, msg: '_paper' | '_pebble' | '_scissors'): void {
+    const to = new Set<GameObject>();
+    for (const [dx, dy] of STEPS) {
+      const st = this.stoneObjectAt(o.col + dx, o.row + dy);
+      if (st) to.add(st);
+    }
+    for (const t of splitTokens(o.attrs.fellows)) for (const f of this.resolve(t)) if (!f.gone && !isItem(f)) to.add(f);
+    for (const t of to) {
+      // scissors cut paper, paper wraps pebble, pebble breaks scissors (doBreak: only an idle stone)
+      const breaks = (msg === '_scissors' && t.kind === 'st_document') || (msg === '_paper' && t.kind === 'st_pebble') || (msg === '_pebble' && t.cls === 'scissors');
+      if (breaks && t.breaking === undefined) {
+        t.breaking = this.now;
+        this.events.push({ type: 'sound', name: 'explode' });
+      }
+    }
+  }
+
   /** Stone::send_impulse: a stone receives an impulse in Enigma direction d. */
   private sendImpulse(col: number, row: number, d: number): void {
     const [dx, dy] = STEPS[d];
@@ -1547,6 +1624,7 @@ export class ObjectWorld {
           continue;
         }
         o.gone = true;
+        o.picked = true;
         this.unplace(o);
         let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
         // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
@@ -3926,6 +4004,7 @@ export class ObjectWorld {
     for (const o of this.at(col, row)) {
       if (o.cls !== 'document' || o.gone) continue;
       o.gone = true;
+      o.picked = true;
       this.events.push({ type: 'sound', name: 'pickup' });
       const key = o.attrs.text ?? '';
       this.events.push({ type: 'text', text: this.texts[key] ?? key });
@@ -4001,6 +4080,9 @@ export class ObjectWorld {
       if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
       if (o.cls === 'shogundot' && !o.gone) this.shogunDotStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
+      if (o.cls === 'forward' && !o.gone) this.forwardStep(o);
+      // st_document_breaking, st_pebble_breaking, st_scissors_breaking: st_break_plain (10 × 50 ms), then gone
+      if ((o.cls === 'rps' || o.cls === 'scissors') && !o.gone && o.breaking !== undefined && this.now - o.breaking >= 10 * 50) this.remove(o);
       if (o.cls === 'flthief' && !o.gone) {
         // ThiefFloor::actor_enter: an idle floor thief emerges for a marble arriving on the floor
         const inside = this.marbles.flatMap((m, i) => (m.init && m.col === o.col && m.row === o.row ? [i] : []));
@@ -4148,10 +4230,17 @@ export class ObjectWorld {
   create(kind: string, col: number, row: number, attrs: Record<string, string>): GameObject | null {
     const cls = objectClass(kind);
     if (!cls) return null;
-    const o = this.add(kind === 'st_box_wood' ? (this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v') : kind, cls, col, row);
+    // BoxStone GROWING (st_box_wood_growing, st_box_hay_growing): a box that grows like one from a seed
+    const growing = /^st_box_(wood|hay)_growing$/.test(kind);
+    const base = growing ? kind.replace(/_growing$/, '') : kind;
+    const o = this.add(base === 'st_box_wood' ? (this.random() < 0.5 ? 'st_box_wood_h' : 'st_box_wood_v') : base, cls, col, row);
     o.attrs = { ...attrs };
     o.name = attrs.name ?? '';
-    o.state = initialState(kind, attrs);
+    o.state = initialState(base, attrs);
+    if (growing) {
+      o.growing = this.now;
+      this.shatterAt(col, row);
+    }
     if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
     if (o.cls === 'puzzle') this.autoJoinCluster(o);
     this.updateTriggers(col, row);
@@ -4269,6 +4358,14 @@ export class ObjectWorld {
 
   private message(o: GameObject, msg: string, value: boolean, num?: number): void {
     if (this.compat < 1.1) msg = API1_RENAMING[`${o.cls}__${msg}`] ?? msg;
+    // st_ref: a plain map stone named as a target; "kill" removes it from the map
+    if (o.cls === 'stoneref') {
+      if (msg === 'kill' && !o.gone) {
+        this.env.setStaticStone?.(o.col, o.row, null);
+        this.remove(o);
+      }
+      return;
+    }
     // "kill": the object is gone
     if (msg === 'kill') {
       this.remove(o);
@@ -4282,6 +4379,13 @@ export class ObjectWorld {
     }
     if (o.cls === 'floorref') {
       this.floorMessage(o.col, o.row, msg, value);
+      return;
+    }
+    // ForwardFloor::message: signal and flip reverse the direction, orientate sets it
+    if (o.cls === 'forward') {
+      if (msg === 'signal' || msg === 'flip') o.state = (o.state + 2) & 3;
+      else if (msg === 'orientate' && num !== undefined && num >= 0 && num <= 3) o.state = num;
+      else this.floorMessage(o.col, o.row, msg, value);
       return;
     }
     // "ignite": burnable items set their floor on fire, dynamite and bombs burn, cracks crack
@@ -4638,6 +4742,11 @@ function initialState(kind: string, a: Record<string, string>): number {
     const s = Number(a.$state);
     if (a.$state !== undefined && a.$state !== '' && s >= -1 && s <= 2) return s;
     return /^it_crack_i/.test(kind) ? -1 : /^it_crack_m/.test(kind) ? 1 : /^it_crack_l/.test(kind) ? 2 : 0;
+  }
+  // ForwardFloor: state = direction (W 0, S 1, E 2, N 3), default west
+  if (kind === 'fl_forward') {
+    const v = Number(a.orientation ?? a.$state);
+    return (a.orientation ?? a.$state) !== undefined && v >= 0 && v <= 3 ? v : 0;
   }
   // MirrorStone: state = orientation (Enigma direction W 0, S 1, E 2, N 3), default north
   if (MIRROR_KIND.test(kind)) {

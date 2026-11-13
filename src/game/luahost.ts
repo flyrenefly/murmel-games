@@ -48,7 +48,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
   const cell = (x: number, y: number) => level.cells[y * level.width + x];
   const byId = (ref: string): GameObject | null => {
     const id = ref.slice(2);
-    return objects.objects.find((o) => o.id === id && !o.gone) ?? null;
+    // a picked-up item lives on in the inventory (Enigma: GetNamedObject still finds it, at its last cell)
+    return objects.objects.find((o) => o.id === id && (!o.gone || o.picked)) ?? null;
   };
   const parse = (ref: string) => {
     const [, l, x, y] = ref.split(':');
@@ -83,7 +84,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       const re = glob(pattern);
       const refs: string[] = [];
       // fl_ref objects stand for named floors, which Lua addresses as cells (c:fl:x:y)
-      for (const o of objects.objects) if (!o.gone && o.name && re.test(o.name)) refs.push(o.cls === 'floorref' ? `c:fl:${o.col}:${o.row}` : `o:${o.id}`);
+      for (const o of objects.objects) if ((!o.gone || o.picked) && o.name && re.test(o.name)) refs.push(o.cls === 'floorref' ? `c:fl:${o.col}:${o.row}` : `o:${o.id}`);
       for (const [ref, a] of attrs) if (a.name && re.test(a.name) && host.exists(ref) && !refs.includes(ref)) refs.push(ref);
       return refs;
     },
@@ -191,6 +192,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         cell(x, y).floor = look;
         delete cell(x, y).force;
         attrs.set(`c:fl:${x}:${y}`, decl);
+        // BoxStone::on_floor_change: a box on new abyss, water or swamp sinks
+        objects.floorChanged(x, y);
       } else if (kind.startsWith('st_')) {
         removeStone(x, y);
         if (look === 'oxyd') {

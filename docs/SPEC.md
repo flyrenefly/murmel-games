@@ -415,6 +415,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Eine Kugel näher als 0,21 an der Strahlachse zerspringt (`_laserhit`). Neues Licht öffnet
   Oxyd-Steine, dreht Felsbrocken um und startet Impulssteine; die erste Berechnung löst nichts
   aus. Auf Strahlfelder kann nichts abgelegt werden. Klänge st-laser, st-mirrorturn.
+  **Beweglich per Attribut** (ab 13.11.2026): `movable = true` setzt in Enigma nur das Flag
+  `OBJBIT_MOVABLE`; der Export (enigma-web `level-export` 420a9755) liefert es als `$movable`. Der
+  Konverter macht daraus `movable = true` (Spiegel, Rotatoren, Todessteine) bzw. für gewöhnliche Steine
+  die `_movable`-Art (z. B. st_rawglass → st_rawglass_movable). Ältere Exporte ohne `$movable`
+  ergeben feste Spiegel.
   **st_laserswitch** (`LaserSwitch.cc`): an, solange Licht auf ihn fällt (Aktion true), sonst
   aus (false); der Anfangszustand löst nichts aus. Bild aus = st_oxydb, an = st_quake pendelnd
   à 50 ms; Treffer klingen metallisch.
@@ -535,7 +540,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   als brennender Gegenstand gesetzt; Lua-Bodennachrichten (setfire, stopfire, heat) fehlen.
 - **Ungerade Zahl Oxyd-Steine** (`OxydStone::initColors`): Zufallssteine ("?") ergänzen zuerst feste
   Farben ohne Partner, dann paarweise freie Farben; ein übriger wird ein Schein-Oxyd (FAKE): Er geht
-  nie auf, schließt einen einzeln offenen Stein und zählt nicht zu den Paaren.
+  nie auf, schließt einen einzeln offenen Stein und zählt nicht zu den Paaren. Bleibt eine feste Farbe ohne
+  Partner, lässt Enigma sie stehen; das Level ist dann nur als Meditationslevel (Perlen in Mulden) lösbar
+  und wird nur dann übernommen (ab 13.11.2026).
 - **Lua: random, obj:is, obj:kind, peepall** (api2init.lua, KindDescriptor::isKind, OxydStone):
   `random` = `math.random`; `is` prüft die Art oder eine Oberart (hier per Präfix: st_oneway passt auf
   st_oneway_black); `peepall` im Levelstart zeigt bei Oxyd-Sorte e die Farben aller Steine außer Schein-Oxyden.
@@ -599,7 +606,16 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_flash** (`SimpleStones.cc` FlashStone): Anstoßen gibt der Kugel der anderen Farbe die Kraft
   distortedVelocity(Geschwindigkeit, 20) und blitzt (5 Bilder à 50 ms).
 - **st_scissors** (`ScissorsStone.cc`): Anstoßen schneidet alle Gummibänder der Kugel; nur wenn eines
-  riss, führt die Schere ihre Aktion aus. Bild 130 ms Schnipp. Abweichung: st_document daneben bleibt.
+  riss, führt die Schere ihre Aktion aus. Bild 130 ms Schnipp. Die vier Nachbarsteine und die `fellows`
+  bekommen „_scissors“ (ein st_document zerbricht).
+- **st_document / st_pebble** (`SimpleStones.cc` DocumentStone, PebbleStone, ab 13.11.2026): Schere, Stein, Papier.
+  Anstoßen zeigt beim Dokument dessen `text` und schickt den vier Nachbarsteinen und den `fellows`
+  „_paper“, beim Kiesel „_pebble“. Schere zerschneidet Papier, Papier wickelt den Kiesel ein, der Kiesel
+  zerbricht die Schere: der getroffene Stein zerbricht (st_break_plain, 10 × 50 ms) und ist dann weg;
+  ein zerbrechender Stein reagiert auf nichts mehr.
+- **st_ref** (ab 13.11.2026): ein benannter gewöhnlicher Kartenstein, den eine Aktion mit „kill“ trifft
+  (z. B. st_rawglass als Tür in „Bodyguard“), bekommt dieses Bezugsobjekt; „kill“ nimmt den Stein aus der
+  Karte, andere Nachrichten wirken nicht.
 - **st_rubberband** (`RubberbandStone.cc`): Anstoßen spannt ein Gummiband von der Kugel zur Steinmitte
   (strength, length, threshold, max), falls noch keins zu diesem Stein besteht; `scissor` (Vorgabe true)
   schneidet vorher die anderen Bänder. Abweichung: mit Zauberstab verschieben fehlt.
@@ -674,7 +690,13 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   bei Stößen, schwerer auf Waagen); es lässt sich nicht ablegen (ITEM_KEEP).
 - **it_surprise** (`SurpriseItem.cc`): abgelegt führt es seine Aktion aus und wird zu einem zufälligen
   Gegenstand aus `selection` (Vorgabe Schirm, Feder, Dynamit, Kaffee, Hammer; ohne dessen Ablegewirkung).
-  Ziel und Auswahl reisen im Inventar mit. Auswahl mit "=Kachel" (Lua) fehlt.
+  Ziel und Auswahl reisen im Inventar mit. "=Taste": siehe **it_surprise mit "=Taste"**.
+- **fl_forward** (`ForwardFloor.cc`, ab 13.11.2026): Förderband. Der Konverter legt den Grundboden des
+  Geschmacks (darkgray, platinum, rough, bright, bridgewood) und ein Objekt `fl_forward` an; Zustand =
+  Richtung (W 0, S 1, E 2, N 3). Alle `interval` s (Vorgabe 0,6; 0 = aus) merkt es sich den Stein darauf
+  und gibt ihm 0,08 s später einen Impuls in seine Richtung, wenn er noch dort liegt (bewegliche Steine
+  rücken weiter). „signal“ und „flip“ drehen die Richtung um, „orientate“ setzt sie. Bild: Pfeile aus
+  `fl_forward` (4 Richtungen × 6 Bilder, 110/90 ms) über dem Grundboden.
 - **it_pencil** (`SimpleItems.cc` Pencil): zeichnet ein Kreuz (it_cross) unter die Kugel, auf Eis einen kleinen
   Wasserriss, und ist verbraucht; liegt dort etwas oder ist es Abgrund, Wasser, Sumpf oder Brücke, bleibt
   er; im Sprung fällt er herunter.
@@ -704,6 +726,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Knopf „Murmel wechseln“ steuert die andere Murmel (`SwapPlayers`); nur die gesteuerte
   spürt die Maus. Beide öffnen Oxyd-Steine, drücken Auslöser, fallen und starten an ihrem
   eigenen Startpunkt neu. `essential` und `AutoRespawn` werden nicht nachgebildet.
+- **ac_marble_glass** (`Balls.cc`, ab 13.11.2026): Glasmurmel (Farbe 2, Masse 0,5, Besitzer YIN), nur als
+  einzige Hauptkugel (ohne schwarze Murmel und Perlen). Sie versinkt nicht im Sumpf, Laserlicht geht
+  durch sie hindurch. Sie zerspringt, wenn sie eine Steinfläche mit mehr als 4 auf den Stein zu trifft
+  (`GetPushDirection`), eine Steinecke mit einem Geschwindigkeitsquadrat über 3
+  (`beforeStoneBounce`) oder einen anderen Akteur mit einem Quadrat der Relativgeschwindigkeit über 16
+  (`on_collision`).
 - **Gummibänder** (`ot_rubberband`, `src/game/rubber.ts`, nach `Rubberband::applyForces`):
   Feder zwischen zwei Akteuren oder einem Akteur und einer Steinmitte. Länger als `length`
   zieht sie mit `strength · (len − length)` (negativ: stößt ab), kürzer als `threshold`
@@ -748,8 +776,30 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Andere `ot_`-Objekte führen zur Ablehnung. Levels, die ot_timer nutzten,
   waren vorher ohne Timer im Spiel (Inverse Maze II und Kaleidoscope fielen deshalb heraus:
   `lib.maze` bzw. `wo:drawRect` mit Resolver im Rückruf fehlen).
+- **API 1 (`src/lua/api1.lua`, ab 13.11.):** Levels mit Enigma-Kompatibilität < 1.10 laufen
+  zusätzlich durch eine eigene Schicht nach `api1init.lua`/`compat.lua`: `create_world`,
+  `set_stone/item/floor`, `fill_*`, `draw_*`, `oxyd`, `doorh/v`, `puzzle`, `gradient` …,
+  `enigma.MakeObject/Get*/SetAttrib/GetAttrib/GetKind/SendMessage/KillStone/AddRubberBand/
+  AddConstantForce`, `SendMessage`, `SetAttrib(s)`, Lua-4-Globale (`strlen`, `getn`,
+  `tinsert`, Winkelfunktionen in Grad …), `TRUE/FALSE`, `PUZ_*`, `SLOPE_*`. Alte Artnamen
+  („st-rock1“) über Enigmas Umbenennungstabelle (`RenamingObjectsNew2Old`) samt Sonderfällen
+  (Schlüssel, Türen, Schalter `instant`, Gefälle `type` → `fl_slope_<form>`), alte
+  Attributnamen (`keycode`, `on`, `dir`, Flags 0/1 …). Im Init-Modus liefert `set_stone`
+  das exportierte Objekt dieses Felds (der Level darf es sich merken), zur Laufzeit setzt es
+  eine Kachel. `enigma.ConserveLevel = FALSE` wird zum Weltwert. Quelltextausgleich für
+  Lua 5.0/5.1 (`runtime.ts` `api1Source`): `arg` in Vararg-Funktionen, unbekannte
+  Escapes wie `"\("`. Bibliotheken mit `el:preload="true"` (`lib/ant`, `lib/natmaze`,
+  `lib/ralf` …, rekursiv, nur mit freier Lizenz) stellt der Importer vor den Levelcode.
+  Nicht nachgebaut: `set_actor`/`AddSignal`/`oxyd_shuffle` während des Spiels, Wurmlochziele
+  per Attribut zur Laufzeit.
+- **Init-Grenze:** Die Init läuft auf der fertigen Welt; ein Level, das würfelt, bis es ein
+  von seinem eigenen Aufbau noch freies Feld findet, endet dort nie. Nach 50 Mio.
+  Lua-Anweisungen bricht `LuaLevel` die Init ab („Level-Init läuft endlos“).
 - **Importprüfung (`tools/lua-check.mjs`):** Rückrufe dürfen nur bekannte Funktionen,
-  Methoden und Arten setzen; abgelehnt werden API 1 (`set_stone`, `enigma.*` …),
+  Methoden und Arten setzen; bei API 1 zählen nur die Funktionen, die die Rückrufe der
+  Levelobjekte erreichen (Aufbaufunktionen laufen nur in der Init), samt alter Artnamen in
+  Literalen und in Globalen wie `mainstone = "st-rock1"`. Abgelehnt werden API 1 nur noch
+  bei Levels ab 1.10 (`set_stone`, `enigma.*` …),
   Bibliotheken (`lib.*`, `res.*` im Spiel), Akteure zur Laufzeit, unbekannte Kachelarten,
   Fehler beim Init. Ziele, die nichts benennen, ignoriert Enigma – der Importer auch
   (außer bei Bibliotheken oder Namen, die im Skript vorkommen).
@@ -799,7 +849,18 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
 - **Karten in Variablen** (`wo:drawMap(ti, pos, karte ^ drehung)`): der Import nimmt alle
   `ti`-Arten des Levels als mögliche Laufzeitkacheln (unbekannte führen zur Ablehnung).
 - **`sender.state = OFF`** an einem `ot_timer` hält ihn an (TimerGadget::setState).
-- **Nicht übernommen:** Pentomino I (enigma_ii/ralf16, Bibliothek `ralf_pento` mit API 1).
+- **Pentomino I** (enigma_ii/ralf16, ab 13.11.): läuft über die API-1-Schicht mit den
+  Enigma-Bibliotheken `lib/ralf_pento` → `lib/ralf` → `lib/ant` (unverändert vor den Code gestellt).
+  Dafür neu:
+  - `st_box_wood_growing`/`st_box_hay_growing` per Skript: wächst wie eine Kiste aus einem Samen.
+  - Wird der Boden unter einer Kiste zu Abgrund, Wasser oder Sumpf (`set_floor`), sinkt sie und
+    wird zum Rahmenboden (`BoxStone::on_floor_change`).
+  - Aufgehobene Gegenstände bleiben für Lua per Name auffindbar, an ihrem letzten Feld
+    (Enigma: der Gegenstand lebt im Inventar weiter; `picked_up("doc")`). Wird so ein Gegenstand
+    wieder abgelegt, findet Lua ihn unter dem alten Namen noch am alten Feld (Abweichung).
+  - `oxyd_shuffle()` während des Spiels wie `wo:shuffleOxyd()`. API-1-`oxyd()` setzt Form b; feste
+    Farben aus `oxyd(x, y, flavor, color)` übernimmt Murmel nicht, die Paare werden gemischt.
+  - Test `src/game/pento1.test.ts` spielt alle zwölf Formen bis zu den echten Oxyd-Steinen.
 
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 

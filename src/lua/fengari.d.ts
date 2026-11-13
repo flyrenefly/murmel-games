@@ -8,6 +8,7 @@ declare module 'fengari' {
     LUA_TNUMBER: number;
     LUA_TSTRING: number;
     LUA_TFUNCTION: number;
+    LUA_MASKCOUNT: number;
     lua_gettop(L: LuaState): number;
     lua_settop(L: LuaState, n: number): void;
     lua_type(L: LuaState, i: number): number;
@@ -27,6 +28,7 @@ declare module 'fengari' {
     lua_getglobal(L: LuaState, k: Uint8Array): number;
     lua_pcall(L: LuaState, nargs: number, nresults: number, errfunc: number): number;
     lua_pop(L: LuaState, n: number): void;
+    lua_sethook(L: LuaState, hook: ((L: LuaState, ar: object) => void) | null, mask: number, count: number): void;
   };
   export const lauxlib: {
     luaL_newstate(): LuaState;

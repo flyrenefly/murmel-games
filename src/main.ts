@@ -256,7 +256,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
       lv.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
     };
     const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: rng, addOxyd, shuffleOxyd }, world, force);
-    const l = await startLua(lv.lua.code, host, lv.lua.libs ?? []);
+    const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     if (level !== lv) return; // another level was loaded meanwhile
     lua = l;
     luaHost = host;
@@ -521,6 +521,10 @@ function onContact(c: Contact): void {
     marbleDies(c.marble, 'sink');
     return;
   }
+  if (c.kind === 'shatter') {
+    marbleDies(c.marble, true);
+    return;
+  }
   if (c.kind === 'object') {
     if (c.by >= 0) objects.touch(c.col, c.row, c.by); // other actors only hit
     if (c.by >= 0 && c.vn < 0 && physics) {
@@ -670,7 +674,8 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     } else if (e.type === 'laserhit') {
       // BasicBall "_laserhit": shatters (not while jumping, falling or in a vortex)
       const m = physics?.marbles[e.marble];
-      if (m && m.active && m.jump <= 0 && falling[e.marble] < 0) marbleDies(e.marble, true);
+      // the glass marble lets the laser through
+      if (m && m.active && !m.glass && m.jump <= 0 && falling[e.marble] < 0) marbleDies(e.marble, true);
     }
     else if (e.type === 'text') showToast(e.text, Math.min(12000, 2500 + e.text.length * 60));
     else if (e.type === 'floor') classic.floorChanged();

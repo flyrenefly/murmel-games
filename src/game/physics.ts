@@ -55,7 +55,9 @@ export type Contact =
   /** A marble collided with another actor (rotor, top, killer). */
   | { kind: 'actor'; actor: EnemyKind; marble: number; speed: number }
   /** A marble sank in the swamp. */
-  | { kind: 'sunk'; marble: number };
+  | { kind: 'sunk'; marble: number }
+  /** The glass marble shattered on a stone or another actor (BasicBall, color GLASS). */
+  | { kind: 'shatter'; marble: number };
 
 /** Who touched a stone: marble index (-1 = another actor) and its colour (0 black, 1 white, 2 none). */
 export interface Toucher {
@@ -96,6 +98,10 @@ export interface Marble extends Body {
   rotor?: boolean;
   /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
   follow?: boolean;
+  /** No owner (owner=DEFAULT, controllers=CTRL_NONE): never steered, never the swapped-to marble. */
+  ownerless?: boolean;
+  /** ac_marble_glass (color 2, mass 0.5): never sinks, ignores lasers, shatters on hard hits. */
+  glass?: boolean;
   /** "essential" actor: its final death restarts the level. */
   essential: boolean;
 }
@@ -104,6 +110,18 @@ export interface Marble extends Body {
 export const PEARL_RADIUS = 13 / 64;
 const PEARL_MASS = 0.7;
 const isPearl = (k: string): boolean => /^ac_pearl(_white|_black)?$/.test(k);
+/** Marble traits (Balls.cc): the glass marble weighs 0.5. */
+const GLASS_MASS = 0.5;
+/**
+ * BasicBall::beforeStoneBounce (GLASS): it shatters when hitting a stone face with more than 4
+ * towards it (GetPushDirection), or an outer corner with a squared speed above 3.
+ */
+export function glassBreaks(nx: number, ny: number, vx: number, vy: number): boolean {
+  const vn = vx * nx + vy * ny;
+  if (vn >= 0) return false;
+  const face = Math.abs(nx) > 0.999 || Math.abs(ny) > 0.999;
+  return face ? vn < -4 : vx * vx + vy * vy > 3;
+}
 
 /** ac_marble-jump: PingPong of 4 frames à 70 ms (models-2d.lua). */
 export const JUMP_SECONDS = 8 * 0.07;
@@ -200,8 +218,15 @@ export class PhysicsWorld {
     this.enemies = createEnemies(level.actors ?? []);
     // Without a black marble the first pearl is ball 0 (it stays a pearl).
     const mp = level.mainPearl;
+    const glass = mp?.k === 'ac_marble_glass' ? makeMarble(2, level.start.x, level.start.y) : null;
+    if (glass) {
+      glass.glass = true;
+      glass.mass = GLASS_MASS;
+    }
     this.marbles = [
-      mp?.k === 'ac_marble_white'
+      glass
+        ? glass // the glass marble is the main ball (owner YIN, controllers 1)
+        : mp?.k === 'ac_marble_white'
         ? makeMarble(1, level.start.x, level.start.y) // a single white marble is the main ball
         : mp
         ? makeMarble(mp.k === 'ac_pearl_black' || mp.a?.color === '0' ? 0 : 1, level.start.x, level.start.y, true, { x: Number(mp.a?.velocity_x) || 0, y: Number(mp.a?.velocity_y) || 0 })
@@ -212,8 +237,10 @@ export class PhysicsWorld {
     for (const white of level.actors ?? []) {
       if (white.k !== 'ac_marble_white' && white.k !== 'ac_marble_black') continue;
       const w = makeMarble(white.k === 'ac_marble_black' ? 0 : 1, white.x, white.y);
-      w.follow = white.k === 'ac_marble_black';
       w.passive = white.a?.passive === 'true';
+      w.ownerless = white.a?.ownerless === 'true';
+      // further steered marbles of a colour move with the current one of that colour (controllers 1 / 2)
+      w.follow = !w.passive && (white.k === 'ac_marble_black' || this.marbles.some((o) => o.color === 1 && !o.pearl && !o.passive));
       w.essential = white.a?.essential === '1';
       this.marbles.push(w);
       whites.set(white, w);
@@ -374,7 +401,7 @@ export class PhysicsWorld {
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
       const cur = this.marbles[this.cur];
-      const k = i === this.cur || m.pearl || (m.follow && cur && cur.color === 0) ? adhesion : 0;
+      const k = i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0;
       const [ffx, ffy] = this.floorForce(m.pos);
       let ux = this.axisForce.x + mx;
       let uy = this.axisForce.y + my;
@@ -444,7 +471,7 @@ export class PhysicsWorld {
     const c = Math.floor(m.pos.x);
     const r = Math.floor(m.pos.y);
     const floor = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.cells[r * this.width + c].floor : '';
-    if (floor !== 'fl_swamp') {
+    if (floor !== 'fl_swamp' || m.glass) {
       m.sink = 0;
       return;
     }
@@ -524,6 +551,13 @@ export class PhysicsWorld {
         if (relspeed < 0) continue; // moving apart
         // Marbles come first: a1 is a marble whenever one of the two is.
         const mi = this.marbles.indexOf(a1 as Marble);
+        // BasicBall::on_collision (GLASS): shatters at a squared relative speed above 16
+        for (const g of [a1, a2]) {
+          const gi = this.marbles.indexOf(g as Marble);
+          const dvx = a1.vel.x - a2.vel.x;
+          const dvy = a1.vel.y - a2.vel.y;
+          if (gi >= 0 && (g as Marble).glass && dvx * dvx + dvy * dvy > 16) onContact({ kind: 'shatter', marble: gi });
+        }
         // a bug or horse does not hurt (no on_collision)
         if (mi >= 0 && j >= marbles.length && (a2 as Enemy).kind !== 'bug' && (a2 as Enemy).kind !== 'horse') onContact({ kind: 'actor', actor: (a2 as Enemy).kind, marble: mi, speed: relspeed });
         const dmu = a1.mass === a2.mass ? a1.mass : (2 * a1.mass * a2.mass) / (a1.mass + a2.mass);
@@ -628,6 +662,8 @@ export class PhysicsWorld {
     const isNew = !b.touching.has(key) && !b.nowTouching.has(key);
     if (vn < 0) {
       const speed = Math.hypot(vel.x, vel.y);
+      const gi = (b as Marble).glass ? this.marbles.indexOf(b as Marble) : -1;
+      if (gi >= 0 && glassBreaks(nx, ny, vel.x, vel.y)) onContact({ kind: 'shatter', marble: gi });
       const pushing = b === this.marbles[this.cur] && this.axisForce.x * nx + this.axisForce.y * ny < 0;
       const e = pushing && -vn < REST_SPEED ? 0 : RESTITUTION;
       vel.x -= (1 + e) * vn * nx;
@@ -665,9 +701,9 @@ export class PhysicsWorld {
 
   /** player::SwapPlayers: to the other marble (also a passive one, through a yin-yang item). */
   swap(): boolean {
-    if (this.marbles.filter((m) => !m.pearl && !m.follow).length < 2) return false;
+    if (this.marbles.filter((m) => !m.pearl && !m.follow && !m.ownerless).length < 2) return false;
     do this.cur = (this.cur + 1) % this.marbles.length;
-    while (this.marbles[this.cur].pearl || this.marbles[this.cur].follow);
+    while (this.marbles[this.cur].pearl || this.marbles[this.cur].follow || this.marbles[this.cur].ownerless);
     this.mouse.x = this.mouse.y = 0;
     this.mouseTime = 0;
     return true;
