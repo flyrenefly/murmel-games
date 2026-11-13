@@ -33,6 +33,7 @@ import { indexOfLevel, startFromHash } from './startlink';
 import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
 import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
+import { AUS, IOS_HINWEIS, type Moeglich, moeglich, schluesselLaden, standText, umgebung, VERWEIGERT_HINWEIS, type Wahl, wahlAnwenden } from './webpush';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -471,7 +472,7 @@ async function aufgabeSpielen(a: Aufgabe): Promise<void> {
 
 /** Today's and this week's task above the packs; they appear when the answer is there (not offline). */
 function aufgabenZeigen(packs: { id: string; title: string }[]): void {
-  void aufgabenLaden().then((tasks) => {
+  void Promise.all([aufgabenLaden(), erinnerungMoeglich()]).then(([tasks, push]) => {
     if (!tasks || levelList.hidden || ovTitle.textContent !== 'Levelpakete') return;
     const rows = (['tag', 'woche'] as const).flatMap((art) => {
       const a = tasks[art];
@@ -480,8 +481,102 @@ function aufgabenZeigen(packs: { id: string; title: string }[]): void {
       const current = aufgabe?.art === art && aufgabe.zeitraum === a.zeitraum;
       return [listButton(`<span>${solved.has(a.level) ? '✓' : '›'}</span><b>${escapeHtml(z.titel)}</b><small>${escapeHtml(z.info)}</small>`, current, () => void aufgabeSpielen(a))];
     });
+    if (rows.length && push.m !== 'nein') {
+      const info = push.m === 'ios-browser' ? 'auf dem Home-Bildschirm' : standText(erinnerungWahl);
+      rows.push(listButton(`<span>›</span><b>Erinnerung</b><small>${escapeHtml(info)}</small>`, false, () => showErinnerung(push)));
+    }
     levelList.prepend(...rows);
   });
+}
+
+// ---------- Erinnerung per Web Push (docs/SPEC-webpush.md, src/webpush.ts) ----------
+let erinnerungWahl: Wahl = store.get<Wahl>('erinnerung', AUS);
+let pushSchluessel: Promise<string | null> | null = null;
+
+/** Can this browser get reminders, and does the server send them? Asks the server once per page. */
+async function erinnerungMoeglich(): Promise<{ m: Moeglich; schluessel: string | null }> {
+  const m = moeglich(umgebung());
+  if (m === 'nein') return { m, schluessel: null };
+  pushSchluessel ??= schluesselLaden();
+  const schluessel = await pushSchluessel;
+  if (!schluessel) pushSchluessel = null; // offline now: ask again next time
+  return { m: schluessel ? m : 'nein', schluessel };
+}
+
+const pushTeile = (erlaubnis: () => Promise<NotificationPermission>) => ({ erlaubnis, registrierung: () => navigator.serviceWorker.getRegistration() });
+
+/** The card with two switches; the browser asks for the permission only after one is switched on. */
+function showErinnerung(push: { m: Moeglich; schluessel: string | null }): void {
+  mode = 'menu';
+  if (push.m === 'ios-browser' || !push.schluessel) return showOverlay('Erinnerung', escapeHtml(IOS_HINWEIS), [['Zurück', () => void showLevels()]]);
+  const schluessel = push.schluessel;
+  showOverlay('Erinnerung', 'Murmel schickt dir eine Mitteilung, sobald um Mitternacht ein neues Level bereitsteht. Ein Konto brauchst du dafür nicht.', [['Fertig', () => void showLevels()]]);
+  const meldung = document.createElement('p');
+  meldung.className = 'note';
+  meldung.setAttribute('role', 'status');
+  if (Notification.permission === 'denied') meldung.textContent = VERWEIGERT_HINWEIS;
+  const boxes: HTMLInputElement[] = [];
+  const schalter = (art: keyof Wahl, titel: string, wann: string) => {
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.id = 'erinnerung-' + art;
+    box.setAttribute('role', 'switch');
+    box.checked = erinnerungWahl[art];
+    box.addEventListener('change', () => {
+      const neu = { ...erinnerungWahl, [art]: box.checked };
+      for (const b of boxes) b.disabled = true;
+      meldung.textContent = '';
+      // straight from the click: Safari shows the permission prompt only then
+      void wahlAnwenden(neu, schluessel, pushTeile(() => Notification.requestPermission())).then((r) => {
+        if (r === 'ok') {
+          erinnerungWahl = neu;
+          store.set('erinnerung', neu);
+          meldung.textContent = neu.tag || neu.woche ? 'Erinnerung ist an.' : 'Erinnerung ist aus.';
+        } else {
+          box.checked = !box.checked;
+          meldung.textContent = r === 'verweigert' ? VERWEIGERT_HINWEIS : 'Das hat nicht geklappt. Bitte versuch es später noch einmal.';
+        }
+        for (const b of boxes) b.disabled = false;
+      });
+    });
+    boxes.push(box);
+    const text = document.createElement('span');
+    text.append(titel, document.createElement('br'), Object.assign(document.createElement('small'), { textContent: wann }));
+    const label = document.createElement('label');
+    label.className = 'konto-schalter';
+    label.htmlFor = box.id;
+    // like the overlay buttons: the click belongs to the card, not to the game
+    label.addEventListener('click', (e) => e.stopPropagation());
+    label.append(box, text);
+    return label;
+  };
+  ovForm.replaceChildren(schalter('tag', 'Neues Tageslevel', 'jeden Tag um Mitternacht'), schalter('woche', 'Neue Wochenaufgabe', 'montags um Mitternacht'), meldung);
+  ovForm.hidden = false;
+}
+
+/** On load: the browser may have changed the subscription; tell the server quietly (no prompt). */
+async function erinnerungAbgleichen(): Promise<void> {
+  if (!erinnerungWahl.tag && !erinnerungWahl.woche) return;
+  const { m, schluessel } = await erinnerungMoeglich();
+  if (m !== 'bereit' || !schluessel) return;
+  if (Notification.permission !== 'granted') {
+    // permission taken back in the browser settings: the reminder is off
+    erinnerungWahl = AUS;
+    store.set('erinnerung', AUS);
+    return;
+  }
+  await wahlAnwenden(erinnerungWahl, schluessel, pushTeile(async () => Notification.permission));
+}
+
+/** "#tageslevel" (a reminder was clicked): start today's level. */
+async function tageslevelOeffnen(): Promise<void> {
+  history.replaceState(null, '', location.pathname + location.search);
+  const tasks = await aufgabenLaden();
+  if (tasks?.tag) await aufgabeSpielen(tasks.tag);
+  else {
+    showStart();
+    showToast('Das Tageslevel ist gerade nicht erreichbar.', 2400);
+  }
 }
 
 /** The task line of the win message: signed in, the run goes to the task's ranking. */
@@ -1216,12 +1311,22 @@ void kontoLaden().then(async () => {
 });
 if (mailLinkPruefen(kontoHost) || anbieterRueckkehrPruefen(kontoHost)) {
   /* a mail link or the way back from Google, Apple, GitHub opened its dialog */
+} else if (location.hash === '#tageslevel') {
+  void tageslevelOeffnen();
 } else if (location.hash === '#konto') {
   // from the forum: "Anmelden" opens the account dialog
   history.replaceState(null, '', location.pathname + location.search);
   openKonto();
 } else showStart();
 if (linkStart && !linkStart.ok) showToast(linkStart.error, 4000);
+void erinnerungAbgleichen();
+// A reminder clicked while the game is open (service worker) or a link with #tageslevel
+navigator.serviceWorker?.addEventListener('message', (e) => {
+  if ((e.data as { murmel?: unknown } | null)?.murmel === 'tageslevel') void tageslevelOeffnen();
+});
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#tageslevel') void tageslevelOeffnen();
+});
 // A mail link opened in a tab that already plays
 window.addEventListener('hashchange', () => void mailLinkPruefen(kontoHost));
 window.addEventListener('hashchange', async () => {
