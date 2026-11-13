@@ -1,0 +1,51 @@
+# Murmel auf dem VPS (/opt/murmel). Nur Caddy veröffentlicht Ports; API und Datenbank bleiben im
+# internen Netz (Docker umgeht ufw bei veröffentlichten Ports).
+name: murmel
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./www:/srv/www:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+  api:
+    image: murmel-api:${MURMEL_VERSION}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://murmel:${POSTGRES_PASSWORD}@db:5432/murmel
+      MURMEL_VERSION: ${MURMEL_VERSION}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: murmel
+      POSTGRES_DB: murmel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U murmel -d murmel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:

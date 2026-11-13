@@ -1,0 +1,10 @@
+[Unit]
+Description=Murmel automatischer Rollout von main
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=murmel
+ExecStart=/opt/murmel/update.sh
+TimeoutStartSec=20min

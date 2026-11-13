@@ -67,6 +67,8 @@ export interface LevelLua {
   named: { l: string; x: number; y: number; a: Record<string, string> }[];
   /** Name and custom attributes of the black marble. */
   marble?: Record<string, string>;
+  /** Enigma libraries the script needs (src/lua/lib, e.g. "libpento"), run before it. */
+  libs?: string[];
 }
 
 export interface Cell {
@@ -175,7 +177,9 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   // Meditation levels (Enigma ChangeMeditation): pearls and hollows instead of Oxyd stones
   // Meditation levels: pearls (also the main pearl, which is not in actors) and meditation hollows
   const meditation = (!!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k))) && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
-  if (signals.length === 0 && !meditation) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
+  // Lua may set Oxyd stones during play (Pentomino: wo[…] = {"st_oxyd"} once the puzzle is done)
+  const luaOxyds = file.lua?.kinds.st_oxyd === 'oxyd';
+  if (signals.length === 0 && !meditation && !luaOxyds) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
 
   // initColors leaves a colour without partner alone; only a meditation level stays solvable then
   assignRandomSymbols(file.id, signals, random, meditation);
@@ -217,7 +221,7 @@ export const FAKE_OXYD = '-';
  * times, then get random colours in pairs (colours not taken by fixed stones); an odd one left
  * over becomes a fake Oxyd stone.
  */
-function assignRandomSymbols(id: string, signals: SignalStone[], random: () => number, allowUnpaired = false): void {
+export function assignRandomSymbols(id: string, signals: SignalStone[], random: () => number, allowUnpaired = false): void {
   const auto = signals.filter((s) => s.symbol === '?');
   const count = new Map<string, number>();
   for (const s of signals) if (s.symbol !== '?') count.set(s.symbol, (count.get(s.symbol) ?? 0) + 1);
@@ -244,6 +248,29 @@ function assignRandomSymbols(id: string, signals: SignalStone[], random: () => n
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   auto.forEach((s, i) => (s.symbol = pool[i]));
+}
+
+/**
+ * wo[pos] = {"st_oxyd"} during play: a new closed Oxyd stone ('?' until wo:shuffleOxyd or its
+ * first hit colours it, see colorNewSignals). Returns it, or null outside the level.
+ */
+export function addSignal(level: Level, col: number, row: number, flavor: string): SignalStone | null {
+  const cell = cellAt(level, col, row);
+  if (!cell) return null;
+  const old = level.signals.find((s) => s.col === col && s.row === row);
+  if (old) return old;
+  cell.stone = 'st_oxyd';
+  delete cell.hollow;
+  const s: SignalStone = { index: level.signals.length, col, row, symbol: '?', flavor };
+  level.signals.push(s);
+  return s;
+}
+
+/** OxydStone::initColors for Oxyd stones made during play: their '?' becomes colours in pairs. */
+export function colorNewSignals(level: Level, random: () => number): boolean {
+  if (!level.signals.some((s) => s.symbol === '?')) return false;
+  assignRandomSymbols(level.id, level.signals, random);
+  return true;
 }
 
 export function cellAt(level: Level, col: number, row: number): Cell | null {

@@ -1,14 +1,14 @@
 import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
-import { cellAt, isDeadly, parseLevel, type Level } from './game/level';
+import { addSignal, cellAt, colorNewSignals, isDeadly, parseLevel, type Level } from './game/level';
 import { bagContents, isBag, ITEM_NAMES, ObjectWorld, type ObjectEvent } from './game/objects';
 import { PairBoard, type PairEvent } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, JUMP_SECONDS, PHYSICS_DT, PhysicsWorld, SINK_DEPTH, type Contact } from './game/physics';
 import type { LevelFile } from './game/level';
 import { applyWorld, makeLuaHost } from './game/luahost';
 import { LEVELS } from './levels';
-import type { LuaLevel } from './lua/runtime';
+import type { LuaHost, LuaLevel } from './lua/runtime';
 import { listPacks, packLevels, packTitle } from './packs';
 import { type ActorSprite, CLASSIC_FALL_SECONDS, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
@@ -104,6 +104,8 @@ let deadForever: boolean[] = [];
 const ownerOf = (i: number): number => (physics?.marbles[i] && physics.marbles[i].color === 1 && !physics.marbles[i].pearl ? 1 : 0);
 /** Lua callbacks of the current level (null = none). */
 let lua: LuaLevel | null = null;
+/** The Lua host of the current level (test helper `tile`). */
+let luaHost: LuaHost | null = null;
 /** wo["GlobalForce"] of the current level. */
 let globalForce = { x: 0, y: 0 };
 let objects: ObjectWorld = new ObjectWorld([], 1);
@@ -216,14 +218,39 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   rotorTime = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
+  luaHost = null;
   if (lv.lua) {
     const ph = physics;
     const ow = objects;
     const { startLua } = await import('./lua');
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random }, world, force);
-    const l = await startLua(lv.lua.code, host);
+    // Oxyd stones made by Lua (Pentomino): a new closed stone; the renderer learns of them once per batch
+    let signalsPending = false;
+    const addOxyd = (x: number, y: number, flavor: string): void => {
+      const s = addSignal(lv, x, y, flavor);
+      if (!s || s.index < board.states.length || level !== lv) return;
+      board.add(s.symbol);
+      ph.addSignal(x, y, s.index);
+      if (signalsPending) return;
+      signalsPending = true;
+      queueMicrotask(() => {
+        signalsPending = false;
+        if (level !== lv) return;
+        if (isClassic()) classic.signalsAdded();
+        else buildRenderer();
+        updateHud();
+      });
+    };
+    const shuffleOxyd = (): void => {
+      if (level !== lv) return;
+      colorSignals();
+      board.shuffle();
+      lv.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
+    };
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random, addOxyd, shuffleOxyd }, world, force);
+    const l = await startLua(lv.lua.code, host, lv.lua.libs ?? []);
     if (level !== lv) return; // another level was loaded meanwhile
     lua = l;
+    luaHost = host;
     ow.onCallback = (fn, value, sender) => l.callback(fn, value, `o:${sender.id}`);
   }
   updateItems();
@@ -415,6 +442,7 @@ function formatTime(secs: number): string {
 function pairsText(): string {
   if (board.totalPairs > 0) return `Paare ${board.solvedPairs}/${board.totalPairs}`;
   const pearls = physics?.marbles.filter((m) => m.pearl).length ?? 0;
+  if (pearls === 0) return ''; // Oxyd stones still to come (made by Lua)
   return `Perlen ${objects.meditationCount().engaged}/${pearls}`;
 }
 
@@ -500,7 +528,17 @@ function onContact(c: Contact): void {
     return;
   }
   sfx.stone(c.speed); // Enigma: every stone hit makes the stone sound
-  if (c.kind === 'signal') handlePairEvents(board.hit(c.index));
+  if (c.kind === 'signal') hitSignal(c.index);
+}
+
+/** OxydStone::initColors: stones made by Lua get their colours with wo:shuffleOxyd or their first hit. */
+function colorSignals(): void {
+  if (colorNewSignals(level, Math.random)) level.signals.forEach((s) => board.setSymbol(s.index, s.symbol));
+}
+
+function hitSignal(index: number): void {
+  colorSignals();
+  handlePairEvents(board.hit(index));
 }
 
 /** Marble i dies: fall animation, then respawn at its start. */
@@ -647,7 +685,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
       const st = board.states[s.index];
       const open = e.msg === 'open' || e.msg === 'on' || (e.msg === 'signal' && e.value) || (e.msg === 'toggle' && st === 'closed');
       const close = e.msg === 'close' || e.msg === 'off' || (e.msg === 'signal' && !e.value) || (e.msg === 'toggle' && st === 'open');
-      if (open) handlePairEvents(board.hit(s.index));
+      if (open) hitSignal(s.index);
       else if (close) handlePairEvents(board.close(s.index));
       else if (e.msg === 'closeall') handlePairEvents(board.closeAll());
       else if (e.msg === 'peepall') classic.peepAll(level.signals.filter((x) => x.symbol !== '-').map((x) => x.index));
@@ -658,7 +696,7 @@ function handleObjectEvents(events: ObjectEvent[]): void {
     } else if (e.type === 'oxyd') {
       // a boulder rolled against an Oxyd stone: it opens like on a marble hit
       const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
-      if (s) handlePairEvents(board.hit(s.index));
+      if (s) hitSignal(s.index);
     }
     else if (e.type === 'quake') {
       sfx.quake();
@@ -1164,6 +1202,10 @@ requestAnimationFrame((t) => {
   },
   /** Test helper: call a Lua function of the level like a callback. */
   luaCall: (fn: string, sender = '') => lua?.callback(fn, true, sender),
+  /** Test helper: set a tile like Lua's wo[pos] = {kind, …} (Lua levels only). */
+  tile: (x: number, y: number, kind: string, attrs: Record<string, string> = {}) => luaHost?.setTile(x, y, kind, attrs),
+  /** Test helper: wo:shuffleOxyd() like Lua (Lua levels only). */
+  shuffleOxyd: () => luaHost?.shuffleOxyd?.(),
   globalForce: () => ({ ...globalForce }),
   friction: () => physics?.frictionFactor ?? 1,
   inventory: () => [...objects.inventory],

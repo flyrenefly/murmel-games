@@ -4215,8 +4215,35 @@ export class ObjectWorld {
     o.name = attrs.name ?? '';
     o.state = initialState(kind, attrs);
     if (o.cls === 'timer' && o.state === 1) this.startTimer(o);
+    if (o.cls === 'puzzle') this.autoJoinCluster(o);
     this.updateTriggers(col, row);
     return o;
+  }
+
+  /**
+   * Stone::autoJoinCluster (PuzzleStone::on_creation): a stone with a "cluster" connects to
+   * neighbours of the same cluster and drops connections to others; a stone without one
+   * adapts clustered neighbours to its own connections. Neighbours: puzzles of its colour.
+   */
+  private autoJoinCluster(o: GameObject): void {
+    const mine = o.attrs.cluster;
+    let conn = this.conn(o);
+    for (const [dx, dy, bit] of STEPS) {
+      const back = bit === 1 ? 4 : bit === 4 ? 1 : bit === 2 ? 8 : 2;
+      const q = this.puzzleAt(o.col + dx, o.row + dy, o.attrs.color ?? '');
+      if (q && q !== o) {
+        const theirs = q.attrs.cluster;
+        const setQ = (c: number) => (q.attrs = { ...q.attrs, $connections: String(c) });
+        if (mine) {
+          if (mine === theirs) {
+            conn |= bit;
+            setQ(this.conn(q) | back);
+          } else if (!theirs && this.conn(q) & back) conn |= bit;
+          else conn &= ~bit;
+        } else if (theirs) setQ(conn & bit ? this.conn(q) | back : this.conn(q) & ~back);
+      } else if (mine) conn &= ~bit;
+    }
+    o.attrs = { ...o.attrs, $connections: String(conn) };
   }
 
   /** obj:kill() / wo[pos] = {"st_nil"}. */

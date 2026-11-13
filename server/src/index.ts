@@ -1,0 +1,25 @@
+import { fileURLToPath } from 'node:url';
+import { buildApp } from './app.ts';
+import { connect, database } from './db.ts';
+import { migrate } from './migrate.ts';
+
+const url = process.env.DATABASE_URL;
+if (!url) throw new Error('DATABASE_URL fehlt');
+const version = process.env.MURMEL_VERSION ?? 'dev';
+const port = Number(process.env.PORT ?? 3000);
+
+const sql = connect(url);
+const done = await migrate(sql, fileURLToPath(new URL('../migrations', import.meta.url)));
+const app = buildApp({ version, db: database(sql), logger: true });
+if (done.length) app.log.info({ migrations: done }, 'migrations applied');
+
+// docker stop sends SIGTERM: finish open requests, close the pool
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.once(signal, async () => {
+    await app.close();
+    await sql.end({ timeout: 5 });
+    process.exit(0);
+  });
+}
+
+await app.listen({ host: '0.0.0.0', port });

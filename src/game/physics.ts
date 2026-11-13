@@ -320,6 +320,12 @@ export class PhysicsWorld {
   private clock = 0;
 
   /** A stone appeared (true) or vanished in a cell at runtime (Lua callbacks). */
+  /** An Oxyd stone made during play (Lua): its cell is the signal stone `index`. */
+  addSignal(col: number, row: number, index: number): void {
+    if (col < 0 || row < 0 || col >= this.width || row >= this.height) return;
+    this.solid[row * this.width + col] = index;
+  }
+
   setSolid(col: number, row: number, solid: boolean): void {
     if (col < 0 || row < 0 || col >= this.width || row >= this.height) return;
     const i = row * this.width + col;

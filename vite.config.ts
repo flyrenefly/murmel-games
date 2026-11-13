@@ -12,6 +12,31 @@ function files(dir: string, rel = ''): string[] {
 }
 
 /**
+ * Content-Security-Policy without 'unsafe-eval': fengari-web builds two helpers with Function() when
+ * it loads. Both are replaced by equivalent plain code (delete in sloppy mode returns false instead of
+ * throwing, hence the try/catch). The third Function() only runs when Lua loads external JavaScript,
+ * which Murmel never does. Fails the build if fengari changes, so the CSP never breaks silently.
+ */
+function cspSafeFengari(): Plugin {
+  const swaps: [string, string][] = [
+    ['Function("t","k","delete t[k]")', '((t,k)=>{try{return delete t[k]}catch{return false}})'],
+    ['Function("return ()=>void 0;")', '(()=>()=>void 0)'],
+  ];
+  return {
+    name: 'murmel-csp-fengari',
+    transform(code, id) {
+      if (!/fengari-web[\\/]dist[\\/]fengari-web\.bundle\.js$/.test(id.split('?')[0])) return null;
+      let out = code;
+      for (const [from, to] of swaps) {
+        if (!out.includes(from)) throw new Error(`fengari-web: ${from} nicht gefunden – CSP-Anpassung prüfen`);
+        out = out.split(from).join(to);
+      }
+      return { code: out, map: null };
+    },
+  };
+}
+
+/**
  * Offline play: writes dist/sw.js from src/sw-template.js with the list of files to precache
  * (everything but the level packs, which are cached when opened) and a version hash of them.
  */
@@ -41,7 +66,7 @@ function offline(): Plugin {
 export default defineConfig({
   // Relative paths so the build works in any webspace folder.
   base: './',
-  plugins: [offline()],
+  plugins: [cspSafeFengari(), offline()],
   build: {
     target: 'es2022',
     assetsInlineLimit: 0,

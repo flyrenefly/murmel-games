@@ -127,7 +127,7 @@ POLIST.__mul = function(a, b)
 end
 POS.__concat = POLIST.__concat
 
-function po(x, y)
+local function newpo(x, y)
   if type(x) == "number" then return newpos(x, y) end
   local t = etype_of(x)
   if t == "group" then return aspolist(x) end
@@ -138,8 +138,39 @@ function po(x, y)
     for _, v in ipairs(x) do l[#l + 1] = topos(v) end
     return newpolist(l)
   end
-  error("po: unbekanntes Argument", 2)
+  error("po: unbekanntes Argument", 3)
 end
+
+-- lua.cc dispatchPositionsReadAccess / WriteAccess: po["name"] is a named position or the position
+-- of a named object; a pattern with * or ? gives a position list. po["name"] = pos names a position.
+local namedpos = {}
+po = setmetatable({}, {
+  __name = "positions",
+  __call = function(_, x, y) return newpo(x, y) end,
+  __index = function(_, name)
+    if type(name) ~= "string" and type(name) ~= "number" then error("Positions: key is not a string", 2) end
+    name = tostring(name)
+    if string.find(name, "[%*%?]") then
+      local l = {}
+      local pat = "^" .. string.gsub(string.gsub(name, "[%^%$%(%)%%%.%[%]%+%-]", "%%%0"), "[%*%?]", {["*"] = ".*", ["?"] = "."}) .. "$"
+      for k, p in pairs(namedpos) do
+        if string.find(k, pat) then l[#l + 1] = newpos(p.x, p.y) end
+      end
+      for _, o in ipairs(no[name]) do l[#l + 1] = topos(o) end
+      return newpolist(l)
+    end
+    local p = namedpos[name]
+    if p then return newpos(p.x, p.y) end
+    local o = no[name]
+    if o._ref then return topos(o) end
+    return nil
+  end,
+  __newindex = function(_, name, p)
+    local q = topos(p)
+    if not q then error("Position naming: value is not a position", 2) end
+    namedpos[tostring(name)] = q
+  end,
+})
 
 -------------------------------------------------------------------------------
 -- attribute values: the bridge transports strings
@@ -238,6 +269,14 @@ end
 function methods.kill(self)
   if INIT or not self._ref then return end
   M.kill(self._ref)
+end
+-- PuzzleStone "get_cluster": the stones of its fragment (joined by matching connections)
+function methods.get_cluster(self)
+  local l = {}
+  if self._ref then
+    for _, r in ipairs(M.cluster(self._ref)) do l[#l + 1] = obj(r) end
+  end
+  return newgroup(l)
 end
 function methods.xy(self)
   local p = topos(self)
@@ -482,8 +521,23 @@ TILE.__concat = function(a, b)
   for _, d in ipairs(astile(b)) do l[#l + 1] = d end
   return setmetatable(l, TILE)
 end
+-- lua.cc tileDeclaration: tile:_declaration() is a deep copy of its declarations
+local function deepcopy(v)
+  if type(v) ~= "table" then return v end
+  local c = {}
+  for k, x in pairs(v) do c[k] = deepcopy(x) end
+  return c
+end
+TILE.__index = {
+  _declaration = function(t)
+    local l = {}
+    for i, d in ipairs(t) do l[i] = deepcopy(d) end
+    return l
+  end,
+}
 
 ti = setmetatable({}, {
+  __name = "tiles",
   __newindex = function(t, k, v) rawset(t, k, astile(v)) end,
   __call = function(_, v) return astile(v) end,
 })
@@ -543,27 +597,72 @@ function wmethods.add(_, a, b)
     M.add(d[1], table.unpack(declargs(d)))
   end
 end
--- api2init.lua drawMap / drawRect / drawBorder during play (in init mode the export holds the world).
--- Resolvers are plain tile tables here (ti); map read directions are not supported.
-local function evaluate(resolver, key)
-  local tile = type(resolver) == "table" and resolver[key] or nil
+-- lua.cc evaluateKey: a resolver is the tile table (ti), a function (key, x, y) or a resolver
+-- context {implementation, finalizer, subresolver, …} whose implementation gets this evaluator.
+local function rawevaluate(resolver, key, x, y)
+  if etype_of(resolver) == "tiles" then return rawget(resolver, key) end
+  if type(resolver) == "function" then return resolver(key, x, y) end
+  if type(resolver) == "table" and type(rawget(resolver, 1)) == "function" then
+    return resolver[1](resolver, rawevaluate, key, x, y)
+  end
+  -- plain tables of tiles (some levels keep their own)
+  if type(resolver) == "table" then return resolver[key] end
+  error("Resolver mit falschem Typ", 3)
+end
+local function evaluate(resolver, key, x, y)
+  local tile = rawevaluate(resolver, key, x or 0, y or 0)
   if tile == nil then error("Murmel kennt die Kachel '" .. tostring(key) .. "' nicht", 3) end
   return tile
 end
 
+-- api2init.lua drawMap: call the resolvers' finalizers from bottom to top
+local function finalizeResolvers(context)
+  if type(context) == "table" and etype_of(context) ~= "tiles" then
+    finalizeResolvers(rawget(context, 3))
+    local finalizer = rawget(context, 2)
+    if type(finalizer) == "function" then finalizer(context) end
+  end
+end
+
+-- api2init.lua drawMap during play (in init mode the export holds the world), with read directions
+-- and maps from wo:newMap.
 function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
   if INIT then return end
   local origin = topos(anchor)
-  if type(arg3) ~= "string" or type(arg4) ~= "table" or (arg5 ~= nil and arg5 ~= 0) then unsupported("wo:drawMap mit dieser Karte") end
-  local ignore, map = arg3, arg4
+  local ignore, map, readdir
+  if etype_of(arg3) == "map" then
+    map, ignore, readdir = arg3, arg3.defaultkey, arg4 or MAP_IDENT
+  else
+    if type(arg3) ~= "string" or type(arg4) ~= "table" then unsupported("wo:drawMap mit dieser Karte") end
+    ignore, map, readdir = arg3, arg4, arg5 or MAP_IDENT
+  end
+  if readdir == 0 then readdir = MAP_IDENT end
   local len = string.len(ignore)
-  for y = 1, #map do
+  local w, h = 0, #map
+  for y = 1, h do w = math.max(w, string.len(map[y]) // len) end
+  local function rot(x, y)
+    if readdir == MAP_IDENT then return x, y end
+    if readdir == MAP_ROT_CW then return h + 1 - y, x end
+    if readdir == MAP_ROT_180 then return w + 1 - x, h + 1 - y end
+    if readdir == MAP_ROT_CCW then return y, w + 1 - x end
+    if readdir == MAP_FLIP_HORIZONTAL then return w + 1 - x, y end
+    if readdir == MAP_FLIP_VERTICAL then return x, h + 1 - y end
+    if readdir == MAP_FLIP_SLASH then return y, x end
+    if readdir == MAP_FLIP_BACKSLASH then return h + 1 - y, w + 1 - x end
+    unsupported("diese Leserichtung")
+  end
+  for y = 1, h do
     local line = map[y]
     for x = 1, string.len(line) // len do
       local key = string.sub(line, len * (x - 1) + 1, len * x)
-      if key ~= ignore then settile(newpos(origin.x - 1 + x, origin.y - 1 + y), evaluate(resolver, key)) end
+      if key ~= ignore then
+        local rx, ry = rot(x, y)
+        local px, py = origin.x - 1 + rx, origin.y - 1 + ry
+        settile(newpos(px, py), evaluate(resolver, key, math.floor(px), math.floor(py)))
+      end
     end
   end
+  finalizeResolvers(resolver)
 end
 
 local function rectargs(arg1, arg2, arg3, arg4, arg5)
@@ -605,10 +704,114 @@ function wmethods.fl(_, p) return fl(p) end
 function wmethods.st(_, p) return st(p) end
 function wmethods.it(_, p) return it(p) end
 
-for _, m in ipairs({"shuffleOxyd", "world", "_register"}) do
+for _, m in ipairs({"world", "_register"}) do
   wmethods[m] = function()
     if not INIT then unsupported("wo:" .. m) end
   end
+end
+-- wo:shuffleOxyd() during play (Oxyd stones made by Lua get their colours here); in init mode
+-- the export already holds the colours.
+function wmethods.shuffleOxyd()
+  if not INIT then M.shuffleoxyd() end
+end
+
+-------------------------------------------------------------------------------
+-- maps (libmap subset: wo:newMap, map ^ transformation, transformation * transformation)
+-------------------------------------------------------------------------------
+
+local MAPTRANS = {__name = "maptransformation"}
+MAP_IDENT = setmetatable({index = 1}, MAPTRANS)
+MAP_ROT_CW = setmetatable({index = 2}, MAPTRANS)
+MAP_ROT_180 = setmetatable({index = 3}, MAPTRANS)
+MAP_ROT_CCW = setmetatable({index = 4}, MAPTRANS)
+MAP_FLIP_BACKSLASH = setmetatable({index = 5}, MAPTRANS)
+MAP_FLIP_HORIZONTAL = setmetatable({index = 6}, MAPTRANS)
+MAP_FLIP_SLASH = setmetatable({index = 7}, MAPTRANS)
+MAP_FLIP_VERTICAL = setmetatable({index = 8}, MAPTRANS)
+MAP_COUNT = 8
+MAP_ALL = {MAP_IDENT, MAP_ROT_CW, MAP_ROT_180, MAP_ROT_CCW, MAP_FLIP_BACKSLASH,
+           MAP_FLIP_HORIZONTAL, MAP_FLIP_SLASH, MAP_FLIP_VERTICAL}
+-- libmap transformation_compose / _power / _inverse
+local COMPOSE = {{1, 2, 3, 4, 5, 6, 7, 8}, {2, 3, 4, 1, 6, 7, 8, 5}, {3, 4, 1, 2, 7, 8, 5, 6}, {4, 1, 2, 3, 8, 5, 6, 7},
+                 {5, 8, 7, 6, 1, 4, 3, 2}, {6, 5, 8, 7, 2, 1, 4, 3}, {7, 6, 5, 8, 3, 2, 1, 4}, {8, 7, 6, 5, 4, 3, 2, 1}}
+MAPTRANS.__mul = function(x, y) return MAP_ALL[COMPOSE[x.index][y.index]] end
+MAPTRANS.__pow = function(x, y)
+  if type(y) ~= "number" then return x * y end
+  local r = MAP_IDENT
+  for _ = 1, y % 4 do r = r * x end
+  return r
+end
+MAPTRANS.__unm = function(x) return MAP_ALL[({1, 4, 3, 2, 5, 6, 7, 8})[x.index]] end
+
+local MAP = {__name = "map"}
+local function newmap(defaultkey, rows)
+  local kl = string.len(defaultkey)
+  local m, width, height = {}, 0, 0
+  for k, line in pairs(rows) do
+    if type(k) == "number" and k == math.floor(k) and k > 0 then
+      height = math.max(height, k)
+      if string.len(line) % kl ~= 0 then error("newMap: Line " .. k .. " doesn't fit to key length (" .. kl .. ").", 3) end
+      width = math.max(width, string.len(line) // kl)
+      m[k] = line
+    end
+  end
+  for y = 1, height do
+    m[y] = (m[y] or "")
+    m[y] = m[y] .. string.rep(defaultkey, width - string.len(m[y]) // kl)
+  end
+  m.__width, m.__height, m.__defaultkey, m.__keylength = whole(width), whole(height), defaultkey, kl
+  return setmetatable(m, MAP)
+end
+-- libmap get: map.width/height/defaultkey/keylength, map[y] the line, map[{x, y}] the key (0-based)
+MAP.__index = function(m, k)
+  if k == "width" or k == "height" or k == "defaultkey" or k == "keylength" then return rawget(m, "__" .. k) end
+  local p = type(k) == "table" and topos(k)
+  if p then
+    local kl = rawget(m, "__keylength")
+    local line = rawget(m, p.y + 1)
+    if not line or p.x < 0 or p.x >= rawget(m, "__width") then return rawget(m, "__defaultkey") end
+    return string.sub(line, p.x * kl + 1, (p.x + 1) * kl)
+  end
+  return nil
+end
+-- libmap transform: map ^ transformation
+MAP.__pow = function(map, op)
+  local w, h = map.width, map.height
+  local function rot(x, y)
+    if op == MAP_IDENT then return x, y end
+    if op == MAP_ROT_CW then return y, h - 1 - x end
+    if op == MAP_ROT_180 then return w - 1 - x, h - 1 - y end
+    if op == MAP_ROT_CCW then return w - 1 - y, x end
+    if op == MAP_FLIP_HORIZONTAL then return w - 1 - x, y end
+    if op == MAP_FLIP_VERTICAL then return x, h - 1 - y end
+    if op == MAP_FLIP_SLASH then return y, x end
+    if op == MAP_FLIP_BACKSLASH then return w - 1 - y, h - 1 - x end
+    error("keine Kartentransformation", 3)
+  end
+  local nw, nh = w, h
+  if op == MAP_ROT_CW or op == MAP_ROT_CCW or op == MAP_FLIP_SLASH or op == MAP_FLIP_BACKSLASH then nw, nh = h, w end
+  local result = {}
+  for y = 1, nh do
+    local line = ""
+    for x = 1, nw do
+      local rx, ry = rot(x - 1, y - 1)
+      line = line .. map[{rx, ry}]
+    end
+    result[y] = line
+  end
+  return newmap(map.defaultkey, result)
+end
+
+function wmethods.newMap(_, defaultkey, arg1, arg2)
+  if type(defaultkey) ~= "string" or defaultkey == "" then error("wo:newMap: default key", 2) end
+  if type(arg1) == "table" and arg2 == nil then return newmap(defaultkey, arg1) end
+  if type(arg1) == "number" and type(arg2) == "number" then
+    local rows = {}
+    for y = 1, arg2 do rows[y] = string.rep(defaultkey, arg1) end
+    return newmap(defaultkey, rows)
+  end
+  if arg1 == nil and arg2 == nil then return newmap(defaultkey, {defaultkey}) end
+  error("wo:newMap: Syntax error. Can't understand arguments.", 2)
 end
 
 -- libmath: lib.math.permutation(n) – the numbers 1..n in random order
@@ -650,15 +853,118 @@ wo = setmetatable({}, {
       if p then settile(p, v) end
     end
   end,
-  __call = function(_, ...)
+  __call = function(_, resolver, ...)
     if not INIT then unsupported("wo() während des Spiels") end
+    -- the export holds the world; the resolvers' finalizers still run (res.pento keeps its areas)
+    finalizeResolvers(resolver)
     return M.size()
   end,
 })
 
--- resolvers only matter for world building, which the export already did
--- (res.maze, res.puzzle … as well: in init mode any resolver just passes its argument on)
+-- Resolvers only matter for world building, which the export already did: unknown ones
+-- (res.maze, res.puzzle …) just pass their argument on. Real ones (api2init.lua): res.autotile,
+-- and those of the libraries Murmel loads (libpento).
 res = setmetatable({}, {__index = function() return function(r) return r end end})
+res.metatable = {__name = "resolver", _type = "resolver", _resolver = true}
+
+function is_resolver(resolver)
+  local t = etype_of(resolver)
+  return t == "tiles" or t == "function" or t == "resolver" or
+    (type(resolver) == "table" and getmetatable(resolver) ~= nil and getmetatable(resolver)._resolver == true)
+end
+
+-- api2init.lua assert_bool / assert_type
+function assert_bool(bool, message, level)
+  if not bool then
+    if type(message) == "string" and message ~= "" then error(message, (level or 1) + 1) end
+    error("Anonymous assertion failed.", (level or 1) + 1)
+  end
+end
+
+function assert_type(object, objname, level, ...)
+  local conditions = {...}
+  local t = etype(object)
+  for _, c in ipairs(conditions) do
+    if c == t
+      or (c == "integer" and type(object) == "number" and math.ceil(object) == object)
+      or (c == "positive" and type(object) == "number" and object > 0)
+      or (c == "non-negative" and type(object) == "number" and object >= 0)
+      or (c == "natural" and type(object) == "number" and math.ceil(object) == object and object >= 0)
+      or (c == "positive integer" and type(object) == "number" and math.ceil(object) == object and object > 0)
+      or (c == "non-empty string" and type(object) == "string" and object ~= "")
+      or (c == "any table" and type(object) == "table")
+      or (c == "valid object" and t == "object" and -object)
+      or (c == "table" and t == "tile") then
+      return
+    end
+  end
+  error("Wrong type for " .. tostring(objname) .. ", is " .. t .. ".", (level or 1) + 1)
+end
+
+-- api2init.lua res.autotile: keys of a range or with a prefix get tiles made from a template,
+-- "%%" in its strings replaced by the key's number or suffix.
+function res.autotile_newtile(context, evaluator, key, x, y, template, substitution)
+  local decl = template:_declaration()
+  local result
+  for _, tile in ipairs(decl) do
+    local add
+    if type(tile) == "string" then
+      add = evaluator(context[3], (string.gsub(tile, "%%%%", substitution)), x, y)
+    else
+      local at = {}
+      for k, val in pairs(tile) do
+        if type(val) == "string" then
+          at[k] = (string.gsub(val, "%%%%", "%%" .. substitution))
+        elseif type(val) == "table" then
+          local tt = {}
+          for j, token in ipairs(val) do
+            tt[j] = type(token) == "string" and (string.gsub(token, "%%%%", "%%" .. substitution)) or token
+          end
+          at[k] = tt
+        else
+          at[k] = val
+        end
+      end
+      add = ti(at)
+    end
+    if result == nil then result = astile(add) else result = result .. add end
+  end
+  ti[key] = result
+end
+
+function res.autotile_implementation(context, evaluator, key, x, y)
+  for _, rule in ipairs(context[4]) do
+    if #rule >= 3 then
+      local first = string.byte(rule[1], #rule[1])
+      local last = string.byte(rule[2], #rule[2])
+      local candidate = string.byte(key, #key)
+      local offset = rule[4] or 1
+      if #rule[1] == #key and string.sub(key, 1, -2) == string.sub(rule[1], 1, -2) and first <= candidate and candidate <= last then
+        local tile = evaluator(context[3], key, x, y)
+        if tile ~= nil then return tile end
+        res.autotile_newtile(context, evaluator, key, x, y, ti[rule[3]], candidate - first + offset)
+        return ti[key]
+      end
+    elseif string.find(key, rule[1], 1, true) == 1 then
+      local tile = evaluator(context[3], key, x, y)
+      if tile ~= nil then return tile end
+      res.autotile_newtile(context, evaluator, key, x, y, ti[rule[2]], string.sub(key, #rule[1] + 1))
+      return ti[key]
+    end
+  end
+  return evaluator(context[3], key, x, y)
+end
+
+function res.autotile(subresolver, ...)
+  assert_bool(is_resolver(subresolver), "res.autotile first argument (subresolver)", 2)
+  local args = {...}
+  for i, rule in ipairs(args) do
+    assert_type(rule, "res.autotile argument " .. (i + 1), 2, "table")
+    assert_bool(#rule >= 2 and #rule <= 4, "res.autotile rule " .. i .. " has wrong number of arguments (must be 2, 3, or 4).", 2)
+    assert_bool(rawget(ti, rule[#rule >= 3 and 3 or 2]), "res.autotile: Missing template tile '" .. tostring(rule[#rule >= 3 and 3 or 2]) .. "'", 2)
+  end
+  return setmetatable({res.autotile_implementation, nil, subresolver, args}, res.metatable)
+end
 
 function cond(condition, iftrue, iffalse)
   if condition then return iftrue end
@@ -720,8 +1026,23 @@ function __describetile(key)
 end
 
 -- Object::performAction → lua::CallFunc(name, value, sender)
+-- lua::CallFunc also resolves dotted names ("pento.next": a function in a table)
+local function lookup(name)
+  local v = _G
+  for part in string.gmatch(name, "[^%.]+") do
+    if type(v) ~= "table" then return nil end
+    v = v[part]
+  end
+  return v
+end
+
 function __callback(name, value, ref)
-  local f = _G[name]
+  local f = lookup(name)
   if type(f) ~= "function" then return end
   f(value, obj(ref))
+end
+
+-- For the importer: whether a target names a Lua function after the init (also "pento.next")
+function __isfunction(name)
+  return type(lookup(name)) == "function"
 end
