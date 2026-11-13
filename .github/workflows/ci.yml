@@ -20,6 +20,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # Server (API): eigene Abhängigkeiten, Typprüfung und Tests
+      - run: npm ci --ignore-scripts
+        working-directory: server
+      - run: npm run typecheck
+        working-directory: server
+      - run: npm test
+        working-directory: server
       - uses: actions/upload-artifact@v7
         with:
           name: site
