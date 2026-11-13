@@ -540,7 +540,7 @@ btnRestart.addEventListener('click', (e) => {
 });
 /** Yin-yang (it_yinyang): steer the other marble. */
 function swapMarble(): void {
-  if (mode === 'play') session?.swapMarble();
+  if (mode === 'play') session?.act('swap');
 }
 btnSwap.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -548,7 +548,7 @@ btnSwap.addEventListener('click', (e) => {
 });
 /** player::ActivateFirstItem: use or drop the first item; false = no item. */
 function dropItem(): boolean {
-  return mode === 'play' && !!session?.dropItem();
+  return mode === 'play' && !!session?.act('drop');
 }
 /** The level has a spring to pick up. */
 function hasSpring(): boolean {
@@ -576,7 +576,7 @@ function updateItems(): void {
 }
 /** Right click / Tab: rotate the inventory (player::RotateInventory). */
 function rotateItems(): void {
-  if (mode === 'play') session?.rotateItems();
+  if (mode === 'play') session?.act('rotate');
 }
 btnRotate.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -587,7 +587,7 @@ window.addEventListener('contextmenu', (e) => {
 });
 /** Left click / Space: use the first inventory item; without items the yin-yang swaps marbles. */
 function useItem(): void {
-  if (mode === 'play') session?.useItem();
+  if (mode === 'play') session?.act('use');
 }
 btnDrop.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -690,16 +690,23 @@ requestAnimationFrame((t) => {
   globalForce: () => ({ ...(session?.globalForce ?? { x: 0, y: 0 }) }),
   friction: () => physics?.frictionFactor ?? 1,
   inventory: () => [...objects.inventory],
+  /** Test helper (not recorded: it changes the run directly). */
   push: (x: number, y: number) => {
     if (!physics) return;
     const v = physics.velocity;
     physics.setVelocity(v.x + x, v.y + y);
   },
-  mouse: (dx: number, dy: number) => physics?.addMouseForce(dx * mouseSpeed, dy * mouseSpeed),
+  /** Test helper: mouse movement like the real mouse (goes into the recording). */
+  mouse: (dx: number, dy: number) => {
+    pendingMouse.x += dx * mouseSpeed;
+    pendingMouse.y += dy * mouseSpeed;
+  },
+  /** The recording of the current run (docs/SPEC-aufzeichnung.md). */
+  recording: () => session?.recording() ?? null,
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
   cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),
-  /** Test helper: put the marble at x/y (tile units). */
+  /** Test helper: put the marble at x/y (tile units; not recorded). */
   teleport: (x: number, y: number, i?: number) => physics?.respawn(x, y, i),
 };
 

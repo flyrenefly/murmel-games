@@ -9,6 +9,7 @@ import { applyWorld, makeLuaHost } from './luahost';
 import { ObjectWorld, type ObjectEvent } from './objects';
 import { PairBoard, type PairEvent } from './pairs';
 import { PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
+import { type Action, encodeInput, Recorder, type RecordingInput } from './recording';
 import { createRng } from './rng';
 import type { LuaHost, LuaLevel } from '../lua/runtime';
 import { CLASSIC_FALL_SECONDS } from '../render/classic';
@@ -68,6 +69,14 @@ export interface StepControl {
 
 export const NO_CONTROL: StepControl = { fx: 0, fy: 0, ax: 0, ay: 0 };
 
+/** A recorded run (docs/SPEC-aufzeichnung.md): level, start value and the input of every step. */
+export interface Recording extends RecordingInput {
+  level: string;
+  seed: number;
+  dt: number;
+  result: 'sieg' | 'offen';
+}
+
 export class GameSession {
   readonly level: Level;
   readonly board: PairBoard;
@@ -82,6 +91,8 @@ export class GameSession {
   lua: LuaLevel | null = null;
   luaHost: LuaHost | null = null;
   ui: SessionUI;
+  /** The input of this run while it is played (rounded: a replay uses exactly the same numbers). */
+  private readonly recorder = new Recorder();
 
   /** Still playing: false after the win (physics keeps running, input and timers stop). */
   playing = true;
@@ -259,9 +270,11 @@ export class GameSession {
   step(control: StepControl): void {
     const ph = this.physics;
     const objects = this.objects;
+    // while playing the input is recorded and used rounded (after the win it no longer counts)
+    const [fx, fy, ax, ay] = this.playing ? this.recorder.step(control.fx, control.fy, control.ax, control.ay) : [0, 0, 0, 0];
     const steering = this.playing && this.falling[ph.current] < 0;
-    if (steering && (control.fx !== 0 || control.fy !== 0)) ph.addMouseForce(control.fx, control.fy);
-    if (steering) ph.setAxisForce(control.ax, control.ay);
+    if (steering && (fx !== 0 || fy !== 0)) ph.addMouseForce(fx, fy);
+    if (steering) ph.setAxisForce(ax, ay);
     else ph.setAxisForce(0, 0);
     // Timers count physics steps, not frames: a run replays the same on any refresh rate.
     if (this.playing) this.timerStep(PHYSICS_DT);
@@ -595,6 +608,25 @@ export class GameSession {
   }
 
   // ---------- player actions ----------
+
+  /** An action of the player (recorded, so a replay does the same before the same step). */
+  act(action: Action): boolean {
+    if (!this.playing) return false;
+    this.recorder.action(action);
+    if (action === 'use') {
+      this.useItem();
+      return true;
+    }
+    if (action === 'drop') return this.dropItem();
+    if (action === 'rotate') return this.rotateItems();
+    if (action === 'swap') return this.swapMarble();
+    return false;
+  }
+
+  /** The recording of this run so far. */
+  recording(): Recording {
+    return { ...encodeInput(this.recorder), level: this.level.id, seed: this.seed, dt: PHYSICS_DT, result: this.won ? 'sieg' : 'offen' };
+  }
 
   /** Yin-yang (it_yinyang): steer the other marble. */
   swapMarble(): boolean {

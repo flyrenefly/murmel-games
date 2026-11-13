@@ -1,21 +1,24 @@
 /**
  * Input recording of a run (docs/SPEC-aufzeichnung.md, stage A4): per physics step the force the
- * player added (rounded to 1/1024, so replaying uses exactly the same numbers) and the actions
- * taken before the step. Stored as run lengths: [count, fx, fy] for steps, [count, "action"] for
- * actions.
+ * player added and the force of keys or tilt (rounded to 1/1024, so replaying uses exactly the same
+ * numbers) and the actions taken before the step. Stored as run lengths: [count, fx, fy] or
+ * [count, fx, fy, ax, ay] for steps (the axis force only when it is not 0), [count, "action"] for actions.
  */
 
-export const ACTIONS = ['drop', 'rotate', 'swap', 'restart'] as const;
+export const ACTIONS = ['use', 'drop', 'rotate', 'swap', 'restart'] as const;
 export type Action = (typeof ACTIONS)[number];
 
 /** Input of one physics step. */
 export interface StepInput {
   fx: number;
   fy: number;
+  ax: number;
+  ay: number;
   actions: Action[];
 }
 
-export type Entry = [number, number, number] | [number, Action];
+type Step = [number, number, number] | [number, number, number, number, number];
+export type Entry = Step | [number, Action];
 
 export interface RecordingInput {
   v: 1;
@@ -32,20 +35,20 @@ export function quantize(v: number): number {
 
 export class Recorder {
   private entries: Entry[] = [];
-  private run: [number, number, number] | null = null;
+  private run: Step | null = null;
   steps = 0;
 
-  /** Records one physics step; returns the rounded force the simulation must use. */
-  step(fx: number, fy: number): [number, number] {
-    const qx = quantize(fx);
-    const qy = quantize(fy);
-    if (this.run && this.run[1] === qx && this.run[2] === qy) this.run[0]++;
+  /** Records one physics step; returns the rounded forces the simulation must use. */
+  step(fx: number, fy: number, ax = 0, ay = 0): [number, number, number, number] {
+    const q = [quantize(fx), quantize(fy), quantize(ax), quantize(ay)];
+    const r = this.run;
+    if (r && r[1] === q[0] && r[2] === q[1] && (r[3] ?? 0) === q[2] && (r[4] ?? 0) === q[3]) r[0]++;
     else {
       this.flush();
-      this.run = [1, qx, qy];
+      this.run = q[2] || q[3] ? [1, q[0], q[1], q[2], q[3]] : [1, q[0], q[1]];
     }
     this.steps++;
-    return [qx / SCALE, qy / SCALE];
+    return [q[0] / SCALE, q[1] / SCALE, q[2] / SCALE, q[3] / SCALE];
   }
 
   /** Records an action taken before the next step. */
@@ -58,7 +61,7 @@ export class Recorder {
   }
 
   input(): Entry[] {
-    return this.run ? [...this.entries, [...this.run]] : [...this.entries];
+    return this.run ? [...this.entries, [...this.run] as Step] : [...this.entries];
   }
 
   private flush(): void {
@@ -87,7 +90,7 @@ export function decodeInput(data: unknown): DecodedInput {
   let total = 0;
   for (const e of entries) {
     if (!Array.isArray(e) || !isCount(e[0])) throw new Error('Aufzeichnung: ungültiger Eintrag');
-    if (e.length === 3 && isForce(e[1]) && isForce(e[2])) total += e[0];
+    if ((e.length === 3 || (e.length === 5 && isForce(e[3]) && isForce(e[4]))) && isForce(e[1]) && isForce(e[2])) total += e[0];
     else if (e.length === 2 && (ACTIONS as readonly unknown[]).includes(e[1])) continue;
     else throw new Error('Aufzeichnung: ungültiger Eintrag');
   }
@@ -102,9 +105,9 @@ export function decodeInput(data: unknown): DecodedInput {
           for (let k = 0; k < e[0]; k++) pending.push(e[1]);
           continue;
         }
-        const [count, qx, qy] = e as [number, number, number];
+        const [count, qx, qy, qax = 0, qay = 0] = e as [number, number, number, number?, number?];
         for (let k = 0; k < count; k++) {
-          yield { fx: qx / SCALE, fy: qy / SCALE, actions: pending };
+          yield { fx: qx / SCALE, fy: qy / SCALE, ax: qax / SCALE, ay: qay / SCALE, actions: pending };
           pending = [];
         }
       }

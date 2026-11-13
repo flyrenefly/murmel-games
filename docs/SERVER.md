@@ -47,6 +47,7 @@ api.murmel.games  ── kleiner VPS (Docker) ──  Datenbank + nächtliche Si
 | `api-basis` | IONOS-VPS, PostgreSQL, Reverse-Proxy, Sicherung, Überwachung, Deploy | – |
 | `umzug` | Spiel vom eigenen Server, IONOS-Webspace als Notbetrieb mit Umschaltung | `api-basis` |
 | `konten` | Mail-Link, Passkey, Google/Apple/GitHub; Profil; Konto löschen | `api-basis` |
+| `forum` | Forum für Spieler: Fehler melden, Verbesserungen vorschlagen, Fragen, Rückmeldung zu Levels; Status je Beitrag (offen, geplant, erledigt), Abstimmen, Melden, Moderation durch Admin | `konten` |
 | `sync` | Fortschritt und Bestzeiten geräteübergreifend | `konten`, `lokal` |
 | `bestenliste` | Zeiten je Level, Ranglisten, Prüfung per Nachspielen | `konten`, `aufzeichnung` |
 | `loesbarkeit` | Nächtliches Nachspielen aller Levels mit gespeicherten Lösungen | `api-basis`, `aufzeichnung` |
@@ -66,7 +67,7 @@ api.murmel.games  ── kleiner VPS (Docker) ──  Datenbank + nächtliche Si
 |---|---|---|
 | A | `lokal`, `aufzeichnung`, `editor` | nein – sofort möglich, nutzt auch ohne Konto |
 | B | `api-basis`, `umzug`, `konten` | ja (VPS-Bestellung durch den Nutzer) |
-| C | `sync`, `bestenliste`, `loesbarkeit` | ja |
+| C | `forum`, `sync`, `bestenliste`, `loesbarkeit` | ja |
 | D | `geister`, `spielerlevels`, `tageslevel`, `levelseiten` | ja |
 | E | `mehrspieler`, `wettkampf`, `enigma-upload`, `auswertung`, `cloudstand` | ja |
 
@@ -116,6 +117,19 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
   den Zustand – einfach und ohne Auseinanderlaufen. Erste Levels: die vorhandenen
   Yin-Yang-/Zwei-Murmel-Levels.
 - Kein Konto nötig; Räume verfallen nach 30 min ohne Aktivität.
+
+## 7.1 Forum (`forum`)
+
+Wunsch des Nutzers (13.11.2026): Spieler können Verbesserungen, Fehler usw. posten; die Beiträge
+fließen in die Todo-Liste ein. Gebaut wird der Baustein direkt nach `konten` (Nutzer, 13.11.2026).
+
+- **Lesen ohne Konto, Schreiben nur mit Konto** (`konten`).
+- **Kategorien:** Fehler, Verbesserung, Frage, Level.
+- **Status je Beitrag:** offen, geplant, erledigt – Abstimmen (Daumen hoch), Melden.
+- **Aus dem Spiel heraus „Fehler melden“**, mit Level-Kennung und Spielversion vorausgefüllt.
+- **Admin** (`ADMIN_EMAILS`, kommt mit `konten`): Status setzen, Beiträge ausblenden, Konten sperren.
+- **Spam-Schutz:** Begrenzung je Konto und IP; keine Bilder-Uploads in der ersten Stufe.
+- **Datenschutz:** Die Datenschutzerklärung bekommt einen eigenen Abschnitt, vorher vom Nutzer freigegeben.
 
 ## 8. Betrieb, Datenschutz, Kosten
 
@@ -252,15 +266,22 @@ die Bestenlisten ohnehin entsteht.
   ausgeblendet und vom Nutzer geprüft.
 - Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
 - Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
+- **Mailversand** der Login-Links über ein **IONOS-Postfach von murmel.games**. `info@murmel.games` ist
+  bisher nur eine Weiterleitung: ein echtes Postfach (z. B. `login@murmel.games`) legt der Nutzer in
+  IONOS an und trägt das SMTP-Passwort selbst in `/opt/murmel/.env` ein (Versand über Port 587, Port 25
+  ist am VPS gesperrt).
+- **„Mit Apple anmelden“** nutzt das **Apple-Developer-Konto von WH-Control**. Services ID, Schlüssel
+  und Return-URL legt der Nutzer dort an; die Geheimnisse liegen nur auf dem Server.
+- **`konten` wird gebaut** („Ja, starten“): erste Stufe im Branch `konten` – Mail-Link, Passkey und
+  Admin-Rolle über `ADMIN_EMAILS` in `/opt/murmel/.env`. **Keine Passwörter**; der Anmeldelink per Mail
+  übernimmt die Rolle von „Passwort vergessen“.
+- **Forum** (`forum`, Abschnitt 7.1) wird **direkt im Anschluss an `konten`** gebaut („forum nach den
+  konten bauen“).
+- **Erledigt am 13.11.:** VPS bestellt (Nutzer) und eingerichtet, DNS umgestellt (Abschnitt 9),
+  Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“).
 
 **Noch offen**
-1. **Bauphasen** aus Abschnitt 3 freigeben (Phase A beginnt ohne Server)?
-2. **Mailversand** für Login-Links: über das IONOS-Postfach von murmel.games (Vorschlag für den
-   Start) oder einen Versanddienst?
-3. **VPS-Bestellung** bei IONOS macht der Nutzer selbst (Kauf); danach SSH-Schlüssel für den Deploy.
-4. **DNS-Umstellung** von `murmel.games` auf den Server erst auf ausdrücklichen Auftrag.
-5. **Fremdanmeldung:** Für Apple ist ein kostenpflichtiges Apple-Developer-Konto nötig (das von
-   WH-Control nutzen oder ein eigenes?); Google und GitHub brauchen je eine eigene App-Anmeldung.
+1. **Fremdanmeldung:** Google und GitHub brauchen je eine eigene App-Anmeldung (legt der Nutzer an).
 
 ## 12. Grenzen (für alle Bausteine)
 
