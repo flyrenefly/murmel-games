@@ -24,6 +24,7 @@ import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
 import { Geist, vergleich } from './game/geist';
 import { type Aufgabe, aufgabenLaden, einreichenAufgabe, ergebnisZeile, listenZeile, titelZeile } from './tageslevel';
+import { tippsUI } from './tipps-ui';
 import { auswahl, eigenenLaufSpeichern, eigenerLauf, geistLaden, geisterListe, type Option } from './geister';
 import { editorButton, LINK_PACK, noteLinkWin, openLinkFromHash } from './editor/game-link';
 import { encodeLevel, LINK_PREFIX } from './editor/link';
@@ -166,6 +167,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   buildRenderer();
   updateHud();
   zz.levelGeladen(s);
+  tipps.levelGeladen(s, packList[i], startLua);
 }
 
 function styleLabel(): string {
@@ -606,6 +608,7 @@ function showPause(): void {
     ['Weiterspielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Neustart', restart],
     ['Levels', showLevels],
+    ...tipps.menuePunkt(),
     ['Zu zweit', zz.menue],
     ...linkButtons(),
     [kontoLabel(), openKonto],
@@ -810,15 +813,17 @@ function onWin(): void {
     geistWahl = { level: level.id, titel: `Dein Lauf ${formatBest(s.steps)}`, daten: recording };
     void restart();
   }]];
-  const board = leaderboardLine(recording, s.steps, level.id);
-  const task = aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
+  // a run with a shown way goes to no ranking (docs/SPEC-tipps.md)
+  const ohneRangliste = tipps.wegGezeigt();
+  const board = ohneRangliste ? () => '' : leaderboardLine(recording, s.steps, level.id);
+  const task = !ohneRangliste && aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
   const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const rate: [string, () => void][] = packId === PLAYER_PACK ? [['Bewerten', () => location.assign(listUrl(level.id))]] : [];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${tipps.siegZeile()}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart], ...raceIt, ...ranking, ...rate, ...asSolution]
         : [
@@ -922,6 +927,18 @@ const zz = zuZweit({
   formatTime: formatBest,
 });
 
+// Tipps (docs/SPEC-tipps.md, src/tipps-ui.ts)
+const tipps = tippsUI(
+  {
+    showOverlay,
+    showToast,
+    menue: () => ((mode = 'menu'), input.releaseLock()),
+    spielen: () => (isTouch ? void startTouch() : startPlaying()),
+    aus: () => zz.laeuft() || mode === 'won',
+  },
+  $<HTMLButtonElement>('btn-tipp'),
+);
+
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, 0.1);
   last = now;
@@ -955,6 +972,7 @@ function frame(now: number): void {
         if (!s.won) showToast(`Geist im Ziel: ${formatBest(geist.zeit ?? 0)}`, 2000);
       }
     }
+    tipps.rechnen(s);
   } else {
     input.takeMouse();
     pendingMouse = { x: 0, y: 0 };
@@ -1007,6 +1025,8 @@ function frame(now: number): void {
   actors.push(...zz.geister(dt));
   const ghostSprite = geist?.sprite(a);
   if (ghostSprite) actors.push(ghostSprite);
+  const tippSprite = tipps.sprite(a);
+  if (tippSprite) actors.push(tippSprite);
   // marbles turned into rotors (it_drop) are drawn as rotors
   marbles.forEach((mm, i) => {
     if ((rotorTime[i] ?? 0) > 0 && !deadForever[i]) actors.push({ kind: 'rotor', color: 0, x: mm.x, y: mm.y });
@@ -1163,6 +1183,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyT') cycleStyle();
   else if (e.code === 'KeyR' && mode !== 'menu') restart();
+  else if (e.code === 'KeyH' && mode === 'play') void tipps.oeffnen();
   else if (e.key === '+' || e.code === 'NumpadAdd') changeMouseSpeed(1);
   else if (e.key === '-' || e.code === 'NumpadSubtract') changeMouseSpeed(-1);
   else if (mode === 'menu' && overlay.hidden === false && levelList.hidden && ['Enter', 'Space'].includes(e.code)) {
@@ -1256,6 +1277,8 @@ requestAnimationFrame((t) => {
   start: () => showStart(),
   /** Geister: the ghost of this run (docs/SPEC-geister.md). */
   ghost: () => (geist ? { steps: geist.schritte, done: geist.imZiel, sprite: geist.sprite(1) } : null),
+  /** Tipps: the tip button, the shown way and the counts of this run (docs/SPEC-tipps.md). */
+  tipp: () => tipps.zustand(),
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
   cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),

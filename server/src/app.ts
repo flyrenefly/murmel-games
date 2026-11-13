@@ -3,6 +3,7 @@ import { type Checker, type LeaderboardStore, leaderboardRoutes } from './besten
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type GhostStore, ghostRoutes } from './geister.ts';
 import { type DailyStore, dailyRoutes } from './tageslevel.ts';
+import { tipRoutes } from './tipps.ts';
 import { type AccountOptions, accountRoutes } from './konten.ts';
 import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
 import { raumRoutes, type RoomHub } from './raum.ts';
@@ -28,7 +29,7 @@ export interface AppOptions {
   accounts?: AccountOptions;
   /** Forum (needs accounts); without it the routes are absent. */
   forum?: ForumStore;
-  /** Lösbarkeitsprüfung: solutions and nightly results for admins (needs accounts). */
+  /** Lösbarkeitsprüfung: solutions and nightly results for admins (needs accounts); its solutions also feed the tips. */
   solvability?: SolvabilityStore;
   /** Zu zweit spielen: rooms and the WebRTC handshake (WebSocket /api/raum); without it the route is absent. */
   raum?: RoomHub;
@@ -79,6 +80,8 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   if (accounts) accountRoutes(app, accounts);
   if (accounts && forum) forumRoutes(app, { store: forum, accounts: accounts.store, origin: accounts.origin, now: accounts.now ?? now });
   if (accounts && solvability) solvabilityRoutes(app, solvability);
+  // Tipps: admin solutions for everyone, no account needed (docs/SPEC-tipps.md)
+  if (solvability) tipRoutes(app, { store: solvability, now: () => now().getTime() });
   const clock = accounts?.now ?? now;
   const playerFile = playerLevels && playerFileFor(playerLevels.store);
   const queue = accounts && leaderboard ? leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: clock, solutions: solvability, playerFile }) : undefined;

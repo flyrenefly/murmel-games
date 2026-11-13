@@ -50,6 +50,15 @@ export class Geist {
     }
   }
 
+  /** Plays on without the per-frame limit (a tip starts in the middle of the solution). */
+  vorspulen(steps: number): void {
+    while (this.session.steps < steps && !this.session.won) {
+      const before = this.session.steps;
+      this.folgen(steps);
+      if (this.session.steps === before) return; // the recording ended
+    }
+  }
+
   /** The controlled marble, interpolated like the own one (`alpha` 0…1 between the last two steps). */
   sprite(alpha: number): ActorSprite | null {
     if (this.session.won) return null;
