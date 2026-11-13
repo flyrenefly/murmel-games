@@ -29,7 +29,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Levelseiten (docs/SPEC-levelseiten.md) NICHT auf den IONOS-Webspace (Nutzerentscheidung 13.11.2026):
+      # Der Webspace ist nur Notbetrieb und braucht nur das spielbare Spiel; Levelseiten und Vorschaubilder
+      # (~2300 Dateien, ~90 MB) würden jeden Upload stark verlängern. Live liefert sie der VPS aus.
+      # MURMEL_LEVELSEITEN=0 überspringt das Vite-Plugin; die Sitemap bleibt dann die aus public/.
       - run: npm run build
+        env:
+          MURMEL_LEVELSEITEN: '0'
+      # Absicherung, falls das Plugin doch lief: alles vom Generator Erzeugte entfernen.
+      # deploy-sftp.mjs löscht remote jede Datei, die hier fehlt – Reste auf dem Webspace verschwinden also.
+      - name: Levelseiten nicht spiegeln
+        run: |
+          rm -rf dist/level
+          cp public/sitemap.xml dist/sitemap.xml
       - name: Check credentials
         env:
           SFTP_USER: ${{ secrets.IONOS_SFTP_USER }}
