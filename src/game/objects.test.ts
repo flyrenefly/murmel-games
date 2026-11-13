@@ -1642,3 +1642,21 @@ describe('surprise stone', () => {
     expect(w.objects.filter((o) => !o.gone).map((o) => o.kind)).toEqual(['st_death']);
   });
 });
+
+describe('spitter', () => {
+  it('an extra life loads a cannonball that flies with the hitting velocity and breaks the floor where it lands', () => {
+    const fl: Record<string, string> = {};
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: (c, r) => fl[c + ',' + r] ?? 'fl_gray', setFloor: (c, r, k) => (fl[c + ',' + r] = k) };
+    const w = new ObjectWorld([{ x: 2, y: 2, k: 'st_spitter' }], W, {}, env);
+    w.marbleAt(9, 9);
+    w.inventory.push('it_extralife');
+    // the marble came from the west at 5 tiles/s (after the bounce it moves west again)
+    w.hit(2, 2, 0, -1, 0, -5, -5, 0, 0);
+    expect(w.inventory).toEqual([]);
+    w.update(560);
+    expect(w.cannonballs().length).toBe(1);
+    w.update(570);
+    // 2.5 + 5 × 0.56 = 5.3 → cell 5: an explosion (debris) there
+    expect(w.objects.some((o) => o.cls === 'explosion' && o.col === 5 && o.row === 2)).toBe(true);
+  });
+});

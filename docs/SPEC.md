@@ -589,6 +589,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_drop** (`Drop.cc`): benutzt wird die Kugel für 5 s zu einem steuerbaren Rotor (Radius 22/64): ihre Gummibänder
   reißen, sie fliegt über Abgrund, Wasser, Feuer und Gegenstände, Gegner zerschmettern sie nicht, Schranken mit
   it_drop halten sie auf.
+- **st_spitter, ot_cannonball** (`SpitterStone.cc`, `CannonBall.cc`): stößt eine Kugel mit Extraleben an, lädt er
+  (550 ms) und schießt eine Kanonenkugel mit ihrer Geschwindigkeit vor dem Abprall (höchstens range/0,56); sie
+  fliegt 0,56 s. Beim Aufschlag: Stein → "_cannonball" (Oxyd öffnet, Kanonenstein zerbricht zu einer Mulde
+  außer secure, Eis bricht, Impulsstein stößt, Puzzle explodiert, Braunpyramide verschwindet); sonst ein
+  zerstörbarer Gegenstand oder Boden → Explosion mit Bruch; Dynamit/Bomben explodieren, Risse brechen;
+  auf festem Boden zerschellen Kugeln dort. Nachricht "spit" fehlt.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist

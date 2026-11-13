@@ -226,6 +226,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
+  if (kind === 'st_spitter') return ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
   if (kind === 'st_surprise') return ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow'];
   if (/^st_charge/.test(kind)) return ['st_charge_plus', 'st_charge_minus', 'st_charge_zero', 'sh_rounded'];
   if (kind === 'st_brake' || kind === 'it_brake') return ['st_brake', 'sh_brake', 'it_explosion'];
@@ -393,6 +394,8 @@ export class ClassicView {
     }
 
     this.drawActors(ox, oy);
+    // ot_cannonball: the jumping black marble (ac_cannonball = ac_marble_black-jump)
+    if (this.objects) for (const b of this.objects.cannonballs()) this.drawMarble(ox, oy, { x: b.x, y: b.y, fall: -1, color: 0, sink: 0, jump: b.t });
     // The current ball: a pearl when the level has no black marble (mainPearl)
     if (this.hideMarble) {
       // invisible: nothing drawn
@@ -837,6 +840,12 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'spitter') {
+      const look = world.spitterLook(o);
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame(look.image, look.frame, px, py);
       return;
     }
     if (o.cls === 'stsurprise') {

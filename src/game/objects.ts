@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -27,6 +27,9 @@ export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wo
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
+
+/** CannonBall: flight time = the marble jump animation. */
+const CANNON_MS = 560;
 
 /** st_quaking: ping-pong of 4 frames, repeated, 50 ms each (one animcb cycle). */
 const VOLCANO_QUAKE_MS = 16 * 50;
@@ -405,6 +408,8 @@ export interface GameObject {
   exploding?: number;
   /** Boulder (BoulderStone): phase and start of the current animation cycle. */
   boulder?: { phase: 'init' | 'idle' | 'active' | 'falling'; since: number };
+  /** st_spitter: its phase, since when, and the velocity of the ball it loads. */
+  spit?: { phase: 'active' | 'loading' | 'spitting' | 'breaking'; since: number; vx: number; vy: number };
   /** st_monoflop: when it switches off again. */
   alarmAt?: number;
   /** st_laserflop: held on by laser light. */
@@ -548,6 +553,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'fl_thief') return 'flthief';
   if (kind === 'it_surprise') return 'surprise';
   if (kind === 'st_surprise') return 'stsurprise';
+  if (kind === 'st_spitter') return 'spitter';
   if (kind === 'it_trap') return 'trap';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
@@ -741,7 +747,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -786,6 +792,28 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'spitter') {
+        // SpitterStone::actor_hit: an extra life in the inventory loads a cannonball with the actor's
+        // velocity (before the bounce), at most range / 0.56
+        const s = (o.spit ??= { phase: 'active', since: 0, vx: 0, vy: 0 });
+        if (s.phase !== 'active' || o.state === 0 || by < 0) return;
+        const inv = this.inventories[this.ownerOf(by)] ?? this.inventory;
+        const li = inv.indexOf('it_extralife');
+        if (li < 0) return;
+        inv.splice(li, 1);
+        this.events.push({ type: 'items' });
+        const vp = vx * nx + vy * ny;
+        let px = vx + (vn - vp) * nx;
+        let py = vy + (vn - vp) * ny;
+        const num = (k: string, def: number) => (o.attrs[k] !== undefined && o.attrs[k] !== '' ? Number(o.attrs[k]) : def);
+        const f = num('hit_strength', 1);
+        [px, py] = [(num('hit_distortion_xx', 1) * px + num('hit_distortion_xy', 0) * py) * f, (num('hit_distortion_yx', 0) * px + num('hit_distortion_yy', 1) * py) * f];
+        const max = num('range', 100) / 0.56;
+        const v = Math.hypot(px, py);
+        if (v > max) [px, py] = [(px / v) * max, (py / v) * max];
+        o.spit = { phase: 'loading', since: this.now, vx: px, vy: py };
+        return;
+      }
       if (o.cls === 'stsurprise') {
         // SurpriseStone::actor_hit: its action, then a random stone of its selection replaces it
         this.performAction(o, true);
@@ -2125,6 +2153,93 @@ export class ObjectWorld {
     if (o.gone) return;
     this.remove(o);
     if (!this.itemAt(o.col, o.row)) this.addExplosion(o.col, o.row, 0);
+  }
+
+  // ---------- spitter and cannonballs (SpitterStone.cc, CannonBall.cc) ----------
+
+  /** Flying cannonballs: start position, velocity and start time (flight = the jump animation, 0.56 s). */
+  private balls: { x: number; y: number; vx: number; vy: number; t0: number }[] = [];
+
+  private spitterStep(o: GameObject): void {
+    const s = o.spit;
+    if (!s || s.phase === 'active') return;
+    const age = this.now - s.since;
+    if (s.phase === 'loading' && age >= 5 * 100 + 50) {
+      this.balls.push({ x: o.col + 0.5, y: o.row + 0.5, vx: s.vx, vy: s.vy, t0: this.now });
+      o.spit = { ...s, phase: 'spitting', since: this.now };
+    } else if (s.phase === 'spitting' && age >= 6 * 175) o.spit = { ...s, phase: 'active', since: this.now };
+    else if (s.phase === 'breaking' && age >= 6 * 100) {
+      // SpitterStone::animcb BREAKING: a meditation hollow remains
+      this.remove(o);
+      if (!this.itemAt(o.col, o.row)) {
+        const h = this.add('it_meditation_hollow', 'meditation', o.col, o.row);
+        h.state = -2;
+      }
+    }
+  }
+
+  private ballStep(): void {
+    for (let k = this.balls.length - 1; k >= 0; k--) {
+      const b = this.balls[k];
+      if (this.now - b.t0 < CANNON_MS) continue;
+      this.balls.splice(k, 1);
+      const t = CANNON_MS / 1000;
+      this.cannonLand(Math.floor(b.x + b.vx * t), Math.floor(b.y + b.vy * t));
+    }
+  }
+
+  /** CannonBall::animcb: the stone gets "_cannonball", else the item, else the floor breaks. */
+  private cannonLand(c: number, r: number): void {
+    if (c < 0 || r < 0 || c >= this.width) return;
+    const st = this.stoneObjectAt(c, r);
+    const fixed = st ? null : this.env.staticStone?.(c, r);
+    if (st || fixed) {
+      if (st?.cls === 'spitter' && !truthy(st.attrs.secure)) st.spit = { phase: 'breaking', since: this.now, vx: 0, vy: 0 };
+      else if (st?.cls === 'ice') this.breakStone(st);
+      else if (st?.cls === 'impulse') this.startImpulse(st, -1);
+      else if (st?.cls === 'puzzle') this.explodePuzzle(st);
+      else if (fixed === 'st_oxyd') this.events.push({ type: 'oxyd', col: c, row: r }); // OxydStone "_cannonball": tryOpen
+      else if (fixed === 'st_brownpyramid') this.env.setStaticStone?.(c, r, null);
+      return;
+    }
+    const it = this.itemAt(c, r);
+    if (it) {
+      if (it.cls === 'dynamite' || it.cls === 'bomb') {
+        if (it.cls === 'bomb') this.bombExplode(it);
+        else this.dynamiteExplode(it);
+      } else if (it.cls === 'crack') {
+        this.remove(it);
+        const d = this.add(this.crackWater(it) ? 'it_debris_water' : 'it_debris', 'debris', c, r);
+        d.blast = this.now;
+      } else if (!INDESTRUCTIBLE.has(it.cls)) {
+        this.remove(it);
+        this.addExplosion(c, r, 3);
+        return;
+      }
+      this.shatterAt(c, r);
+      return;
+    }
+    if (HARD_FLOORS.has(this.env.floorAt(c, r))) this.shatterAt(c, r);
+    else this.addExplosion(c, r, 3);
+  }
+
+  /** Flying cannonballs for the renderer: position and flight progress 0..1. */
+  cannonballs(): { x: number; y: number; t: number }[] {
+    return this.balls.map((b) => {
+      const t = Math.min(1, (this.now - b.t0) / CANNON_MS);
+      return { x: b.x + (b.vx * t * CANNON_MS) / 1000, y: b.y + (b.vy * t * CANNON_MS) / 1000, t };
+    });
+  }
+
+  /** Image and frame of a spitter. */
+  spitterLook(o: GameObject): { image: string; frame: number } {
+    const s = o.spit;
+    const age = s ? this.now - s.since : this.now;
+    if (o.state === 0 && (!s || s.phase === 'active')) return { image: 'st_spitter_idle', frame: 0 };
+    if (s?.phase === 'loading') return { image: 'st_spitter_loading', frame: Math.min(5, Math.floor(age / 100)) };
+    if (s?.phase === 'spitting') return { image: 'st_spitter_spitting', frame: Math.min(5, Math.floor(age / 175)) };
+    if (s?.phase === 'breaking') return { image: 'st_spitter_breaking', frame: Math.min(5, Math.floor(age / 100)) };
+    return { image: 'st_spitter_idle', frame: Math.floor(this.now / 150) % 6 };
   }
 
   /** Milliseconds since a time of the object clock. */
@@ -3813,6 +3928,7 @@ export class ObjectWorld {
       if (o.cls === 'coinslot' && !o.gone) this.coinslotStep(o);
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
       if (o.cls === 'volcano' && !o.gone) this.volcanoStep(o);
+      if (o.cls === 'spitter' && !o.gone) this.spitterStep(o);
       // st_laserflop_on starts ON_TIMER
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt === undefined && !o.lasered) o.alarmAt = this.now + (Number(o.attrs.interval) || 1.8) * 1000;
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt !== undefined && this.now >= o.alarmAt) {
@@ -3917,6 +4033,7 @@ export class ObjectWorld {
     }
     this.heatingStep();
     this.floodStep();
+    this.ballStep();
     for (const o of this.objects) {
       const imp = o.impulse;
       if (imp && o.moving && this.now - o.moving.since >= o.moving.dur) {
@@ -4330,6 +4447,8 @@ function onewayFaces(o: GameObject): number {
 }
 
 function initialState(kind: string, a: Record<string, string>): number {
+  // SpitterStone: 1 active (default), 0 idle
+  if (kind === 'st_spitter') return a.$state === '0' ? 0 : 1;
   // MonoFlopStone st_laserflop_on: ON_PENDING (on, the timer runs, no action)
   if (kind === 'st_laserflop_on') return 1;
   // VolcanoStone: 0 inactive, 1 active, 2 new, 3 growing, 4 breaking, 5 finished

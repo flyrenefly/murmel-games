@@ -14,7 +14,7 @@
  {
   "pack": "tutorial_training",
   "title": "Training",
-  "count": 1,
+  "count": 2,
   "of": 2
  },
  {
@@ -38,7 +38,7 @@
  {
   "pack": "enigma_iv",
   "title": "Enigma IV",
-  "count": 81,
+  "count": 83,
   "of": 100
  },
  {
@@ -68,7 +68,7 @@
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 78,
+  "count": 79,
   "of": 100
  },
  {

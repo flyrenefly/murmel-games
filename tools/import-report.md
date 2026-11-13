@@ -1,6 +1,6 @@
 # Enigma-Import
 
-922 von 1322 Levels übernommen (18 Pakete).
+926 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -9,7 +9,7 @@
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
-| Lua-Init | 103 | 5 |
+| Lua-Init | 103 | 6 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -26,7 +26,6 @@
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
 | Lua: :drawRect | 12 | 6 |
-| Stein st_spitter | 9 | 3 |
 | Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
@@ -104,7 +103,6 @@
 | Lua: test() | 1 | 0 |
 | Lua: close() | 1 | 1 |
 | Lua: hollow() | 1 | 0 |
-| Lua: st_spitter | 1 | 1 |
 | Lua: mirror3() | 1 | 0 |
 | Lua: send_group_message() | 1 | 0 |
 | Lua: random_element() | 1 | 0 |
