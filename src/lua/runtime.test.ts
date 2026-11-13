@@ -221,3 +221,22 @@ describe('wo:drawMap during play', () => {
     expect(set).toEqual(['2,3,st_granite', '3,4,st_granite', '0,0,st_granite', '1,0,st_granite']);
   });
 });
+
+describe('res.random during play', () => {
+  it('replaces hit keys by a key chosen by frequency, other keys pass through', async () => {
+    const w = fakeHost([]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await startLua(
+      `ti["-"] = {"fl_sand"}\nti["1"] = {"fl_red"}\nti["2"] = {"fl_blue"}\nti["#"] = {"st_granite"}
+local r = res.random(ti, "-", {{"1", 0}, {"2", 1}})
+local s = res.random(ti, {{"x", "#"}}, "1")
+function f() wo:drawRect(po(0, 0), po(1, 0), "-", r) wo:drawRect(po(2, 0), po(2, 0), "#", r) wo:drawRect(po(3, 0), po(3, 0), "x", s) end`,
+      w.host,
+    );
+    lua.callback('f', true, 'x');
+    expect(lua.lastError).toBe('');
+    // frequency 0 is never chosen; the superkey's tile comes first
+    expect(set).toEqual(['0,0,fl_blue', '1,0,fl_blue', '2,0,st_granite', '3,0,st_granite', '3,0,fl_red']);
+  });
+});

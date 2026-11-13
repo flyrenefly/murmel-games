@@ -40,7 +40,7 @@ export function levelLibs(xml) {
   return [...xml.matchAll(/<el:dependency el:path="([^"]+)"/g)].map((m) => LIBS[m[1]]).filter(Boolean);
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
-const RESOLVERS = new Set(['autotile', 'pento']);
+const RESOLVERS = new Set(['autotile', 'pento', 'random']);
 
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
@@ -111,11 +111,9 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const body = reached.replace(/--[^\n]*/g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
   const locals = new Set([...body.matchAll(/\blocal\s+(?:function\s+)?([A-Za-z_][\w\s,]*)/g)].flatMap((m) => m[1].split(',').map((s) => s.trim())));
   for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
-  // wo:drawMap/drawRect/drawBorder during play: only with plain tile tables (no res.* resolvers, no map objects)
-  const draws = [...body.matchAll(/:\s*(draw(?:Map|Rect|Border))\s*\(/g)].map((m) => m[1]);
-  // (res.autotile, res.pento and wo:newMap with map ^ transformation are built; libmap's other functions are not)
-  const otherResolver = [...code.matchAll(/\bres\.(\w+)/g)].some((m) => !RESOLVERS.has(m[1]));
-  if (draws.length && (otherResolver || /\blib\.map\b/.test(code))) for (const d of new Set(draws)) problems.add(`:${d}`);
+  // wo:drawMap/drawRect/drawBorder during play: only with resolvers the shim builds (ti, res.autotile,
+  // res.random, res.pento; wo:newMap with map ^ transformation), no libmap, and only keys ti knows
+  for (const d of drawCalls(reached.replace(/--[^\n]*/g, ''))) if (!drawOk(d, code)) problems.add(`:${d.method}`);
   // wo:add during play: only items into an inventory (YIN/YANG) and rubber bands
   const raw = reached.replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
@@ -133,6 +131,82 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   // world attributes changed during play: only those the game applies
   for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];
+}
+
+/** The wo:drawMap/drawRect/drawBorder calls in a piece of Lua: method, argument text, drawn keys. */
+export function drawCalls(text) {
+  const calls = [];
+  for (const m of text.matchAll(/:\s*(draw(?:Map|Rect|Border))\s*\(/g)) {
+    let depth = 1;
+    let i = m.index + m[0].length;
+    const start = i;
+    while (i < text.length && depth > 0) {
+      if (text[i] === '"') i = text.indexOf('"', i + 1);
+      else if (text[i] === '(' || text[i] === '{') depth++;
+      else if (text[i] === ')' || text[i] === '}') depth--;
+      if (i < 0) break;
+      i++;
+    }
+    const args = text.slice(start, i < 0 ? text.length : i - 1);
+    // the arguments' own strings: without index expressions (sender["_pos"]) and calls (ti({…}))
+    let flat = args;
+    while (/[[(][^[\]()]*[\])]/.test(flat)) flat = flat.replace(/[[(][^[\]()]*[\])]/g, '');
+    const own = [...flat.replace(/\{[^{}]*\}/g, '').matchAll(/"([^"]*)"/g)].map((s) => s[1]);
+    const keys = [];
+    if (m[1] !== 'drawMap') keys.push(...own); // drawRect/drawBorder: a tile key, not a string inside a tile {…}
+    else if (own.length && own[0].length > 0) {
+      // drawMap(resolver, anchor, ignore, {rows}): the rows cut into keys as long as the ignore key
+      const len = own[0].length;
+      const rows = /\{([^{}]*)\}/.exec(flat)?.[1] ?? '';
+      for (const r of rows.matchAll(/"([^"]*)"/g)) {
+        for (let k = 0; k + len <= r[1].length; k += len) if (r[1].slice(k, k + len) !== own[0]) keys.push(r[1].slice(k, k + len));
+      }
+    }
+    calls.push({ method: m[1], args, keys: [...new Set(keys)] });
+  }
+  return calls;
+}
+
+/** Whether the shim can run a draw call during play: its resolvers are built and ti knows its keys. */
+export function drawOk(call, code) {
+  if (/\blib\.map\b/.test(call.args)) return false;
+  const names = new Set([...call.args.matchAll(/\bres\.(\w+)/g)].map((r) => r[1]));
+  let plainTi = true;
+  for (const id of new Set(call.args.replace(/"[^"]*"/g, '').match(/\b[A-Za-z_]\w*\b/g) ?? [])) {
+    // a resolver kept in a variable (local resolver = res.random(ti, …)) or a map from wo:newMap
+    for (const d of code.matchAll(new RegExp(`(?:^|[^.\\w])${id}\\s*=(?!=)\\s*([^\\n]*)`, 'g'))) {
+      if (/\blib\.map\b/.test(d[1])) return false;
+      for (const r of d[1].matchAll(/\bres\.(\w+)/g)) names.add(r[1]);
+      if (/wo:newMap/.test(d[1])) plainTi = false;
+    }
+  }
+  if ([...names].some((n) => !RESOLVERS.has(n))) return false;
+  if (names.size || !plainTi) return true;
+  // plain tiles: every key the call draws needs a ti entry (else "Murmel kennt die Kachel nicht")
+  const esc = (k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return call.keys.every((k) => new RegExp(`\\[\\s*"${esc(k)}"\\s*\\]\\s*=(?!=)`).test(code));
+}
+
+/**
+ * The keys of all maps a level makes with wo:newMap(ignore, rows), when each one's rows are a literal
+ * table (inline or in a variable defined once); null when one is built otherwise.
+ */
+export function newMapKeys(code) {
+  const keys = new Set();
+  let seen = 0;
+  for (const m of code.matchAll(/wo:newMap\(\s*"([^"]*)"\s*,\s*([A-Za-z_]\w*|\{[^}]*\})\s*\)/g)) {
+    seen++;
+    let rows = m[2];
+    if (!rows.startsWith('{')) {
+      const defs = [...code.matchAll(new RegExp(`(?:^|[^.\\w])${m[2]}\\s*=(?!=)\\s*(\\{[^}]*\\})`, 'g'))];
+      if (defs.length !== 1) return null;
+      rows = defs[0][1];
+    }
+    if (/[^\s,{}]/.test(rows.replace(/"[^"]*"/g, ''))) return null; // not only strings
+    const len = m[1].length || 1;
+    for (const r of rows.matchAll(/"([^"]*)"/g)) for (let i = 0; i + len <= r[1].length; i += len) keys.add(r[1].slice(i, i + len));
+  }
+  return seen === (code.match(/wo:newMap\s*\(/g) ?? []).length ? keys : null;
 }
 
 /** Kinds (st_/fl_/it_/ac_) that callbacks may create: literals in the bodies and in ti entries they use. */
@@ -171,9 +245,14 @@ export function runtimeKinds(code, api1 = false, entries = undefined) {
       for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
     }
   }
-  // maps from wo:newMap kept in variables (parts[kind] ^ rotation): any ti entry may be drawn
+  // maps from wo:newMap kept in variables (parts[kind] ^ rotation): the keys of their rows when every
+  // map is made from literal rows (wo:newMap(" ", part1), local part1 = {"  A ", …}), else any ti entry
   if (/:\s*drawMap\s*\(/.test(body) && /wo:newMap/.test(code)) {
-    for (const d of code.matchAll(/ti\[\s*"[^"]*"\s*\]\s*=([^\n]*)/g)) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+    const mapKeys = newMapKeys(code);
+    for (const d of code.matchAll(/ti\[\s*"([^"]*)"\s*\]\s*=([^\n]*)/g)) {
+      if (mapKeys && !mapKeys.has(d[1])) continue;
+      for (const k of d[2].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+    }
   }
   for (const ch of keys) {
     const key = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

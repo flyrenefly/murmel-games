@@ -966,6 +966,49 @@ function res.autotile(subresolver, ...)
   return setmetatable({res.autotile_implementation, nil, subresolver, args}, res.metatable)
 end
 
+-- api2init.lua res.random: hit keys become a randomly chosen replacement key (by frequency),
+-- optionally on top of a superkey's tile. Callbacks redraw floors with it (wo:drawRect).
+function res.random_implementation(context, evaluator, key, x, y)
+  for _, hit in ipairs(context[4]) do
+    if key == hit[1] then
+      local super = nil
+      if hit[2] ~= nil then super = evaluator(context[3], hit[2], x, y) end
+      local r = math.random() * context[6]
+      local i = 1
+      local s = context[5][i][2]
+      while s < r and context[5][i + 1] do
+        i = i + 1
+        s = s + context[5][i][2]
+      end
+      local replacement = evaluator(context[3], context[5][i][1], x, y)
+      if super == nil then return replacement end
+      return astile(super) .. replacement
+    end
+  end
+  return evaluator(context[3], key, x, y)
+end
+
+function res.random(subresolver, hits, replacements)
+  assert_bool(is_resolver(subresolver), "res.random first argument (subresolver)", 2)
+  assert_type(hits, "res.random second argument (hits)", 2, "non-empty string", "table")
+  assert_type(replacements, "res.random third argument (replacements)", 2, "string", "table")
+  local hit_table = {}
+  if type(hits) == "string" then
+    hit_table[1] = {hits, nil}
+  else
+    for i, v in ipairs(hits) do hit_table[i] = type(v) == "string" and {v, nil} or v end
+  end
+  local repl_table = {}
+  if type(replacements) == "string" then
+    repl_table[1] = {replacements, 1}
+  else
+    for i, v in ipairs(replacements) do repl_table[i] = type(v) == "string" and {v, 1} or v end
+  end
+  local sum = 0
+  for _, v in ipairs(repl_table) do sum = sum + v[2] end
+  return setmetatable({res.random_implementation, nil, subresolver, hit_table, repl_table, sum}, res.metatable)
+end
+
 function cond(condition, iftrue, iffalse)
   if condition then return iftrue end
   return iffalse
