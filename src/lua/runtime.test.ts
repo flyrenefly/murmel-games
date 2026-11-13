@@ -170,9 +170,9 @@ end`;
 
   it('reports Lua errors instead of throwing', async () => {
     const w = fakeHost([]);
-    const lua = await startLua('function boom() wo:drawMap(ti, po(0,0), "", {}) end', w.host);
+    const lua = await startLua('function boom() wo:shuffleOxyd() end', w.host);
     lua.callback('boom', true, 'x');
-    expect(lua.lastError).toMatch(/drawMap/);
+    expect(lua.lastError).toMatch(/shuffleOxyd/);
   });
 });
 
@@ -186,5 +186,17 @@ describe('wo:add during play', () => {
     lua.callback('f', true, 'o:5');
     expect(lua.lastError).toBe('');
     expect(calls).toEqual(['inv 0 it_extralife', 'rubber a:0 o:5 20 2']);
+  });
+});
+
+describe('wo:drawMap during play', () => {
+  it('sets the tiles of a map from ti, skipping the ignore key', async () => {
+    const w = fakeHost([]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await startLua(`ti["#"] = {"st_granite"}\nfunction f() wo:drawMap(ti, po(2, 3), " ", {"# ", " #"}) wo:drawRect(po(0, 0), 2, 1, ti["#"]) end`, w.host);
+    lua.callback('f', true, 'x');
+    expect(lua.lastError).toBe('');
+    expect(set).toEqual(['2,3,st_granite', '3,4,st_granite', '0,0,st_granite', '1,0,st_granite']);
   });
 });

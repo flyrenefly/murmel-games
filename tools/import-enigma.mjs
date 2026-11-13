@@ -348,6 +348,7 @@ async function analyzeLua(xml, exp) {
 function runtimeKind(kind) {
   if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
   if (kind.startsWith('fl_')) {
+    if (kind === 'fl_fake_abyss' || kind === 'fl_fake') return 'fl_fake_abyss'; // FakeFloor: looks like abyss
     if (SPECIAL_FLOORS.test(kind)) return null;
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
@@ -735,7 +736,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       else {
         kinds[k] = v;
         if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-        else if (v !== 'nil') imgs.add(v);
+        else if (v !== 'nil') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
       }
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
@@ -744,7 +745,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (!v) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v !== 'nil') imgs.add(v);
+      else if (v !== 'nil') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)

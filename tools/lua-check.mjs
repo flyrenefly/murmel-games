@@ -42,7 +42,10 @@ export function luaProblems(code, fns) {
   if (API1.test(code)) problems.add('API 1');
   const body = bodies(code).replace(/--[^\n]*/g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
   const locals = new Set([...body.matchAll(/\blocal\s+(?:function\s+)?([A-Za-z_][\w\s,]*)/g)].flatMap((m) => m[1].split(',').map((s) => s.trim())));
-  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add') problems.add(`:${m[1]}`);
+  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
+  // wo:drawMap/drawRect/drawBorder during play: only with plain tile tables (no res.* resolvers, no map objects)
+  const draws = [...body.matchAll(/:\s*(draw(?:Map|Rect|Border))\s*\(/g)].map((m) => m[1]);
+  if (draws.length && (/\bres\.\w+/.test(code) || /\blib\.map\b|wo:newMap|MAP_ROT|MAP_FLIP/.test(code))) for (const d of new Set(draws)) problems.add(`:${d}`);
   // wo:add during play: only items into an inventory (YIN/YANG) and rubber bands
   const raw = bodies(code).replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
@@ -62,6 +65,31 @@ export function luaProblems(code, fns) {
 export function runtimeKinds(code) {
   const body = bodies(code);
   const kinds = new Set([...body.matchAll(/"((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
+  // drawMap/drawRect/drawBorder during play: the tiles of the keys in their string arguments (map lines, keys)
+  const keys = new Set();
+  for (const m of body.matchAll(/:\s*draw(?:Map|Rect|Border)\s*\(/g)) {
+    // the arguments up to the matching parenthesis
+    let depth = 1;
+    let i = m.index + m[0].length;
+    const start = i;
+    while (i < body.length && depth > 0) {
+      if (body[i] === '"') i = body.indexOf('"', i + 1);
+      else if (body[i] === '(' || body[i] === '{') depth++;
+      else if (body[i] === ')' || body[i] === '}') depth--;
+      if (i < 0) break;
+      i++;
+    }
+    const args = body.slice(start, i - 1);
+    for (const str of args.matchAll(/"([^"]*)"/g)) for (const ch of str[1]) keys.add(ch);
+    // tiles kept in variables (SynapseOn = {"fl_redslab"})
+    for (const id of args.replace(/"[^"]*"/g, '').matchAll(/\b([A-Za-z_]\w*)\b/g)) {
+      for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+    }
+  }
+  for (const ch of keys) {
+    const key = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+  }
   for (const m of body.matchAll(/ti\[\s*"([^"]+)"\s*\]/g)) {
     const key = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);

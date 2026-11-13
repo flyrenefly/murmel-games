@@ -1,14 +1,14 @@
 # Enigma-Import
 
-935 von 1322 Levels übernommen (18 Pakete).
+940 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 120 | 8 |
+| Lua: :drawMap | 115 | 4 |
 | Lua-Rückruf | 113 | 5 |
 | keine Oxyd-Steine | 111 | 3 |
+| Lua: st_oxyd | 106 | 0 |
 | Lua: :shuffleOxyd | 106 | 0 |
-| Lua: st_oxyd | 104 | 0 |
 | Lua-Init | 103 | 6 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
@@ -25,7 +25,7 @@
 | Lua: abyss() | 20 | 0 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
-| Lua: :drawRect | 12 | 6 |
+| Lua: :drawRect | 9 | 4 |
 | Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
@@ -41,11 +41,10 @@
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
+| Lua: st_oxyd_d | 5 | 1 |
 | Pferd mit Aktion oder Steuerung | 4 | 1 |
-| Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
 | Wurmloch ohne Ziel | 4 | 1 |
-| Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
@@ -61,6 +60,7 @@
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
 | Lua: res.autotile | 2 | 0 |
+| Lua: st_greenbrown_hollow | 2 | 0 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
@@ -106,7 +106,6 @@
 | Lua: random_element() | 1 | 0 |
 | Lua: test_link() | 1 | 0 |
 | Lua: fl_bridge | 1 | 0 |
-| Lua: st_greenbrown_hollow | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
 | Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
@@ -136,7 +135,6 @@
 | Lizenz: special | 1 | 1 |
 | Lua: gsub() | 1 | 0 |
 | Stein st_stoneimpulse_steady | 1 | 0 |
-| Lua: :drawBorder | 1 | 0 |
 | Lua: lib.lua | 1 | 0 |
 | Lua: st_puzzle_yellow_es | 1 | 0 |
 | Lua: st_puzzle_yellow_sw | 1 | 0 |

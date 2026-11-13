@@ -537,6 +537,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   spannt ein Gummiband (bewegliche Steine werden verfolgt). Andere Objekte zur Laufzeit fehlen.
 - **Lua obj:orientate(dir) / obj:turnback()** (auch auf Gruppen): die Richtung reist als Zahl mit (Einbahnsteine,
   Spiegel, Laser, Felsbrocken, Drehkreuzarme).
+- **Lua wo:drawMap / drawRect / drawBorder während des Spiels** (api2init.lua): mit einfachen Kacheltabellen (ti) als
+  Auflöser; Kartenobjekte, Leserichtungen und res.*-Auflöser fehlen. Der Import erkennt die gesetzten Kacheln an den
+  Kartenzeichen und Variablen der Aufrufe.
 - **st_flat_breakable / _cracked / _burnable / _breaking, st_plaster_breakable / _movable** (`FlatStone.cc`,
   `PlasterStone.cc`): als Bruchsteine mit der st_flat_break-Animation (6 × 50 ms). Hammer bricht
   breakable und cracked; Laser bricht breakable; Explosion/Zünden bricht breakable und cracked; Feuer

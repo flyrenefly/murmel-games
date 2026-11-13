@@ -526,7 +526,64 @@ function wmethods.add(_, a, b)
     M.add(d[1], table.unpack(declargs(d)))
   end
 end
-for _, m in ipairs({"shuffleOxyd", "drawMap", "drawRect", "drawBorder", "world", "_register"}) do
+-- api2init.lua drawMap / drawRect / drawBorder during play (in init mode the export holds the world).
+-- Resolvers are plain tile tables here (ti); map read directions are not supported.
+local function evaluate(resolver, key)
+  local tile = type(resolver) == "table" and resolver[key] or nil
+  if tile == nil then error("Murmel kennt die Kachel '" .. tostring(key) .. "' nicht", 3) end
+  return tile
+end
+
+function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
+  if INIT then return end
+  local origin = topos(anchor)
+  if type(arg3) ~= "string" or type(arg4) ~= "table" or (arg5 ~= nil and arg5 ~= 0) then unsupported("wo:drawMap mit dieser Karte") end
+  local ignore, map = arg3, arg4
+  local len = string.len(ignore)
+  for y = 1, #map do
+    local line = map[y]
+    for x = 1, string.len(line) // len do
+      local key = string.sub(line, len * (x - 1) + 1, len * x)
+      if key ~= ignore then settile(newpos(origin.x - 1 + x, origin.y - 1 + y), evaluate(resolver, key)) end
+    end
+  end
+end
+
+local function rectargs(arg1, arg2, arg3, arg4, arg5)
+  local origin = topos(arg1)
+  local dest, tile, resolver
+  if type(arg2) == "number" then
+    dest = newpos(origin.x + arg2 - 1, origin.y + arg3 - 1)
+    tile, resolver = arg4, arg5
+  else
+    dest, tile, resolver = topos(arg2), arg3, arg4
+  end
+  if type(tile) == "string" then tile = evaluate(resolver, tile) end
+  return origin, dest, tile
+end
+
+function wmethods.drawRect(_, ...)
+  if INIT then return end
+  local origin, dest, tile = rectargs(...)
+  for y = origin.y, dest.y do
+    for x = origin.x, dest.x do settile(newpos(x, y), tile) end
+  end
+end
+
+function wmethods.drawBorder(_, ...)
+  if INIT then return end
+  local origin, dest, tile = rectargs(...)
+  for x = origin.x, dest.x do
+    settile(newpos(x, origin.y), tile)
+    if origin.y ~= dest.y then settile(newpos(x, dest.y), tile) end
+  end
+  for y = origin.y + 1, dest.y - 1 do
+    settile(newpos(origin.x, y), tile)
+    if origin.x ~= dest.x then settile(newpos(dest.x, y), tile) end
+  end
+end
+
+for _, m in ipairs({"shuffleOxyd", "world", "_register"}) do
   wmethods[m] = function()
     if not INIT then unsupported("wo:" .. m) end
   end
