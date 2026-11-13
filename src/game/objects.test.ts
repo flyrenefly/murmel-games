@@ -1500,3 +1500,31 @@ describe('bottle', () => {
     expect(w.objects[1].gone).toBe(true);
   });
 });
+
+describe('flood', () => {
+  it('a water source floods floodable floors step by step; a box becomes a bridge', () => {
+    const fl: Record<string, string> = { '1,1': 'fl_water' };
+    const attrs: Record<string, Record<string, string>> = { '2,1': { floodable: 'true' }, '3,1': { floodable: 'true' }, '4,1': { floodable: 'true' } };
+    const env: ObjectEnv = {
+      stoneAt: () => false,
+      floorAt: (c, r) => fl[c + ',' + r] ?? 'fl_gray',
+      setFloor: (c, r, k) => {
+        fl[c + ',' + r] = k;
+        delete attrs[c + ',' + r];
+      },
+      floorAttr: (c, r, k) => attrs[c + ',' + r]?.[k],
+      floodSources: () => [[1, 1]],
+    };
+    const w = new ObjectWorld([{ x: 4, y: 1, k: 'st_box_wood_h' }], W, {}, env);
+    w.marbleAt(9, 9);
+    w.update(10);
+    w.update(200);
+    expect(fl['2,1']).toBe('fl_water');
+    expect(fl['3,1']).toBeUndefined();
+    w.update(200);
+    expect(fl['3,1']).toBe('fl_water');
+    w.update(200);
+    expect(fl['4,1']).toBe('fl_wood_framed_h'); // the bridge (framed wood) conducts the flood on
+    expect(w.objects[0].gone).toBe(true);
+  });
+});

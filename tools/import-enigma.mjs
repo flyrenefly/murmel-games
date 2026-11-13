@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|thief|fake_trigger|adhesionless|ice_heating|swamp_heating|water_source)/;
+const SPECIAL_FLOORS = /^fl_(forward|thief|fake_trigger|adhesionless|ice_heating|swamp_heating)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -406,8 +406,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
         continue;
       }
       if (SPECIAL_FLOORS.test(fl.k)) reject(`Boden ${fl.k.replace(/_[nesw]+$/, '')}`);
-      // FloodStream (water, wood, hay, rock) in state FLOODING: water spreads – not built.
-      if (/^fl_(water|wood|hay|rock)/.test(fl.k) && fl.$state === '1') reject('Flut');
+      // FloodStream: fl_water_source is flooding water; water and framed wood/hay/rock in state FLOODING spread
+      let flooding = fl.$state === '1' && /^fl_(water|wood|hay|rock)/.test(fl.k);
+      if (fl.k === 'fl_water_source') {
+        fl.k = 'fl_water';
+        flooding = true;
+      }
       // Sinking marbles (models-2d.lua) for the renderer.
       if (fl.k === 'fl_swamp') for (const i of ['ac_marble_black_sink', 'ac_marble_white_sink', 'sh_marble_sink']) imgs.add(i);
       // BridgeFloor: floor fl_bridge_<gc|bw>_<open|closed> plus an object fl_bridge for its state
@@ -450,7 +454,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
       const def = { floor: DEADLY.has(fl.k) ? fl.k : fl.k.startsWith('fl_slope') || fl.k.startsWith('fl_yinyang') ? fl.k : flImg };
       // Floor fire attributes; initfire: the floor starts burning (Floor "_init" → force_fire)
       const fire = {};
-      for (const a of ['burnable', 'ignitable', 'secure', 'eternal', 'noash', 'fastfire']) if (fl[a] !== undefined && fl[a] !== '') fire[a] = String(fl[a]);
+      for (const a of ['burnable', 'ignitable', 'secure', 'eternal', 'noash', 'fastfire', 'floodable', 'interval']) if (fl[a] !== undefined && fl[a] !== '') fire[a] = String(fl[a]);
+      if (flooding) fire.flooding = 'true';
       if (Object.keys(fire).length) def.fire = fire;
       if (fl.initfire === true || fl.initfire === 'true') {
         objs.push({ x, y, k: 'it_burnable_ignited', a: {} });

@@ -299,6 +299,8 @@ export interface ObjectEnv {
   transparentAt?(col: number, row: number): boolean;
   /** A fire attribute of the cell's floor (burnable, secure, eternal, noash, fastfire, ignitable), if set. */
   floorAttr?(col: number, row: number, key: string): string | undefined;
+  /** Cells whose floor floods at the level start (fl_water_source, FloodStream FLOODING). */
+  floodSources?(): [number, number][];
 }
 
 const NO_ENV: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {} };
@@ -1795,6 +1797,96 @@ export class ObjectWorld {
 
   // ---------- fire (floors.cc fire system, BurnableItem.cc, Extinguisher.cc) ----------
 
+  // ---------- flood (FloodStream.cc) ----------
+
+  /** FloodStream cells in state FLOODING (index → interval in ms). */
+  private flooding = new Map<number, number>();
+  /** Their pending alarm (one-shot, GameTimer.set_alarm(…, false)). */
+  private floodAlarm = new Map<number, number>();
+  private floodInit = false;
+
+  private floodInterval(c: number, r: number): number {
+    const v = Number(this.env.floorAttr?.(c, r, 'interval'));
+    return (Number.isFinite(v) && v > 0 ? v : 0.2) * 1000;
+  }
+
+  /** FloodStream::setState(FLOODING): water and framed wood/hay/rock; the alarm starts. */
+  private startFlood(c: number, r: number, ms: number): void {
+    const idx = r * this.width + c;
+    if (this.flooding.has(idx)) return;
+    this.flooding.set(idx, ms);
+    this.floodAlarm.set(idx, this.now + ms);
+  }
+
+  /** FloodStream::message "_checkflood" (a stone changed nearby): flooding cells try again. */
+  private floodCheck(col: number, row: number): void {
+    if (!this.flooding.size) return;
+    for (const [dx, dy] of [[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]]) {
+      const idx = (row + dy) * this.width + col + dx;
+      const ms = this.flooding.get(idx);
+      if (ms !== undefined && !this.floodAlarm.has(idx)) this.floodAlarm.set(idx, this.now + ms);
+    }
+  }
+
+  /** Water kills cracks and burnable items (not oil) where it appears. */
+  private floodItems(c: number, r: number): void {
+    for (const it of [...this.at(c, r)]) {
+      if (it.gone) continue;
+      if (it.cls === 'crack' || (it.cls === 'burnable' && burnState(it) !== 'oil')) this.remove(it);
+    }
+  }
+
+  /** FloodStream::tryFlood from a flooding neighbour (from: Enigma direction back to it). */
+  private tryFlood(c: number, r: number, from: number, ms: number): void {
+    if (c < 0 || r < 0 || c >= this.width) return;
+    const floor = this.env.floorAt(c, r);
+    if (floor === 'fl_water' || /^fl_(wood|hay|rock)_framed/.test(floor)) {
+      if (floor === 'fl_water') this.floodItems(c, r);
+      this.startFlood(c, r, ms);
+      return;
+    }
+    if (!truthy(this.env.floorAttr?.(c, r, 'floodable') ?? '')) return;
+    const st = this.stoneObjectAt(c, r);
+    if (st ? !(st.cls === 'box' || this.allowsSpreading(st, from)) : this.env.staticStone?.(c, r)) return;
+    // fl_water_source: new flooding water; a box on it sinks and becomes a bridge
+    this.env.setFloor(c, r, 'fl_water');
+    this.events.push({ type: 'floor', col: c, row: r });
+    this.floodItems(c, r);
+    if (st && st.kind.startsWith('st_box')) {
+      this.remove(st);
+      this.env.setFloor(c, r, bridgeFloor(st.kind));
+      this.events.push({ type: 'sound', name: 'move' });
+      return;
+    }
+    this.startFlood(c, r, ms);
+  }
+
+  /** FloodStream::alarm: flood the four neighbours the stone here lets through. */
+  private floodStep(): void {
+    if (!this.floodInit) {
+      this.floodInit = true;
+      for (const [c, r] of this.env.floodSources?.() ?? []) this.startFlood(c, r, this.floodInterval(c, r));
+    }
+    for (const [idx, at] of [...this.floodAlarm]) {
+      if (this.now < at) continue;
+      this.floodAlarm.delete(idx);
+      const c = idx % this.width;
+      const r = Math.floor(idx / this.width);
+      const floor = this.env.floorAt(c, r);
+      if (floor !== 'fl_water' && !/^fl_(wood|hay|rock)_framed/.test(floor)) {
+        this.flooding.delete(idx); // the floor changed (bridge): no more flood here
+        continue;
+      }
+      const st = this.stoneObjectAt(c, r);
+      if (!st && this.env.staticStone?.(c, r)) continue;
+      const ms = this.flooding.get(idx) ?? 200;
+      for (const d of [3, 2, 1, 0]) {
+        if (st && !(st.cls === 'box' || this.allowsSpreading(st, d))) continue;
+        this.tryFlood(c + L_DX[d], r + L_DY[d], (d + 2) % 4, ms);
+      }
+    }
+  }
+
   /** Floor::fire_countdown per cell (default 1). */
   private fireCountdown = new Map<number, number>();
   /** Floors in their heating animation: start and the floor they become. */
@@ -3228,6 +3320,7 @@ export class ObjectWorld {
 
   /** Trigger::updateIState: pressed by the marble or a stone on it. */
   private updateTriggers(col: number, row: number): void {
+    this.floodCheck(col, row);
     const pressed =
       this.marbles.some((m) => m.col === col && m.row === row) || this.at(col, row).some((x) => (x.cls === 'box' || x.cls === 'puzzle') && !x.gone);
     for (const o of this.at(col, row)) {
@@ -3420,6 +3513,7 @@ export class ObjectWorld {
       }
     }
     this.heatingStep();
+    this.floodStep();
     for (const o of this.objects) {
       const imp = o.impulse;
       if (imp && o.moving && this.now - o.moving.since >= o.moving.dur) {

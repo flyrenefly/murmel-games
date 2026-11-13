@@ -1,6 +1,6 @@
 # Enigma-Import
 
-822 von 1322 Levels übernommen (18 Pakete).
+828 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -49,7 +49,6 @@
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 2 |
 | Stein st_spitter | 9 | 1 |
-| Flut | 9 | 6 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |

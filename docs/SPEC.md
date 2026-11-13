@@ -591,6 +591,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   fährt hindurch, alle anderen prallen ab.
 - **Gummibänder an beweglichen Steinen** (Kisten, Felsbrocken, Puzzle …): das Bandende folgt dem
   Steinobjekt (über seine $id); ist der Stein weg, bleibt es an der letzten Stelle.
+- **Flut** (`FloodStream.cc`): fl_water_source und flutende Wasser-/gerahmte Holz-, Heu- und Felsböden
+  versuchen nach `interval` (0,2 s) einmal, ihre vier Nachbarn zu fluten (soweit der Stein darauf es
+  zulässt; Kisten ja, feste Steine nein): Wasser und gerahmte Böden fluten mit, Böden mit `floodable`
+  werden zu flutendem Wasser (Risse und Brennbares darauf verschwinden, eine Kiste sinkt und wird zur
+  Brücke, die weiterleitet). Bewegt sich ein Stein, prüfen flutende Nachbarn erneut.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

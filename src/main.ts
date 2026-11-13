@@ -161,6 +161,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
     },
     staticStone: (c, r) => cellAt(lv, c, r)?.stone ?? null,
     floorAttr: (c, r, key) => cellAt(lv, c, r)?.fire?.[key],
+    floodSources: () => lv.cells.flatMap((cell, i) => (cell.fire?.flooding === 'true' ? [[i % lv.width, Math.floor(i / lv.width)] as [number, number]] : [])),
     // Stone::is_transparent: hollow stones and glass except dark glass and beads
     transparentAt: (c, r) => {
       const cell = cellAt(lv, c, r);
