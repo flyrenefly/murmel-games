@@ -10,6 +10,7 @@ import { FALL_SECONDS, GameSession, type SessionUI, type SoundName } from './gam
 import { LEVELS } from './levels';
 import { listPacks, packLevels, packTitle } from './packs';
 import { randomSeed } from './game/rng';
+import { emptyProgress, mergeProgress, parseProgress, type Progress, recordAttempt, recordPlay, recordWin, serializeProgress, summarize } from './game/progress';
 import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
@@ -118,6 +119,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   store.set('level', i);
   // one random sequence per run (docs/SPEC-aufzeichnung.md): every random choice of the level uses it
   const token = ++loadToken;
+  noteRunEnded(session);
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
@@ -222,6 +224,111 @@ function controlsHelp(): string {
     : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
+// ---------- progress: best times, statistics, save and load (docs/SPEC-lokal.md) ----------
+/** Best runs, counters and solved levels; only in this browser (and in files the player saves). */
+let progress: Progress = (() => {
+  const raw = store.get<unknown>('progress', null);
+  try {
+    if (raw) return parseProgress(JSON.stringify(raw)).progress;
+  } catch {
+    /* a broken entry: start fresh, the solved list below keeps what was solved */
+  }
+  return emptyProgress();
+})();
+// levels solved before best times existed (keys 'solved' and 'solvedPacks')
+progress = mergeProgress(progress, {
+  levels: {},
+  solved: [...solved, ...Object.values(store.get<Record<string, string[]>>('solvedPacks', {})).flat()],
+});
+const nowIso = () => new Date().toISOString();
+function saveProgress(): void {
+  store.set('progress', JSON.parse(serializeProgress(progress, nowIso())));
+}
+saveProgress();
+/** Runs already counted: started (attempt) and finished (play time, falls). */
+const runStarted = new WeakSet<GameSession>();
+const runCounted = new WeakSet<GameSession>();
+
+/** A run played its first step: one attempt. */
+function noteRunStarted(s: GameSession): void {
+  if (runStarted.has(s) || s.steps === 0) return;
+  runStarted.add(s);
+  progress = recordAttempt(progress, s.level.id, nowIso());
+  saveProgress();
+}
+
+/** A run ends (won, left, restarted): its play time and falls count. */
+function noteRunEnded(s: GameSession | null): void {
+  if (!s || runCounted.has(s)) return;
+  runCounted.add(s);
+  if (s.steps === 0 && s.falls === 0) return;
+  progress = recordPlay(progress, s.level.id, s.steps, s.falls);
+  saveProgress();
+}
+
+/** Time of a best run: m:ss,t from physics steps (the same on every device). */
+function formatBest(steps: number): string {
+  const t = Math.round(steps * PHYSICS_DT * 10);
+  const s = Math.floor(t / 10);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')},${t % 10}`;
+}
+
+/** Statistics, and saving or loading the progress as a file. */
+function showProgress(message = ''): void {
+  mode = 'menu';
+  input.releaseLock();
+  const sum = summarize(progress);
+  const last = sum.lastPlayed ? new Date(sum.lastPlayed).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '–';
+  const rows: [string, string][] = [
+    ['Gelöste Levels', String(sum.solved)],
+    ['Gespielte Levels', String(sum.played)],
+    ['Spielzeit', formatTime(sum.playSteps * PHYSICS_DT)],
+    ['Abstürze', String(sum.falls)],
+    ['Zuletzt gespielt', last],
+  ];
+  const table = `<dl class="stats">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
+  const note = message ? `<span class="note" role="status">${escapeHtml(message)}</span>` : '';
+  showOverlay('Fortschritt', `${table}${note}<span class="credit">Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.</span>`, [
+    ['Zurück', () => void showLevels()],
+    ['Sichern', saveProgressFile],
+    ['Laden', loadProgressFile],
+  ]);
+}
+
+function saveProgressFile(): void {
+  const blob = new Blob([serializeProgress(progress, nowIso())], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `murmel-fortschritt-${nowIso().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showProgress('Datei gespeichert.');
+}
+
+function loadProgressFile(): void {
+  const pick = document.createElement('input');
+  pick.type = 'file';
+  pick.accept = 'application/json,.json';
+  pick.addEventListener('change', async () => {
+    const file = pick.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > 5_000_000) throw new Error('zu groß');
+      const { progress: loaded, skipped } = parseProgress(await file.text());
+      const before = summarize(progress).solved;
+      progress = mergeProgress(progress, loaded);
+      for (const id of progress.solved) solved.add(id);
+      store.set('solved', [...solved]);
+      saveProgress();
+      const added = summarize(progress).solved - before;
+      showProgress(`Geladen: ${added} Levels neu gelöst${skipped ? `, ${skipped} unlesbare Einträge übersprungen` : ''}.`);
+    } catch {
+      showProgress('Das ist keine Murmel-Fortschrittsdatei.');
+    }
+  });
+  pick.click();
+}
+
 function showStart(): void {
   mode = 'menu';
   const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
@@ -260,7 +367,7 @@ function listButton(html: string, current: boolean, onClick: () => void): HTMLBu
 async function showLevels(): Promise<void> {
   mode = 'menu';
   input.releaseLock();
-  showOverlay('Levelpakete', '', [['Zurück', showStart]]);
+  showOverlay('Levelpakete', '', [['Zurück', showStart], ['Fortschritt', () => showProgress()]]);
   const packs = await listPacks();
   levelList.replaceChildren(
     ...packs.map((p) => {
@@ -282,23 +389,56 @@ function solvedCount(pack: string): number {
   return solvedInPack.get(pack)?.size ?? 0;
 }
 
-/** Second level: the levels of one pack. */
+/** Which levels the pack list shows (remembered). */
+type LevelFilter = 'alle' | 'offen' | 'geloest';
+let levelFilter: LevelFilter = (['alle', 'offen', 'geloest'] as const).find((f) => f === store.get('levelFilter', 'alle')) ?? 'alle';
+
+/** Alle · Offen · Gelöst: a segmented control above the level list. */
+function filterBar(onChange: () => void): HTMLElement {
+  const bar = document.createElement('div');
+  bar.className = 'filter';
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', 'Levels anzeigen');
+  for (const [f, label] of [['alle', 'Alle'], ['offen', 'Offen'], ['geloest', 'Gelöst']] as const) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(f === levelFilter));
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sfx.menu();
+      levelFilter = f;
+      store.set('levelFilter', f);
+      onChange();
+    });
+    bar.append(b);
+  }
+  return bar;
+}
+
+/** Second level: the levels of one pack, with best times and the filter. */
 async function showPack(id: string): Promise<void> {
   const levels = await packLevels(id).catch(() => null);
   if (!levels) return;
   showOverlay(await packTitle(id), '', [['Zurück', () => void showLevels()]]);
-  levelList.replaceChildren(
-    ...levels.map((l, i) =>
-      listButton(
-        `<span>${i + 1}</span>${escapeHtml(l.title)}${solved.has(l.id) ? ' <em>✓</em>' : ''}`,
-        id === packId && i === levelIndex,
-        async () => {
+  const render = () => {
+    const rows = levels.flatMap((l, i) => {
+      const done = solved.has(l.id);
+      if ((levelFilter === 'offen' && done) || (levelFilter === 'geloest' && !done)) return [];
+      const best = progress.levels[l.id]?.best;
+      const right = best ? `<small>${formatBest(best.steps)}</small>` : '';
+      return [
+        listButton(`<span>${i + 1}</span>${escapeHtml(l.title)}${right}${done ? ' <em aria-label="gelöst">✓</em>' : ''}`, id === packId && i === levelIndex, async () => {
           await loadLevel(id, i);
           showStart();
-        },
-      ),
-    ),
-  );
+        }),
+      ];
+    });
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = levelFilter === 'offen' ? 'Alle Levels dieses Pakets sind gelöst.' : 'Noch kein Level dieses Pakets gelöst.';
+    levelList.replaceChildren(filterBar(render), ...(rows.length ? rows : [empty]));
+  };
+  render();
   levelList.hidden = false;
   (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
 }
@@ -327,6 +467,15 @@ function onWin(): void {
   mode = 'won';
   solved.add(level.id);
   store.set('solved', [...solved]);
+  const prevBest = progress.levels[level.id]?.best;
+  progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());
+  noteRunEnded(s); // saves the progress
+  const newBest = progress.levels[level.id]?.best;
+  const bestLine = !prevBest
+    ? ''
+    : newBest && newBest !== prevBest
+      ? `<br><strong class="best">Neue Bestzeit!</strong> Vorher ${formatBest(prevBest.steps)}`
+      : `<br>Bestzeit ${formatBest(prevBest.steps)}`;
   noteSolved(packId, level.id);
   sfx.win();
   input.releaseLock();
@@ -334,7 +483,7 @@ function onWin(): void {
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatTime(s.playSeconds)} · Abstürze ${s.falls}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart]]
         : [
@@ -431,6 +580,7 @@ function frame(now: number): void {
       pendingMouse = { x: 0, y: 0 };
       acc -= PHYSICS_DT;
     }
+    if (mode === 'play') noteRunStarted(s);
   } else {
     input.takeMouse();
     pendingMouse = { x: 0, y: 0 };
@@ -701,6 +851,8 @@ requestAnimationFrame((t) => {
   enemies: () => (physics?.enemies ?? []).map((e) => ({ kind: e.kind, x: e.pos.x, y: e.pos.y })),
   objects: () => objects.objects.map((o) => ({ k: o.kind, x: o.col, y: o.row, state: o.state, moving: !!o.moving, gone: o.gone, name: o.name })),
   cell: (x: number, y: number) => ({ ...cellAt(level, x, y) }),
+  /** Test helper: positions of the Oxyd stones. */
+  signals: () => level.signals.map((g) => ({ x: g.col, y: g.row })),
   /** Test helper: put the marble at x/y (tile units; not recorded). */
   teleport: (x: number, y: number, i?: number) => physics?.respawn(x, y, i),
 };
