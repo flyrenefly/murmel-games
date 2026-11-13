@@ -95,6 +95,7 @@ export default defineConfig({
         forumseite: resolve(__dirname, 'forum.html'),
         loesbarkeit: resolve(__dirname, 'loesbarkeit.html'),
         bestenliste: resolve(__dirname, 'bestenliste.html'),
+        editor: resolve(__dirname, 'editor.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

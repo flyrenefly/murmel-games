@@ -21,6 +21,7 @@ import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
+import { editorButton, LINK_PACK, openLinkFromHash } from './editor/game-link';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -122,8 +123,10 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   i = Math.min(Math.max(0, i), packList.length - 1);
   packId = pack;
   levelIndex = i;
-  store.set('pack', pack);
-  store.set('level', i);
+  if (pack !== LINK_PACK) {
+    store.set('pack', pack);
+    store.set('level', i);
+  }
   // one random sequence per run (docs/SPEC-aufzeichnung.md): every random choice of the level uses it
   const token = ++loadToken;
   noteRunEnded(session);
@@ -134,6 +137,8 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   if (token !== loadToken) return; // another level was loaded meanwhile
   s = created;
   session = s;
+  // levels from links (docs/SPEC-editor.md) count in no progress, statistics or best times
+  if (pack === LINK_PACK) runStarted.add(s), runCounted.add(s);
   level = s.level;
   board = s.board;
   physics = s.physics;
@@ -379,8 +384,15 @@ function showStart(): void {
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
     [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
+    ...linkButtons(),
     [kontoLabel(), openKonto],
   ]);
+}
+
+/** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link. */
+function linkButtons(): [string, () => void][] {
+  const b = packId === LINK_PACK ? editorButton() : null;
+  return b ? [b] : [];
 }
 
 function showPause(): void {
@@ -389,6 +401,7 @@ function showPause(): void {
     ['Weiterspielen', startPlaying],
     ['Neustart', restart],
     ['Levels', showLevels],
+    ...linkButtons(),
     [kontoLabel(), openKonto],
     ['Fehler melden', reportBug],
   ]);
@@ -557,6 +570,7 @@ function leaderboardLine(rec: ReturnType<GameSession['recording']>, steps: numbe
 
 function onWin(): void {
   if (!session) return;
+  if (packId === LINK_PACK) return linkWin(session);
   const s = session;
   mode = 'won';
   solved.add(level.id);
@@ -595,6 +609,14 @@ function onWin(): void {
           ],
     );
   }, 900);
+}
+
+/** Won a level from a link: no progress, statistics or best time (docs/SPEC-editor.md). */
+function linkWin(s: GameSession): void {
+  mode = 'won';
+  sfx.win();
+  input.releaseLock();
+  setTimeout(() => showOverlay('Geschafft!', `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}`, [...linkButtons(), ['Nochmal', restart], ['Levels', showLevels]]), 900);
 }
 
 // ---------- game events (the simulation is in src/game/session.ts) ----------
@@ -910,7 +932,10 @@ function noteSolved(pack: string, id: string): void {
 for (const [k, v] of Object.entries(store.get<Record<string, string[]>>('solvedPacks', {}))) solvedInPack.set(k, new Set(v));
 for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 
-await loadLevel(packId, levelIndex);
+// a shared level in the link (#level=…, src/editor/game-link.ts) starts instead of the last level
+const linkStart = await openLinkFromHash(location.hash);
+if (linkStart?.ok) await loadLevel(LINK_PACK, 0);
+else await loadLevel(packId, levelIndex);
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
 void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
@@ -923,8 +948,17 @@ if (mailLinkPruefen(kontoHost)) {
   history.replaceState(null, '', location.pathname + location.search);
   openKonto();
 } else showStart();
+if (linkStart && !linkStart.ok) showToast(linkStart.error, 4000);
 // A mail link opened in a tab that already plays
 window.addEventListener('hashchange', () => void mailLinkPruefen(kontoHost));
+window.addEventListener('hashchange', async () => {
+  const r = await openLinkFromHash(location.hash);
+  if (r && !r.ok) showToast(r.error, 4000);
+  if (r?.ok) {
+    await loadLevel(LINK_PACK, 0);
+    showStart();
+  }
+});
 $('loading').remove();
 requestAnimationFrame((t) => {
   last = t;
