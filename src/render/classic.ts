@@ -223,6 +223,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
+  if (kind === 'st_brake' || kind === 'it_brake') return ['st_brake', 'sh_brake', 'it_explosion'];
   if (/^it_pipe/.test(kind)) return ['it_pipe'];
   if (kind === 'st_rubberband') return ['st_rubberband', 'sh_round'];
   if (kind === 'st_flash') return ['st_flash', 'sh_solid'];
@@ -823,6 +824,11 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'brake') {
+      if (pass === 'shadow') this.image('sh_brake', px, py);
+      else this.image('st_brake', px, py);
       return;
     }
     if (o.cls === 'volcano') {

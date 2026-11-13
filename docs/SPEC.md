@@ -605,6 +605,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Zyklus). Je Zyklus breitet er sich mit je 30 % in freie Nachbarfelder aus und erlischt mit 5 % zu einem
   flachen Stein (`secure`: erst wenn alle freien Nachbarn versorgt sind). Kugeln in aktiven, wachsenden
   oder brechenden Vulkanen zerschellen; der Hammer bricht einen aktiven. Inaktive wachen mit toggle auf.
+- **st_brake / it_brake** (`BrakeStone.cc`, `BrakeItem.cc`): durchfahrbarer Stein, der rollende/geschobene
+  Steine aufhält; eine Kugel näher als 0,3 an der Mitte nimmt ihn auf, abgelegt wird er wieder ein
+  Stein (nur wo kein Stein ist). Laserlicht und Explosionen sprengen ihn.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

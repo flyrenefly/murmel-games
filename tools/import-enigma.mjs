@@ -96,6 +96,7 @@ const OBJECTS = [
   [/^st_polarswitch$/, ['st_lightglass', 'st_darkglass', 'sh_rawglass']],
   [/^st_monoflop$/, ['st_monoflop', 'sh_round']],
   [/^st_mail(_[nesw])?$/, ['st_mail', 'sh_solid']],
+  [/^(st|it)_brake$/, ['st_brake', 'sh_brake', 'it_explosion']],
   [/^it_pipe(_[nesw]{1,2})?$/, ['it_pipe']],
   [/^st_portal(_horse|_pearl)?$/, ['st_portal_horse', 'sh_portal_horse']],
   [/^st_scissors$/, ['st_scissors', 'sh_round']],

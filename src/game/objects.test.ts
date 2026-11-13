@@ -1566,3 +1566,16 @@ describe('volcano', () => {
     expect(w.objects[1].state).toBe(1);
   });
 });
+
+describe('brake', () => {
+  it('actors pass a brake and pick it up near its centre; dropped it becomes a stone again', () => {
+    const w = world([{ x: 3, y: 1, k: 'st_brake' }]);
+    expect(w.blockAt(3, 1, 0)).toBe(0);
+    w.actorStep(3.15, 1.5, 0); // 0.35 away: not yet
+    expect(w.inventory).toEqual([]);
+    w.actorStep(3.5, 1.5, 0);
+    expect(w.inventory).toEqual(['it_brake']);
+    expect(w.dropItem(5.5, 1.5)).toBe(true);
+    expect(w.objects.filter((o) => !o.gone).map((o) => [o.kind, o.col])).toEqual([['st_brake', 5]]);
+  });
+});
