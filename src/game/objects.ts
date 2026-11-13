@@ -1673,14 +1673,11 @@ export class ObjectWorld {
       const sel = (o.attrs.selection ?? '').split(/[,;]/).map((t) => t.trim()).filter(Boolean);
       const list = sel.length ? sel : ['it_umbrella', 'it_spring_keep', 'it_dynamite', 'it_coffee', 'it_hammer'];
       const next = list[Math.floor(this.random() * list.length)];
-      this.remove(o);
-      // "=same": the tile of the selection is this very surprise (enigma.settile, resolved by the import)
-      if (next === '=same') {
-        this.add('it_surprise', 'surprise', col, row).attrs = { ...o.attrs };
-        return;
-      }
       const cls = objectClass(next);
-      if (cls) this.add(next, cls, col, row);
+      this.remove(o);
+      const n = cls ? this.add(next, cls, col, row) : null;
+      // a surprise in its own selection ("=w" with ti["w"] = this surprise) keeps the selection
+      if (n && next === 'it_surprise') n.attrs = { ...n.attrs, selection: o.attrs.selection ?? '' };
       return;
     }
     if (isBag(kind)) {

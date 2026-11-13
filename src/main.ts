@@ -1179,3 +1179,12 @@ requestAnimationFrame((t) => {
   /** Test helper: put the marble at x/y (tile units). */
   teleport: (x: number, y: number, i?: number) => physics?.respawn(x, y, i),
 };
+
+// Offline play: the service worker (dist/sw.js, built by the offline plugin in vite.config.ts)
+// keeps the game, its graphics and every opened level pack in the browser cache.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  const register = () => void navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // main.ts waits for level data first, so the load event may already be over
+  if (document.readyState === 'complete') register();
+  else addEventListener('load', register);
+}

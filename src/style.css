@@ -216,6 +216,8 @@ button.level.current {
   font-size: 11px;
   color: rgba(200, 205, 220, 0.55);
   pointer-events: none;
+  /* Above the menu overlay (like the HUD): the links stay clickable while a menu is open. */
+  z-index: 20;
 }
 
 #credits a {

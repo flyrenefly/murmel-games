@@ -24,6 +24,13 @@ Levels, eigener Code. Kein Code, keine Grafik und keine Levels aus Oxyd oder Eni
 
 Installierbar als App (PWA), offline spielbar.
 
+**Offline (ab 13.11.2026):** Service Worker `sw.js`, beim Build vom Plugin `murmel-offline` in
+`vite.config.ts` aus `src/sw-template.js` erzeugt (Version = Hash über Vorlage und Dateien). Spiel, Grafik,
+Klänge und eingebaute Levels (rund 4 MB) werden bei der Installation vorab gespeichert, Seitenaufrufe
+kommen zuerst aus dem Netz (neue Versionen sofort), offline aus dem Speicher. Enigma-Pakete
+(`levels/enigma/*.json`, 12 MB) werden beim ersten Öffnen gespeichert und im Hintergrund
+aufgefrischt. `sw.js` wird ohne HTTP-Cache ausgeliefert (`.htaccess`).
+
 ## Technik
 
 | Bereich | Wahl | Grund |
@@ -546,6 +553,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
 - **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
 - **Lua-Tabellen als Attributwerte** (`target = {"a#*", "b#*"}`, `action_3 = {"open", "close"}`): werden zu Tokenlisten „a#*,b#*“ (ot_counter/ot_timer aus wo:add).
+- **it_surprise mit "=Taste"**: Der Import löst die Kachel ti[Taste] des Levelskripts auf (Tasten mit Leerzeichen am Ende inklusive); eine Überraschung in der eigenen Auswahl bleibt Überraschung mit derselben Auswahl. Levels, die hohle Puzzlesteine erst zur Laufzeit setzen, werden nicht mehr als „alter Export“ abgelehnt.
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
   Hauptkugel (Spieler 2, sein Inventar).
 - **st_stoneimpulse_steady**: pulsiert immer wieder, solange Laserlicht darauf fällt. **it_explosion(_nil/…)** als
@@ -676,10 +684,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   bei Stößen, schwerer auf Waagen); es lässt sich nicht ablegen (ITEM_KEEP).
 - **it_surprise** (`SurpriseItem.cc`): abgelegt führt es seine Aktion aus und wird zu einem zufälligen
   Gegenstand aus `selection` (Vorgabe Schirm, Feder, Dynamit, Kaffee, Hammer; ohne dessen Ablegewirkung).
-  Ziel und Auswahl reisen im Inventar mit. "=Kachel" (`enigma.settile`) löst der Konverter aus der
-  Kacheltabelle `ti` des Levels auf (ab 13.11.2026): ein einfacher Gegenstand ohne Attribute wird zu
-  seinem Namen, dieselbe Überraschung noch einmal zu "=same" (sie entsteht mit allen Attributen neu);
-  andere Kacheln bleiben gesperrt.
+  Ziel und Auswahl reisen im Inventar mit. "=Taste": siehe **it_surprise mit "=Taste"**.
 - **fl_forward** (`ForwardFloor.cc`, ab 13.11.2026): Förderband. Der Konverter legt den Grundboden des
   Geschmacks (darkgray, platinum, rough, bright, bridgewood) und ein Objekt `fl_forward` an; Zustand =
   Richtung (W 0, S 1, E 2, N 3). Alle `interval` s (Vorgabe 0,6; 0 = aus) merkt es sich den Stein darauf

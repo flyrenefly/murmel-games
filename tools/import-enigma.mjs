@@ -204,15 +204,6 @@ const API1_ACTIONS = [
 ];
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
 
-/** A single-object tile ti["key"] = {"kind", attr=value, …} of the level's Lua (key without its padding), or null. */
-function luaTile(code, key) {
-  const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const m = new RegExp(`^\\s*ti\\[\\s*"${esc}\\s*"\\s*\\]\\s*=\\s*\\{\\s*"(\\w+)"\\s*(?:,([^{}]*))?\\}\\s*(?:--.*)?$`, 'm').exec(code);
-  if (!m) return null;
-  const a = {};
-  for (const p of (m[2] ?? '').matchAll(/(\w+)\s*=\s*(?:"([^"]*)"|([\w.]+))/g)) a[p[1]] = p[2] ?? p[3];
-  return { k: m[1], a };
-}
 
 const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
 
@@ -393,8 +384,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     return reject(`Lizenz: ${licence || 'keine Angabe'}`);
   }
   // Not built yet: other floors for fallen puzzles.
-  // Hollow stones come as $hollow since the export of 12.11. (enigma-web 0d6063b4); older exports lack it.
-  if (/hollow\s*=\s*true/.test(xml) && !exp.world.cells.some((c) => c.some((o) => o && o.$hollow === 'true'))) reject('Puzzle hohl (alter Export)');
+  // Hollow stones come as $hollow since the export of 12.11. (enigma-web 0d6063b4). A level that names
+  // hollow=true without a hollow stone in its world creates them at runtime (ti entries for callbacks).
   // wo["FallenPuzzle"]: the floor under a sunk puzzle stone (see below, after the Lua init)
   if (/el:single="false"/.test(xml)) {
     blockers = null;
@@ -460,22 +451,29 @@ function convertLevel(pack, meta, xml, exp, lua) {
       // it_laserbeam: Enigma's beams of the initial world – Murmel calculates them itself
       // Bottle with a message ("text": shown as a document when used) is not built
       if (it && /^it_bottle/.test(it.k) && it.text) reject('Flasche mit Text');
-      // it_surprise: its selection must be items Murmel has. "=tile" (enigma.settile) is resolved from the
-      // level's tile table: a plain item, or the same surprise again ("=same", it keeps its attributes)
+      // it_surprise: its selection must be items Murmel has. "=key" is the tile ti[key] of the level
+      // script (keys may end in a space, so the raw tokens are used); a plain item tile becomes its kind,
+      // a surprise tile with the same selection stays a surprise ("keep dice").
       if (it && it.k === 'it_surprise' && it.selection) {
-        const own = tokens(it.selection).join(',');
-        const sel = tokens(it.selection).map((t) => {
-          if (!t.startsWith('=')) return t;
-          const tile = luaTile(lua?.code ?? '', t.slice(1));
-          if (tile?.k === 'it_surprise' && tokens(tile.a.selection).join(',') === own) return '=same';
-          return tile && Object.keys(tile.a).length === 0 ? tile.k : t;
-        });
-        it.selection = sel.join(',');
+        const sel = it.selection
+          .split(/[;,]/)
+          .filter((t) => t.trim() !== '')
+          .map((t) => {
+            if (!t.trim().startsWith('=')) return t.trim();
+            const key = t.trim() === t ? t.slice(1) : t.replace(/^\s*=/, '');
+            const esc = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const m = new RegExp(`ti\\[\\s*"${esc}"\\s*\\]\\s*=\\s*\\{\\s*"(it_\\w+)"\\s*(?:,([^}]*))?\\}`).exec(lua?.code ?? luaCode(xml));
+            if (!m) return t;
+            const rest = (m[2] ?? '').replace(/--.*$/, '').trim();
+            if (rest === '') return m[1];
+            if (m[1] === 'it_surprise' && /^selection\s*=\s*"=([^"]*)"$/.exec(rest)?.[1] === key) return 'it_surprise';
+            return t;
+          });
         for (const t of sel) {
-          if (t === '=same') continue;
-          if (t.startsWith('=') || !objectImages(t)) reject(`Überraschung mit ${t}`);
+          if (t.startsWith('=') || !objectImages(t)) reject(`Überraschung mit ${t.trim()}`);
           else objectImages(t).forEach((i) => imgs.add(i));
         }
+        it.selection = sel.join(',');
       }
       if (it && it.k !== 'it_laserbeam') {
         const im = objectImages(it.k);

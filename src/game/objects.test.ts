@@ -1626,6 +1626,17 @@ describe('surprise', () => {
     expect(w.objects[0].state).toBe(1);
     expect(w.objects.find((o) => !o.gone && o.kind === 'it_hammer')?.col).toBe(3);
   });
+
+  it('a surprise in its own selection stays a surprise with that selection', () => {
+    const w = new ObjectWorld([{ x: 2, y: 0, k: 'it_surprise', a: { selection: 'it_surprise' } }], W, {}, undefined, () => 0);
+    w.marbleAt(0, 0);
+    w.actorStep(2.5, 0.5, 0);
+    w.dropItem(3.5, 0.5);
+    w.update(500);
+    const s = w.objects.find((o) => !o.gone && o.kind === 'it_surprise');
+    expect(s?.col).toBe(3);
+    expect(s?.attrs.selection).toBe('it_surprise');
+  });
 });
 
 describe('trap and API 1 messages', () => {
@@ -1819,18 +1830,6 @@ describe('st_document, st_pebble and st_scissors', () => {
     w.hit(3, 1, 0, -1, 0, -3, 0, 0, 0);
     w.update(600);
     expect(w.objects.every((o) => !o.gone)).toBe(true);
-  });
-});
-
-describe('it_surprise with "=same"', () => {
-  it('turns into the same surprise again, keeping selection and target', () => {
-    const w = new ObjectWorld([door(5), { x: 2, y: 0, k: 'it_surprise', a: { target: 'door1', action: 'toggle', selection: '=same' } }], W, {}, undefined, () => 0);
-    w.marbleAt(0, 0);
-    w.actorStep(2.5, 0.5, 0);
-    w.dropItem(3.5, 0.5);
-    const again = w.objects.find((o) => !o.gone && o.kind === 'it_surprise');
-    expect(again?.col).toBe(3);
-    expect(again?.attrs).toMatchObject({ selection: '=same', target: 'door1' });
   });
 });
 
