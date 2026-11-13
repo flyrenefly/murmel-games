@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyProgress, mergeProgress, parseProgress, recordAttempt, recordWin, serializeProgress, type Progress } from './progress';
+import { emptyProgress, mergeProgress, parseProgress, recordAttempt, recordPlay, recordWin, serializeProgress, summarize, type Progress } from './progress';
 
 const T1 = '2026-11-13T10:00:00.000Z';
 const T2 = '2026-11-13T11:00:00.000Z';
@@ -52,6 +52,30 @@ describe('recordAttempt', () => {
     expect(p.levels.x.attempts).toBe(2);
     expect(p.levels.x.lastPlayed).toBe(T2);
     expect(p.solved).toEqual([]);
+  });
+});
+
+describe('recordPlay und summarize', () => {
+  it('summiert Spielzeit (Schritte) und Abstürze je Level über alle Läufe', () => {
+    let p = recordPlay(emptyProgress(), 'x', 1000, 2);
+    p = recordPlay(p, 'x', 500, 1);
+
+    expect(p.levels.x.playSteps).toBe(1500);
+    expect(p.levels.x.falls).toBe(3);
+  });
+
+  it('fasst den ganzen Fortschritt zusammen', () => {
+    let p = recordWin(recordPlay(emptyProgress(), 'a', 800, 1), 'a', { steps: 800, falls: 1, seed: 1 }, T1);
+    p = recordPlay(recordAttempt(p, 'b', T2), 'b', 200, 4);
+
+    expect(summarize(p)).toEqual({ solved: 1, played: 2, playSteps: 1000, falls: 5, lastPlayed: T2 });
+  });
+
+  it('übersteht Speichern und Laden und das Zusammenführen', () => {
+    const p = recordPlay(emptyProgress(), 'x', 70, 1);
+
+    expect(parseProgress(serializeProgress(p, T1)).progress).toEqual(p);
+    expect(mergeProgress(p, p).levels.x).toMatchObject({ playSteps: 70, falls: 1 });
   });
 });
 

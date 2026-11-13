@@ -17,6 +17,10 @@ export interface LevelProgress {
   solves: number;
   attempts: number;
   lastPlayed?: string;
+  /** Physics steps played in all runs of the level. */
+  playSteps?: number;
+  /** Falls in all runs of the level. */
+  falls?: number;
 }
 
 export interface Progress {
@@ -50,6 +54,35 @@ export function recordAttempt(p: Progress, id: string, date: string): Progress {
   return { ...p, levels: { ...p.levels, [id]: { ...e, attempts: e.attempts + 1, lastPlayed: date } } };
 }
 
+/** A run ended (won, left or restarted): its play time in physics steps and its falls count. */
+export function recordPlay(p: Progress, id: string, steps: number, falls: number): Progress {
+  if (steps <= 0 && falls <= 0) return p;
+  const e = entry(p, id);
+  return { ...p, levels: { ...p.levels, [id]: { ...e, playSteps: (e.playSteps ?? 0) + steps, falls: (e.falls ?? 0) + falls } } };
+}
+
+export interface Summary {
+  solved: number;
+  /** Levels started or played at least once. */
+  played: number;
+  playSteps: number;
+  falls: number;
+  lastPlayed?: string;
+}
+
+/** Totals over all levels (the statistics page). */
+export function summarize(p: Progress): Summary {
+  const out: Summary = { solved: p.solved.length, played: 0, playSteps: 0, falls: 0 };
+  for (const l of Object.values(p.levels)) {
+    if (l.attempts > 0 || l.solves > 0 || (l.playSteps ?? 0) > 0) out.played++;
+    out.playSteps += l.playSteps ?? 0;
+    out.falls += l.falls ?? 0;
+    const lp = later(out.lastPlayed, l.lastPlayed);
+    if (lp) out.lastPlayed = lp;
+  }
+  return out;
+}
+
 /** A level was won: count it, keep the better run. */
 export function recordWin(p: Progress, id: string, run: Omit<BestRun, 'date'>, date: string): Progress {
   const e = entry(p, id);
@@ -68,6 +101,9 @@ export function mergeProgress(a: Progress, b: Progress): Progress {
     if (bst) m.best = bst;
     const lp = later(x.lastPlayed, y.lastPlayed);
     if (lp) m.lastPlayed = lp;
+    // counters: the larger value (loading the same file twice must not double them)
+    if (x.playSteps !== undefined || y.playSteps !== undefined) m.playSteps = Math.max(x.playSteps ?? 0, y.playSteps ?? 0);
+    if (x.falls !== undefined || y.falls !== undefined) m.falls = Math.max(x.falls ?? 0, y.falls ?? 0);
     levels[id] = m;
   }
   return { levels, solved: union(a.solved, b.solved) };
@@ -103,6 +139,11 @@ function checkLevel(v: unknown): LevelProgress | null {
   if (l.lastPlayed !== undefined) {
     if (!isDate(l.lastPlayed)) return null;
     out.lastPlayed = l.lastPlayed;
+  }
+  for (const k of ['playSteps', 'falls'] as const) {
+    if (l[k] === undefined) continue;
+    if (!isCount(l[k])) return null;
+    out[k] = l[k];
   }
   return out;
 }

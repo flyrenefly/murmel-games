@@ -334,3 +334,79 @@ button.level small {
   font-size: 13px;
   opacity: 0.85;
 }
+
+/* Level list: filter Alle · Offen · Gelöst (segmented control), stays on top while the list scrolls. */
+.filter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(14, 16, 28, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filter button {
+  flex: 1;
+  padding: 6px 8px;
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.filter button[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* best time and check mark side by side on the right */
+button.level small + em {
+  margin-left: 8px;
+}
+
+button.level small {
+  font-variant-numeric: tabular-nums;
+}
+
+#level-list .empty {
+  margin: 12px 0;
+  color: var(--muted);
+}
+
+/* Progress page: statistics and messages */
+dl.stats {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin: 0 0 14px;
+  text-align: left;
+}
+
+dl.stats dt {
+  color: var(--muted);
+}
+
+dl.stats dd {
+  margin: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.card .note {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.card .best {
+  color: var(--accent);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
