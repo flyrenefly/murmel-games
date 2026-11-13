@@ -33,7 +33,11 @@ Lösbarkeitsprüfung, Geister, Tipps, Spieler-Levels und Wettkampf auf.
 Simulation steckt in `src/game/session.ts` (`GameSession`, `step(eingabe)`, Oberfläche über `SessionUI`);
 `main.ts` ist die Hülle. Geprüft: 6 Session-Tests in Node (Determinismus über den ganzen Zustand,
 auch mit Lua; Fallen; Sieg), alle 1141 Levels laden im Browser, Spieltest (Bewegung, Fallen, Oxyd).
-Ausstehend: A4 in die Spielschleife einbinden, A5 Nachspielen.
+A4 und A5 erledigt: Die Session zeichnet jeden Lauf auf (`session.recording()`, Test-Hook
+`window.murmel.recording()`), `replay()` in `src/game/replay.ts` spielt ihn in Node nach. Nachweis: ein
+im Browser (Edge) aufgezeichneter Lauf ergibt in Node bitgenau denselben Endzustand
+(`src/game/fixtures/browser-hostile-world.json`). Offen: `levelHash`, Werkzeug für die Kommandozeile
+(kommt mit `bestenliste`, wenn der Server nachspielt).
 
 ## Format (Version 1)
 
@@ -43,8 +47,10 @@ Ausstehend: A4 in die Spielschleife einbinden, A5 Nachspielen.
   "input": [[120, 0, 0], [3, 512, -64], [1, "drop"], [40, 0, 0], …] }
 ```
 
-- `input`: Lauflängen `[anzahl, kraftX, kraftY]` (Kraft in 1/1024) oder Aktion `[anzahl, "name"]`;
-  eine Aktion gilt vor dem nächsten Schritt. Aktionen: `drop`, `rotate`, `swap`, `restart`.
+- `input`: Lauflängen `[anzahl, mausX, mausY]` oder `[anzahl, mausX, mausY, achseX, achseY]` (Kräfte in
+  1/1024; die Achsenkraft von Tasten/Neigen nur, wenn sie nicht 0 ist) oder Aktion `[anzahl, "name"]`;
+  eine Aktion gilt vor dem nächsten Schritt. Aktionen: `use` (Klick/Leertaste), `drop`, `rotate`, `swap`.
+- Die Session rundet jede Eingabe beim Spielen auf 1/1024 – Spiel und Nachspielen rechnen mit denselben Zahlen.
 - Umgesetzt in `src/game/recording.ts` (Stufe A4, Modul; Einbindung in die Spielschleife nach A3).
 - `levelHash` bindet die Aufzeichnung an den Levelinhalt (geänderte Levels → alte Aufzeichnungen
   ungültig, nicht falsch).

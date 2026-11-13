@@ -51,12 +51,18 @@ Einträge werden übersprungen und gemeldet.
   Prüfung (Tests in `progress.test.ts`).
 - `main.ts` – nur Anbindung: beim Sieg eintragen, Anzeige, Menüpunkte.
 
+**Stand 13.11.2026:** Teil 1–4 umgesetzt (`src/game/progress.ts`, Anbindung in `main.ts`): Bestleistung
+und Zähler je Level (Versuch ab dem ersten gespielten Schritt, Spielzeit und Abstürze beim Ende eines
+Laufs), Siegmeldung mit Bestzeit, Levelliste mit Bestzeit und Filter Alle · Offen · Gelöst, Seite
+„Fortschritt“ mit Kennzahlen, Sichern und Laden. `rec` (beste Aufzeichnung) folgt mit `bestenliste`.
+Datenschutzerklärung: Text wartet auf Freigabe des Nutzers.
+
 ## Tests und Abnahme
 
-- [ ] Bessere Zeit ersetzt, schlechtere nicht; Gleichstand → weniger Abstürze gewinnt.
-- [ ] Zusammenführen ist kommutativ (A+B = B+A) und verliert keinen gelösten Level.
-- [ ] Kaputte/fremde Datei wird abgelehnt oder teilweise übernommen, ohne den Bestand zu ändern.
-- [ ] Browser: Level lösen → Bestzeit in Siegmeldung und Levelliste; sichern → Datei; in leerem
+- [x] Bessere Zeit ersetzt, schlechtere nicht; Gleichstand → weniger Abstürze gewinnt.
+- [x] Zusammenführen ist kommutativ (A+B = B+A) und verliert keinen gelösten Level.
+- [x] Kaputte/fremde Datei wird abgelehnt oder teilweise übernommen, ohne den Bestand zu ändern.
+- [x] Browser: Level lösen → Bestzeit in Siegmeldung und Levelliste; sichern → Datei; in leerem
       Profil laden → Fortschritt da.
 
 ## Grenzen
