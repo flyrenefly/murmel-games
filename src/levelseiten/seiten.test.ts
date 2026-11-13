@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { LevelFile } from '../game/level';
 import { PHYSICS_DT } from '../game/physics';
@@ -7,16 +5,23 @@ import { LEVELS } from '../levels';
 import { STEP_SECONDS, top3, zeit } from './bestzeiten';
 import { buildPages, describe as describeLevel, indexHtml, levelHtml, licenseLabel, licenseUrl, packHtml, type PackSource, playHash, shorten, sitemapPaths, sitemapXml, slugify } from './seiten';
 import { indexOfLevel, startFromHash } from '../startlink';
+import STATIC_SITEMAP from '../../public/sitemap.xml?raw';
+import ROBOTS from '../../public/robots.txt?raw';
+import CLIENT_SRC from './bestzeiten.ts?raw';
+
+/** public/levels/enigma/*.json als Text, Schlüssel = Dateiname. */
+const PACK_FILES = Object.fromEntries(
+  Object.entries(import.meta.glob('/public/levels/enigma/*.json', { eager: true, query: '?raw', import: 'default' }) as Record<string, string>).map(([k, v]) => [k.replace(/^.*\//, ''), v]),
+);
 
 const lv = (id: string, title: string, extra: Partial<LevelFile> = {}): LevelFile => ({ id, title, author: 'Ada', license: 'GPL v2.0 or above', map: ['#'], ...extra });
 
 /** Alle Levels wie im Spiel: eigene, dann die Enigma-Pakete in der Reihenfolge von index.json. */
 function allPacks(): PackSource[] {
-  const dir = join(__dirname, '../../public/levels/enigma');
-  const index = JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8')) as { pack: string; title: string }[];
+  const index = JSON.parse(PACK_FILES['index.json']) as { pack: string; title: string }[];
   return [
     { id: 'murmel', title: 'Murmel', levels: LEVELS },
-    ...index.map((p) => ({ id: p.pack, title: p.title, levels: (JSON.parse(readFileSync(join(dir, `${p.pack}.json`), 'utf8')) as { levels: LevelFile[] }).levels })),
+    ...index.map((p) => ({ id: p.pack, title: p.title, levels: (JSON.parse(PACK_FILES[`${p.pack}.json`]) as { levels: LevelFile[] }).levels })),
   ];
 }
 
@@ -137,9 +142,8 @@ describe('Metadaten', () => {
 });
 
 describe('Sitemap', () => {
-  const staticXml = readFileSync(join(__dirname, '../../public/sitemap.xml'), 'utf8');
   const packs = buildPages(allPacks());
-  const xml = sitemapXml(staticXml, sitemapPaths(packs));
+  const xml = sitemapXml(STATIC_SITEMAP, sitemapPaths(packs));
   const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
   it('behält die festen Seiten und nennt alle kanonischen Levelseiten genau einmal', () => {
@@ -156,9 +160,8 @@ describe('Sitemap', () => {
   });
 
   it('robots.txt erlaubt alles und nennt die Sitemap', () => {
-    const robots = readFileSync(join(__dirname, '../../public/robots.txt'), 'utf8');
-    expect(robots).toMatch(/^Allow: \/$/m);
-    expect(robots).toContain('Sitemap: https://murmel.games/sitemap.xml');
+    expect(ROBOTS).toMatch(/^Allow: \/$/m);
+    expect(ROBOTS).toContain('Sitemap: https://murmel.games/sitemap.xml');
   });
 });
 
@@ -177,8 +180,7 @@ describe('Bestzeiten (bestzeiten.ts)', () => {
   });
 
   it('enthält keine Importe (wird ohne Bundler ausgeliefert)', () => {
-    const src = readFileSync(join(__dirname, 'bestzeiten.ts'), 'utf8');
-    expect(src).not.toMatch(/^import /m);
+    expect(CLIENT_SRC).not.toMatch(/^import /m);
   });
 });
 
@@ -211,7 +213,5 @@ describe('Spielstart per Adresse (startlink.ts)', () => {
 });
 
 it('es gibt jedes Paket aus index.json als Datei', () => {
-  const dir = join(__dirname, '../../public/levels/enigma');
-  const files = new Set(readdirSync(dir));
-  for (const p of JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8'))) expect(files.has(`${p.pack}.json`)).toBe(true);
+  for (const p of JSON.parse(PACK_FILES['index.json']) as { pack: string }[]) expect(PACK_FILES[`${p.pack}.json`]).toBeTypeOf('string');
 });
