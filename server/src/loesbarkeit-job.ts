@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { connect } from './db.ts';
 import { parseAdminEmails } from './konten.ts';
@@ -29,7 +29,8 @@ function readJson<T>(path: string, what: string): T {
 }
 
 /** The load probe of every level and the replay of the repository solutions plus the stored ones. */
-export async function runTools(gameDir: string, stored: (StoredSolution & { recording: Recording })[], jobs = 1): Promise<ToolOutput> {
+export async function runTools(game: string, stored: (StoredSolution & { recording: Recording })[], jobs = 1): Promise<ToolOutput> {
+  const gameDir = resolve(game);
   const tmp = mkdtempSync(join(tmpdir(), 'loesbarkeit-'));
   try {
     const dbDir = join(tmp, 'db');

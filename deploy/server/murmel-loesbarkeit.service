@@ -1,0 +1,12 @@
+[Unit]
+Description=Murmel Lösbarkeitsprüfung (Nachtlauf)
+After=docker.service
+
+[Service]
+Type=oneshot
+User=murmel
+# niedrigste Priorität auch für Kopie und Docker-Aufruf; die Rechnung selbst begrenzt compose.yml (1 Kern)
+Nice=19
+IOSchedulingClass=idle
+ExecStart=/opt/murmel/loesbarkeit.sh
+TimeoutStartSec=2h

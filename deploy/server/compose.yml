@@ -41,6 +41,33 @@ services:
       db:
         condition: service_healthy
 
+  # Nachtlauf der Lösbarkeitsprüfung (docs/SPEC-loesbarkeit.md): startet nie mit `up`, nur aus
+  # /opt/murmel/loesbarkeit.sh (murmel-loesbarkeit.timer). Ein Kern, kleiner CPU-Anteil, nice 19 –
+  # die API behält Vorrang. Das Spiel der aktiven Version liegt schreibgeschützt unter /game.
+  loesbarkeit:
+    image: murmel-api:${MURMEL_VERSION}
+    profiles: ["nacht"]
+    command: ["nice", "-n", "19", "node", "src/loesbarkeit-job.ts"]
+    environment:
+      DATABASE_URL: postgres://murmel:${POSTGRES_PASSWORD}@db:5432/murmel
+      MURMEL_VERSION: ${MURMEL_VERSION}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://murmel.games}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      GAME_DIR: /game
+    volumes:
+      - ${LOESBARKEIT_DIR:-./loesbarkeit}:/game:ro
+    cpus: 1
+    cpu_shares: 128
+    mem_limit: 1g
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:18-alpine
     restart: unless-stopped

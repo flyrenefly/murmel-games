@@ -37,7 +37,7 @@ git -C "$WORK" clean -qfdx -e node_modules
 docker run --rm --user 1000:1000 -e npm_config_cache=/tmp/npm -v "$WORK":/src -w /src node:24-alpine \
   sh -c 'npm ci --no-audit --no-fund >/dev/null && npx vite build >/dev/null'
 
-install -m 755 "$WORK/deploy/server/release.sh" "$WORK/deploy/server/backup.sh" "$WORK/deploy/server/update.sh" "$ROOT/"
+install -m 755 "$WORK/deploy/server/release.sh" "$WORK/deploy/server/backup.sh" "$WORK/deploy/server/update.sh" "$WORK/deploy/server/loesbarkeit.sh" "$ROOT/"
 if "$ROOT/release.sh" "$v" "$WORK/dist" "$WORK/server"; then
   rm -f "$ROOT/failed-version"
 else
