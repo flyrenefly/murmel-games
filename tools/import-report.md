@@ -1,11 +1,11 @@
 # Enigma-Import
 
-805 von 1322 Levels übernommen (18 Pakete).
+808 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 120 | 3 |
-| Lua-Rückruf | 116 | 3 |
+| Lua-Rückruf | 116 | 4 |
 | keine Oxyd-Steine | 111 | 1 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
@@ -24,8 +24,7 @@
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Akteur ac_horse | 27 | 3 |
-| Gegenstand it_glasses | 27 | 3 |
+| Akteur ac_horse | 27 | 4 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
@@ -71,14 +70,13 @@
 | Lua: getn() | 5 | 0 |
 | Gummiband an bewegtem oder unbekanntem Anker | 5 | 5 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_death_movable | 5 | 1 |
+| Stein st_death_movable | 5 | 2 |
 | Stein st_jamb_black | 5 | 1 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
 | Stein st_surprise | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
-| Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
@@ -198,7 +196,7 @@
 | Stein fl_water | 1 | 0 |
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
-| Lua: f() | 1 | 0 |
+| Lua: f() | 1 | 1 |
 | Lua: it_pipe | 1 | 0 |
 | Stein st_barrier (it_pipe) | 1 | 0 |
 | Stein st_barrier (it_pipe_ns) | 1 | 0 |

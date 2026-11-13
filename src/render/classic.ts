@@ -187,6 +187,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_death') return ['it_death'];
   if (/^it_(coffee|coffee_drop)$/.test(kind)) return ['it_coffee'];
   if (/^it_(spade|brush|cherry|banana|cross|squashed|pin)$/.test(kind)) return [kind, 'it_squashed'];
+  if (/^it_glasses/.test(kind)) return ['it_glasses', 'it_glasses_broken', 'st_death'];
   if (/^it_bottle/.test(kind)) return ['it_bottle_idle', 'it_bottle_broken'];
   if (kind.startsWith('it_burnable') || kind.startsWith('it_extinguisher')) return FIRE_IMAGES;
   if (kind.startsWith('it_strip')) return ['it_strip'];
@@ -265,6 +266,15 @@ export class ClassicView {
   private marble = { x: 0, y: 0, fall: -1, color: 0, sink: 0, jump: -1, pearl: false };
   /** The current marble is invisible (it_cherry). */
   hideMarble = false;
+  /** Glasses::Spot bits of the current player's glasses (1 death, 2 hollow, 16 light passenger). */
+  private glasses = 0;
+
+  /** Glasses in the inventory changed: invisible death stones show, hollow stones vanish. */
+  setGlasses(bits: number): void {
+    if (bits === this.glasses) return;
+    this.glasses = bits;
+    this.floorChanged();
+  }
   private actors: ActorSprite[] = [];
   private rubbers: number[] = [];
   private now = 0;
@@ -438,13 +448,15 @@ export class ClassicView {
     });
     // Shadows fall onto the floor before the stones are drawn.
     for (const s of level.signals) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
+    // Glass, greenbrown, plaster and flat stones that are hollow vanish behind glasses ("_glasses" HOLLOW)
+    const seenThrough = (cell: { stone: string | null; hollow?: boolean }) => (this.glasses & 2) !== 0 && !!cell.hollow && /^st_(rawglass|lightglass|darkglass|greenbrown|plaster|flat)/.test(cell.stone ?? '');
     level.cells.forEach((cell, i) => {
-      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible') return;
+      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible' || seenThrough(cell)) return;
       g.drawImage(img.sh_solid, (i % level.width) * T, Math.floor(i / level.width) * T);
     });
     level.cells.forEach((cell, i) => {
       // st_invisible: a wall that is not drawn.
-      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible') return;
+      if (!cell.stone || cell.stone === 'st_oxyd' || cell.stone === 'st_invisible' || seenThrough(cell)) return;
       const im = img[cell.stone] ?? img.st_greenbrown;
       g.drawImage(im, 0, 0, T, T, (i % level.width) * T, Math.floor(i / level.width) * T, T, T);
     });
@@ -665,7 +677,8 @@ export class ClassicView {
       return;
     }
     if (o.cls === 'death') {
-      if (o.kind === 'st_death_invisible' || o.attrs.invisible === 'true') return;
+      // DeathStone: invisible ones show through glasses (Spot DEATH)
+      if ((o.kind === 'st_death_invisible' || o.attrs.invisible === 'true') && !(this.glasses & 1)) return;
       if (pass === 'shadow') this.image('sh_round', px, py);
       else this.frame('st_death', o.moving ? Math.min(2, Math.floor(p * 3)) : 0, px, py);
       return;

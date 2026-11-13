@@ -779,6 +779,7 @@ function frame(now: number): void {
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
     classic.hideMarble = (invis[ci] ?? 0) > 0; // BasicBall::update_model hides an invisible marble
+    classic.setGlasses(objects.glassesBits());
     classic.updateRubbers(bands);
     classic.updateHalos(marbles.flatMap((m, i) => ((shield[i] ?? 0) > 0 && !deadForever[i] ? [{ x: m.x, y: m.y, rest: shield[i], small: !!m.pearl }] : [])));
     classic.render(dt);

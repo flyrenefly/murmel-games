@@ -581,6 +581,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist
   nicht aufnehmbar, der Pinsel entfernt sie. Flaschen mit Text (Botschaft) fehlen noch.
 - **it_pin** (`actors.cc` spikes): wer die Nadel trägt, hat Reibung + 7.
+- **it_glasses / _broken** (`GlassesItem.cc`): trägt der aktuelle Spieler eine Brille, sieht er unsichtbare
+  Todessteine, und hohle Glas-, Grünbraun-, Gips- und Flachsteine verschwinden. Ein Stein darauf zerbricht
+  sie. Abweichung: versteckte Lichtpassagiere werden noch nicht sichtbar.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
