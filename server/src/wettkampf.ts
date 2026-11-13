@@ -38,6 +38,8 @@ export const WK = {
   vorlaufMs: 1000,
   /** …and at most this far behind it. */
   rueckstandMs: 20_000,
+  /** After the first racer finished, the others have this long. */
+  nachZielMs: 120_000,
   /** 15 min of play per round. */
   maxSchritte: 360_000,
   maxEintraege: 300_000,
@@ -131,6 +133,8 @@ interface Runde {
   phase: 'laden' | 'rennen';
   ladenBis: number;
   losAt: number;
+  /** When the first racer finished (server clock), or 0. */
+  ersteImZiel: number;
   laeufe: Map<number, Lauf>;
 }
 
@@ -378,7 +382,7 @@ export class WettkampfHub {
     for (const f of raum.fahrer.keys()) {
       laeufe.set(f, { nr: f, bereit: false, empfangen: 0, eintraege: [], neu: [], gestartet: false, sim: null, status: 'faehrt', zeit: null, claim: null });
     }
-    raum.runde = { nr, level: raum.level, seed: this.neuerSeed(), phase: 'laden', ladenBis: now + WK.ladenMs, losAt: 0, laeufe };
+    raum.runde = { nr, level: raum.level, seed: this.neuerSeed(), phase: 'laden', ladenBis: now + WK.ladenMs, losAt: 0, ersteImZiel: 0, laeufe };
     this.alle(raum, { t: 'runde', runde: nr, level: raum.level, seed: raum.runde.seed, fahrer: [...laeufe.keys()] });
     this.lobby(raum);
   }
@@ -542,7 +546,7 @@ export class WettkampfHub {
       for (const l of r.laeufe.values()) {
         if (l.status !== 'faehrt') continue;
         const uhr = jetzt - r.losAt;
-        if (uhr > WK.maxSchritte * DT_MS + WK.rueckstandMs) this.raus(raum, l, 'zeit');
+        if (uhr > WK.maxSchritte * DT_MS + WK.rueckstandMs || (r.ersteImZiel && jetzt - r.ersteImZiel > WK.nachZielMs)) this.raus(raum, l, 'zeit');
         else if (uhr - WK.rueckstandMs > l.empfangen * DT_MS) this.raus(raum, l, 'zu-langsam');
       }
       this.alle(raum, { t: 'stand', runde: r.nr, f: [...r.laeufe.values()].map((l): StandZeile => [l.nr, l.sim?.x ?? 0, l.sim?.y ?? 0, l.sim?.farbe ?? 0, l.sim?.schritte ?? 0, l.status, l.zeit]) });
@@ -558,7 +562,10 @@ export class WettkampfHub {
     if (s.ziel !== null) {
       l.status = 'ziel';
       l.zeit = s.ziel;
-      if (raum.runde) this.weg.push(this.key(raum, raum.runde, l));
+      if (raum.runde) {
+        raum.runde.ersteImZiel ||= this.now();
+        this.weg.push(this.key(raum, raum.runde, l));
+      }
       return;
     }
     // the browser says it won, but the referee played all its steps up to there without the win

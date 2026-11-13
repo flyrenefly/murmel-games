@@ -157,6 +157,13 @@ Spiel `src/mehrspieler/` mit beiden Spielarten (gemeinsam, Wettrennen). Die Brow
   `MURMEL_API=http://127.0.0.1:3182 npx vite --port 5182`. Ohne TURN verbindet nur das Dev-Build direkt.
   Ende-zu-Ende-Test mit zwei Tabs: `npm run test:e2e:zuzweit`.
 
+**Stufe 2 `wettkampf` gebaut (Branch `mehrspieler-2`, 13.11.2026):** Spezifikation `docs/SPEC-wettkampf.md`.
+Wettrennen für bis zu 4 Fahrer plus 8 Zuschauer, 5-stelliger Code, WebSocket `/api/wettkampf` (kein WebRTC,
+kein TURN). Jeder Browser rechnet seinen Lauf selbst und schickt die Eingaben je Physikschritt; ein Kindprozess
+mit dem Spielcode unter `/game` (`tools/lib/wettkampf-worker.mjs`) rechnet jeden Lauf mit, nur sein Ergebnis
+zählt. Nichts in der Datenbank. Grenzen: 40 Räume, 6 Rennen, Rechenlast unter 70 % eines Kerns. Abschalten:
+`WETTKAMPF=aus` in `/opt/murmel/.env`. Caddy reicht das Upgrade wie bei `/api/raum` durch.
+
 ## 7.1 Forum (`forum`)
 
 Wunsch des Nutzers (13.11.2026): Spieler können Verbesserungen, Fehler usw. posten; die Beiträge

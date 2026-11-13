@@ -26,7 +26,7 @@ function peer(ip = '203.0.113.1') {
 type TestPeer = ReturnType<typeof peer>;
 
 /**
- * Stand-in for the referee: level "ziel:N" is won after N steps (counted across restarts), "kaputt"
+ * Stand-in for the referee: level "ziel:N" is won after N steps of one try (a restart begins anew), "kaputt"
  * fails to start. Position x = steps of the current try.
  */
 function fakeRechner() {
@@ -56,7 +56,7 @@ function fakeRechner() {
           for (let i = 0; i < e[0] && run.won === null; i++) {
             run.schritte++;
             run.versuch++;
-            if (run.schritte >= run.ziel) run.won = run.schritte;
+            if (run.versuch >= run.ziel) run.won = run.schritte;
           }
         }
         staende.push({ k: a.k, schritte: run.schritte, x: run.versuch, y: 0, farbe: 0, ziel: run.won, ...(run.fehler ? { fehler: run.fehler } : {}) });
@@ -268,13 +268,13 @@ describe('Wettkampf: Rennen und Schiedsrichter', () => {
     const [a, b] = [peer(), peer('198.51.100.2')];
     await raum(s, [a, b], [], { ...LEVEL, id: 'ziel:300' });
     await rennen(s, [a, b]);
-    s.clock.add(400 * DT_MS);
-    await s.send(a, { t: 'eingabe', runde: 1, ab: 0, e: [[200, 0, 0], [1, 'restart'], [100, 0, 0]] });
+    s.clock.add(500 * DT_MS);
+    await s.send(a, { t: 'eingabe', runde: 1, ab: 0, e: [[100, 0, 0], [1, 'restart'], [300, 0, 0]] });
     await s.send(b, { t: 'eingabe', runde: 1, ab: 0, e: leer(250) });
     await s.hub.takt();
     const f = a.last('stand')!.f;
-    assert.deepEqual(f[0].slice(4), [300, 'ziel', 300]);
-    assert.deepEqual(f[0].slice(1, 2), [100]); // the marble of the second try
+    assert.deepEqual(f[0].slice(4), [400, 'ziel', 400]);
+    assert.deepEqual(f[0].slice(1, 2), [300]); // the marble of the second try
   });
 
   test('Der Browser meldet ein Ziel, das der Server nicht erreicht: abweichung', async () => {
@@ -316,6 +316,35 @@ describe('Wettkampf: Rennen und Schiedsrichter', () => {
     await s.hub.takt();
     const erg = a.last('ergebnis')!.plaetze.map((p) => p.grund);
     assert.deepEqual(erg, ['zu-schnell', 'ungueltig', 'zu-langsam']);
+  });
+
+  test('Nach dem ersten im Ziel bleiben den anderen 2 Minuten', async () => {
+    const s = setup();
+    const [a, b] = [peer(), peer('198.51.100.2')];
+    await raum(s, [a, b], [], { ...LEVEL, id: 'ziel:400' });
+    await rennen(s, [a, b]);
+    s.clock.add(400 * DT_MS);
+    await s.send(a, { t: 'eingabe', runde: 1, ab: 0, e: leer(400) });
+    await s.send(b, { t: 'eingabe', runde: 1, ab: 0, e: leer(100) });
+    await s.hub.takt();
+    assert.equal(a.last('stand')!.f[0][5], 'ziel');
+    let ab = 100;
+    for (let t = 0; t < WK.nachZielMs; t += 10_000) {
+      s.clock.add(10_000);
+      // b keeps sending, but starts over before every win
+      const e: Eintrag[] = [];
+      for (let k = 0; k < 10; k++) e.push([1, 'restart'], [399, 0, 0]);
+      await s.send(b, { t: 'eingabe', runde: 1, ab, e });
+      ab += 3990;
+      await s.hub.takt();
+    }
+    assert.equal(a.last('ergebnis'), undefined);
+    s.clock.add(100);
+    await s.hub.takt();
+    assert.deepEqual(a.last('ergebnis')!.plaetze.map((p) => [p.nr, p.platz, p.grund]), [
+      [1, 1, undefined],
+      [2, null, 'zeit'],
+    ]);
   });
 
   test('Wer beim Laden nicht bereit wird, setzt aus; wer geht, ist raus', async () => {

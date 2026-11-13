@@ -78,7 +78,8 @@ laufendes Rennen.
    bereit ist, setzt diese Runde aus), kommt `los` mit **3 s Countdown**.
 4. Jeder spielt sein Level. Die anderen Fahrer sind als halbdurchsichtige **Geister** zu sehen; eine
    kleine Rangliste zeigt Zeit und Status aller.
-5. Die Runde endet, wenn alle Fahrer im Ziel oder raus sind, oder nach **15 min** Spielzeit. Der Server
+5. Die Runde endet, wenn alle Fahrer im Ziel oder raus sind, **2 min nach dem ersten Zieleinlauf**
+   (Nachspielzeit, damit niemand die Runde aufhält) oder nach **15 min** Spielzeit. Der Server
    schickt `ergebnis` mit Plätzen. Danach wählt der Spielleiter „Nochmal“ oder ein anderes Level.
 6. Zuschauer folgen einem Fahrer (Tasten 1–4 oder Knöpfe), sehen sein Spielfeld, die anderen als
    Geister und die Rangliste.
@@ -96,6 +97,7 @@ laufendes Rennen.
 - **Neustart:** Eintrag `[1, "restart"]` im Eingabestrom. Der Server beginnt den Lauf neu; Extraleben
   nimmt er mit, wenn sein eigener Lauf das verlangt (`restartRequested === 'keep'`), wie die Hülle in
   `main.ts`.
+- **Nachspielzeit:** 2 min nach dem ersten im Ziel ist, wer noch fährt, `zeit` (raus).
 - **Aufgeben** oder Verbindung weg = `raus` (kein Wiederbeitritt in die laufende Runde; zur nächsten
   Runde wieder beitreten).
 
@@ -134,7 +136,8 @@ zusätzlich `[1, "restart"]`.
 - Je IP (nur im Speicher, wie Stufe 1): **2 offene Räume**, **10 gleichzeitige Verbindungen**,
   **30 Beitrittsversuche je 10 min** (Codes 00000–99999: Raten ist aussichtslos), höchstens
   **200 Nachrichten je 10 s** je Verbindung.
-- Eingaben: Einträge geprüft wie `decodeInput`, Schritte nur lückenlos (`ab`), nicht vor der Uhr,
+- Eingaben: Einträge geprüft wie `decodeInput`, Schritte nur lückenlos (`ab`; eine wegen der
+  Nachrichtengrenze verworfene Nachricht ergibt eine Lücke und damit `ungueltig`), nicht vor der Uhr,
   höchstens 15 min je Runde; höchstens 300 000 Einträge je Fahrer und Runde.
 - **Raumleben:** Ohne Fahrer schließt der Raum sofort (Zuschauer bekommen `verfallen`). Lobby ohne
   Start und ohne Nachricht 15 min → geschlossen. Geht der Spielleiter, wird der nächste Fahrer
@@ -155,9 +158,12 @@ zusätzlich `[1, "restart"]`.
 
 ## 8. Spiel (Browser)
 
-- `src/mehrspieler/wettkampf.ts`: Protokoll (prüfen, packen), Eingabestrom aus der Aufzeichnung der
-  Session, Uhr-Aufholen, Geister, Rangliste – ohne DOM, getestet.
-- `src/mehrspieler/wettkampf-ui.ts`: WebSocket, Menüs, Lobby, Countdown, Rangliste, Zuschauen. Es
+- `src/mehrspieler/wettkampf.ts`: Protokoll (prüfen), Eingabestrom aus der Aufzeichnung der
+  Session (alle 100 ms; ein noch wachsender Lauf gleicher Schritte geht anteilig raus, sonst bekäme
+  der Server von einem Spieler ohne Mausbewegung nichts), Uhr-Aufholen, Geister, Rangliste – ohne DOM, getestet.
+- `src/mehrspieler/wettkampf-ui.ts`: WebSocket, Menüs, Lobby, Countdown, Rangliste, Zuschauen.
+  Nur im Dev-Build: `window.__wettkampf` (Zustand, Autopilot mit einer gespeicherten Lösung) für den
+  Browsertest. Es
   hängt sich an die vorhandenen Haken von `zuZweit` (`rechnen`, `geister`, `gewonnen`, `seed`,
   `levelGeladen`, `laeuft`, `folgt`); `main.ts` bekommt nur den Startwert-und-Leben-Parameter beim
   Laden.
@@ -183,5 +189,5 @@ zusätzlich `[1, "restart"]`.
   Kindprozess kommt von dort.
 - Lokal: `PORT=3182 node server/src/raum-dev.ts` startet jetzt auch den Wettkampf (Spielcode aus dem
   Repo), dazu `MURMEL_API=http://127.0.0.1:3182 npx vite --port 5182`.
-- Rückweg: `WETTKAMPF=aus` in `/opt/murmel/.env` schaltet die Route ab (Fehler `aus` im Spiel); oder
-  den Commit zurücknehmen.
+- Rückweg: `WETTKAMPF=aus` in `/opt/murmel/.env` und `docker compose up -d api` schaltet die Route ab
+  (das Spiel meldet dann „Keine Verbindung zum Server“); oder den Commit zurücknehmen.
