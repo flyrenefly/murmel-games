@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { type Checker, type LeaderboardStore, leaderboardRoutes } from './bestenliste.ts';
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type GhostStore, ghostRoutes } from './geister.ts';
+import { type DailyStore, dailyRoutes } from './tageslevel.ts';
 import { type AccountOptions, accountRoutes } from './konten.ts';
 import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
 import { raumRoutes, type RoomHub } from './raum.ts';
@@ -37,6 +38,8 @@ export interface AppOptions {
   leaderboard?: { store: LeaderboardStore; checker: Checker };
   /** Geister: leaderboard runs as ghosts, with the players' consent (needs accounts and leaderboard). */
   ghosts?: GhostStore;
+  /** Tageslevel und Wochenaufgabe (needs accounts and leaderboard: its checker and queue). */
+  daily?: DailyStore;
   /** Spieler-Levels (needs accounts): upload, release, list, ratings. Uses the leaderboard's checker and queue. */
   playerLevels?: { store: PlayerLevelStore; checker?: Checker };
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
@@ -57,7 +60,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, playerLevels, sync, raum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, playerLevels, sync, raum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -79,6 +82,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   const clock = accounts?.now ?? now;
   const playerFile = playerLevels && playerFileFor(playerLevels.store);
   const queue = accounts && leaderboard ? leaderboardRoutes(app, { ...leaderboard, version, origin: accounts.origin, now: clock, solutions: solvability, playerFile }) : undefined;
+  if (accounts && leaderboard && daily && queue) dailyRoutes(app, { store: daily, checker: leaderboard.checker, queue, solvability, origin: accounts.origin, now: clock });
   const levelChecker = playerLevels?.checker ?? leaderboard?.checker;
   if (accounts && playerLevels && levelChecker) {
     playerLevelRoutes(app, { store: playerLevels.store, checker: levelChecker, queue, version, origin: accounts.origin, mailer: accounts.mailer, adminEmails: accounts.adminEmails, now: clock });

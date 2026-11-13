@@ -23,6 +23,7 @@ import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
 import { Geist, vergleich } from './game/geist';
+import { type Aufgabe, aufgabenLaden, einreichenAufgabe, ergebnisZeile, listenZeile, titelZeile } from './tageslevel';
 import { auswahl, eigenenLaufSpeichern, eigenerLauf, geistLaden, geisterListe, type Option } from './geister';
 import { editorButton, LINK_PACK, noteLinkWin, openLinkFromHash } from './editor/game-link';
 import { encodeLevel, LINK_PREFIX } from './editor/link';
@@ -141,7 +142,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
-  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
+  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? aufgabenSeed(pack, packList[i]) ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
   const ghost = await geistFuer(packList[i], startLua);
   if (token !== loadToken) return; // another level was loaded meanwhile
   geist = ghost;
@@ -431,7 +432,7 @@ function showStart(): void {
   mode = 'menu';
   const where = packId === PLAYER_PACK ? escapeHtml(packName) : `${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}`;
   const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}</span><br>`;
-  const ghostNote = geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '';
+  const ghostNote = (aufgabe ? `<span class="credit">${escapeHtml(titelZeile(aufgabe))}</span><br>` : '') + (geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '');
   const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? 'Geist ändern' : 'Mit Geist', () => void showGeister()]];
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + ghostNote + controlsHelp(), [
     ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
@@ -442,6 +443,59 @@ function showStart(): void {
     [kontoLabel(), openKonto],
   ]);
   addSteeringChoice(showStart);
+}
+
+// ---------- Tageslevel und Wochenaufgabe (docs/SPEC-tageslevel.md, src/tageslevel.ts) ----------
+/** The task being played: its start value holds for every restart until another level is loaded. */
+let aufgabe: Aufgabe | null = null;
+
+/** Start value of the level being loaded if it is the active task's; otherwise the task ends. */
+function aufgabenSeed(pack: string, file: LevelFile): number | null {
+  if (aufgabe && aufgabe.pack === pack && aufgabe.level === file.id) return aufgabe.seed;
+  aufgabe = null;
+  return null;
+}
+
+async function aufgabeSpielen(a: Aufgabe): Promise<void> {
+  aufgabe = a;
+  await loadLevel(a.pack, a.index);
+  if (level.id !== a.level) {
+    aufgabe = null;
+    showToast('Dieses Level fehlt in deiner Spielversion – bitte die Seite neu laden.', 3000);
+  }
+  showStart();
+}
+
+/** Today's and this week's task above the packs; they appear when the answer is there (not offline). */
+function aufgabenZeigen(packs: { id: string; title: string }[]): void {
+  void aufgabenLaden().then((tasks) => {
+    if (!tasks || levelList.hidden || ovTitle.textContent !== 'Levelpakete') return;
+    const rows = (['tag', 'woche'] as const).flatMap((art) => {
+      const a = tasks[art];
+      if (!a) return [];
+      const z = listenZeile(a, packs.find((p) => p.id === a.pack)?.title ?? a.pack, formatBest);
+      const current = aufgabe?.art === art && aufgabe.zeitraum === a.zeitraum;
+      return [listButton(`<span>${solved.has(a.level) ? '✓' : '›'}</span><b>${escapeHtml(z.titel)}</b><small>${escapeHtml(z.info)}</small>`, current, () => void aufgabeSpielen(a))];
+    });
+    levelList.prepend(...rows);
+  });
+}
+
+/** The task line of the win message: signed in, the run goes to the task's ranking. */
+function aufgabenLine(rec: ReturnType<GameSession['recording']>, a: Aufgabe): () => string {
+  const id = `aufgabe-${++leaderboardSeq}`;
+  let text = ergebnisZeile({ status: 'wartet' }, a.art, formatBest);
+  const show = (t: string) => {
+    text = t;
+    const el = document.getElementById(id);
+    if (el) el.textContent = t;
+  };
+  void (async () => {
+    const sent = await einreichenAufgabe(rec, a, __MURMEL_VERSION__);
+    if ('fehler' in sent) return show(ergebnisZeile({ status: 'abgelehnt', grund: sent.fehler }, a.art, formatBest));
+    show(ergebnisZeile(await abwarten(sent.id), a.art, formatBest));
+  })();
+  return () => `<br><span class="note" id="${id}" role="status" aria-live="polite">${escapeHtml(text)}</span>`;
 }
 
 // ---------- Geister (docs/SPEC-geister.md, src/game/geist.ts) ----------
@@ -586,6 +640,7 @@ async function showLevels(): Promise<void> {
   );
   levelList.hidden = false;
   (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
+  aufgabenZeigen(packs);
 }
 
 const solvedInPack = new Map<string, Set<string>>();
@@ -731,13 +786,14 @@ function onWin(): void {
     void restart();
   }]];
   const board = leaderboardLine(recording, s.steps, level.id);
+  const task = aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
   const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const rate: [string, () => void][] = packId === PLAYER_PACK ? [['Bewerten', () => location.assign(listUrl(level.id))]] : [];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart], ...raceIt, ...ranking, ...rate, ...asSolution]
         : [

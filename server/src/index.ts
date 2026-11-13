@@ -6,6 +6,7 @@ import { connect, database } from './db.ts';
 import { parseAdminEmails } from './konten.ts';
 import { forumStore } from './forum-db.ts';
 import { ghostStore } from './geister-db.ts';
+import { dailyStore } from './tageslevel-db.ts';
 import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
 import { playerLevelStore } from './spielerlevels-db.ts';
@@ -36,6 +37,7 @@ const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS
   // the game code of the active version, read-only (compose.yml); without it submitting answers 503
   leaderboard: { store: leaderboardStore(sql), checker },
   ghosts: ghostStore(sql),
+  daily: dailyStore(sql),
   // Spieler-Levels: same checker process and queue as the leaderboard
   playerLevels: { store: playerLevelStore(sql) },
   sync: syncStore(sql),
