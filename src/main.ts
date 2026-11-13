@@ -15,9 +15,10 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
-import { beiKontoWechsel, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
 import { Abgleich, statusText, type SyncStatus } from './sync';
 import { loesungSpeichern } from './loesung';
+import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 
@@ -484,7 +485,10 @@ async function showPack(id: string): Promise<void> {
       const done = solved.has(l.id);
       if ((levelFilter === 'offen' && done) || (levelFilter === 'geloest' && !done)) return [];
       const best = progress.levels[l.id]?.best;
-      const right = best ? `<small>${formatBest(best.steps)}</small>` : '';
+      const server = meine.get(l.id);
+      // the better of the local and the checked time, and the own place in the leaderboard
+      const steps = Math.min(best?.steps ?? Infinity, server?.zeit ?? Infinity);
+      const right = Number.isFinite(steps) ? `<small>${formatBest(steps)}${server ? ` · Platz ${server.platz}` : ''}</small>` : '';
       return [
         listButton(`<span>${i + 1}</span>${escapeHtml(l.title)}${right}${done ? ' <em aria-label="gelöst">✓</em>' : ''}`, id === packId && i === levelIndex, async () => {
           await loadLevel(id, i);
@@ -520,6 +524,37 @@ function pairsText(): string {
   return `Perlen ${objects.meditationCount().engaged}/${pearls}`;
 }
 
+// ---------- leaderboard (optional, src/bestenliste.ts) ----------
+/** Own checked times and places per level; filled after sign-in. */
+let meine: Meine = new Map();
+let leaderboardSeq = 0;
+
+/**
+ * The leaderboard line of the win message. Signed in, the run goes to the server for its replay and the
+ * line shows the place when the answer comes; otherwise a hint to sign in.
+ */
+function leaderboardLine(rec: ReturnType<GameSession['recording']>, steps: number, levelId: string): () => string {
+  if (!darfEinreichen()) return () => '<br><span class="note">Anmelden, um in die Bestenliste zu kommen.</span>';
+  const server = meine.get(levelId);
+  if (server && !lohntSich(steps, server)) return () => `<br><span class="note">Bestenliste: Platz ${server.platz} (deine Bestzeit ${formatBest(server.zeit)})</span>`;
+  const id = `bestenliste-${++leaderboardSeq}`;
+  let text = 'Bestenliste: wird geprüft …';
+  // the overlay appears a moment after the win (sound first); it shows whatever is known by then
+  const show = (t: string) => {
+    text = t;
+    const el = document.getElementById(id);
+    if (el) el.textContent = t;
+  };
+  void (async () => {
+    const sent = await einreichen(rec, __MURMEL_VERSION__);
+    if ('fehler' in sent) return show(`Bestenliste: ${sent.fehler}`);
+    const result = await abwarten(sent.id);
+    if (result.status === 'angenommen' && result.platz) meine.set(levelId, { zeit: result.zeit, platz: result.platz });
+    show(ergebnisText(result, formatBest));
+  })();
+  return () => `<br><span class="note" id="${id}" role="status" aria-live="polite">${escapeHtml(text)}</span>`;
+}
+
 function onWin(): void {
   if (!session) return;
   const s = session;
@@ -543,16 +578,19 @@ function onWin(): void {
   const last = levelIndex === packList.length - 1;
   // Admins: the won run as a solution for the nightly check (docs/SPEC-loesbarkeit.md)
   const recording = s.recording();
+  const board = leaderboardLine(recording, s.steps, level.id);
+  const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart], ...asSolution]
+        ? [['Levels', showLevels], ['Nochmal', restart], ...ranking, ...asSolution]
         : [
             ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
+            ...ranking,
             ...asSolution,
           ],
     );
@@ -874,7 +912,8 @@ for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 
 await loadLevel(packId, levelIndex);
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
-void kontoLaden().then(() => {
+void kontoLaden().then(async () => {
+  if (darfEinreichen()) meine = await meineLaden();
   for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
 });
 if (mailLinkPruefen(kontoHost)) {

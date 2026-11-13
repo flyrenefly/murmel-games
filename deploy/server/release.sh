@@ -31,6 +31,8 @@ activate() { # activate VERSION – Spiel umhängen, API-Image tauschen, prüfen
   docker image inspect "murmel-api:$v" >/dev/null || { log "Image murmel-api:$v fehlt"; exit 1; }
   ln -sfn "releases/$v" "$ROOT/www/current.tmp" && mv -T "$ROOT/www/current.tmp" "$ROOT/www/current"
   setenv MURMEL_VERSION "$v"
+  # Spielcode für die Bestenliste (siehe unten); notfalls leer, damit Docker ihn nicht als root anlegt
+  mkdir -p "$ROOT/game/$v"
   docker compose up -d --remove-orphans
   # ein geändertes Caddyfile übernimmt Caddy nur nach einem Neuladen
   docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || log "Caddy-Neuladen gescheitert"
@@ -69,6 +71,21 @@ mv "$RELEASES/$v.tmp" "$RELEASES/$v"
 
 # API-Image bauen, Betriebsdateien übernehmen
 docker build -q -t "murmel-api:$v" "$src" >/dev/null
+# Spielcode dieser Version für die Bestenliste (docs/SPEC-bestenliste.md): die API spielt eingereichte
+# Läufe damit nach, schreibgeschützt unter /game (compose.yml). Aus Git, nicht aus dem Arbeitsbaum.
+repo="$src/.."
+game="$ROOT/game/$v"
+if [ ! -f "$game/tools/lib/check-worker.mjs" ] && git -C "$repo" cat-file -e "$v^{commit}" 2>/dev/null; then
+  rm -rf "$game.tmp"
+  mkdir -p "$game.tmp/node_modules"
+  git -C "$repo" archive "$v" package.json src public/levels tools | tar -C "$game.tmp" -xf -
+  # Lua für Node: fengari und seine Abhängigkeiten (wie loesbarkeit.sh)
+  for m in fengari $(jq -r '.dependencies // {} | keys[]' "$repo/node_modules/fengari/package.json"); do
+    cp -a "$repo/node_modules/$m" "$game.tmp/node_modules/"
+  done
+  rm -rf "$game"
+  mv "$game.tmp" "$game"
+fi
 cp "$src/../deploy/server/compose.yml" "$src/../deploy/server/Caddyfile" "$ROOT/"
 
 if activate "$v"; then
@@ -83,6 +100,7 @@ prev=$(cat "$ROOT/previous-version" 2>/dev/null || true)
 ls -1t "$RELEASES" | grep -E '^[0-9a-f]{7,40}$' | tail -n +$((KEEP + 1)) | while read -r old; do
   [ "$old" = "$v" ] || [ "$old" = "$prev" ] && continue
   rm -rf -- "${RELEASES:?}/$old"
+  rm -rf -- "${ROOT:?}/game/$old"
   docker image rm "murmel-api:$old" >/dev/null 2>&1 || true
 done
 docker image prune -f >/dev/null

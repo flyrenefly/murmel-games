@@ -37,6 +37,11 @@ services:
       MURMEL_VERSION: ${MURMEL_VERSION}
       # Lesezugang zur Statistik (/statistik.html); leer = Statistik geschlossen
       STATS_TOKEN: ${STATS_TOKEN:-}
+      GAME_DIR: /game
+    # Bestenliste: Spielcode der aktiven Version zum Nachspielen (update.sh legt ihn an); fehlt er,
+    # nimmt die API keine Läufe an, alles andere läuft.
+    volumes:
+      - ./game/${MURMEL_VERSION}:/game:ro
     depends_on:
       db:
         condition: service_healthy
