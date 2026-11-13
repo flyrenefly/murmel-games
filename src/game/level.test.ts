@@ -67,3 +67,10 @@ describe('parseLevel', () => {
     for (const f of LEVELS) expect(() => parseLevel(f)).not.toThrow();
   });
 });
+
+describe('meditation levels with a main pearl', () => {
+  it('a level without Oxyd stones loads when its main pearl and hollows make it a meditation', () => {
+    const file: LevelFile = { id: 't', title: 'T', author: 'x', license: 'GPL', map: ['####', '#@.#', '####'], mainPearl: { k: 'ac_pearl_white' }, objects: [{ x: 2, y: 1, k: 'it_meditation_hollow' }] };
+    expect(() => parseLevel(file)).not.toThrow();
+  });
+});
