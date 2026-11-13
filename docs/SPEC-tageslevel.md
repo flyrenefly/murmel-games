@@ -7,7 +7,7 @@ Baustein aus `docs/SERVER.md` (Phase D, Abschnitt 10). Grundlagen: `docs/SPEC-be
 Zeitumstellung und Jahreswechsel, Auswahl, API mit Speicher-Store, Levelkatalog aus dem echten Spielcode;
 PostgreSQL-Teil in der CI), vitest, Edge headless mit nachgebildeter API (Zeilen in der Levelliste,
 Startkarte, Startwert über Neustarts, Einreichen nach Sieg mit Platz, anderes Level beendet die Aufgabe).
-Nicht geprüft: echte Tagesrangliste auf dem Server. T3 wartet auf Freigabe des Textes.
+Nicht geprüft: echte Tagesrangliste auf dem Server. T3: Absatz in „Bestenlisten“ vom Nutzer freigegeben und eingetragen.
 
 ## Ziel
 
