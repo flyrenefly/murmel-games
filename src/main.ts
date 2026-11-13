@@ -22,6 +22,9 @@ import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, 
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 import { editorButton, LINK_PACK, openLinkFromHash } from './editor/game-link';
+import { loadSteering, saveSteering, type Steering } from './steuerung';
+import { steeringControl } from './steuerung-ui';
+import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -213,6 +216,36 @@ function showOverlay(title: string, text: string, buttons: [string, () => void][
 
 const isTouch = matchMedia('(pointer: coarse)').matches;
 
+// ---------- touch steering: tilt from a rest pose or swipe (src/steuerung.ts), rotation lock ----------
+let steering: Steering = loadSteering(store);
+function chooseSteering(s: Steering): void {
+  steering = s;
+  saveSteering(store, s);
+}
+/** The current attitude becomes the rest pose; with feedback when the player asked for it. */
+function setRest(feedback: boolean): void {
+  input.setRest();
+  if (feedback) showToast('Ruhelage gesetzt');
+}
+input.onDoubleTap = () => {
+  if (mode === 'play' && input.tiltEnabled) setRest(true);
+};
+$('btn-rest').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setRest(true);
+});
+/** Touch dialogs: the segmented control "Neigen / Wischen"; a change shows the dialog again. */
+function addSteeringChoice(redraw: () => void): void {
+  if (!isTouch) return;
+  ovForm.replaceChildren(steeringControl(steering, (s) => (chooseSteering(s), redraw())));
+  ovForm.hidden = false;
+}
+async function lockRotationOrHint(): Promise<void> {
+  if ((await lockRotation()) || store.get('drehsperreHinweis', false)) return;
+  store.set('drehsperreHinweis', true); // once, not on every start
+  showToast(rotationHint(), 5000);
+}
+
 function startPlaying(): void {
   sfx.unlock();
   overlay.hidden = true;
@@ -221,23 +254,30 @@ function startPlaying(): void {
     startTime = performance.now();
     reportEvent('start', level.id); // anonymous statistics: once per run
   }
+  setRest(false); // level start and resume: the current attitude is the rest pose
   input.requestLock();
 }
 
 async function startTouch(): Promise<void> {
   sfx.unlock();
-  if (!input.tiltEnabled && !(await input.enableTilt())) {
-    showOverlay('Neigen nicht möglich', 'Dieses Gerät oder dieser Browser liefert keine Lagedaten.', [['OK', showStart]]);
+  if (steering === 'tilt' && !input.tiltEnabled && !(await input.enableTilt())) {
+    showOverlay('Neigen nicht möglich', 'Dieses Gerät oder dieser Browser liefert keine Lagedaten. Mit Wischen geht es trotzdem.', [
+      ['Mit Wischen spielen', () => (chooseSteering('swipe'), void startTouch())],
+      ['Zurück', showStart],
+    ]);
     return;
   }
+  input.setSteering(steering);
+  document.body.dataset.steer = steering;
   startPlaying();
+  void lockRotationOrHint();
 }
 
 const twoMarbles = () => (physics?.steerable ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
-    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
+    ? `${steering === 'swipe' ? 'Wische über das Spielfeld, um die Murmel anzuschieben.' : 'Neige dein Gerät, um die Murmel zu rollen. Doppelt tippen macht die jetzige Haltung zur Ruhelage.'}<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
     : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
@@ -382,11 +422,12 @@ function showStart(): void {
   mode = 'menu';
   const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
-    [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
+    ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
     ...linkButtons(),
     [kontoLabel(), openKonto],
   ]);
+  addSteeringChoice(showStart);
 }
 
 /** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link. */
@@ -398,13 +439,14 @@ function linkButtons(): [string, () => void][] {
 function showPause(): void {
   mode = 'menu';
   showOverlay('Pause', controlsHelp(), [
-    ['Weiterspielen', startPlaying],
+    ['Weiterspielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Neustart', restart],
     ['Levels', showLevels],
     ...linkButtons(),
     [kontoLabel(), openKonto],
     ['Fehler melden', reportBug],
   ]);
+  addSteeringChoice(showPause);
 }
 
 /** Opens the forum in a new tab with a bug topic for this level and game version (src/forum-text.ts). */
@@ -417,6 +459,7 @@ const kontoHost: KontoHost = { showOverlay, form: ovForm, back: showStart };
 function openKonto(): void {
   mode = 'menu';
   input.releaseLock();
+  unlockRotation();
   void kontoOeffnen(kontoHost);
 }
 
@@ -440,6 +483,7 @@ function listButton(html: string, current: boolean, onClick: () => void): HTMLBu
 async function showLevels(): Promise<void> {
   mode = 'menu';
   input.releaseLock();
+  unlockRotation();
   showOverlay('Levelpakete', '', [['Zurück', showStart], ['Fortschritt', () => showProgress()]]);
   const packs = await listPacks();
   levelList.replaceChildren(

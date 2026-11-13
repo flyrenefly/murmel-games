@@ -597,3 +597,51 @@ button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---------- Touch steering: "Neigen / Wischen" and the rest pose button ---------- */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#ov-form .segmented button {
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 9px;
+  color: var(--muted);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#ov-form .segmented button[aria-checked='true'] {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  font-weight: 600;
+}
+
+body[data-theme='retro16'] .segmented,
+body[data-theme='retro16'] #ov-form .segmented button {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Only while tilting on a touch device. */
+#btn-rest {
+  display: none;
+}
+body[data-mode='play'][data-steer='tilt'] #btn-rest {
+  display: inline-block;
+}
+
+/* Longer hints (rotation lock) use the width instead of a narrow column. */
+#toast {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
