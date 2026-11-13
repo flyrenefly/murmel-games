@@ -24,8 +24,8 @@ Lösungen nachgespielt**. Das geschieht
 - **Nachspielen:** ~0,3 s Rechenzeit je Lösung (Läufe von 25–120 s Spielzeit, ein Kern). Selbst mit
   einer Lösung je Level wären es ~6 min auf einem Kern – deutlich unter der Schätzung in
   SERVER.md 8.1 (30–60 min).
-- **Lösungen gibt es noch keine.** Ein einfacher Autopilot (unten) löst 29 Levels; alles andere
-  braucht Läufe von Menschen.
+- **Lösungen:** Ein einfacher Autopilot (`tools/autosolve.mjs`, nur Tastenkraft, Weg über freie Felder
+  zu den Oxyd-Paaren) löst 29 Levels (26 Enigma, 3 eigene); alles andere braucht Läufe von Menschen.
 
 ## Bausteine
 
@@ -35,9 +35,14 @@ Lösungen nachgespielt**. Das geschieht
 | L2 | Werkzeuge `tools/check-load.mjs` und `tools/check-solutions.mjs`: Kindprozesse (einer je Kern oder `--jobs`), Zeitlimit je Level, Ausgabe als Text und `--json` | `node --test tools/` |
 | L3 | Lösungen im Repo: `solutions/<präfix>/<name>.json` (Format v1 + `levelHash`, `source`); Autopilot `tools/autosolve.mjs` | CI spielt alle nach |
 | L4 | CI: Ladeprobe und Nachspielen bei jedem PR und Push (Job `build`, also auch Voraussetzung für den Rollout) | Lauf in GitHub Actions |
-| L5 | Nachtlauf: `server/src/loesbarkeit/` (Job), Migration `005_loesbarkeit.sql`, systemd-Timer, Mail bei neuen Fehlschlägen | `node --test`, DB-Test mit `TEST_DATABASE_URL` |
+| L5 | Nachtlauf: `server/src/loesbarkeit-job.ts` (Job, Logik in `loesbarkeit.ts`), Migration `005_loesbarkeit.sql`, systemd-Timer, Mail bei neuen Fehlschlägen | `node --test`, DB-Test mit `TEST_DATABASE_URL` |
 | L6 | Admin-Ansicht `loesbarkeit.html` + `GET /api/admin/loesbarkeit…` | `node --test` (Endpunkte), Browser |
-| L7 | Weitere Herkunft der Lösungen – **Entscheidung des Nutzers**, siehe unten | – |
+| L7 | Lösungen der Admins: Knopf „Als Lösung speichern“ nach dem Sieg (`src/loesung.ts`), `POST /api/admin/loesungen` | vitest `loesung.test.ts`, `node --test` |
+
+**Stand 13.11.2026:** L1–L7 gebaut (Branch `loesbarkeit`). Geprüft: vitest, `node --test` (Werkzeuge und
+Server, PostgreSQL-Teil nur in der CI), Nachtlauf lokal von Ende zu Ende mit Speicher-Store (1144 Levels,
+31 Lösungen, Mail-Text), Admin-Ansicht im Browser mit Beispieldaten (hell, dunkel, 375 px). Nicht
+geprüft: Container und Timer auf dem Server (Schritte unten), Knopf im Spiel mit echtem Admin-Konto.
 
 ### Ergebnisse
 
@@ -124,6 +129,22 @@ solutions           (id, level, level_hash, recording jsonb, steps, account_id �
 - **Level-Verlauf:** Klick auf ein Level zeigt dessen Ergebnisse der letzten Läufe.
 - API: `GET /api/admin/loesbarkeit` (letzter Lauf + Probleme + Verlauf),
   `GET /api/admin/loesbarkeit/level?id=…` (Verlauf eines Levels).
+
+### Einrichten auf dem Server (einmalig, als root)
+
+Der Rollout (`update.sh`) bringt `loesbarkeit.sh`, `compose.yml` und das API-Image mit Migration 005 von
+selbst. Einmalig nötig sind nur die systemd-Einheiten:
+
+```bash
+install -m 644 /opt/murmel/repo/deploy/server/murmel-loesbarkeit.service /opt/murmel/repo/deploy/server/murmel-loesbarkeit.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now murmel-loesbarkeit.timer
+systemctl start murmel-loesbarkeit.service   # erster Lauf sofort, Ausgabe: journalctl -u murmel-loesbarkeit
+```
+
+Voraussetzungen: `jq` und `git` (für `update.sh` schon da), `ADMIN_EMAILS` und SMTP-Werte in
+`/opt/murmel/.env` (sonst kein Mailversand, die Ansicht geht trotzdem). Rückweg:
+`systemctl disable --now murmel-loesbarkeit.timer`; die Tabellen stören nicht.
 
 ## Grenzen
 
