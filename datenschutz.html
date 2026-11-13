@@ -164,10 +164,14 @@
       <h2>Speicherung im Browser</h2>
       <p>
         Das Spiel speichert Einstellungen und Spielfortschritt (gewählter Grafikstil, Mausgeschwindigkeit,
-        zuletzt gespieltes und gelöste Levels) im lokalen Speicher Ihres Browsers (<code>localStorage</code>,
-        Einträge beginnend mit <code>murmel.</code>). Diese Daten verlassen Ihr Gerät nicht und werden nicht an
-        uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion erforderlich
-        (§ 25 Abs. 2 Nr. 2 TDDDG). Sie können sie jederzeit über die Browsereinstellungen löschen.
+        zuletzt gespieltes und gelöste Levels, Bestzeiten, Spielzeit, Abstürze und Anzahl der Versuche je Level,
+        Filter der Levelliste) im lokalen Speicher Ihres Browsers (<code>localStorage</code>, Einträge beginnend
+        mit <code>murmel.</code>). Damit das Spiel auch ohne Internetverbindung funktioniert, legt der Browser
+        außerdem Programmdateien, Grafiken, Klänge und die geöffneten Levelpakete in seinem Cache-Speicher ab
+        (Service Worker). Diese Daten verlassen Ihr Gerät nicht und werden nicht an uns übertragen. Mit
+        „Fortschritt → Sichern“ können Sie Ihren Fortschritt als Datei auf Ihr Gerät herunterladen; auch diese
+        Datei wird nicht an uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion
+        erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Sie können sie jederzeit über die Browsereinstellungen löschen.
       </p>
 
       <h2>Bewegungssensoren</h2>
