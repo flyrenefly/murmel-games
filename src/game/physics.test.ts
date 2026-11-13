@@ -395,3 +395,15 @@ describe('fl_yinyang', () => {
     }
   });
 });
+
+describe('rubber bands at runtime', () => {
+  it('st_rubberband adds a band once; scissors cut it and report the cut', () => {
+    const w = new PhysicsWorld(level);
+    expect(w.hasRubberTo(0, 5.5, 2.5)).toBe(false);
+    w.addRubber(0, 5.5, 2.5, { strength: 10 });
+    expect(w.hasRubberTo(0, 5.5, 2.5)).toBe(true);
+    expect(w.rubbers.length).toBe(1);
+    expect(w.cutRubbers(0)).toBe(true);
+    expect(w.cutRubbers(0)).toBe(false);
+  });
+});

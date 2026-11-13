@@ -571,6 +571,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   startet die Zeit neu. st_laserflop fehlt noch.
 - **st_flash** (`SimpleStones.cc` FlashStone): Anstoßen gibt der Kugel der anderen Farbe die Kraft
   distortedVelocity(Geschwindigkeit, 20) und blitzt (5 Bilder à 50 ms).
+- **st_scissors** (`ScissorsStone.cc`): Anstoßen schneidet alle Gummibänder der Kugel; nur wenn eines
+  riss, führt die Schere ihre Aktion aus. Bild 130 ms Schnipp. Abweichung: st_document daneben bleibt.
+- **st_rubberband** (`RubberbandStone.cc`): Anstoßen spannt ein Gummiband von der Kugel zur Steinmitte
+  (strength, length, threshold, max), falls noch keins zu diesem Stein besteht; `scissor` (Vorgabe true)
+  schneidet vorher die anderen Bänder. Abweichung: mit Zauberstab verschieben fehlt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

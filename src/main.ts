@@ -580,6 +580,15 @@ function handleObjectEvents(events: ObjectEvent[]): void {
         const y = Math.min(e.toRow + 0.99, Math.max(e.toRow + 0.01, m.pos.y));
         physics!.respawn(x, y, i);
       });
+    } else if (e.type === 'scissors') {
+      if (physics?.cutRubbers(e.marble)) objects.scissorsCut(e.col, e.row);
+    } else if (e.type === 'rubberband') {
+      // RubberbandStone::actor_hit: unless already connected to this stone
+      const ph = physics;
+      if (ph && !ph.hasRubberTo(e.marble, e.col + 0.5, e.row + 0.5)) {
+        if (e.scissor) ph.cutRubbers(e.marble);
+        ph.addRubber(e.marble, e.col + 0.5, e.row + 0.5, { strength: e.strength, length: e.length, threshold: e.threshold, max: e.max });
+      }
     } else if (e.type === 'flash') {
       // FlashStone: FindOtherMarble – the marble of the other colour gets the force
       const ph = physics;
@@ -1043,7 +1052,7 @@ requestAnimationFrame((t) => {
 
 // Expose a tiny hook for automated browser tests.
 (window as unknown as { murmel: unknown }).murmel = {
-  state: () => ({ mode, level: level.id, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
+  state: () => ({ mode, level: level.id, rubbers: physics?.rubbers.length ?? 0, pairs: board.solvedPairs, total: board.totalPairs, states: [...board.states], falls, pos: { ...(physics?.position ?? { x: 0, y: 0 }) }, style, current: physics?.current ?? 0, marbles: (physics?.marbles ?? []).map((m, i) => ({ ...m.pos, active: m.active, jump: m.jump, falling: falling[i] >= 0 })) }),
   swap: swapMarble,
   drop: dropItem,
   /** Test helper: hold or release the drop button (player::InhibitPickup). */

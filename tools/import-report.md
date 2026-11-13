@@ -1,15 +1,15 @@
 # Enigma-Import
 
-789 von 1322 Levels übernommen (18 Pakete).
+798 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 119 | 3 |
+| Lua: :drawMap | 120 | 3 |
 | Lua-Rückruf | 116 | 3 |
 | keine Oxyd-Steine | 111 | 1 |
-| Lua: :shuffleOxyd | 105 | 0 |
-| Lua: st_oxyd | 103 | 0 |
-| Lua-Init | 102 | 3 |
+| Lua: :shuffleOxyd | 106 | 0 |
+| Lua: st_oxyd | 104 | 0 |
+| Lua-Init | 103 | 3 |
 | Lua: API 1 | 69 | 1 |
 | Stein st_mail | 54 | 3 |
 | XML fehlt | 50 | 50 |
@@ -23,9 +23,8 @@
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Stein st_scissors | 28 | 3 |
 | Gegenstand it_pipe_ns | 28 | 0 |
-| Akteur ac_horse | 27 | 2 |
+| Akteur ac_horse | 27 | 3 |
 | Gegenstand it_glasses | 27 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
@@ -33,10 +32,9 @@
 | Lua: abyss() | 20 | 0 |
 | Gegenstand it_bottle_idle | 20 | 3 |
 | Gegenstand it_pipe_es | 20 | 0 |
-| Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
+| Lua: :add | 18 | 5 |
 | Lua: fill_floor() | 17 | 0 |
-| Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
 | Lua: draw_stones() | 14 | 0 |
@@ -53,7 +51,7 @@
 | Stein st_brake | 11 | 2 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_pin | 10 | 3 |
-| Gegenstand it_rubberband | 10 | 2 |
+| Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 1 |
 | Stein st_spitter | 9 | 1 |
 | Flut | 9 | 4 |
@@ -62,6 +60,7 @@
 | Lua-Init (Weltwert) | 8 | 1 |
 | Lua: :orientate | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
+| Lua: lib.math | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
 | Wurmloch ohne Ziel | 7 | 1 |
 | Lua: document() | 6 | 0 |
@@ -70,14 +69,13 @@
 | Lua: :can_go_east | 6 | 0 |
 | Lua: puzzle() | 6 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
-| Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 2 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
+| Gummiband an bewegtem oder unbekanntem Anker | 5 | 5 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 1 |
 | Stein st_jamb_black | 5 | 1 |
-| Gummiband an bewegtem oder unbekanntem Anker | 4 | 4 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 0 |
@@ -85,6 +83,7 @@
 | Aktion inner_pull | 4 | 0 |
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
+| Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 2 |
@@ -98,7 +97,6 @@
 | Lua: dynamite() | 3 | 0 |
 | Akteur ac_marble_glass | 3 | 0 |
 | Stein st_document | 3 | 0 |
-| Lua: :set | 2 | 0 |
 | Lua: res.autotile | 2 | 0 |
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
@@ -108,6 +106,7 @@
 | Puzzle hohl (alter Export) | 2 | 2 |
 | Aktion ignite | 2 | 1 |
 | mehrere weiße Murmeln | 2 | 0 |
+| Lua: st_darkglass_hollow | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
 | Stein st_portal_pearl | 2 | 2 |
@@ -119,7 +118,6 @@
 | Stein st_volcano_idle | 2 | 0 |
 | Lua: :peepall | 2 | 1 |
 | Lua: it_pencil | 2 | 0 |
-| Lua: st_scissors | 2 | 0 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Lua: :fl | 1 | 0 |
@@ -156,7 +154,6 @@
 | Lua: st_greenbrown_hollow | 1 | 0 |
 | Aktion trigger | 1 | 0 |
 | Lua: res.puzzle | 1 | 0 |
-| Lua: st_darkglass_hollow | 1 | 0 |
 | Lua: :st | 1 | 1 |
 | Lua: setter() | 1 | 0 |
 | Lua: ferry_movement() | 1 | 0 |
@@ -215,7 +212,6 @@
 | Stein st_barrier (it_bottle) | 1 | 0 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
-| Lua: st_rubberband | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
 | Lua: st_mail_n | 1 | 0 |

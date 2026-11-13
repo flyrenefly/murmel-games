@@ -213,6 +213,8 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
   if (kind === 'st_monoflop') return ['st_monoflop', 'sh_round'];
+  if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
+  if (kind === 'st_rubberband') return ['st_rubberband', 'sh_round'];
   if (kind === 'st_flash') return ['st_flash', 'sh_solid'];
   if (/^st_magic/.test(kind)) return ['st_brick', 'st_oxyda', 'st_oxydc', 'sh_solid', 'st_rawglass', 'st_lightglass', 'sh_rawglass'];
   if (/^st_ghost/.test(kind)) return ['st_purplemarble', 'st_greenbrown', 'st_break_oxydc', 'st_flat_break', 'sh_solid', 'sh_round'];
@@ -792,6 +794,18 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'scissors') {
+      // st_scissors: frame 0; snip: frame 1 for 130 ms
+      const age = o.pulse === undefined ? -1 : world.ageOf(o.pulse);
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.frame('st_scissors', age >= 0 && age < 130 ? 1 : 0, px, py);
+      return;
+    }
+    if (o.cls === 'rubberstone') {
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else this.image('st_rubberband', px, py);
       return;
     }
     if (o.cls === 'monoflop') {

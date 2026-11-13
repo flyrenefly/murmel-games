@@ -1,6 +1,6 @@
 import { type ActorDef, createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
 import type { Level } from './level';
-import { type BodyForce, Rubberband } from './rubber';
+import { type BodyForce, Rubberband, type RubberDef } from './rubber';
 import { ALL_FACES, EAST, NORTH, PANES, SOUTH, WEST } from './objects';
 import FLOORS from './floors.generated.json';
 
@@ -621,13 +621,34 @@ export class PhysicsWorld {
     m.vel.y += (6 * fy * PHYSICS_DT) / m.mass;
   }
 
-  /** Actor "disconnect" (vortex/wormhole scissor): its rubber bands snap. */
-  cutRubbers(i: number): void {
+  /** Actor "disconnect" (vortex/wormhole scissor, st_scissors): its rubber bands snap. True if one did. */
+  cutRubbers(i: number): boolean {
     const m = this.marbles[i];
+    const before = this.rubbers.length;
     for (let k = this.rubbers.length - 1; k >= 0; k--) {
       const r = this.rubbers[k];
       if (r.a1 === m || r.a2 === m) this.rubbers.splice(k, 1);
     }
+    this.recountBands();
+    return this.rubbers.length < before;
+  }
+
+  /** The marble already has a band to the stone centre x/y. */
+  hasRubberTo(i: number, x: number, y: number): boolean {
+    const m = this.marbles[i];
+    return this.rubbers.some((r) => r.a1 === m && !r.a2 && Math.abs(r.end.x - x) < 1e-6 && Math.abs(r.end.y - y) < 1e-6);
+  }
+
+  /** A new band from the marble to a stone centre (st_rubberband). */
+  addRubber(i: number, x: number, y: number, def: Omit<RubberDef, 'a' | 'b'>): void {
+    const m = this.marbles[i];
+    this.rubbers.push(new Rubberband({ ...def, a: i, b: [x, y] }, m, null, { x, y }));
+    this.recountBands();
+  }
+
+  private recountBands(): void {
+    this.bandCount.clear();
+    for (const r of this.rubbers) for (const b of [r.a1, r.a2]) if (b) this.bandCount.set(b as Body, (this.bandCount.get(b as Body) ?? 0) + 1);
   }
 
   /** Put the marble at x/y (tile units, marble centre) and stop it. */
