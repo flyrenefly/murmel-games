@@ -16,14 +16,15 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
-const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle']);
+const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
-const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3 };
+const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3 };
 /** German names of inventory items for the display. */
 export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille' };
+for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
 
@@ -169,6 +170,19 @@ export function windowFaces(o: GameObject): number {
   if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return ALL_FACES ^ (Number(o.attrs.$connections) & ALL_FACES);
   const s = /^st_window_([nesw]+)$/.exec(o.kind)?.[1] ?? 's';
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
+
+/** it_pipe connections as Enigma direction bits (W 1, S 2, E 4, N 8); it_pipe = ew. */
+export function pipeBits(o: GameObject): number {
+  const s = /^it_pipe_([nesw]+)$/.exec(o.kind)?.[1] ?? 'ew';
+  return (s.includes('w') ? 1 : 0) | (s.includes('s') ? 2 : 0) | (s.includes('e') ? 4 : 0) | (s.includes('n') ? 8 : 0);
+}
+
+/** MailStone orientation (Enigma W0 S1 E2 N3) from the attribute or the kind (st_mail = north). */
+export function mailDir(o: GameObject): number {
+  const v = o.attrs.orientation;
+  if (v !== undefined && v !== '' && Number.isInteger(Number(v))) return Number(v) & 3;
+  return { w: 0, s: 1, e: 2, n: 3 }[/^st_mail_([nesw])$/.exec(o.kind)?.[1] ?? 'n'] ?? 3;
 }
 
 /** MagicStone flavor: brick, oxyda, oxydc (from the kind or the flavor attribute). */
@@ -486,6 +500,8 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_flash') return 'flash';
   if (kind === 'st_scissors') return 'scissors';
   if (/^st_portal(_horse|_pearl|_glass)?$/.test(kind)) return 'portal';
+  if (/^it_pipe(_[nesw]{1,2})?$/.test(kind)) return 'pipe';
+  if (/^st_mail(_[nesw])?$/.test(kind)) return 'mail';
   if (kind === 'st_rubberband') return 'rubberstone';
   if (kind === 'st_knight') return 'knight';
   if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
@@ -659,7 +675,7 @@ export class ObjectWorld {
         if ((f === 'horse' && actor === 'horse') || (f === 'pearl' && actor === 'pearl_white')) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -703,6 +719,15 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'mail') {
+        // MailStone::actor_hit: the first item goes through the pipes and drops behind the last one
+        if (by < 0) return;
+        const inv = this.inventories[this.ownerOf(by)] ?? this.inventory;
+        if (!inv.length) return;
+        const end = this.pipeEnd(o.col, o.row, mailDir(o));
+        if (end && this.canDropAt(end[0] + 0.5, end[1] + 0.5)) this.dropKind(inv.shift()!, end[0], end[1]);
+        return;
+      }
       if (o.cls === 'scissors') {
         // ScissorsStone::actor_hit: snip (130 ms) and "disconnect" the actor
         if (by >= 0) {
@@ -1377,7 +1402,12 @@ export class ObjectWorld {
     if (this.inventory.length === 0 || this.at(col, row).some((o) => !o.gone && isItem(o))) return false;
     if (this.beams.has(row * this.width + col)) return false;
     if (col < 0 || row < 0 || col >= this.width) return false;
-    const kind = this.inventory.shift()!;
+    this.dropKind(this.inventory.shift()!, col, row);
+    return true;
+  }
+
+  /** Item::drop: an item of this kind lands in the cell (with its on_drop effects). */
+  private dropKind(kind: string, col: number, row: number): void {
     const o = this.add(kind, objectClass(kind) ?? 'seed', col, row);
     if (o.cls === 'seed') this.startGrowing(o);
     if (o.cls === 'flag') this.flagRespawn[flagColor(kind)] = { x: col + 0.5, y: row + 0.5 };
@@ -1387,7 +1417,33 @@ export class ObjectWorld {
       o.kind = 'it_squashed';
       o.cls = 'squashed';
     }
-    return true;
+    this.updateTriggers(col, row);
+  }
+
+  /**
+   * PipeItem::findPipeEndpoint: from the mail stone in direction d (Enigma W0 S1 E2 N3) along the
+   * pipes; the first cell where no pipe continues. null: a broken or circular pipe.
+   */
+  private pipeEnd(col: number, row: number, d: number): [number, number] | null {
+    let c = col;
+    let r = row;
+    let dir = d;
+    for (let guard = 0; guard < 10000; guard++) {
+      c += L_DX[dir];
+      r += L_DY[dir];
+      if (c < 0 || r < 0 || c >= this.width) return null;
+      const it = this.itemAt(c, r);
+      if (!it || it.cls !== 'pipe') return [c, r];
+      const bits = pipeBits(it);
+      const back = 1 << ((dir + 2) % 4);
+      if (!(bits & back)) return [c, r];
+      const rest = bits & ~back;
+      const next = [1, 2, 4, 8].indexOf(rest);
+      if (next < 0) return null;
+      dir = next;
+      if (c === col && r === row && dir === d) return null;
+    }
+    return null;
   }
 
   /** Item::can_drop_at: no item in the cell. */

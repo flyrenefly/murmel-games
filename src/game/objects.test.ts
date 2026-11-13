@@ -1528,3 +1528,25 @@ describe('flood', () => {
     expect(w.objects[0].gone).toBe(true);
   });
 });
+
+describe('mail and pipes', () => {
+  it('the first item travels from the mail stone along the pipes and drops behind the last piece', () => {
+    const w = world([
+      { x: 2, y: 1, k: 'st_mail_e' },
+      { x: 3, y: 1, k: 'it_pipe_ws' },
+      { x: 3, y: 2, k: 'it_pipe_ne' },
+      { x: 4, y: 2, k: 'it_pipe_ew' },
+    ]);
+    w.inventory.push('it_hammer');
+    w.hit(2, 1, 0, -1, 0, -3, 0, 0, 0);
+    expect(w.inventory).toEqual([]);
+    const h = w.objects.find((o) => o.kind === 'it_hammer');
+    expect([h?.col, h?.row]).toEqual([5, 2]);
+  });
+
+  it('pipes can be picked up', () => {
+    const w = world([{ x: 3, y: 1, k: 'it_pipe_ns' }]);
+    w.actorStep(3.5, 1.5, 0);
+    expect(w.inventory).toEqual(['it_pipe_ns']);
+  });
+});

@@ -1,6 +1,6 @@
 # Enigma-Import
 
-828 von 1322 Levels übernommen (18 Pakete).
+847 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -11,7 +11,6 @@
 | Lua: st_oxyd | 104 | 0 |
 | Lua-Init | 103 | 3 |
 | Lua: API 1 | 69 | 1 |
-| Stein st_mail | 54 | 3 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
 | Lizenz: keine Angabe | 42 | 42 |
@@ -19,32 +18,26 @@
 | Lua: set_item() | 37 | 0 |
 | Lua: strlen() | 35 | 0 |
 | Lua: strsub() | 35 | 0 |
-| Gegenstand it_pipe_ew | 34 | 0 |
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Gegenstand it_pipe_ns | 28 | 0 |
-| Gegenstand it_pipe_sw | 24 | 0 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
-| Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Gegenstand it_pipe_es | 20 | 0 |
-| Gegenstand it_pipe_nw | 19 | 0 |
-| Lua: :add | 18 | 5 |
+| Lua: :add | 18 | 6 |
 | Lua: fill_floor() | 17 | 0 |
-| Gegenstand it_seed_volcano | 16 | 3 |
+| Gegenstand it_seed_volcano | 16 | 6 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_trap | 14 | 1 |
-| Gegenstand it_weight | 14 | 2 |
+| Gegenstand it_weight | 14 | 4 |
 | Pferd mit Zielen | 13 | 2 |
-| Gegenstand it_bag | 13 | 3 |
+| Gegenstand it_bag | 13 | 5 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Lua: :drawRect | 12 | 5 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
-| Stein st_brake | 11 | 2 |
+| Stein st_brake | 11 | 6 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 3 |
 | Gegenstand it_drop | 10 | 2 |
@@ -68,18 +61,18 @@
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_death_movable | 5 | 2 |
-| Stein st_jamb_black | 5 | 1 |
+| Stein st_jamb_black | 5 | 2 |
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
-| Lua: :setfire | 4 | 0 |
+| Lua: :setfire | 4 | 1 |
 | Stein st_surprise | 4 | 0 |
 | Aktion inner_pull | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
 | Lua: new_kruskal_maze() | 3 | 0 |
-| Stein st_laserflop | 3 | 2 |
+| Stein st_laserflop | 3 | 3 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
@@ -167,7 +160,6 @@
 | Stein st_rawglass | 1 | 0 |
 | Lua: draw_items() | 1 | 0 |
 | Stein fl_concrete | 1 | 1 |
-| Gegenstand it_pipe_e | 1 | 0 |
 | Lua: send_message_named() | 1 | 0 |
 | Lua: floor() | 1 | 0 |
 | Lua: oxyd_shuffle() | 1 | 0 |
@@ -193,9 +185,6 @@
 | Lua: st_volcano | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 1 |
-| Lua: it_pipe | 1 | 0 |
-| Stein st_barrier (it_pipe) | 1 | 0 |
-| Stein st_barrier (it_pipe_ns) | 1 | 0 |
 | Stein st_barrier (it_pencil) | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
@@ -204,13 +193,6 @@
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_brake | 1 | 0 |
 | Lua: it_bag | 1 | 0 |
-| Lua: st_mail_n | 1 | 0 |
-| Lua: it_pipe_ew | 1 | 0 |
-| Lua: it_pipe_ns | 1 | 0 |
-| Lua: it_pipe_es | 1 | 0 |
-| Lua: it_pipe_sw | 1 | 0 |
-| Lua: it_pipe_nw | 1 | 0 |
-| Lua: it_pipe_ne | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
 | Lua: st_charge_plus | 1 | 0 |
 | Lua: st_charge_minus | 1 | 0 |
@@ -220,9 +202,6 @@
 | Boden fl_forward | 1 | 0 |
 | Stein st_jamb_white | 1 | 0 |
 | FallenPuzzle | 1 | 0 |
-| Gegenstand it_pipe_w | 1 | 0 |
-| Gegenstand it_pipe_n | 1 | 0 |
-| Gegenstand it_pipe_s | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Lua: ac_rotor | 1 | 0 |
 | Stein st_door_d | 1 | 0 |

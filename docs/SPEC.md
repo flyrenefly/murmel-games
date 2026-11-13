@@ -596,6 +596,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   zulässt; Kisten ja, feste Steine nein): Wasser und gerahmte Böden fluten mit, Böden mit `floodable`
   werden zu flutendem Wasser (Risse und Brennbares darauf verschwinden, eine Kiste sinkt und wird zur
   Brücke, die weiterleitet). Bewegt sich ein Stein, prüfen flutende Nachbarn erneut.
+- **st_mail_n/e/s/w, it_pipe_*** (`MailStone.cc`, `PipeItem.cc`): Rohrstücke sind aufnehmbare
+  Gegenstände. Stößt eine Kugel mit Gegenständen an einen Briefstein, folgt der erste Gegenstand den
+  Rohren ab der Steinrichtung und fällt im ersten Feld ohne passendes Rohr ab (wie abgelegt, mit
+  dessen Wirkung), falls dort nichts liegt; kaputte oder kreisförmige Rohre schicken nichts.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 
