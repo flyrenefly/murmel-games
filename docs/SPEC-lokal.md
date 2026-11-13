@@ -55,7 +55,7 @@ Einträge werden übersprungen und gemeldet.
 und Zähler je Level (Versuch ab dem ersten gespielten Schritt, Spielzeit und Abstürze beim Ende eines
 Laufs), Siegmeldung mit Bestzeit, Levelliste mit Bestzeit und Filter Alle · Offen · Gelöst, Seite
 „Fortschritt“ mit Kennzahlen, Sichern und Laden. `rec` (beste Aufzeichnung) folgt mit `bestenliste`.
-Datenschutzerklärung: Text wartet auf Freigabe des Nutzers.
+Datenschutzerklärung: Abschnitt „Speicherung im Browser“ ergänzt (vom Nutzer freigegeben, 13.11.2026).
 
 ## Tests und Abnahme
 
