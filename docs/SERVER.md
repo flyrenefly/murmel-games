@@ -98,6 +98,11 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
   Startwert je Lauf).
 - Ranglisten je Level (Top 100 + eigener Platz), keine globale Punktzahl am Anfang.
 
+**`bestenliste` gebaut (Branch `bestenliste`, 13.11.2026):** Spezifikation `docs/SPEC-bestenliste.md`, Migration
+`006_bestenliste.sql`, API `/api/bestenliste` (`server/src/bestenliste*.ts`), Seite `bestenliste.html`. Die API spielt
+Läufe mit dem Prüfprozess der Lösbarkeitsprüfung nach; den Spielcode der aktiven Version legt `release.sh` unter
+`/opt/murmel/game/<version>` ab (schreibgeschützt unter `/game` im Container).
+
 ## 6. Leveleditor und Spieler-Levels (`editor`, `spielerlevels`)
 
 - Editor im Browser auf Basis des vorhandenen Levelformats (`LevelFile`), Objekte aus der
@@ -112,11 +117,17 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 ## 7. Mehrspieler (`mehrspieler`)
 
 - Ein Spieler öffnet einen Raum und bekommt einen **4-stelligen Code**, der zweite tritt bei.
-- Verbindung direkt zwischen den Browsern (WebRTC-Datenkanal); der Server vermittelt nur.
+- Verbindung per WebRTC-Datenkanal, **immer über den eigenen TURN-Server** (Relay): Mitspieler sehen
+  die IP-Adresse des anderen nicht. Der Server vermittelt den Aufbau (Signalisierung) und leitet weiter.
 - Spielmodell: ein Browser rechnet die Physik (Gastgeber), der andere schickt Eingaben und erhält
-  den Zustand – einfach und ohne Auseinanderlaufen. Erste Levels: die vorhandenen
-  Yin-Yang-/Zwei-Murmel-Levels.
+  den Zustand – einfach und ohne Auseinanderlaufen.
+- **Zwei Spielarten:** gemeinsames Lösen der Zwei-Murmel-Levels (Yin-Yang) und Wettrennen im selben
+  Level mit eigener Murmel.
 - Kein Konto nötig; Räume verfallen nach 30 min ohne Aktivität.
+- **Entscheidungen des Nutzers (13.11.2026):** eigener TURN-Server (coturn) auf dem VPS, kein fremder
+  Anbieter; beide Spielarten; Verbindung nur über TURN; Stufe 1 gestartet (Sitzung „Murmel: Mehrspieler
+  Stufe 1“, Branch `mehrspieler`). coturn braucht eigene Ports in ufw und der IONOS-Firewall (Freigabe
+  beim Einrichten).
 
 **Stufe 1 gebaut (Branch `mehrspieler`, 13.11.2026):** Spezifikation `docs/SPEC-mehrspieler.md`.
 Räume und Vermittlung `server/src/raum.ts` (WebSocket `/api/raum`, nur im Speicher), eigener
@@ -316,7 +327,8 @@ die Bestenlisten ohnehin entsteht.
 - **Erledigt am 13.11.:** VPS bestellt (Nutzer) und eingerichtet, DNS umgestellt (Abschnitt 9),
   Server-Basis (`api-basis`) in Betrieb; Phase A läuft („weiter mit Phase A“): `aufzeichnung` und
   `lokal` sind fertig; `bestenliste`, `sync` und `editor` laufen in eigenen Sitzungen, `spielerlevels`
-  folgt nach dem Editor.
+  folgt nach dem Editor. `mehrspieler` Stufe 1 läuft in einer eigenen Sitzung (eigener TURN-Server, nur
+  Relay, gemeinsames Lösen und Wettrennen).
 
 **Noch offen**
 1. **Fremdanmeldung:** Google und GitHub brauchen je eine eigene App-Anmeldung (legt der Nutzer an).

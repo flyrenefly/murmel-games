@@ -41,6 +41,11 @@ services:
       TURN_SECRET: ${TURN_SECRET:-}
       TURN_URLS: ${TURN_URLS:-}
       SITE_ADDRESS: ${SITE_ADDRESS}
+      GAME_DIR: /game
+    # Bestenliste: Spielcode der aktiven Version zum Nachspielen (update.sh legt ihn an); fehlt er,
+    # nimmt die API keine Läufe an, alles andere läuft.
+    volumes:
+      - ./game/${MURMEL_VERSION}:/game:ro
     depends_on:
       db:
         condition: service_healthy

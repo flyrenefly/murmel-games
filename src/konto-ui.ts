@@ -17,13 +17,28 @@ let stand: KontoStand | null = null;
 /** Menu label: "Anmelden" or "Konto" (known after the first status call). */
 export const kontoLabel = (): string => (stand?.angemeldet ? 'Konto' : 'Anmelden');
 
+/** Signed in and not blocked: runs go to the leaderboard (docs/SPEC-bestenliste.md). */
+export const darfEinreichen = (): boolean => stand?.angemeldet === true && !stand.konto.gesperrt;
+
 /** Signed in as admin (e.g. "Als Lösung speichern" after a win, docs/SPEC-loesbarkeit.md). */
 export const istAdmin = (): boolean => stand?.angemeldet === true && stand.konto.rolle === 'admin';
+
+let wechsel: (angemeldet: boolean) => void = () => {};
+/** Called when the sign-in state becomes known or changes (sync: docs/SPEC-sync.md). */
+export function beiKontoWechsel(f: (angemeldet: boolean) => void): void {
+  wechsel = f;
+}
+function setStand(s: KontoStand): KontoStand {
+  const vorher = stand?.angemeldet;
+  stand = s;
+  if (vorher !== s.angemeldet) wechsel(s.angemeldet);
+  return s;
+}
 
 /** Asks the server once in the background who is signed in (for the menu label). */
 export async function kontoLaden(): Promise<void> {
   const r = await api.stand();
-  if (r.ok) stand = r.daten;
+  if (r.ok) stand = setStand(r.daten);
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
@@ -58,7 +73,7 @@ export async function kontoOeffnen(host: KontoHost): Promise<void> {
     host.showOverlay('Konto', r.fehler, [['Zurück', host.back]]);
     return;
   }
-  stand = r.daten;
+  stand = setStand(r.daten);
   if (stand.angemeldet) kontoSeite(host, stand.konto);
   else anmelden(host);
 }
@@ -77,7 +92,7 @@ export function mailLinkPruefen(host: KontoHost): boolean {
           host.showOverlay('Anmelden', r.fehler, [['Neuen Link anfordern', () => anmelden(host)], ['Zurück', host.back]]);
           return;
         }
-        stand = r.daten;
+        stand = setStand(r.daten);
         if (stand.angemeldet) kontoSeite(host, stand.konto, true);
       },
     ],
@@ -163,7 +178,7 @@ async function passkeyAnmelden(host: KontoHost, meldung: HTMLElement): Promise<v
   }
   const r = await api.anmeldenAbschliessen(start.daten.vorgang, antwort);
   if (!r.ok) return void meldung.replaceChildren(status(r.fehler, 'fehler'));
-  stand = r.daten;
+  stand = setStand(r.daten);
   if (stand.angemeldet) kontoSeite(host, stand.konto);
 }
 
@@ -238,7 +253,7 @@ async function passkeyEinrichten(host: KontoHost, meldung: HTMLElement): Promise
   }
   const r = await api.passkeyAbschliessen(start.daten.vorgang, antwort);
   if (!r.ok) return void meldung.replaceChildren(status(r.fehler, 'fehler'));
-  stand = r.daten;
+  stand = setStand(r.daten);
   if (stand.angemeldet) {
     kontoSeite(host, stand.konto);
     host.form.append(status('Passkey eingerichtet. Beim nächsten Mal: „Mit Passkey anmelden“.'));
@@ -248,7 +263,7 @@ async function passkeyEinrichten(host: KontoHost, meldung: HTMLElement): Promise
 async function abmelden(host: KontoHost, alle: boolean): Promise<void> {
   const r = await api.abmelden(alle);
   if (!r.ok) return void host.form.append(status(r.fehler, 'fehler'));
-  stand = r.daten;
+  stand = setStand(r.daten);
   host.showOverlay('Abgemeldet', alle ? 'Du bist auf allen Geräten abgemeldet.' : 'Du bist abgemeldet. Dein Spielstand auf diesem Gerät bleibt.', [['OK', host.back]]);
 }
 
@@ -266,7 +281,7 @@ function loeschenFragen(host: KontoHost, konto: Konto): void {
       button('Konto endgültig löschen', async () => {
         const r = await api.loeschen();
         if (!r.ok) return void host.form.append(status(r.fehler, 'fehler'));
-        stand = r.daten;
+        stand = setStand(r.daten);
         host.showOverlay('Konto gelöscht', 'Dein Konto ist gelöscht. Murmel spielst du weiter wie bisher.', [['OK', host.back]]);
       }, 'gefahr'),
     ),

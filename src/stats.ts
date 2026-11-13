@@ -29,7 +29,8 @@ function browserEnv(): Env {
 }
 
 export function reportEvent(type: StatType, level: string, env: Env = browserEnv()): void {
-  if (!statsAllowed(env) || !env.sendBeacon) return;
+  // levels from links (src/editor) are no shared levels to count
+  if (!statsAllowed(env) || !env.sendBeacon || level.startsWith('link:')) return;
   try {
     env.sendBeacon('/api/event', new Blob([JSON.stringify({ type, level })], { type: 'application/json' }));
   } catch {

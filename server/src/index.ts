@@ -1,10 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.ts';
+import { leaderboardStore } from './bestenliste-db.ts';
+import { gameChecker } from './bestenliste-pruefer.ts';
 import { connect, database } from './db.ts';
 import { parseAdminEmails } from './konten.ts';
 import { forumStore } from './forum-db.ts';
 import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
+import { syncStore } from './sync-db.ts';
 import { mailerFromEnv } from './mail.ts';
 import { migrate } from './migrate.ts';
 import { RoomHub, turnUrls } from './raum.ts';
@@ -25,7 +28,16 @@ const accounts = {
 // Zu zweit spielen: TURN credentials only with the secret from /opt/murmel/.env (TURN_SECRET)
 const turnSecret = process.env.TURN_SECRET;
 const raum = new RoomHub({ turn: turnSecret ? { secret: turnSecret, urls: turnUrls(process.env) } : null });
-const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql), raum, logger: true });
+const gameDir = process.env.GAME_DIR || '/game';
+const checker = gameChecker(gameDir);
+const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
+  // the game code of the active version, read-only (compose.yml); without it submitting answers 503
+  leaderboard: { store: leaderboardStore(sql), checker },
+  sync: syncStore(sql),
+  raum,
+  logger: true,
+});
+if (!checker.available()) app.log.warn({ gameDir }, 'no game code: leaderboard submissions are off');
 if (!turnSecret) app.log.warn('TURN_SECRET not set: rooms work, but browsers get no TURN server');
 if (!accounts.mailer) app.log.warn('SMTP not configured: sign-in by mail link is off');
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
@@ -34,6 +46,7 @@ if (done.length) app.log.info({ migrations: done }, 'migrations applied');
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.once(signal, async () => {
     await app.close();
+    checker.close();
     await sql.end({ timeout: 5 });
     process.exit(0);
   });

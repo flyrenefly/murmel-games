@@ -137,7 +137,8 @@
         verwendet keine Tracking-Werkzeuge fremder Anbieter und keine Werbung, lädt keine Inhalte von fremden
         Servern (keine externen Schriften, Skripte oder Videos) und verlangt keine Anmeldung; ein Konto ist
         freiwillig. Personenbezogene Daten fallen beim Abruf der Seite durch den Webserver, kurzzeitig für
-        unsere eigene, anonyme Spielstatistik und, wenn Sie eines anlegen, für Ihr Konto und Ihre Forumsbeiträge an (siehe unten).
+        unsere eigene, anonyme Spielstatistik und, wenn Sie eines anlegen, für Ihr Konto, Ihre Forumsbeiträge,
+        Ihre Einträge in den Bestenlisten und, wenn Sie angemeldet spielen, Ihren Spielfortschritt an (siehe unten).
       </p>
 
       <h2>Hosting und Server-Logdateien</h2>
@@ -183,7 +184,8 @@
         Die Anmeldemails versenden wir über ein E-Mail-Postfach bei der IONOS SE, die dafür in unserem Auftrag
         tätig ist (Art. 28 DSGVO). Rechtsgrundlage ist die Bereitstellung des von Ihnen gewünschten Kontos
         (Art. 6 Abs. 1 lit. b DSGVO). Sie können Ihr Konto jederzeit auf der Kontoseite löschen; dabei werden
-        Konto, Passkeys, Sitzungen und Anmeldelinks sofort entfernt. Die Daten werden auf unserem Server in
+        Konto, Passkeys, Sitzungen, Anmeldelinks und der abgeglichene Fortschritt sofort entfernt. Die Daten
+        werden auf unserem Server in
         Deutschland verarbeitet.
       </p>
 
@@ -223,6 +225,59 @@
         verarbeitet.
       </p>
 
+      <h2>Fortschritt auf allen Geräten</h2>
+      <p>
+        Wenn Sie angemeldet sind, gleicht das Spiel Ihren Spielfortschritt mit Ihrem Konto ab, damit Sie auf allen
+        Geräten denselben Stand haben. Dafür speichern wir zu Ihrem Konto: die gelösten Levels und je Level die
+        Bestzeit (mit Zahl der Abstürze, Startwert des Zufalls und Zeitpunkt des Laufs), wie oft Sie es gelöst
+        und begonnen haben, die gesamte Spielzeit und die Abstürze sowie wann Sie es zuletzt gespielt haben, dazu
+        den Zeitpunkt des letzten Abgleichs. Abgeglichen wird beim Öffnen des Spiels, nach dem Anmelden, kurz nach
+        jedem gelösten Level und auf der Seite „Fortschritt“. Ohne Konto wird nichts übertragen.
+      </p>
+      <p>
+        Diese Daten sind nur für Sie sichtbar; sie sind nicht öffentlich und erscheinen in keiner Rangliste. Zum
+        Schutz vor Überlastung begrenzen wir die Zahl der Abgleiche je Konto; dafür wird die Kontonummer
+        kurzzeitig im Arbeitsspeicher gehalten. Wenn Sie Ihr Konto löschen, wird der gespeicherte Fortschritt
+        sofort mitgelöscht; der Fortschritt in Ihrem Browser bleibt, bis Sie ihn dort löschen.
+      </p>
+      <p>
+        Rechtsgrundlage ist die Bereitstellung der von Ihnen gewünschten Funktion (Art. 6 Abs. 1 lit. b DSGVO).
+        Die Daten werden auf unserem Server in Deutschland verarbeitet.
+      </p>
+
+      <h2>Bestenlisten</h2>
+      <p>
+        Wenn Sie angemeldet sind und ein Level lösen, schickt das Spiel Ihren Lauf an unseren Server: die
+        Kennung des Levels, die Spielversion und die Aufzeichnung Ihrer Eingaben (Steuerbewegungen und Aktionen
+        je Physikschritt, dazu der Startwert des Zufalls). Der Server spielt den Lauf nach und übernimmt die Zeit
+        nur, wenn das Level dabei gelöst wird. Ohne Konto bleiben Ihre Bestzeiten nur in Ihrem Browser.
+      </p>
+      <p>
+        Die Ranglisten sind öffentlich: Jede Person kann je Level die besten 100 Einträge mit Platz, Ihrem
+        selbst gewählten Anzeigenamen (ohne Anzeigenamen: „ohne Namen“), Ihrer Zeit und dem Datum sehen. Ihre
+        E-Mail-Adresse wird nie angezeigt.
+      </p>
+      <p>
+        Wir speichern je Konto und Level nur Ihren besten Lauf: Zeit, Datum, Spielversion und dessen
+        Aufzeichnung. Die Aufzeichnung ist nicht öffentlich; sie dient dazu, die Zeit zu belegen und später erneut
+        zu prüfen. Ein schnellerer Lauf ersetzt den alten samt Aufzeichnung, langsamere Läufe werden nach der
+        Prüfung nicht gespeichert. Gespeichert bleibt der Eintrag, bis Sie ihn löschen oder Ihr Konto löschen.
+        Zum Schutz vor Missbrauch begrenzen wir die Zahl der Läufe je Konto und Stunde; das Ergebnis einer
+        Prüfung halten wir bis zu 10 Minuten im Arbeitsspeicher.
+      </p>
+      <p>
+        Sie können Ihren Eintrag auf der Ranglistenseite des Levels jederzeit löschen. Wenn Sie Ihr Konto
+        löschen, werden alle Ihre Einträge samt Aufzeichnungen sofort entfernt. Aus den nächtlichen
+        Datensicherungen auf unserem Server verschwinden sie nach spätestens 14 Tagen. Administratoren können
+        Einträge entfernen, etwa bei Missbrauch; gesperrte Konten erscheinen in keiner Rangliste und können
+        keine Läufe einreichen.
+      </p>
+      <p>
+        Rechtsgrundlage ist die Bereitstellung der von Ihnen gewünschten Funktion (Art. 6 Abs. 1 lit. b DSGVO),
+        für den Schutz vor Missbrauch unser berechtigtes Interesse an fairen Ranglisten (Art. 6 Abs. 1 lit. f
+        DSGVO). Die Daten werden auf unserem Server in Deutschland verarbeitet.
+      </p>
+
       <h2>Speicherung im Browser</h2>
       <p>
         Das Spiel speichert Einstellungen und Spielfortschritt (gewählter Grafikstil, Mausgeschwindigkeit,
@@ -230,7 +285,8 @@
         Filter der Levelliste) im lokalen Speicher Ihres Browsers (<code>localStorage</code>, Einträge beginnend
         mit <code>murmel.</code>). Damit das Spiel auch ohne Internetverbindung funktioniert, legt der Browser
         außerdem Programmdateien, Grafiken, Klänge und die geöffneten Levelpakete in seinem Cache-Speicher ab
-        (Service Worker). Diese Daten verlassen Ihr Gerät nicht und werden nicht an uns übertragen. Mit
+        (Service Worker). Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
+        Spielfortschritt mit Ihrem Konto abgeglichen (siehe „Fortschritt auf allen Geräten“). Mit
         „Fortschritt → Sichern“ können Sie Ihren Fortschritt als Datei auf Ihr Gerät herunterladen; auch diese
         Datei wird nicht an uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion
         erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Sie können sie jederzeit über die Browsereinstellungen löschen.

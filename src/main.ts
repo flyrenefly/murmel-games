@@ -15,11 +15,17 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
-import { istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { Abgleich, statusText, type SyncStatus } from './sync';
 import { loesungSpeichern } from './loesung';
+import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
+import { editorButton, LINK_PACK, openLinkFromHash } from './editor/game-link';
+import { loadSteering, saveSteering, type Steering } from './steuerung';
+import { steeringControl } from './steuerung-ui';
+import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -121,8 +127,10 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   i = Math.min(Math.max(0, i), packList.length - 1);
   packId = pack;
   levelIndex = i;
-  store.set('pack', pack);
-  store.set('level', i);
+  if (pack !== LINK_PACK) {
+    store.set('pack', pack);
+    store.set('level', i);
+  }
   // one random sequence per run (docs/SPEC-aufzeichnung.md): every random choice of the level uses it
   const token = ++loadToken;
   noteRunEnded(session);
@@ -133,6 +141,8 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   if (token !== loadToken) return; // another level was loaded meanwhile
   s = created;
   session = s;
+  // levels from links (docs/SPEC-editor.md) count in no progress, statistics or best times
+  if (pack === LINK_PACK) runStarted.add(s), runCounted.add(s);
   level = s.level;
   board = s.board;
   physics = s.physics;
@@ -208,6 +218,36 @@ function showOverlay(title: string, text: string, buttons: [string, () => void][
 
 const isTouch = matchMedia('(pointer: coarse)').matches;
 
+// ---------- touch steering: tilt from a rest pose or swipe (src/steuerung.ts), rotation lock ----------
+let steering: Steering = loadSteering(store);
+function chooseSteering(s: Steering): void {
+  steering = s;
+  saveSteering(store, s);
+}
+/** The current attitude becomes the rest pose; with feedback when the player asked for it. */
+function setRest(feedback: boolean): void {
+  input.setRest();
+  if (feedback) showToast('Ruhelage gesetzt');
+}
+input.onDoubleTap = () => {
+  if (mode === 'play' && input.tiltEnabled) setRest(true);
+};
+$('btn-rest').addEventListener('click', (e) => {
+  e.stopPropagation();
+  setRest(true);
+});
+/** Touch dialogs: the segmented control "Neigen / Wischen"; a change shows the dialog again. */
+function addSteeringChoice(redraw: () => void): void {
+  if (!isTouch) return;
+  ovForm.replaceChildren(steeringControl(steering, (s) => (chooseSteering(s), redraw())));
+  ovForm.hidden = false;
+}
+async function lockRotationOrHint(): Promise<void> {
+  if ((await lockRotation()) || store.get('drehsperreHinweis', false)) return;
+  store.set('drehsperreHinweis', true); // once, not on every start
+  showToast(rotationHint(), 5000);
+}
+
 function startPlaying(): void {
   sfx.unlock();
   overlay.hidden = true;
@@ -216,23 +256,30 @@ function startPlaying(): void {
     startTime = performance.now();
     reportEvent('start', level.id); // anonymous statistics: once per run
   }
+  setRest(false); // level start and resume: the current attitude is the rest pose
   input.requestLock();
 }
 
 async function startTouch(): Promise<void> {
   sfx.unlock();
-  if (!input.tiltEnabled && !(await input.enableTilt())) {
-    showOverlay('Neigen nicht möglich', 'Dieses Gerät oder dieser Browser liefert keine Lagedaten.', [['OK', showStart]]);
+  if (steering === 'tilt' && !input.tiltEnabled && !(await input.enableTilt())) {
+    showOverlay('Neigen nicht möglich', 'Dieses Gerät oder dieser Browser liefert keine Lagedaten. Mit Wischen geht es trotzdem.', [
+      ['Mit Wischen spielen', () => (chooseSteering('swipe'), void startTouch())],
+      ['Zurück', showStart],
+    ]);
     return;
   }
+  input.setSteering(steering);
+  document.body.dataset.steer = steering;
   startPlaying();
+  void lockRotationOrHint();
 }
 
 const twoMarbles = () => (physics?.steerable ?? 1) > 1;
 
 function controlsHelp(): string {
   return isTouch
-    ? `Neige dein Gerät, um die Murmel zu rollen.<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
+    ? `${steering === 'swipe' ? 'Wische über das Spielfeld, um die Murmel anzuschieben.' : 'Neige dein Gerät, um die Murmel zu rollen. Doppelt tippen macht die jetzige Haltung zur Ruhelage.'}<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
     : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
 }
 
@@ -257,6 +304,20 @@ function saveProgress(): void {
   store.set('progress', JSON.parse(serializeProgress(progress, nowIso())));
 }
 saveProgress();
+
+// Fortschritt auf allen Geräten (docs/SPEC-sync.md): only when signed in, never a dialog.
+const abgleich = new Abgleich(
+  () => progress,
+  (p) => {
+    progress = p;
+    for (const id of progress.solved) solved.add(id);
+    store.set('solved', [...solved]);
+    saveProgress();
+  },
+);
+beiKontoWechsel((angemeldet) => (angemeldet ? void abgleich.jetzt() : abgleich.abgemeldet()));
+window.addEventListener('online', () => abgleich.online());
+
 /** Runs already counted: started (attempt) and finished (play time, falls). */
 const runStarted = new WeakSet<GameSession>();
 const runCounted = new WeakSet<GameSession>();
@@ -285,10 +346,8 @@ function formatBest(steps: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')},${t % 10}`;
 }
 
-/** Statistics, and saving or loading the progress as a file. */
-function showProgress(message = ''): void {
-  mode = 'menu';
-  input.releaseLock();
+/** The statistics table of the progress page (rebuilt after a sync while the page is open). */
+function progressTable(): string {
   const sum = summarize(progress);
   const last = sum.lastPlayed ? new Date(sum.lastPlayed).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '–';
   const rows: [string, string][] = [
@@ -298,14 +357,34 @@ function showProgress(message = ''): void {
     ['Abstürze', String(sum.falls)],
     ['Zuletzt gespielt', last],
   ];
-  const table = `<dl class="stats">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
+  return `<dl class="stats" id="fortschritt-zahlen">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
+}
+
+/** Statistics, the sync status, and saving or loading the progress as a file. */
+function showProgress(message = ''): void {
+  mode = 'menu';
+  input.releaseLock();
   const note = message ? `<span class="note" role="status">${escapeHtml(message)}</span>` : '';
-  showOverlay('Fortschritt', `${table}${note}<span class="credit">Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.</span>`, [
+  const mitKonto = abgleich.status.art !== 'abgemeldet';
+  const sync = `<p id="sync-status" class="sync-status" role="status" aria-live="polite" data-art="${abgleich.status.art}">${escapeHtml(statusText(abgleich.status))}</p>`;
+  const hinweis = mitKonto
+    ? 'Dein Konto hält den Fortschritt auf allen Geräten gleich. Mit „Sichern“ zusätzlich als Datei mitnehmen.'
+    : 'Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.';
+  showOverlay('Fortschritt', `${progressTable()}${note}${sync}<span class="credit">${hinweis}</span>`, [
     ['Zurück', () => void showLevels()],
     ['Sichern', saveProgressFile],
     ['Laden', loadProgressFile],
   ]);
+  if (mitKonto && abgleich.status.art !== 'laeuft') abgleich.bald(0);
 }
+// While the progress page is open: the status line, and the numbers after a sync brought something.
+abgleich.beobachten((s: SyncStatus) => {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = statusText(s);
+  el.dataset.art = s.art;
+  if (s.art === 'ok') document.getElementById('fortschritt-zahlen')?.replaceWith(document.createRange().createContextualFragment(progressTable()));
+});
 
 function saveProgressFile(): void {
   const blob = new Blob([serializeProgress(progress, nowIso())], { type: 'application/json' });
@@ -345,23 +424,33 @@ function showStart(): void {
   mode = 'menu';
   const credit = `<span class="credit">${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}</span><br>`;
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
-    [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
+    ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
     ['Zu zweit', zz.menue],
+    ...linkButtons(),
     [kontoLabel(), openKonto],
   ]);
+  addSteeringChoice(showStart);
+}
+
+/** "Zurück zum Editor" / "Im Editor öffnen" for a level from a link. */
+function linkButtons(): [string, () => void][] {
+  const b = packId === LINK_PACK ? editorButton() : null;
+  return b ? [b] : [];
 }
 
 function showPause(): void {
   mode = 'menu';
   showOverlay('Pause', controlsHelp(), [
-    ['Weiterspielen', startPlaying],
+    ['Weiterspielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Neustart', restart],
     ['Levels', showLevels],
     ['Zu zweit', zz.menue],
+    ...linkButtons(),
     [kontoLabel(), openKonto],
     ['Fehler melden', reportBug],
   ]);
+  addSteeringChoice(showPause);
 }
 
 /** Opens the forum in a new tab with a bug topic for this level and game version (src/forum-text.ts). */
@@ -374,6 +463,7 @@ const kontoHost: KontoHost = { showOverlay, form: ovForm, back: showStart };
 function openKonto(): void {
   mode = 'menu';
   input.releaseLock();
+  unlockRotation();
   void kontoOeffnen(kontoHost);
 }
 
@@ -397,6 +487,7 @@ function listButton(html: string, current: boolean, onClick: () => void): HTMLBu
 async function showLevels(): Promise<void> {
   mode = 'menu';
   input.releaseLock();
+  unlockRotation();
   showOverlay('Levelpakete', '', [['Zurück', showStart], ['Fortschritt', () => showProgress()]]);
   const packs = await listPacks();
   levelList.replaceChildren(
@@ -455,7 +546,10 @@ async function showPack(id: string): Promise<void> {
       const done = solved.has(l.id);
       if ((levelFilter === 'offen' && done) || (levelFilter === 'geloest' && !done)) return [];
       const best = progress.levels[l.id]?.best;
-      const right = best ? `<small>${formatBest(best.steps)}</small>` : '';
+      const server = meine.get(l.id);
+      // the better of the local and the checked time, and the own place in the leaderboard
+      const steps = Math.min(best?.steps ?? Infinity, server?.zeit ?? Infinity);
+      const right = Number.isFinite(steps) ? `<small>${formatBest(steps)}${server ? ` · Platz ${server.platz}` : ''}</small>` : '';
       return [
         listButton(`<span>${i + 1}</span>${escapeHtml(l.title)}${right}${done ? ' <em aria-label="gelöst">✓</em>' : ''}`, id === packId && i === levelIndex, async () => {
           await loadLevel(id, i);
@@ -491,8 +585,40 @@ function pairsText(): string {
   return `Perlen ${objects.meditationCount().engaged}/${pearls}`;
 }
 
+// ---------- leaderboard (optional, src/bestenliste.ts) ----------
+/** Own checked times and places per level; filled after sign-in. */
+let meine: Meine = new Map();
+let leaderboardSeq = 0;
+
+/**
+ * The leaderboard line of the win message. Signed in, the run goes to the server for its replay and the
+ * line shows the place when the answer comes; otherwise a hint to sign in.
+ */
+function leaderboardLine(rec: ReturnType<GameSession['recording']>, steps: number, levelId: string): () => string {
+  if (!darfEinreichen()) return () => '<br><span class="note">Anmelden, um in die Bestenliste zu kommen.</span>';
+  const server = meine.get(levelId);
+  if (server && !lohntSich(steps, server)) return () => `<br><span class="note">Bestenliste: Platz ${server.platz} (deine Bestzeit ${formatBest(server.zeit)})</span>`;
+  const id = `bestenliste-${++leaderboardSeq}`;
+  let text = 'Bestenliste: wird geprüft …';
+  // the overlay appears a moment after the win (sound first); it shows whatever is known by then
+  const show = (t: string) => {
+    text = t;
+    const el = document.getElementById(id);
+    if (el) el.textContent = t;
+  };
+  void (async () => {
+    const sent = await einreichen(rec, __MURMEL_VERSION__);
+    if ('fehler' in sent) return show(`Bestenliste: ${sent.fehler}`);
+    const result = await abwarten(sent.id);
+    if (result.status === 'angenommen' && result.platz) meine.set(levelId, { zeit: result.zeit, platz: result.platz });
+    show(ergebnisText(result, formatBest));
+  })();
+  return () => `<br><span class="note" id="${id}" role="status" aria-live="polite">${escapeHtml(text)}</span>`;
+}
+
 function onWin(): void {
   if (!session) return;
+  if (packId === LINK_PACK) return linkWin(session);
   const s = session;
   mode = 'won';
   if (zz.gewonnen(s)) return input.releaseLock(); // zu zweit: no single-player progress, own result
@@ -502,6 +628,7 @@ function onWin(): void {
   const prevBest = progress.levels[level.id]?.best;
   progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());
   noteRunEnded(s); // saves the progress
+  abgleich.bald();
   const newBest = progress.levels[level.id]?.best;
   const bestLine = !prevBest
     ? ''
@@ -514,20 +641,31 @@ function onWin(): void {
   const last = levelIndex === packList.length - 1;
   // Admins: the won run as a solution for the nightly check (docs/SPEC-loesbarkeit.md)
   const recording = s.recording();
+  const board = leaderboardLine(recording, s.steps, level.id);
+  const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${board()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart], ...asSolution]
+        ? [['Levels', showLevels], ['Nochmal', restart], ...ranking, ...asSolution]
         : [
             ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
+            ...ranking,
             ...asSolution,
           ],
     );
   }, 900);
+}
+
+/** Won a level from a link: no progress, statistics or best time (docs/SPEC-editor.md). */
+function linkWin(s: GameSession): void {
+  mode = 'won';
+  sfx.win();
+  input.releaseLock();
+  setTimeout(() => showOverlay('Geschafft!', `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}`, [...linkButtons(), ['Nochmal', restart], ['Levels', showLevels]]), 900);
 }
 
 // ---------- game events (the simulation is in src/game/session.ts) ----------
@@ -864,9 +1002,13 @@ function noteSolved(pack: string, id: string): void {
 for (const [k, v] of Object.entries(store.get<Record<string, string[]>>('solvedPacks', {}))) solvedInPack.set(k, new Set(v));
 for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 
-await loadLevel(packId, levelIndex);
+// a shared level in the link (#level=…, src/editor/game-link.ts) starts instead of the last level
+const linkStart = await openLinkFromHash(location.hash);
+if (linkStart?.ok) await loadLevel(LINK_PACK, 0);
+else await loadLevel(packId, levelIndex);
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
-void kontoLaden().then(() => {
+void kontoLaden().then(async () => {
+  if (darfEinreichen()) meine = await meineLaden();
   for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
 });
 if (mailLinkPruefen(kontoHost)) {
@@ -876,8 +1018,17 @@ if (mailLinkPruefen(kontoHost)) {
   history.replaceState(null, '', location.pathname + location.search);
   openKonto();
 } else showStart();
+if (linkStart && !linkStart.ok) showToast(linkStart.error, 4000);
 // A mail link opened in a tab that already plays
 window.addEventListener('hashchange', () => void mailLinkPruefen(kontoHost));
+window.addEventListener('hashchange', async () => {
+  const r = await openLinkFromHash(location.hash);
+  if (r && !r.ok) showToast(r.error, 4000);
+  if (r?.ok) {
+    await loadLevel(LINK_PACK, 0);
+    showStart();
+  }
+});
 $('loading').remove();
 requestAnimationFrame((t) => {
   last = t;
