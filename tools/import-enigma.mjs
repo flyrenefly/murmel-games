@@ -572,8 +572,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
       const t = [...allCells(w)].find((c) => c.o.name === tok || '#' + c.o.$id === tok);
       if (t) dest = [t.x + 0.5, t.y + 0.5];
     }
-    if (!dest) reject('Wurmloch ohne Ziel');
-    else o.a.dest = `${dest[0]},${dest[1]}`;
+    // WormHole::actor_hit without a destination: it only attracts (unless a script sets one later)
+    if (!dest && (src.destination || /destination/.test(lua?.code ?? ''))) reject('Wurmloch ohne Ziel');
+    else if (dest) o.a.dest = `${dest[0]},${dest[1]}`;
   }
   // Cracks: wo["Fragility"]/["CrackSpreading"] of the level script as their defaults
   for (const o of objs) {

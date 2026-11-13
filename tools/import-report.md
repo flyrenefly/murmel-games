@@ -1,6 +1,6 @@
 # Enigma-Import
 
-905 von 1322 Levels übernommen (18 Pakete).
+906 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -37,7 +37,6 @@
 | Lua: :orientate | 7 | 4 |
 | Lua: set_attrib() | 7 | 0 |
 | Lua: lib.math | 7 | 1 |
-| Wurmloch ohne Ziel | 7 | 2 |
 | Lua: document() | 6 | 0 |
 | Lua: doorh() | 6 | 0 |
 | Lua: :can_go_south | 6 | 0 |
@@ -51,7 +50,8 @@
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
-| Aktion inner_pull | 4 | 0 |
+| Aktion inner_pull | 4 | 1 |
+| Wurmloch ohne Ziel | 4 | 1 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: :closeall | 3 | 1 |
