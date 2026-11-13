@@ -39,22 +39,40 @@ async function remoteFiles(sftp, dir = '.', rel = '') {
   return out;
 }
 
-const sftp = new SftpClient();
-await sftp.connect({
+const options = {
   host,
   port: 22,
   username,
   password,
   readyTimeout: 30000,
   hostVerifier: (key) => PINNED.has(createHash('sha256').update(key).digest('base64').replace(/=+$/, '')),
-});
+};
+let sftp = new SftpClient();
+await sftp.connect(options);
+
+/** Upload one file; the connection sometimes drops ("Unexpected end event"): reconnect and retry. */
+async function put(local, remote) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await sftp.fastPut(local, remote);
+      return;
+    } catch (e) {
+      if (attempt >= 4) throw e;
+      console.warn(`retry ${remote} (${attempt}): ${e.message}`);
+      await sftp.end().catch(() => {});
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+      sftp = new SftpClient();
+      await sftp.connect(options);
+    }
+  }
+}
 try {
   const files = localFiles(localRoot);
   const dirs = new Set(files.map((f) => posix.dirname(f)).filter((d) => d !== '.'));
   for (const d of [...dirs].sort()) await sftp.mkdir(d, true);
   let n = 0;
   for (const f of files) {
-    await sftp.fastPut(join(localRoot, f), f);
+    await put(join(localRoot, f), f);
     n++;
   }
   const keep = new Set(files);
