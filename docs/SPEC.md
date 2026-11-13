@@ -24,6 +24,13 @@ Levels, eigener Code. Kein Code, keine Grafik und keine Levels aus Oxyd oder Eni
 
 Installierbar als App (PWA), offline spielbar.
 
+**Offline (ab 13.11.2026):** Service Worker `sw.js`, beim Build vom Plugin `murmel-offline` in
+`vite.config.ts` aus `src/sw-template.js` erzeugt (Version = Hash über Vorlage und Dateien). Spiel, Grafik,
+Klänge und eingebaute Levels (rund 4 MB) werden bei der Installation vorab gespeichert, Seitenaufrufe
+kommen zuerst aus dem Netz (neue Versionen sofort), offline aus dem Speicher. Enigma-Pakete
+(`levels/enigma/*.json`, 12 MB) werden beim ersten Öffnen gespeichert und im Hintergrund
+aufgefrischt. `sw.js` wird ohne HTTP-Cache ausgeliefert (`.htaccess`).
+
 ## Technik
 
 | Bereich | Wahl | Grund |

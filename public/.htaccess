@@ -9,6 +9,10 @@ RewriteRule ^(.*)$ https://murmel.games/$1 [R=301,L]
   <FilesMatch "-[A-Za-z0-9_-]{8}.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  # The service worker is checked on every visit, so a new release reaches installed apps at once.
+  <Files "sw.js">
+    Header set Cache-Control "no-cache"
+  </Files>
 </IfModule>
 <IfModule mod_expires.c>
   ExpiresActive On
