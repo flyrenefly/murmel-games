@@ -247,7 +247,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
       lv.signals.forEach((x) => (x.symbol = board.symbolOf(x.index)));
     };
     const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => classic.floorChanged(), random: Math.random, addOxyd, shuffleOxyd }, world, force);
-    const l = await startLua(lv.lua.code, host, lv.lua.libs ?? []);
+    const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     if (level !== lv) return; // another level was loaded meanwhile
     lua = l;
     luaHost = host;

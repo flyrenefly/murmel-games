@@ -334,17 +334,43 @@ function objectDef(x, y, o) {
 
 /** Lua of a level: code, its functions and the result of running its init on the export. */
 async function analyzeLua(xml, exp) {
-  const code = luaCode(xml);
+  let code = luaCode(xml);
   if (!code) return null;
-  // libraries Murmel ships (libpento) run before the level, as Enigma preloads them
-  const libs = levelLibs(xml);
+  // Enigma's Lua API 1 (api1init.lua) for levels with compatibility below 1.10
+  const api1 = (Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1) < 1.1;
+  // libraries Murmel ships (libpento, API 2) run before the level, as Enigma preloads them
+  const libs = api1 ? [] : levelLibs(xml);
+  // API 1: libraries the level preloads (el:dependency … el:preload="true", lib/ant …) run first
+  if (api1) {
+    // depth first: a library's own preloads come before it (lib/ralf needs lib/ant)
+    const pre = [];
+    const seen = new Set();
+    let missing = null;
+    const load = (src) => {
+      for (const m of src.matchAll(/<el:dependency\b[^>]*>/g)) {
+        const path = /el:path="([^"]+)"/.exec(m[0])?.[1];
+        if (!path || !/el:preload="true"/.test(m[0]) || seen.has(path)) continue;
+        seen.add(path);
+        const file = join(levelsDir, `${path}.xml`);
+        const lib = existsSync(file) ? readFileSync(file, 'utf8') : '';
+        if (!lib || !licenceOk(attr(lib, /<el:license el:type="([^"]*)"/))) missing ??= path;
+        else {
+          load(lib);
+          pre.push(luaCode(lib));
+        }
+      }
+    };
+    load(xml);
+    if (missing) return { code, libs, api1, fns: luaFunctions(code), world: {}, error: `Bibliothek ${missing}` };
+    if (pre.length) code = `${pre.join('\n')}\n${code}`;
+  }
   let init;
   try {
-    init = await luaInit(code, exp.world, libs);
+    init = await luaInit(code, exp.world, libs, api1);
   } catch (e) {
     init = { world: {}, error: String(e) };
   }
-  return { code, libs, fns: luaFunctions(code), ...init };
+  return { code, libs, api1, fns: luaFunctions(code), ...init };
 }
 
 /** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
@@ -556,9 +582,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
           oxyds++;
           // named Oxyd stones can receive messages (open, close, shuffle …)
           // ($id: Lua's named list skips it, so no group holds the stone twice)
-          // (with the level's own attributes "_kind" …, which Lua reads)
+          // (with the level's own attributes "_kind" …, which Lua reads, and oxydcolor: Lua reads it,
+          // Firefox shuffles in its init until three colours differ)
           const own = Object.fromEntries(Object.entries(st).filter(([k, v]) => /^_\w+$/.test(k) && v !== ''));
-          if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name, ...own } });
+          if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name, ...own, ...(st.oxydcolor !== undefined && st.oxydcolor !== '' ? { oxydcolor: st.oxydcolor } : {}) } });
           // flavor e: b's images plus the peephole mask st_oxyde (models-2d.lua)
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor === 'e' ? 'b' : flavor}${s}`);
           if (flavor === 'e') imgs.add('st_oxyde');
@@ -701,6 +728,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // Every action must be a supported message to a supported object, or a Lua function of the
   // level (Object::performAction: no target object and action "callback" or empty).
   let needsLua = false;
+  /** Level functions the objects call (API 1: only what they reach must run during play). */
+  const callbacks = new Set();
   for (const o of objs) {
     for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
       const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
@@ -708,6 +737,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
         const act = acts[i] ?? '';
         if ((act === 'callback' || act === '') && resolveTarget(t, objs).length === 0 && (lua?.fns.has(t) || lua?.isFunction?.(t))) {
           needsLua = true;
+          callbacks.add(t);
         } else if (act === 'callback' || resolveTarget(t, objs).length === 0) {
           const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
           const actor = w.actors.some((x) => x.o.name === t || '#' + x.o.$id === t);
@@ -758,14 +788,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
   if (needsLua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
-    for (const p of luaProblems(lua.code, lua.fns)) reject(`Lua: ${p}`);
+    for (const p of luaProblems(lua.code, lua.fns, lua.api1, callbacks)) reject(`Lua: ${p}`);
     // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a, colour by shuffle) in a level
     // that starts without any (Pentomino). Replacing existing Oxyd stones, fixed colours or other
     // flavors are not built.
     const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
-    for (const k of [...runtimeKinds(lua.code), ...lua.libs.flatMap((l) => l.kinds)]) {
+    for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks), ...lua.libs.flatMap((l) => l.kinds)]) {
       const v = runtimeKind(k);
       if (!runtimeOk(v)) {
         reject(`Lua: ${k}`);

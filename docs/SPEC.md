@@ -748,8 +748,30 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Andere `ot_`-Objekte führen zur Ablehnung. Levels, die ot_timer nutzten,
   waren vorher ohne Timer im Spiel (Inverse Maze II und Kaleidoscope fielen deshalb heraus:
   `lib.maze` bzw. `wo:drawRect` mit Resolver im Rückruf fehlen).
+- **API 1 (`src/lua/api1.lua`, ab 13.11.):** Levels mit Enigma-Kompatibilität < 1.10 laufen
+  zusätzlich durch eine eigene Schicht nach `api1init.lua`/`compat.lua`: `create_world`,
+  `set_stone/item/floor`, `fill_*`, `draw_*`, `oxyd`, `doorh/v`, `puzzle`, `gradient` …,
+  `enigma.MakeObject/Get*/SetAttrib/GetAttrib/GetKind/SendMessage/KillStone/AddRubberBand/
+  AddConstantForce`, `SendMessage`, `SetAttrib(s)`, Lua-4-Globale (`strlen`, `getn`,
+  `tinsert`, Winkelfunktionen in Grad …), `TRUE/FALSE`, `PUZ_*`, `SLOPE_*`. Alte Artnamen
+  („st-rock1“) über Enigmas Umbenennungstabelle (`RenamingObjectsNew2Old`) samt Sonderfällen
+  (Schlüssel, Türen, Schalter `instant`, Gefälle `type` → `fl_slope_<form>`), alte
+  Attributnamen (`keycode`, `on`, `dir`, Flags 0/1 …). Im Init-Modus liefert `set_stone`
+  das exportierte Objekt dieses Felds (der Level darf es sich merken), zur Laufzeit setzt es
+  eine Kachel. `enigma.ConserveLevel = FALSE` wird zum Weltwert. Quelltextausgleich für
+  Lua 5.0/5.1 (`runtime.ts` `api1Source`): `arg` in Vararg-Funktionen, unbekannte
+  Escapes wie `"\("`. Bibliotheken mit `el:preload="true"` (`lib/ant`, `lib/natmaze`,
+  `lib/ralf` …, rekursiv, nur mit freier Lizenz) stellt der Importer vor den Levelcode.
+  Nicht nachgebaut: `set_actor`/`AddSignal`/`oxyd_shuffle` während des Spiels, Wurmlochziele
+  per Attribut zur Laufzeit.
+- **Init-Grenze:** Die Init läuft auf der fertigen Welt; ein Level, das würfelt, bis es ein
+  von seinem eigenen Aufbau noch freies Feld findet, endet dort nie. Nach 50 Mio.
+  Lua-Anweisungen bricht `LuaLevel` die Init ab („Level-Init läuft endlos“).
 - **Importprüfung (`tools/lua-check.mjs`):** Rückrufe dürfen nur bekannte Funktionen,
-  Methoden und Arten setzen; abgelehnt werden API 1 (`set_stone`, `enigma.*` …),
+  Methoden und Arten setzen; bei API 1 zählen nur die Funktionen, die die Rückrufe der
+  Levelobjekte erreichen (Aufbaufunktionen laufen nur in der Init), samt alter Artnamen in
+  Literalen und in Globalen wie `mainstone = "st-rock1"`. Abgelehnt werden API 1 nur noch
+  bei Levels ab 1.10 (`set_stone`, `enigma.*` …),
   Bibliotheken (`lib.*`, `res.*` im Spiel), Akteure zur Laufzeit, unbekannte Kachelarten,
   Fehler beim Init. Ziele, die nichts benennen, ignoriert Enigma – der Importer auch
   (außer bei Bibliotheken oder Namen, die im Skript vorkommen).
