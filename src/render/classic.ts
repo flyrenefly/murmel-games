@@ -226,6 +226,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'st_scissors') return ['st_scissors', 'sh_round'];
   if (/^st_portal/.test(kind)) return ['st_portal_horse', 'sh_portal_horse'];
   if (/^st_mail/.test(kind)) return ['st_mail', 'sh_solid'];
+  if (/^st_yinyang/.test(kind)) return ['st_yinyang', 'st_yinyang_inactive', 'sh_round'];
   if (kind === 'st_spitter') return ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow'];
   if (kind === 'st_surprise') return ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow'];
   if (/^st_charge/.test(kind)) return ['st_charge_plus', 'st_charge_minus', 'st_charge_zero', 'sh_rounded'];
@@ -840,6 +841,13 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'yystone') {
+      // st_yinyang: 6 frames à 140 ms while active; st_yinyang_inactive afterwards
+      if (pass === 'shadow') this.image('sh_round', px, py);
+      else if (o.state === 2) this.image('st_yinyang_inactive', px, py);
+      else this.frame('st_yinyang', o.state === 1 && o.pulse !== undefined ? Math.min(5, Math.floor(world.ageOf(o.pulse) / 140)) : 0, px, py);
       return;
     }
     if (o.cls === 'spitter') {

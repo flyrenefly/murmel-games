@@ -609,6 +609,8 @@ function handleObjectEvents(events: ObjectEvent[]): void {
       const m = ph?.marbles[e.marble];
       const other = m ? ph!.marbles.findIndex((o, k) => k !== e.marble && !o.pearl && o.color === 1 - m.color && o.active) : -1;
       if (other >= 0) ph!.kick(other, e.fx, e.fy);
+    } else if (e.type === 'swapPlayer') {
+      swapMarble();
     } else if (e.type === 'laserhit') {
       // BasicBall "_laserhit": shatters (not while jumping, falling or in a vortex)
       const m = physics?.marbles[e.marble];

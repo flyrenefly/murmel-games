@@ -1,6 +1,6 @@
 # Enigma-Import
 
-926 von 1322 Levels übernommen (18 Pakete).
+928 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -76,7 +76,6 @@
 | Pferd mit Zielen | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Stein st_yinyang | 2 | 1 |
 | Lua: :peepall | 2 | 1 |
 | Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
@@ -149,7 +148,6 @@
 | Lua: st_puzzle_yellow_e | 1 | 0 |
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
-| Stein st_yinyang_active | 1 | 0 |
 | Gegenstand it_explosion_nil | 1 | 0 |
 | Stein fl_water | 1 | 1 |
 | Lua: ac_killer | 1 | 0 |

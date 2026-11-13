@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief' | 'charge' | 'surprise' | 'trap' | 'stsurprise' | 'spitter' | 'yystone';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
@@ -27,6 +27,10 @@ export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wo
 for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
 // Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
 for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
+
+function yinyangInstant(o: GameObject): boolean {
+  return o.attrs.instant !== undefined && o.attrs.instant !== '' ? truthy(o.attrs.instant) : o.kind === 'st_yinyang_instant';
+}
 
 /** CannonBall: flight time = the marble jump animation. */
 const CANNON_MS = 560;
@@ -472,6 +476,8 @@ export type ObjectEvent =
   | { type: 'turnstile'; col: number; row: number; cw: boolean; red: boolean; sender: number; seen: boolean[] }
   /** LaserBeam::actor_hit → "_laserhit": marble i shatters. */
   | { type: 'laserhit'; marble: number }
+  /** YinyangStone::switchPlayer: the other marble is steered. */
+  | { type: 'swapPlayer' }
   /** FlashStone::actor_hit: the other marble gets this force. */
   | { type: 'flash'; marble: number; fx: number; fy: number }
   /** ChargeStone::actor_hit: the marble takes the stone's charge. */
@@ -554,6 +560,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'it_surprise') return 'surprise';
   if (kind === 'st_surprise') return 'stsurprise';
   if (kind === 'st_spitter') return 'spitter';
+  if (/^st_yinyang(_instant|_active|_inactive)?$/.test(kind)) return 'yystone';
   if (kind === 'it_trap') return 'trap';
   if (/^st_charge(_plus|_minus|_zero)?$/.test(kind)) return 'charge';
   if (kind === 'st_ice') return 'ice';
@@ -747,7 +754,7 @@ export class ObjectWorld {
         if (o.state === 2) continue;
         return ALL_FACES;
       }
-      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter') && !o.gone) return ALL_FACES;
+      if ((o.cls === 'magic' || o.cls === 'ghost' || o.cls === 'monoflop' || o.cls === 'flash' || o.cls === 'scissors' || o.cls === 'rubberstone' || o.cls === 'mail' || o.cls === 'charge' || o.cls === 'stsurprise' || o.cls === 'spitter' || o.cls === 'yystone') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -792,6 +799,11 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'yystone') {
+        // YinyangStone::actor_hit: an idle one turns (6 × 140 ms), then switches the player (instant: at once)
+        if (o.state === 0) this.yinyangActivate(o);
+        return;
+      }
       if (o.cls === 'spitter') {
         // SpitterStone::actor_hit: an extra life in the inventory loads a cannonball with the actor's
         // velocity (before the bounce), at most range / 0.56
@@ -2194,7 +2206,8 @@ export class ObjectWorld {
     const st = this.stoneObjectAt(c, r);
     const fixed = st ? null : this.env.staticStone?.(c, r);
     if (st || fixed) {
-      if (st?.cls === 'spitter' && !truthy(st.attrs.secure)) st.spit = { phase: 'breaking', since: this.now, vx: 0, vy: 0 };
+      if (st?.cls === 'yystone' && st.state === 0) this.yinyangActivate(st);
+      else if (st?.cls === 'spitter' && !truthy(st.attrs.secure)) st.spit = { phase: 'breaking', since: this.now, vx: 0, vy: 0 };
       else if (st?.cls === 'ice') this.breakStone(st);
       else if (st?.cls === 'impulse') this.startImpulse(st, -1);
       else if (st?.cls === 'puzzle') this.explodePuzzle(st);
@@ -2240,6 +2253,18 @@ export class ObjectWorld {
     if (s?.phase === 'spitting') return { image: 'st_spitter_spitting', frame: Math.min(5, Math.floor(age / 175)) };
     if (s?.phase === 'breaking') return { image: 'st_spitter_breaking', frame: Math.min(5, Math.floor(age / 100)) };
     return { image: 'st_spitter_idle', frame: Math.floor(this.now / 150) % 6 };
+  }
+
+  // YinyangStone: 0 idle, 1 active (turning), 2 inactive
+  private yinyangActivate(o: GameObject): void {
+    o.state = 1;
+    o.pulse = this.now;
+    if (yinyangInstant(o)) this.yinyangSwitch(o);
+  }
+
+  private yinyangSwitch(o: GameObject): void {
+    this.events.push({ type: 'swapPlayer' });
+    this.performAction(o, true);
   }
 
   /** Milliseconds since a time of the object clock. */
@@ -3929,6 +3954,14 @@ export class ObjectWorld {
       if (o.cls === 'burnable' && !o.gone) this.burnableStep(o);
       if (o.cls === 'volcano' && !o.gone) this.volcanoStep(o);
       if (o.cls === 'spitter' && !o.gone) this.spitterStep(o);
+      if (o.cls === 'yystone' && !o.gone && o.state === 1) {
+        o.pulse ??= this.now;
+        if (this.now - o.pulse >= 6 * 140) {
+          // YinyangStone::animcb: idle again with loop, else inactive; the switch unless instant
+          o.state = truthy(o.attrs.loop) ? 0 : 2;
+          if (!yinyangInstant(o)) this.yinyangSwitch(o);
+        }
+      }
       // st_laserflop_on starts ON_TIMER
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt === undefined && !o.lasered) o.alarmAt = this.now + (Number(o.attrs.interval) || 1.8) * 1000;
       if (o.cls === 'monoflop' && !o.gone && o.state === 1 && o.alarmAt !== undefined && this.now >= o.alarmAt) {
@@ -4447,6 +4480,8 @@ function onewayFaces(o: GameObject): number {
 }
 
 function initialState(kind: string, a: Record<string, string>): number {
+  // YinyangStone: kinds _active / _inactive
+  if (/^st_yinyang/.test(kind)) return kind === 'st_yinyang_active' ? 1 : kind === 'st_yinyang_inactive' ? 2 : 0;
   // SpitterStone: 1 active (default), 0 idle
   if (kind === 'st_spitter') return a.$state === '0' ? 0 : 1;
   // MonoFlopStone st_laserflop_on: ON_PENDING (on, the timer runs, no action)

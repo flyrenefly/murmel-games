@@ -114,6 +114,7 @@ const OBJECTS = [
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
   [/^it_trap$/, ['it_trap']],
+  [/^st_yinyang(_instant|_active|_inactive)?$/, ['st_yinyang', 'st_yinyang_inactive', 'sh_round']],
   [/^st_spitter$/, ['st_spitter_idle', 'st_spitter_loading', 'st_spitter_spitting', 'st_spitter_breaking', 'sh_round', 'ac_marble_black_jump', 'sh_marble_jump', 'it_explosion', 'it_crack_abyss', 'it_crack_water', 'it_meditation_hollow']],
   [/^st_surprise$/, ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow']],
   [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],

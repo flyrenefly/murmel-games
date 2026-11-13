@@ -595,6 +595,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   außer secure, Eis bricht, Impulsstein stößt, Puzzle explodiert, Braunpyramide verschwindet); sonst ein
   zerstörbarer Gegenstand oder Boden → Explosion mit Bruch; Dynamit/Bomben explodieren, Risse brechen;
   auf festem Boden zerschellen Kugeln dort. Nachricht "spit" fehlt.
+- **st_yinyang (_instant/_active/_inactive)** (`SimpleStones.cc` YinyangStone): Anstoßen (oder eine Kanonenkugel)
+  dreht ein ruhendes (6 × 140 ms), dann wechselt die gesteuerte Kugel (instant: sofort) und es führt seine
+  Aktion aus; danach ist es inaktiv, mit `loop` wieder ruhend.
 - **it_bottle_idle / _broken** (`Bottle.cc`, `world.cc` drunkenMouseforce): Trinken macht 5 s betrunken (die
   Steuerkraft dreht sich um π·(0,3·b1 + 0,15·b2), wechselnd jede Sekunde bzw. Fünftelsekunde), dann wird die
   Flasche abgelegt. Ein Stein darauf zerbricht sie; zerbrochen zerschmettert sie Kugeln auf dem Boden, ist
