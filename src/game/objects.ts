@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed']);
@@ -169,6 +169,16 @@ export function windowFaces(o: GameObject): number {
   if (o.attrs.$connections !== undefined && o.attrs.$connections !== '') return ALL_FACES ^ (Number(o.attrs.$connections) & ALL_FACES);
   const s = /^st_window_([nesw]+)$/.exec(o.kind)?.[1] ?? 's';
   return (s.includes('w') ? WEST : 0) | (s.includes('s') ? SOUTH : 0) | (s.includes('e') ? EAST : 0) | (s.includes('n') ? NORTH : 0);
+}
+
+/** MagicStone flavor: brick, oxyda, oxydc (from the kind or the flavor attribute). */
+export function magicFlavor(o: GameObject): string {
+  return o.attrs.flavor || /^st_magic_(\w+)$/.exec(o.kind)?.[1] || 'brick';
+}
+
+/** GhostStone flavor: purplemarble, greenbrown, break. */
+function ghostFlavor(o: GameObject): string {
+  return o.attrs.flavor || /^st_ghost_(\w+)$/.exec(o.kind)?.[1] || 'purplemarble';
 }
 
 /** FlatStone / PlasterStone kinds built as break stones: flat (breakable), cracked, fire (burnable), plaster. */
@@ -457,6 +467,9 @@ export function objectClass(kind: string): ObjectClass | null {
   if (kind === 'st_ice') return 'ice';
   if (kind === 'st_polarswitch') return 'polarswitch';
   if (kind === 'st_barrier') return 'barrier';
+  if (/^st_magic(_brick|_oxyda|_oxydc)?$/.test(kind)) return 'magic';
+  if (/^st_ghost(_purplemarble|_greenbrown|_break)?$/.test(kind)) return 'ghost';
+  if (/^st_disco(_light|_medium|_dark)?$/.test(kind)) return 'disco';
   if (kind === 'st_knight') return 'knight';
   if (/^st_shogun(_s|_m|_sm|_l|_sl|_ml|_sml)?$/.test(kind)) return 'shogun';
   if (/^it_shogun(_s|_m|_l)?$/.test(kind)) return 'shogundot';
@@ -623,6 +636,7 @@ export class ObjectWorld {
    */
   blockAt(col: number, row: number, color = 2, invisible = false, by = -1, shielded = false): number {
     for (const o of this.at(col, row)) {
+      if ((o.cls === 'magic' || o.cls === 'ghost') && !o.gone) return ALL_FACES;
       // PolarSwitchStone::collision_response: invisible actors pass
       if (o.cls === 'polarswitch' && !o.gone) {
         if (invisible) continue;
@@ -666,6 +680,23 @@ export class ObjectWorld {
    */
   hit(col: number, row: number, color = 0, nx = 0, ny = 0, vn = 0, vx = 0, vy = 0, by = -1): void {
     for (const o of [...this.at(col, row)]) {
+      if (o.cls === 'magic') {
+        // MagicStone::actor_hit: brick + magic wand → st_rawglass; oxyda → light glass, oxydc → raw glass (movable)
+        const f = magicFlavor(o);
+        if (f === 'brick' && this.wields('it_magicwand')) this.transformStone(o, 'st_rawglass');
+        else if (f === 'oxyda') this.transformStone(o, 'st_lightglass_movable');
+        else if (f === 'oxydc') this.transformStone(o, 'st_rawglass_movable');
+        return;
+      }
+      if (o.cls === 'ghost') {
+        // GhostStone::actor_hit: purplemarble + brush → st_purplemarble, greenbrown + wand → st_greenbrown,
+        // break + brush → st_break_oxydc
+        const f = ghostFlavor(o);
+        if (f === 'purplemarble' && this.wields('it_brush')) this.transformStone(o, 'st_purplemarble');
+        else if (f === 'greenbrown' && this.wields('it_magicwand')) this.transformStone(o, 'st_greenbrown');
+        else if (f === 'break' && this.wields('it_brush')) this.transformStone(o, 'st_break_oxydc');
+        return;
+      }
       if (o.cls === 'polarswitch') {
         // PolarSwitchStone::actor_hit: toggle
         this.setPolar(o, 1 - o.state);
@@ -1354,6 +1385,8 @@ export class ObjectWorld {
     if (o.cls === 'puzzle') return isHollow(o);
     if (o.cls === 'box') return /^st_(rawglass|lightglass)_movable$/.test(o.kind);
     if (o.cls === 'polarswitch') return o.state === 1; // PolarSwitchStone::is_transparent when ON
+    if (o.cls === 'ghost') return ghostFlavor(o) !== 'purplemarble'; // GhostStone::is_transparent
+    if (o.cls === 'disco') return true; // DiscoStone::is_floating
     if (o.cls === 'barrier') return false;
     return false;
   }
@@ -1641,6 +1674,17 @@ export class ObjectWorld {
     if (o.cls === 'dynamite') return age < 0 ? { image: 'it_dynamite', col: 0, row: 0 } : { image: 'it_dynamite_burning', col: 0, row: Math.min(14, Math.floor(age / 100)) };
     // it_bomb: column 0 black, 1 white; row 0 idle, 1..9 burning
     return { image: 'it_bomb', col: this.bombBlack(o) ? 0 : 1, row: age < 0 ? 0 : 1 + Math.min(8, Math.floor(age / 100)) };
+  }
+
+/** Stone::transform: the stone becomes another one – a plain map stone or an object. */
+  private transformStone(o: GameObject, kind: string): void {
+    this.events.push({ type: 'sound', name: 'switch' });
+    this.remove(o);
+    const cls = objectClass(kind);
+    if (cls) {
+      const n = this.add(kind, cls, o.col, o.row);
+      n.state = initialState(kind, {});
+    } else this.env.setStaticStone?.(o.col, o.row, kind);
   }
 
   /** PolarSwitchStone::setState: light glass (ON, transparent) or dark glass; performs its action. */
@@ -3418,6 +3462,14 @@ export class ObjectWorld {
       return;
     }
     if (o.cls === 'landmine') return;
+    if (o.cls === 'disco') {
+      // DiscoStone::message: lighten, darken (old levels: by 2), signal (1 lighter, 0 darker by 2)
+      const old = this.compat < 1.1;
+      if (msg === 'lighten') o.state = Math.max(0, o.state - (old ? 2 : 1));
+      else if (msg === 'darken') o.state = Math.min(2, o.state + (old ? 2 : 1));
+      else if (msg === 'signal') o.state = Math.max(0, Math.min(2, o.state + (value ? -2 : 2)));
+      return;
+    }
     if (o.cls === 'polarswitch') {
       // StateObject messages: on, off, toggle, signal
       if (msg === 'on' || msg === 'open') this.setPolar(o, 1);
@@ -3649,6 +3701,8 @@ function onewayFaces(o: GameObject): number {
 }
 
 function initialState(kind: string, a: Record<string, string>): number {
+  // DiscoStone: 0 light, 1 medium, 2 dark
+  if (/^st_disco/.test(kind)) return a.$state !== undefined && a.$state !== '' ? Number(a.$state) : kind === 'st_disco_dark' ? 2 : kind === 'st_disco_medium' ? 1 : 0;
   if (/^st_oneway/.test(kind)) return onewayDir(kind, a);
   // Vortex: 1 open, 0 closed
   if (/^it_vortex/.test(kind)) return kind === 'it_vortex_closed' ? 0 : a.$state === '0' ? 0 : 1;

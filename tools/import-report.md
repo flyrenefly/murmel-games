@@ -1,11 +1,11 @@
 # Enigma-Import
 
-744 von 1322 Levels übernommen (18 Pakete).
+771 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 119 | 3 |
-| Lua-Rückruf | 117 | 3 |
+| Lua-Rückruf | 116 | 3 |
 | keine Oxyd-Steine | 111 | 1 |
 | Lua: :shuffleOxyd | 105 | 0 |
 | Lua: st_oxyd | 103 | 0 |
@@ -23,17 +23,15 @@
 | Lua: set_actor() | 32 | 0 |
 | Lua: SendMessage() | 32 | 0 |
 | Lua: oxyd() | 30 | 0 |
-| Stein st_scissors | 28 | 2 |
+| Stein st_scissors | 28 | 3 |
 | Gegenstand it_pipe_ns | 28 | 0 |
 | Akteur ac_horse | 27 | 2 |
-| Gegenstand it_glasses | 27 | 2 |
+| Gegenstand it_glasses | 27 | 3 |
 | Gegenstand it_pipe_sw | 24 | 0 |
-| Stein st_ghost_break | 23 | 2 |
 | Objekt ot_timer (Lua-Init) | 22 | 2 |
 | Gegenstand it_pipe_ne | 21 | 0 |
 | Lua: abyss() | 20 | 0 |
-| Stein st_magic_brick | 20 | 5 |
-| Gegenstand it_bottle_idle | 20 | 2 |
+| Gegenstand it_bottle_idle | 20 | 3 |
 | Gegenstand it_pipe_es | 20 | 0 |
 | Stein st_rubberband | 19 | 1 |
 | Gegenstand it_pipe_nw | 19 | 0 |
@@ -42,35 +40,31 @@
 | Lua: :add | 16 | 4 |
 | Gegenstand it_seed_volcano | 16 | 2 |
 | Stein st_portal_horse | 15 | 2 |
-| Stein st_magic_oxydc | 14 | 5 |
 | Lua: draw_stones() | 14 | 0 |
 | Aktion onoff | 14 | 2 |
 | Gegenstand it_bottle_broken | 14 | 1 |
-| Gegenstand it_trap | 14 | 0 |
+| Gegenstand it_trap | 14 | 1 |
 | Gegenstand it_weight | 14 | 1 |
 | Stein st_flash | 14 | 3 |
-| Stein st_disco_light | 14 | 4 |
 | Gegenstand it_bag | 13 | 3 |
 | Boden fl_thief | 13 | 0 |
 | Boden ohne Bild fl_thief | 13 | 0 |
 | Lua: :drawRect | 12 | 4 |
-| Stein st_ghost_purplemarble | 12 | 4 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
-| Stein st_brake | 11 | 1 |
+| Stein st_brake | 11 | 2 |
 | Aktion turn | 10 | 4 |
 | Gegenstand it_pencil | 10 | 2 |
-| Gegenstand it_pin | 10 | 2 |
+| Gegenstand it_pin | 10 | 3 |
 | Gegenstand it_rubberband | 10 | 2 |
 | Gegenstand it_drop | 10 | 1 |
 | Stein st_spitter | 9 | 1 |
 | Flut | 9 | 4 |
-| Stein st_disco_medium | 9 | 0 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
 | Lua-Init (Weltwert) | 8 | 1 |
 | Stein st_monoflop | 8 | 3 |
-| Lua: :orientate | 7 | 2 |
+| Lua: :orientate | 7 | 3 |
 | Aktion openclose | 7 | 3 |
 | Lua: set_attrib() | 7 | 0 |
 | Gegenstand it_surprise | 7 | 1 |
@@ -83,7 +77,6 @@
 | Akteure: nicht genau eine schwarze Murmel | 6 | 2 |
 | Lua: lib.math | 6 | 0 |
 | Boden fl_adhesionless | 6 | 1 |
-| Stein st_disco_dark | 6 | 0 |
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
@@ -98,7 +91,6 @@
 | Gegenstand it_glasses_broken | 4 | 0 |
 | Lua: st_oxyd_d | 4 | 0 |
 | Lua: :closeall | 3 | 1 |
-| Stein st_ghost_greenbrown | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Stein st_laserflop | 3 | 1 |
 | Lua: :newMap | 3 | 0 |
@@ -124,7 +116,6 @@
 | Aktion turnback | 2 | 0 |
 | Stein st_volcano_active | 2 | 2 |
 | Lua: set_attribs() | 2 | 0 |
-| Stein st_magic_oxyda | 2 | 1 |
 | Stein st_portal_pearl | 2 | 2 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |

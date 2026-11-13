@@ -1441,3 +1441,29 @@ describe('polar switch and barrier', () => {
     expect(w.blockAt(3, 0, 0, false, 0)).toBe(ALL_FACES);
   });
 });
+
+describe('magic, ghost and disco stones', () => {
+  it('magic stones transform on hit; ghost stones need the right tool', () => {
+    const set: string[] = [];
+    const env: ObjectEnv = { stoneAt: () => false, floorAt: () => 'fl_gray', setFloor: () => {}, setStaticStone: (c, r, k) => set.push(`${c},${r},${k}`) };
+    const w = new ObjectWorld([{ x: 1, y: 1, k: 'st_magic_oxyda' }, { x: 3, y: 1, k: 'st_ghost_greenbrown' }, { x: 5, y: 1, k: 'st_magic_brick' }], W, {}, env);
+    w.marbleAt(0, 0);
+    w.hit(1, 1, 0, -1, 0, -3);
+    expect(w.objects.filter((o) => !o.gone).map((o) => o.kind)).toContain('st_lightglass_movable');
+    w.hit(3, 1, 0, -1, 0, -3);
+    expect(set).toEqual([]);
+    w.inventory.push('it_magicwand');
+    w.hit(3, 1, 0, -1, 0, -3);
+    w.hit(5, 1, 0, -1, 0, -3);
+    expect(set).toEqual(['3,1,st_greenbrown', '5,1,st_rawglass']);
+  });
+
+  it('disco stones let actors pass and change their darkness by messages', () => {
+    const w = world([{ x: 2, y: 0, k: 'st_disco_dark', a: { name: 'd' } }]);
+    expect(w.blockAt(2, 0, 0)).toBe(0);
+    w.sendMessage(w.objects[0], 'lighten', true);
+    expect(w.objects[0].state).toBe(1);
+    w.sendMessage(w.objects[0], 'signal', true);
+    expect(w.objects[0].state).toBe(0);
+  });
+});

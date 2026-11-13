@@ -555,6 +555,14 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   sich tragen, prallen ab, alle anderen fahren hindurch; "all" hält jede Kugel mit Gegenständen auf;
   it_umbrella gilt auch mit Schutzschild, it_cherry auch unsichtbar. Gezeichnet als st_barrier mit dem
   Gegenstand darauf. Abweichung: it_drop gegen Rotoren fehlt (Gegner fahren immer durch).
+- **st_magic_brick / _oxyda / _oxydc** (`MagicStone.cc`): sehen aus wie Ziegel bzw. geschlossene
+  Oxyd-Steine; angestoßen wird oxyda zu beweglichem Hellglas, oxydc zu beweglichem Rohglas, brick mit
+  Zauberstab zu festem Rohglas.
+- **st_ghost_purplemarble / _greenbrown / _break** (`GhostStone.cc`): unsichtbare feste Steine; mit Pinsel
+  werden sie zu st_purplemarble bzw. st_break_oxydc, mit Zauberstab greenbrown zu st_greenbrown. Laser
+  geht durch (außer purplemarble).
+- **st_disco_light / _medium / _dark** (`DiscoStone.cc`): durchfahrbare Abdunklung (Bilder st_disco0..2),
+  Nachrichten lighten, darken (alte Levels um 2), signal (1 heller, 0 dunkler um 2).
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

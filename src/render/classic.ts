@@ -1,5 +1,5 @@
 import type { Level } from '../game/level';
-import { doorFlavor, windowFaces, stripConnections, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
+import { doorFlavor, magicFlavor, windowFaces, stripConnections, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
 
@@ -211,6 +211,9 @@ export function objectImages(kind: string): string[] {
   if (/^(st|it)_blocker/.test(kind)) return ['st_blocker', 'sh_round'];
   if (kind === 'st_laserswitch') return ['st_oxydb', 'st_quake', 'sh_round'];
   if (kind === 'st_polarswitch') return ['st_lightglass', 'st_darkglass', 'sh_rawglass'];
+  if (/^st_magic/.test(kind)) return ['st_brick', 'st_oxyda', 'st_oxydc', 'sh_solid', 'st_rawglass', 'st_lightglass', 'sh_rawglass'];
+  if (/^st_ghost/.test(kind)) return ['st_purplemarble', 'st_greenbrown', 'st_break_oxydc', 'st_flat_break', 'sh_solid', 'sh_round'];
+  if (/^st_disco/.test(kind)) return ['st_disco'];
   if (kind === 'st_barrier') return ['st_barrier', 'sh_solid'];
   if (/^st_(flat_(breakable|breaking|cracked|burnable)|plaster_breakable)$/.test(kind)) return ['st_flat', 'st_flat_cracked', 'st_flat_fire', 'st_plaster', 'st_flat_break', 'sh_solid'];
   if (kind.startsWith('st_break')) return [kind === 'st_break' ? 'st_break_plain' : kind === 'st_break_laser' ? 'st_flat' : kind, 'st_flat_break', 'sh_solid', 'sh_round'];
@@ -786,6 +789,19 @@ export class ClassicView {
         const look = world.coinslotLook(o);
         this.frame(look.image, look.frame, px, py);
       }
+      return;
+    }
+    if (o.cls === 'magic') {
+      // st_magic_brick = st_brick0, oxyda/oxydc look like closed Oxyd stones
+      const f = magicFlavor(o);
+      if (pass === 'shadow') this.image('sh_solid', px, py);
+      else this.frame(f === 'oxyda' ? 'st_oxyda' : f === 'oxydc' ? 'st_oxydc' : 'st_brick', 0, px, py);
+      return;
+    }
+    if (o.cls === 'ghost') return; // GhostStone: model "invisible"
+    if (o.cls === 'disco') {
+      // DiscoStone: tiles st_disco0..2, no shadow (floating)
+      if (pass !== 'shadow') this.frame('st_disco', Math.max(0, Math.min(2, o.state)), px, py);
       return;
     }
     if (o.cls === 'polarswitch') {
