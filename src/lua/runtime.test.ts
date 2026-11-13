@@ -240,3 +240,30 @@ function f() wo:drawRect(po(0, 0), po(1, 0), "-", r) wo:drawRect(po(2, 0), po(2,
     expect(set).toEqual(['0,0,fl_blue', '1,0,fl_blue', '2,0,st_granite', '3,0,st_granite', '3,0,fl_red']);
   });
 });
+
+describe('Enigma libraries', () => {
+  it('libmath (with liblua before it) and natmaze run before the level and in its callbacks', async () => {
+    const [liblua, libmath, natmaze] = await Promise.all([import('./lib/liblua.lua?raw'), import('./lib/libmath.lua?raw'), import('./lib/natmaze.lua?raw')]);
+    const w = fakeHost([{ ref: 's', l: 'it', x: 1, y: 1, a: {} }]);
+    const lua = await LuaLevel.create(
+      `maze = new_kruskal_maze(4, 3)
+function f()
+  local d = lib.math.digits(13, 2)
+  local links = 0
+  for y = 0, 2 do for x = 0, 3 do
+    if maze:can_go_east(x, y) then links = links + 1 end
+    if maze:can_go_south(x, y) then links = links + 1 end
+  end end
+  wo["GlobalForce"] = po(#d * 10 + d[4], links)
+end`,
+      w.host,
+      shim,
+      await import('fengari'),
+      [liblua.default, libmath.default, natmaze.default],
+    );
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    // 13 = 1101 (lowest digit first); a spanning tree of 12 cells has 11 links
+    expect(w.force()).toBe('41,11');
+  });
+});

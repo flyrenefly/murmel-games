@@ -31,13 +31,40 @@ export const api1Kind = (name) => API1_KINDS.get(name) ?? null;
  * Enigma libraries Murmel ships (src/lua/lib): dependency path → name in lua.libs, and the kinds
  * the library itself may set during play. lib/libmap: the shim has the part libpento uses.
  */
-export const LIBS = { 'lib/libpento': { name: 'libpento', kinds: ['st_puzzle'] } };
+export const LIBS = {
+  'lib/libpento': { name: 'libpento', kinds: ['st_puzzle'] },
+  // plain Lua helpers (tables, digits, permutations; natmaze: a maze kept in a table)
+  'lib/liblua': { name: 'liblua', kinds: [] },
+  'lib/libmath': { name: 'libmath', kinds: [], deps: ['lib/liblua'] },
+  'lib/natmaze': { name: 'natmaze', kinds: [] },
+};
 export function libCode(name) {
   return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
 }
-/** The supported libraries a level depends on (el:dependency), in order. */
+/** The supported libraries a level depends on (el:dependency), in order, each after its own dependencies. */
 export function levelLibs(xml) {
-  return [...xml.matchAll(/<el:dependency el:path="([^"]+)"/g)].map((m) => LIBS[m[1]]).filter(Boolean);
+  const out = [];
+  const add = (path) => {
+    const lib = LIBS[path];
+    if (!lib || out.includes(lib)) return;
+    for (const d of lib.deps ?? []) add(d);
+    out.push(lib);
+  };
+  for (const m of xml.matchAll(/<el:dependency el:path="([^"]+)"/g)) add(m[1]);
+  return out;
+}
+/**
+ * What loaded libraries give a level's callbacks: their global functions ("new_kruskal_maze",
+ * "lib.math.digits") and, as ":name", the methods they put into tables (maze.can_go_east = …).
+ */
+export function libFunctions(libs) {
+  const names = new Set();
+  for (const l of libs) {
+    const code = libCode(l.name);
+    for (const f of luaFunctions(code)) names.add(f);
+    for (const m of code.matchAll(/^\s*[A-Za-z_]\w*\.([A-Za-z_]\w*)\s*=(?!=)/gm)) names.add(`:${m[1]}`);
+  }
+  return names;
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
 const RESOLVERS = new Set(['autotile', 'pento', 'random']);
@@ -110,7 +137,10 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const assigned = new Set(api1 ? [...code.matchAll(/^\s*([A-Za-z_]\w*)\s*=(?!=)/gm)].map((m) => m[1]) : []);
   const body = reached.replace(/--[^\n]*/g, '').replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
   const locals = new Set([...body.matchAll(/\blocal\s+(?:function\s+)?([A-Za-z_][\w\s,]*)/g)].flatMap((m) => m[1].split(',').map((s) => s.trim())));
-  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
+  // methods the level (or an API 1 library before it) puts into its tables: maze.can_go_east = maze_can_go_east
+  const fields = new Set();
+  for (const m of code.matchAll(/^\s*[A-Za-z_][\w.]*\.([A-Za-z_]\w*)\s*=\s*(?:function\b|([A-Za-z_]\w*)\s*$)/gm)) if (!m[2] || fns.has(m[2])) fields.add(m[1]);
+  for (const m of body.matchAll(/:\s*([A-Za-z_]\w*)\s*\(/g)) if (!METHODS.has(m[1]) && !fields.has(m[1]) && !fns.has(`:${m[1]}`) && m[1] !== 'add' && !/^draw(Map|Rect|Border)$/.test(m[1])) problems.add(`:${m[1]}`);
   // wo:drawMap/drawRect/drawBorder during play: only with resolvers the shim builds (ti, res.autotile,
   // res.random, res.pento; wo:newMap with map ^ transformation), no libmap, and only keys ti knows
   for (const d of drawCalls(reached.replace(/--[^\n]*/g, ''))) if (!drawOk(d, code)) problems.add(`:${d.method}`);
@@ -126,8 +156,8 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
     if (/:\s*$/.test(body.slice(0, m.index + m[1].length))) continue; // obj: close() is a method call
     if (!FUNCS.has(n) && !KEYWORDS.has(n) && !fns.has(n) && !locals.has(n) && !(api1 && (API1_GLOBALS.has(n) || assigned.has(n)))) problems.add(`${n}()`);
   }
-  // lib.math.permutation is provided (enigma.lua); other libraries and resolvers are not
-  for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation')) problems.add(`${m[1]}.${m[2]}`);
+  // lib.math.permutation is provided (enigma.lua), functions of loaded libraries too; other libraries and resolvers are not
+  for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation') && !(m[1] === 'lib' && fns.has(`lib.${m[2]}.${m[3]}`))) problems.add(`${m[1]}.${m[2]}`);
   // world attributes changed during play: only those the game applies
   for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];

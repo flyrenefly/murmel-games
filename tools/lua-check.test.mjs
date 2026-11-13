@@ -26,6 +26,15 @@ test('Zeichnen im Rückruf: res.random ja, res.composer und libmap nein', () => 
   assert.deepEqual(problems(`function f()\n    wo:drawMap(lib.map.new(ti), po(1,1), " ", {"#"})\nend`).includes(':drawMap'), true);
 });
 
+test('Bibliotheken: libmath bringt liblua davor mit, ihre Funktionen und Methoden gelten in Rückrufen', async () => {
+  const { levelLibs, libFunctions } = await import('./lua-check.mjs');
+  const libs = levelLibs('<el:dependency el:path="lib/libmath" el:id="lib/libmath" el:release="1" el:preload="true"/><el:dependency el:path="lib/natmaze"/>');
+  assert.deepEqual(libs.map((l) => l.name), ['liblua', 'libmath', 'natmaze']);
+  const code = 'maze = new_kruskal_maze(5, 5)\nfunction f()\n    if maze:can_go_east(1, 1) then lib.math.digits(3, 2) end\nend';
+  assert.deepEqual(luaProblems(code, luaFunctions(code)).sort(), [':can_go_east', 'lib.math']);
+  assert.deepEqual(luaProblems(code, new Set([...luaFunctions(code), ...libFunctions(libs)])), []);
+});
+
 test('Karten aus wo:newMap: nur die Schlüssel ihrer Zeilen, sonst jede Kachel', async () => {
   const { newMapKeys, runtimeKinds } = await import('./lua-check.mjs');
   const code = `ti["A"] = {"st_granite"}\nti["1"] = {"st_oxyd", flavor="a"}\nlocal part1 = {"  A ", " A. "}\nlocal parts = {wo:newMap(" ", part1)}\nfunction rotate()\n    wo:drawMap(ti, po(3, 3), parts[1]^MAP_ROT_CW)\nend`;

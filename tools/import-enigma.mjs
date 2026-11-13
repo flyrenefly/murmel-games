@@ -10,7 +10,7 @@
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { allTileKinds, api1Kind, levelLibs, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -369,7 +369,7 @@ async function analyzeLua(xml, exp) {
       }
     };
     load(xml);
-    if (missing) return { code, libs, api1, fns: luaFunctions(code), world: {}, error: `Bibliothek ${missing}` };
+    if (missing) return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), world: {}, error: `Bibliothek ${missing}` };
     if (pre.length) code = `${pre.join('\n')}\n${code}`;
   }
   let init;
@@ -378,7 +378,7 @@ async function analyzeLua(xml, exp) {
   } catch (e) {
     init = { world: {}, error: String(e) };
   }
-  return { code, libs, api1, fns: luaFunctions(code), ...init };
+  return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
 }
 
 /** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
