@@ -58,7 +58,7 @@ function floorForce(fl, slopeForce) {
   return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
-const SPECIAL_FLOORS = /^fl_(forward|thief|fake_trigger|adhesionless|ice_heating|swamp_heating)/;
+const SPECIAL_FLOORS = /^fl_(forward|fake_trigger|adhesionless|ice_heating|swamp_heating)/;
 const DEADLY = new Set(['fl_abyss', 'fl_water']);
 
 // Interactive objects (src/game/objects.ts): kind patterns and the images they need.
@@ -430,6 +430,12 @@ function convertLevel(pack, meta, xml, exp, lua) {
         fl.k = `${img}_${fl.$state === '0' ? 'closed' : 'open'}`;
       }
       // ScalesFloor: the base floor of its flavor, plus an object fl_scales that acts like a trigger
+      // ThiefFloor: fl_bluegray with an object fl_thief for the thief
+      if (fl.k === 'fl_thief') {
+        objs.push({ ...objectDef(x, y, fl), k: 'fl_thief' });
+        for (const i of ['thief_template', 'thief_capture_template', 'it_bag']) imgs.add(i);
+        fl.k = 'fl_bluegray';
+      }
       const scales = /^fl_scales(?:_(\w+))?$/.exec(fl.k);
       if (scales) {
         const flavor = fl.flavor || scales[1] || 'darkgray';

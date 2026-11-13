@@ -608,6 +608,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_brake / it_brake** (`BrakeStone.cc`, `BrakeItem.cc`): durchfahrbarer Stein, der rollende/geschobene
   Steine aufhält; eine Kugel näher als 0,3 an der Mitte nimmt ihn auf, abgelegt wird er wieder ein
   Stein (nur wo kein Stein ist). Laserlicht und Explosionen sprengen ihn.
+- **fl_thief** (`ThiefFloor.cc`): fl_bluegray mit Dieb. Betritt eine Kugel das Feld, taucht er auf (7 × 80 ms),
+  stiehlt einen zufälligen Gegenstand ihres Besitzers und einen aufnehmbaren Gegenstand auf dem Feld und
+  verschwindet wieder. Steht ein Schachstein darauf, wird er gefangen (12 × 80 ms): Die Beute fällt als
+  Sack heraus, danach ist es ein gewöhnlicher Boden. Abweichung: der betrunkene Dieb (Flasche) fehlt.
 
 ### Weitere Akteure (`src/game/actors.ts`)
 

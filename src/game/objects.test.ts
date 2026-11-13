@@ -1579,3 +1579,16 @@ describe('brake', () => {
     expect(w.objects.filter((o) => !o.gone).map((o) => [o.kind, o.col])).toEqual([['st_brake', 5]]);
   });
 });
+
+describe('floor thief', () => {
+  it('a marble entering fl_thief loses an item (and the one lying there) to the thief', () => {
+    const w = new ObjectWorld([{ x: 3, y: 1, k: 'fl_thief' }, { x: 3, y: 1, k: 'it_spade' }], W, {}, undefined, () => 0);
+    w.marbleAt(0, 0);
+    w.inventory.push('it_hammer');
+    w.marbleAt(3, 1);
+    w.update(10);
+    w.update(7 * 80);
+    expect(w.inventory).toEqual([]);
+    expect(w.objects[0].thief?.loot).toEqual(['it_hammer', 'it_spade']);
+  });
+});

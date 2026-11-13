@@ -16,7 +16,7 @@ export interface ObjectDef {
   a?: Record<string, string>;
 }
 
-export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake';
+export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' | 'box' | 'timer' | 'quake' | 'death' | 'oneway' | 'puzzle' | 'wormhole' | 'impulse' | 'meditation' | 'landmine' | 'seed' | 'boulder' | 'wand' | 'oxydref' | 'spring' | 'chameleon' | 'extralife' | 'passage' | 'yinyang' | 'swap' | 'fourswitch' | 'chess' | 'blur' | 'vortex' | 'tool' | 'actorimpulse' | 'flag' | 'springboard' | 'magnet' | 'sensor' | 'key' | 'keyswitch' | 'laser' | 'mirror' | 'crack' | 'scales' | 'bridge' | 'counter' | 'pull' | 'rotator' | 'blocker' | 'laserswitch' | 'window' | 'breakstone' | 'explosion' | 'debris' | 'dynamite' | 'bomb' | 'coin' | 'coinslot' | 'thief' | 'bag' | 'dispenser' | 'lightpassenger' | 'turnstile' | 'turnstilearm' | 'ice' | 'shogun' | 'shogundot' | 'knight' | 'deathitem' | 'puller' | 'strip' | 'burnable' | 'cross' | 'squashed' | 'polarswitch' | 'barrier' | 'magic' | 'ghost' | 'disco' | 'monoflop' | 'flash' | 'scissors' | 'rubberstone' | 'bottle' | 'portal' | 'pipe' | 'mail' | 'volcano' | 'brake' | 'flthief';
 
 /** Items (it_*): they lie on the floor, stones can move onto them. */
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe']);
@@ -374,6 +374,8 @@ export interface GameObject {
   pass?: { next: number; dir: number; blocked: boolean; blink: boolean; breaking?: number };
   /** Thief: phase (none = idle), its start, the marble robbed and the loot in its bag. */
   thief?: { phase?: 'emerge' | 'retreat' | 'capture'; since?: number; victim?: number; loot: string[] };
+  /** fl_thief: marbles on the floor in the last step (actor_enter). */
+  inside?: number[];
   /** Bag (it_bag): the items it holds. */
   loot?: string[];
   /** Coin slot: inserting since, time bought until, seconds waiting to be added after the insert. */
@@ -494,6 +496,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
   if (/^it_coin(_s|_m|_l)?$/.test(kind)) return 'coin';
   if (kind === 'st_thief') return 'thief';
+  if (kind === 'fl_thief') return 'flthief';
   if (kind === 'st_ice') return 'ice';
   if (kind === 'st_polarswitch') return 'polarswitch';
   if (kind === 'st_barrier') return 'barrier';
@@ -643,7 +646,7 @@ export class ObjectWorld {
   }
 
   private place(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief') return; // other objects (ot_timer) have no cell; Oxyd stones and scales are map cells
     const key = o.row * this.width + o.col;
     const list = this.byCell.get(key);
     if (list) list.push(o);
@@ -651,7 +654,7 @@ export class ObjectWorld {
   }
 
   private unplace(o: GameObject): void {
-    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge') return;
+    if (o.col < 0 || o.cls === 'oxydref' || o.cls === 'scales' || o.cls === 'bridge' || o.cls === 'flthief') return;
     const key = o.row * this.width + o.col;
     const list = (this.byCell.get(key) ?? []).filter((x) => x !== o);
     if (list.length) this.byCell.set(key, list);
@@ -2505,9 +2508,23 @@ export class ObjectWorld {
           this.events.push({ type: 'items' });
         }
       }
+      // ThiefFloor::doSteal: also a portable item lying on it
+      if (o.cls === 'flthief') {
+        const item = this.itemAt(o.col, o.row);
+        if (item && PICKUP_RADIUS[item.cls] !== undefined) {
+          t.loot.push(item.kind);
+          this.remove(item);
+        }
+      }
       o.thief = { ...t, phase: 'retreat', since: this.now };
     } else if (t.phase === 'retreat' && age >= THIEF_MS) o.thief = { loot: t.loot };
-    else if (t.phase === 'capture' && age >= 12 * 80) this.remove(o);
+    else if (t.phase === 'capture' && age >= 12 * 80) {
+      // the stone thief is gone; the floor thief is CAPTURED for good
+      if (o.cls === 'flthief') {
+        o.state = 1;
+        o.thief = { loot: [] };
+      } else this.remove(o);
+    }
   }
 
   /** ThiefStone "_capture": its bag drops (with an item lying there) unless a static item is here. */
@@ -2540,7 +2557,7 @@ export class ObjectWorld {
   thiefLook(o: GameObject): { image: string; frame: number; overlay: boolean } {
     const t = o.thief;
     const f = t?.since === undefined ? 0 : Math.floor((this.now - t.since) / 80);
-    if (t?.phase === 'capture') return { image: 'st_thief_capture', frame: Math.min(11, f), overlay: false };
+    if (t?.phase === 'capture') return o.cls === 'flthief' ? { image: 'thief_capture_template', frame: Math.min(11, f), overlay: true } : { image: 'st_thief_capture', frame: Math.min(11, f), overlay: false };
     if (t?.phase === 'emerge') return { image: 'thief_template', frame: Math.min(6, f), overlay: true };
     if (t?.phase === 'retreat') return { image: 'thief_template', frame: 6 - Math.min(6, f), overlay: true };
     return { image: '', frame: 0, overlay: false };
@@ -3613,6 +3630,18 @@ export class ObjectWorld {
       if (o.cls === 'lightpassenger' && !o.gone) this.passengerStep(o);
       if (o.cls === 'shogundot' && !o.gone) this.shogunDotStep(o);
       if (o.cls === 'thief' && !o.gone && o.thief?.phase) this.thiefStep(o);
+      if (o.cls === 'flthief' && !o.gone) {
+        // ThiefFloor::actor_enter: an idle floor thief emerges for a marble arriving on the floor
+        const inside = this.marbles.flatMap((m, i) => (m.init && m.col === o.col && m.row === o.row ? [i] : []));
+        const fresh = inside.find((i) => !(o.inside ?? []).includes(i));
+        o.inside = inside;
+        if (o.state === 0 && !o.thief?.phase) {
+          const knight = this.stoneObjectAt(o.col, o.row);
+          if (knight?.cls === 'chess') this.captureThief(o); // ChessStone → "_capture"
+          else if (fresh !== undefined) o.thief = { ...(o.thief ?? { loot: [] }), phase: 'emerge', since: this.now, victim: fresh };
+        }
+        if (o.thief?.phase) this.thiefStep(o);
+      }
       if ((o.cls === 'explosion' || o.cls === 'debris' || o.cls === 'dynamite' || o.cls === 'bomb' || o.cls === 'puller') && !o.gone) this.blastStep(o);
       if (o.cls === 'crack' && !o.gone && o.dissolving !== undefined && this.now - o.dissolving >= CRACK_DISSOLVE_MS) this.crackDissolved(o);
       if (o.cls === 'boulder' && !o.gone) {

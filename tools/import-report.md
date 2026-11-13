@@ -1,6 +1,6 @@
 # Enigma-Import
 
-863 von 1322 Levels übernommen (18 Pakete).
+869 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -31,14 +31,12 @@
 | Gegenstand it_weight | 14 | 4 |
 | Pferd mit Zielen | 13 | 2 |
 | Gegenstand it_bag | 13 | 5 |
-| Boden fl_thief | 13 | 0 |
-| Boden ohne Bild fl_thief | 13 | 0 |
 | Lua: :drawRect | 12 | 5 |
 | Stein st_charge_minus | 11 | 0 |
 | Stein st_charge_plus | 11 | 0 |
 | Gegenstand it_pencil | 10 | 2 |
 | Gegenstand it_rubberband | 10 | 3 |
-| Gegenstand it_drop | 10 | 2 |
+| Gegenstand it_drop | 10 | 3 |
 | Stein st_spitter | 9 | 1 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
@@ -58,7 +56,7 @@
 | ungerade Zahl Oxyd-Steine | 5 | 1 |
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
-| Stein st_death_movable | 5 | 2 |
+| Stein st_death_movable | 5 | 3 |
 | Stein st_jamb_black | 5 | 2 |
 | Pferd mit Aktion oder Steuerung | 4 | 0 |
 | Stein st_charge_zero | 4 | 0 |
@@ -197,7 +195,6 @@
 | FallenPuzzle | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Lua: ac_rotor | 1 | 0 |
-| Stein st_door_d | 1 | 0 |
 | Boden fl_forward_darkgray | 1 | 0 |
 | Lua: :can_go_west | 1 | 0 |
 | Lua: :can_go_north | 1 | 0 |

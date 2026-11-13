@@ -543,6 +543,12 @@ export class ClassicView {
       }
     // Floor heating animation (fl_ice/water/swamp_heating)
     for (const h of world.heatingCells()) if (img[h.image]) this.frame(h.image, h.frame, ox + h.col * T, oy + h.row * T);
+    // fl_thief: the thief overlay on its fl_bluegray floor while it emerges, retreats or is captured
+    for (const o of world.objects) {
+      if (o.cls !== 'flthief' || o.gone || !visible(o)) continue;
+      const look = world.thiefLook(o);
+      if (look.image) this.frame(look.image, look.frame, ox + o.col * T, oy + o.row * T);
+    }
     // fl_scales: overlay on the base floor, released 0 / pressed 1 (models-2d.lua)
     for (const o of world.objects) if (o.cls === 'scales' && !o.gone && visible(o)) this.frame('fl_scales', o.state, ox + o.col * T, oy + o.row * T);
     // fl_bridge opening/closing animation over the floor
