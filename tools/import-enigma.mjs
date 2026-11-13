@@ -114,6 +114,7 @@ const OBJECTS = [
   [/^it_pin$/, ['it_pin']],
   [/^it_weight$/, ['it_weight']],
   [/^it_trap$/, ['it_trap']],
+  [/^it_explosion(_nil|_hollow|_crack|_debris)?$/, ['it_explosion', 'it_meditation_hollow', 'it_crack_water', 'it_crack_abyss']],
   [/^fl_ref$/, []],
   [/^st_jamb(_black|_white)?$/, ['st_jamb_black', 'st_jamb_white', 'sh_jamb']],
   [/^st_yinyang(_instant|_active|_inactive)?$/, ['st_yinyang', 'st_yinyang_inactive', 'sh_round']],
@@ -356,6 +357,7 @@ function runtimeKind(kind) {
   if (kind.startsWith('st_')) {
     if (OXYD.test(kind)) return null;
     if (FAKE_OXYD.test(kind)) return `st_oxyd${FAKE_OXYD.exec(kind)[1]}`;
+    if (kind === 'st_invisible') return 'st_invisible';
     if (STONES.has(kind) || STONE_BASE.test(kind)) return STONE_BASE.exec(kind)?.[1] ?? kind;
   }
   return null;
@@ -738,7 +740,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       else {
         kinds[k] = v;
         if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-        else if (v !== 'nil') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
+        else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
       }
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
@@ -747,7 +749,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (!v) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v !== 'nil') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
+      else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)

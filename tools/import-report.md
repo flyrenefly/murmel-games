@@ -1,6 +1,6 @@
 # Enigma-Import
 
-953 von 1322 Levels übernommen (18 Pakete).
+954 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -42,14 +42,13 @@
 | Lua: st_oxyd_d | 5 | 1 |
 | Pferd mit Aktion oder Steuerung | 4 | 2 |
 | Lua: :setfire | 4 | 1 |
-| Wurmloch ohne Ziel | 4 | 1 |
+| Wurmloch ohne Ziel | 4 | 2 |
 | Lua: lib.math | 4 | 0 |
 | Lua: :set | 3 | 0 |
 | Lua: new_kruskal_maze() | 3 | 0 |
 | Lua: :newMap | 3 | 0 |
 | Lua: oneway() | 3 | 0 |
 | Lua: format() | 3 | 0 |
-| Lua: st_invisible | 3 | 0 |
 | Lua: mod() | 3 | 0 |
 | Lua: draw_floor() | 3 | 0 |
 | Lua: :sound | 3 | 0 |
@@ -71,7 +70,6 @@
 | Pferd mit Zielen | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
-| Lua: it_explosion | 2 | 0 |
 | Lua: ac_top | 2 | 0 |
 | Akteure: nicht genau eine schwarze Murmel | 2 | 0 |
 | Lua: :fl | 1 | 0 |
@@ -137,7 +135,6 @@
 | Lua: st_puzzle_yellow_e | 1 | 0 |
 | Lua: st_puzzle_yellow_ew | 1 | 0 |
 | Lua: st_puzzle_yellow_new | 1 | 0 |
-| Gegenstand it_explosion_nil | 1 | 0 |
 | Lua: ac_killer | 1 | 0 |
 | Lua: f() | 1 | 1 |
 | Überraschung mit =w | 1 | 1 |

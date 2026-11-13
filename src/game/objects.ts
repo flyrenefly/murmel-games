@@ -550,7 +550,7 @@ export function objectClass(kind: string): ObjectClass | null {
   if (/^st_window(_[nesw]+)?$/.test(kind)) return 'window';
   if (/^st_break(_plain|_black|_white|_oxydc|_boulder|_bug|_laser)?$/.test(kind)) return 'breakstone';
   if (FLAT_BREAK[kind]) return 'breakstone';
-  if (/^it_explosion_(nil|hollow|crack|debris)$/.test(kind)) return 'explosion';
+  if (/^it_explosion(_nil|_hollow|_crack|_debris)?$/.test(kind)) return 'explosion';
   if (kind === 'it_debris' || kind === 'it_debris_water') return 'debris';
   if (kind === 'it_dynamite' || kind === 'it_dynamite_burning') return 'dynamite';
   if (/^it_bomb(_black|_white)?(_burning)?$/.test(kind)) return 'bomb';
@@ -1975,6 +1975,7 @@ export class ObjectWorld {
       else if (o.blast !== undefined && this.now - o.blast >= 9 * 100) this.bombExplode(o);
       return;
     }
+    if (o.blast === undefined && o.cls === 'explosion') o.blast = this.now; // placed by the level or a script
     if (o.blast === undefined) return;
     const age = this.now - o.blast;
     if (o.cls === 'dynamite') {
@@ -4556,6 +4557,8 @@ function onewayFaces(o: GameObject): number {
 function initialState(kind: string, a: Record<string, string>): number {
   // YinyangStone: kinds _active / _inactive
   if (/^st_yinyang/.test(kind)) return kind === 'st_yinyang_active' ? 1 : kind === 'st_yinyang_inactive' ? 2 : 0;
+  // Explosion: strength 0 nil, 1 hollow, 2 crack, 3 debris
+  if (/^it_explosion/.test(kind)) return ['_hollow', '_crack', '_debris'].findIndex((s) => kind.endsWith(s)) + 1;
   // SpitterStone: 1 active (default), 0 idle
   if (kind === 'st_spitter') return a.$state === '0' ? 0 : 1;
   // MonoFlopStone st_laserflop_on: ON_PENDING (on, the timer runs, no action)
