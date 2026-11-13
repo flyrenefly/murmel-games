@@ -664,3 +664,103 @@ dialog ul {
     transition: background-color 120ms, border-color 120ms;
   }
 }
+
+/* ---------- Veröffentlichen (docs/SPEC-spielerlevels.md) ---------- */
+.ed-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.ed-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ed-form input[type='text'],
+.ed-form select,
+.ed-form textarea {
+  width: 100%;
+  color: var(--text);
+}
+
+.ed-form textarea {
+  min-height: 96px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font: inherit;
+  resize: vertical;
+}
+
+.ed-form label.ed-check {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.ed-form .ed-check input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.ed-form .ed-count {
+  justify-self: end;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ed-error {
+  color: var(--bad);
+  margin: 0;
+}
+
+.ed-error:empty {
+  display: none;
+}
+
+.ed-busy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ed-busy::before {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  animation: ed-spin 0.9s linear infinite;
+}
+
+@keyframes ed-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-busy::before {
+    animation: none;
+    border-top-color: var(--line);
+  }
+}
+
+/* five actions do not fit next to each other on a phone: wrap instead of cutting off "Probespielen" */
+@media (max-width: 480px) {
+  .ed-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

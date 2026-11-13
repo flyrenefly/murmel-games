@@ -12,7 +12,7 @@ import { existsSync } from 'node:fs';
 import { setPriority } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Checker } from './bestenliste.ts';
+import type { Checker, LevelJson } from './bestenliste.ts';
 import type { Recording } from './loesbarkeit.ts';
 
 // Node strips types by itself; the game code also uses parameter properties, which need the transform.
@@ -25,9 +25,11 @@ interface LevelFile {
   id: string;
 }
 interface WorkerResult {
-  status: 'geloest' | 'nicht-geloest' | 'fehler';
+  status: 'geloest' | 'nicht-geloest' | 'fehler' | 'ungueltig';
   steps: number;
   error?: string;
+  /** kind 'player': the checked level (sanitizeLevel). */
+  file?: LevelJson;
 }
 
 export interface GameCheckerOptions {
@@ -89,7 +91,7 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
     return starting;
   }
 
-  function run(c: ChildProcess, file: LevelFile, recording: Recording): Promise<WorkerResult> {
+  function run(c: ChildProcess, file: unknown, recording: Recording, kind: 'solution' | 'player' = 'solution'): Promise<WorkerResult> {
     const id = ++seq;
     return new Promise((ok) => {
       const finish = (r: WorkerResult) => {
@@ -108,8 +110,19 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
       const timer = setTimeout(() => fail(`Zeitüberschreitung nach ${Math.round(timeoutMs / 1000)} s`), timeoutMs);
       c.on('exit', onExit);
       c.on('message', onMessage);
-      c.send({ id, kind: 'solution', file, recording }, (err) => err && fail(`Prüfprozess nicht erreichbar: ${err.message}`));
+      c.send({ id, kind, file, recording }, (err) => err && fail(`Prüfprozess nicht erreichbar: ${err.message}`));
     });
+  }
+
+  /** One check in the (possibly new) child process; a failed start is a 'fehler'. */
+  async function runFresh(file: unknown, rec: Recording, kind: 'solution' | 'player'): Promise<WorkerResult> {
+    let c: ChildProcess;
+    try {
+      c = child ?? (await start());
+    } catch (e) {
+      return { status: 'fehler', steps: 0, error: (e as Error).message };
+    }
+    return run(c, file, rec, kind);
   }
 
   return {
@@ -127,8 +140,15 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
         return { status: 'fehler', steps: 0, levelHash, error: (e as Error).message };
       }
       const r = await run(c, file, rec);
-      return { status: r.status, steps: r.steps, levelHash, ...(r.error ? { error: r.error } : {}) };
+      return { status: r.status === 'ungueltig' ? 'fehler' : r.status, steps: r.steps, levelHash, ...(r.error ? { error: r.error } : {}) };
     },
+
+    async checkFile(file, rec) {
+      const r = await runFresh(file, rec, 'solution');
+      return { status: r.status === 'ungueltig' ? 'fehler' : r.status, steps: r.steps, ...(r.error ? { error: r.error } : {}) };
+    },
+
+    checkLevel: (raw, rec) => runFresh(raw, rec, 'player'),
 
     close() {
       child?.kill();

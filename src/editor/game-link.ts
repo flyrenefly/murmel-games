@@ -2,7 +2,9 @@
 // level as the one-level pack LINK_PACK; '&edit' marks a playtest from the editor.
 
 import type { LevelFile } from '../game/level';
+import type { Recording } from '../game/session';
 import { setLinkPack } from '../packs';
+import { rememberSolution } from '../spielerlevels';
 import { decodeLevel, LINK_PREFIX, linkData, LinkError } from './link';
 
 export const LINK_PACK = 'link';
@@ -35,4 +37,9 @@ export function editorButton(): [string, () => void] | null {
   return link.edit
     ? ['Zurück zum Editor', () => location.assign('./editor.html')]
     : ['Im Editor öffnen', () => location.assign(`./editor.html${LINK_PREFIX}${link.data}`)];
+}
+
+/** A won link level: the editor may publish exactly this level with this run (docs/SPEC-spielerlevels.md). */
+export function noteLinkWin(recording: Recording): void {
+  if (current) rememberSolution(current.data, recording);
 }

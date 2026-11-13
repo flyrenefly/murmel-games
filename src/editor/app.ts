@@ -7,6 +7,7 @@ import { History } from './history';
 import { decodeLevel, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
 import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, searchPalette } from './palette';
+import { publish } from './publish';
 import { canShare, check, loadError, type Problem } from './rules';
 import { currentId, deleteLevel, listLevels, loadHistory, loadStored, newId, saveHistory, saveLevel, setCurrentId } from './storage';
 
@@ -778,6 +779,23 @@ async function share(): Promise<void> {
   showDialog('Level teilen', body, buttons);
 }
 
+$('ed-publish').addEventListener('click', () => {
+  persist();
+  void publish({
+    file: () => toLevelFile(level, id),
+    errors: () => {
+      problems = check(level);
+      const errors = problems.filter((p) => p.level === 'fehler');
+      marked = errors.flatMap((p) => p.cells ?? []);
+      draw();
+      return errors.map((p) => p.text);
+    },
+    showDialog,
+    close,
+    playtest: () => void playtest(),
+    note,
+  });
+});
 $('ed-menu').addEventListener('click', showLevelMenu);
 $('ed-test').addEventListener('click', () => void playtest());
 $('ed-share').addEventListener('click', () => void share());
