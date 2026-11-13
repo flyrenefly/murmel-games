@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05050c" />
+    <title>Lösbarkeit – Murmel</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      /* Tokens wie statistik.html; dazu Signalfarben für kaputt und gut (immer mit Text, nie nur Farbe) */
+      :root {
+        --bg: #f7f6f2;
+        --fg: #1d1c1a;
+        --muted: #5d5a54;
+        --accent: #1f5fa8;
+        --card: #ffffff;
+        --line: #e3e0d8;
+        --bar: #1f5fa8;
+        --bar-soft: #c9d8ec;
+        --bad: #b3261e;
+        --bad-soft: #f6dcd9;
+        --good: #2e6b34;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0b12;
+          --fg: #e9e7e1;
+          --muted: #a6a29a;
+          --accent: #7fb2ff;
+          --card: #15151f;
+          --line: #2a2a38;
+          --bar: #7fb2ff;
+          --bar-soft: #2a3a55;
+          --bad: #ff8a80;
+          --bad-soft: #3a1d1d;
+          --good: #8fd694;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 17px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      h1 {
+        font-size: 28px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 20px;
+        margin: 32px 0 12px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      input,
+      button,
+      a.button {
+        font: inherit;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--fg);
+      }
+      button,
+      a.button {
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+      }
+      button.link {
+        min-height: 44px;
+        border: 0;
+        background: none;
+        padding: 0;
+        color: var(--accent);
+        text-decoration: underline;
+        text-align: left;
+      }
+      button.danger {
+        color: var(--bad);
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+      }
+      .tile {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .tile b {
+        display: block;
+        font-size: 34px;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+      }
+      .tile small {
+        display: block;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .tile.bad b {
+        color: var(--bad);
+      }
+      /* Verlauf: je Lauf eine Säule (Anteil gelöster Lösungen), rot mit Kerbe, wenn etwas neu kaputt ist */
+      .history {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 96px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .history li {
+        list-style: none;
+        flex: 1 1 0;
+        max-width: 28px;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+      }
+      .history .col {
+        width: 100%;
+        min-height: 4px;
+        border-radius: 4px 4px 0 0;
+        background: var(--bar);
+      }
+      .history .col.bad {
+        background: var(--bad);
+      }
+      .history ol {
+        display: contents;
+      }
+      .legend {
+        display: flex;
+        justify-content: space-between;
+        font-size: 15px;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 12px;
+      }
+      .toolbar input {
+        flex: 1 1 260px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--bad-soft);
+        color: var(--bad);
+        margin-left: 6px;
+      }
+      .s-bad {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .s-good {
+        color: var(--good);
+      }
+      .note {
+        color: var(--muted);
+        font-size: 15px;
+        word-break: break-word;
+      }
+      #status:empty {
+        display: none;
+      }
+      #status {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 16px;
+      }
+    </style>
+    <script type="module" src="/src/loesbarkeit-admin.ts"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Lösbarkeit</h1>
+      <p class="muted">Jede Nacht startet jedes Level ohne Grafik und alle gespeicherten Lösungen werden nachgespielt. Eine Mail kommt nur, wenn etwas neu kaputt ist.</p>
+
+      <p id="status" role="status" aria-live="polite">Lade …</p>
+
+      <section id="result" hidden>
+        <p id="run" class="muted"></p>
+        <div class="tiles">
+          <div class="tile" id="t-levels"><span class="muted">Levels geladen</span><b>–</b><small></small></div>
+          <div class="tile" id="t-solved"><span class="muted">Levels mit Lösung</span><b>–</b><small></small></div>
+          <div class="tile" id="t-solutions"><span class="muted">Lösungen gewinnen</span><b>–</b><small></small></div>
+          <div class="tile" id="t-new"><span class="muted">Neu kaputt</span><b>–</b><small></small></div>
+        </div>
+
+        <h2>Verlauf</h2>
+        <div class="history" aria-label="Läufe der letzten Nächte, ältester links"><ol id="history"></ol></div>
+        <div class="legend muted"><span id="h-first"></span><span id="h-last"></span></div>
+
+        <h2>Probleme</h2>
+        <div class="toolbar" role="search">
+          <label for="filter" class="muted" style="flex-basis: 100%">Level suchen – Enter zeigt den Verlauf eines Levels</label>
+          <input id="filter" type="search" placeholder="z. B. enigma:rb01" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Level</th><th scope="col">Prüfung</th><th scope="col">Ergebnis</th><th scope="col">Hinweis</th></tr>
+            </thead>
+            <tbody id="problems"></tbody>
+          </table>
+        </div>
+
+        <section id="level" hidden>
+          <h2 id="level-title">Level</h2>
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr><th scope="col">Lauf</th><th scope="col">Prüfung</th><th scope="col">Ergebnis</th><th scope="col" class="num">Schritte</th><th scope="col">Hinweis</th></tr>
+              </thead>
+              <tbody id="level-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <h2>Gespeicherte Lösungen</h2>
+        <p class="muted">Siege, die Admins im Spiel mit „Als Lösung speichern“ hochgeladen haben. Herunterladen und unter <code>solutions/</code> ins Repo legen, damit auch die CI sie prüft.</p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Level</th><th scope="col" class="num">Spielzeit</th><th scope="col">Gespeichert</th><th scope="col"><span class="muted">Aktionen</span></th></tr>
+            </thead>
+            <tbody id="solutions"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

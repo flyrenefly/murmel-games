@@ -17,6 +17,9 @@ let stand: KontoStand | null = null;
 /** Menu label: "Anmelden" or "Konto" (known after the first status call). */
 export const kontoLabel = (): string => (stand?.angemeldet ? 'Konto' : 'Anmelden');
 
+/** Signed in as admin (e.g. "Als Lösung speichern" after a win, docs/SPEC-loesbarkeit.md). */
+export const istAdmin = (): boolean => stand?.angemeldet === true && stand.konto.rolle === 'admin';
+
 /** Asks the server once in the background who is signed in (for the menu label). */
 export async function kontoLaden(): Promise<void> {
   const r = await api.stand();

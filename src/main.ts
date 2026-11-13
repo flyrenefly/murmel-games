@@ -15,7 +15,8 @@ import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
-import { kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
+import { loesungSpeichern } from './loesung';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
 
@@ -506,15 +507,19 @@ function onWin(): void {
   sfx.win();
   input.releaseLock();
   const last = levelIndex === packList.length - 1;
+  // Admins: the won run as a solution for the nightly check (docs/SPEC-loesbarkeit.md)
+  const recording = s.recording();
+  const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
       `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart]]
+        ? [['Levels', showLevels], ['Nochmal', restart], ...asSolution]
         : [
             ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             ['Nochmal', restart],
+            ...asSolution,
           ],
     );
   }, 900);
