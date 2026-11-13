@@ -1150,6 +1150,11 @@ requestAnimationFrame((t) => {
   /** Test helper: hold or release the drop button (player::InhibitPickup). */
   hold: (on: boolean) => (objects.inhibitPickup = on),
   luaError: () => lua?.lastError ?? null,
+  /** Test hook: load a level of a pack and start playing. */
+  load: async (pack: string, i: number) => {
+    await loadLevel(pack, i);
+    startPlaying();
+  },
   /** Test helper: call a Lua function of the level like a callback. */
   luaCall: (fn: string, sender = '') => lua?.callback(fn, true, sender),
   globalForce: () => ({ ...globalForce }),
