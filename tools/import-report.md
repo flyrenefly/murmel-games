@@ -1,15 +1,15 @@
 # Enigma-Import
 
-963 von 1322 Levels übernommen (18 Pakete).
+966 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lua: :drawMap | 115 | 4 |
-| Lua-Rückruf | 113 | 5 |
 | keine Oxyd-Steine | 111 | 3 |
+| Lua-Rückruf | 110 | 5 |
 | Lua: st_oxyd | 106 | 0 |
 | Lua: :shuffleOxyd | 106 | 2 |
-| Lua-Init | 95 | 2 |
+| Lua-Init | 94 | 2 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -23,8 +23,8 @@
 | Lua: oxyd() | 30 | 0 |
 | Lua: abyss() | 20 | 0 |
 | Lua: fill_floor() | 17 | 0 |
-| Objekt ot_timer (Lua-Init) | 17 | 1 |
 | Lua: draw_stones() | 14 | 0 |
+| Objekt ot_timer (Lua-Init) | 13 | 0 |
 | Lua: :add | 10 | 5 |
 | Lua: :drawRect | 9 | 4 |
 | Lua-Init (Weltwert) | 9 | 3 |
@@ -134,7 +134,7 @@
 | Lua: wo["SwampSinkTime"] | 1 | 0 |
 | Lua: st_granite_hollow | 1 | 0 |
 | Boden fl_forward_platinum | 1 | 0 |
-| Boden fl_forward | 1 | 0 |
+| Boden fl_forward | 1 | 1 |
 | FallenPuzzle | 1 | 0 |
 | Stein st_pebble | 1 | 0 |
 | Lua: ac_rotor | 1 | 0 |

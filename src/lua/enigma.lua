@@ -171,6 +171,16 @@ local function encode(v)
   if t == "boolean" then return v and "true" or "false" end
   if t == "number" then return num(v) end
   if t == "string" then return v end
+  -- a token list (target = {"door#*", "bridge#*"}, action = {"open", "close"}): comma separated
+  if t == "table" and #v > 0 then
+    local parts = {}
+    for i = 1, #v do
+      local e = encode(v[i])
+      if type(e) ~= "string" or string.find(e, "[,;]") then error("Murmel kann den Wert table nicht speichern", 3) end
+      parts[i] = e
+    end
+    return table.concat(parts, ",")
+  end
   error("Murmel kann den Wert " .. t .. " nicht speichern", 3)
 end
 

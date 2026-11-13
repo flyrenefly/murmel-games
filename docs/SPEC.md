@@ -543,6 +543,7 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
 - **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
 - **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
+- **Lua-Tabellen als Attributwerte** (`target = {"a#*", "b#*"}`, `action_3 = {"open", "close"}`): werden zu Tokenlisten „a#*,b#*“ (ot_counter/ot_timer aus wo:add).
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
   Hauptkugel (Spieler 2, sein Inventar).
 - **st_stoneimpulse_steady**: pulsiert immer wieder, solange Laserlicht darauf fällt. **it_explosion(_nil/…)** als
