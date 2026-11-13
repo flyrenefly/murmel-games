@@ -10,7 +10,7 @@ const port = Number(process.env.PORT ?? 3000);
 
 const sql = connect(url);
 const done = await migrate(sql, fileURLToPath(new URL('../migrations', import.meta.url)));
-const app = buildApp({ version, db: database(sql), logger: true });
+const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, logger: true });
 if (done.length) app.log.info({ migrations: done }, 'migrations applied');
 
 // docker stop sends SIGTERM: finish open requests, close the pool

@@ -11,6 +11,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Echte Datenbank für die Server-Tests (db.test.ts); nur in der CI, Wegwerf-Zugang.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: murmel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d murmel_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -27,6 +40,8 @@ jobs:
         working-directory: server
       - run: npm test
         working-directory: server
+        env:
+          TEST_DATABASE_URL: postgres://test:test@localhost:5432/murmel_test
       - uses: actions/upload-artifact@v7
         with:
           name: site

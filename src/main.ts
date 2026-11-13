@@ -15,6 +15,7 @@ import { type ActorSprite, CLASSIC_FALL_SECONDS, ClassicView } from './render/cl
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
+import { reportEvent } from './stats';
 
 /** World attributes during play (Lua may change them: wo["ConserveLevel"] …). */
 let runWorld: Record<string, string> = {};
@@ -334,7 +335,10 @@ function startPlaying(): void {
   sfx.unlock();
   overlay.hidden = true;
   mode = 'play';
-  if (startTime === 0) startTime = performance.now();
+  if (startTime === 0) {
+    startTime = performance.now();
+    reportEvent('start', level.id); // anonymous statistics: once per run
+  }
   input.requestLock();
 }
 
@@ -457,6 +461,7 @@ function pairsText(): string {
 function onWin(): void {
   mode = 'won';
   solved.add(level.id);
+  reportEvent('solve', level.id);
   store.set('solved', [...solved]);
   noteSolved(packId, level.id);
   sfx.win();
