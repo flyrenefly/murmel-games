@@ -1,6 +1,6 @@
 # Enigma-Import
 
-952 von 1322 Levels übernommen (18 Pakete).
+953 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -61,7 +61,6 @@
 | Lua: :contains_cell | 2 | 0 |
 | Lua: render_maze() | 2 | 0 |
 | Lua: :pos | 2 | 0 |
-| Boden fl_fake_trigger | 2 | 1 |
 | Lua: :replace | 2 | 0 |
 | Puzzle hohl (alter Export) | 2 | 2 |
 | mehrere weiße Murmeln | 2 | 1 |
@@ -111,7 +110,6 @@
 | Lua: fakeoxyd() | 1 | 0 |
 | Lua: GetAttrib() | 1 | 0 |
 | Lua: kill_item() | 1 | 0 |
-| Lua: fl_fake_trigger | 1 | 0 |
 | Lua: wo["ElectricStrength"] | 1 | 1 |
 | Lua: hammer() | 1 | 0 |
 | Lua: set_oxyd() | 1 | 0 |
