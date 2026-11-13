@@ -142,7 +142,7 @@ function levelImages(level: Level): string[] {
   // Kinds Lua callbacks may place.
   for (const [k, v] of Object.entries(level.lua?.kinds ?? {})) {
     if (v === 'object') names.push(...objectImages(k));
-    else if (v === 'oxyd') names.push('st_oxyda', 'st_oxyda_open', 'st_oxyda_opening');
+    else if (v === 'oxyd') names.push('st_oxyda', 'st_oxyda_open', 'st_oxyda_opening', 'st_oxydb', 'st_oxydb_open', 'st_oxydb_opening');
     else if (v !== 'nil') names.push(v);
   }
   return names;

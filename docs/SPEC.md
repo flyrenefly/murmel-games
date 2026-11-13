@@ -849,7 +849,18 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
 - **Karten in Variablen** (`wo:drawMap(ti, pos, karte ^ drehung)`): der Import nimmt alle
   `ti`-Arten des Levels als mögliche Laufzeitkacheln (unbekannte führen zur Ablehnung).
 - **`sender.state = OFF`** an einem `ot_timer` hält ihn an (TimerGadget::setState).
-- **Nicht übernommen:** Pentomino I (enigma_ii/ralf16, Bibliothek `ralf_pento` mit API 1).
+- **Pentomino I** (enigma_ii/ralf16, ab 13.11.): läuft über die API-1-Schicht mit den
+  Enigma-Bibliotheken `lib/ralf_pento` → `lib/ralf` → `lib/ant` (unverändert vor den Code gestellt).
+  Dafür neu:
+  - `st_box_wood_growing`/`st_box_hay_growing` per Skript: wächst wie eine Kiste aus einem Samen.
+  - Wird der Boden unter einer Kiste zu Abgrund, Wasser oder Sumpf (`set_floor`), sinkt sie und
+    wird zum Rahmenboden (`BoxStone::on_floor_change`).
+  - Aufgehobene Gegenstände bleiben für Lua per Name auffindbar, an ihrem letzten Feld
+    (Enigma: der Gegenstand lebt im Inventar weiter; `picked_up("doc")`). Wird so ein Gegenstand
+    wieder abgelegt, findet Lua ihn unter dem alten Namen noch am alten Feld (Abweichung).
+  - `oxyd_shuffle()` während des Spiels wie `wo:shuffleOxyd()`. API-1-`oxyd()` setzt Form b; feste
+    Farben aus `oxyd(x, y, flavor, color)` übernimmt Murmel nicht, die Paare werden gemischt.
+  - Test `src/game/pento1.test.ts` spielt alle zwölf Formen bis zu den echten Oxyd-Steinen.
 
 ## Auffindbarkeit (SEO, ab 11.11.2026)
 

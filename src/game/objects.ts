@@ -1166,6 +1166,22 @@ export class ObjectWorld {
     return true;
   }
 
+  /**
+   * BoxStone::on_floor_change: the floor under a box became abyss, water or swamp (Lua set_floor):
+   * the box sinks and becomes a framed floor, as when pushed there.
+   */
+  floorChanged(col: number, row: number): void {
+    if (!SINK_FLOORS.has(this.env.floorAt(col, row))) return;
+    for (const o of [...this.at(col, row)]) {
+      if (o.gone || !o.kind.startsWith('st_box')) continue;
+      o.gone = true;
+      this.unplace(o);
+      this.env.setFloor(col, row, bridgeFloor(o.kind));
+      this.events.push({ type: 'floor', col, row });
+      this.updateTriggers(col, row);
+    }
+  }
+
   // ---------- puzzle stones (PuzzleStone.cc, Enigma mode) ----------
 
   private puzzleAt(col: number, row: number, color: string): GameObject | null {

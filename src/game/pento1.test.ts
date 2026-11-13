@@ -94,7 +94,7 @@ describe('Pentomino I (Lua API 1, lib/ralf_pento)', () => {
       for (const b of boxes()) objects.remove(b);
       const shape = cellsOf(id, area);
       expect(shape).toHaveLength(5);
-      for (const [x, y] of shape) objects.create('st_box_wood', x, y, {});
+      shape.forEach(([x, y], k) => objects.create('st_box_wood', x, y, { name: `box${k + 1}` }));
       // recognised: shown in the glass area, a fake Oxyd stone, then the boxes fall and new ones grow
       for (let k = 0; k < 12 && lua.lastError === ''; k++) {
         tick();

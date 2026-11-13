@@ -947,7 +947,11 @@ function oxyd(x, y, flavor, color)
   end
   return o
 end
-function oxyd_shuffle() E.SendMessage(TEMPLATE, "shuffle") end
+-- during play (Pentomino I: Oxyd stones made by the script) like wo:shuffleOxyd()
+function oxyd_shuffle()
+  if isinit() then return E.SendMessage(TEMPLATE, "shuffle") end
+  wo:shuffleOxyd()
+end
 function oxyd_closeall() E.SendMessage(TEMPLATE, "closeall") end
 function oneway(x, y, orient) return set_stone("st-oneway", x, y, {orientation = orient}) end
 function laser(x, y, is_on, dir) return set_stone("st-laser", x, y, {on = is_on, dir = dir}) end

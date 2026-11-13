@@ -10,7 +10,7 @@
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { allTileKinds, levelLibs, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, levelLibs, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -821,7 +821,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns, lua.api1, callbacks)) reject(`Lua: ${p}`);
-    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a, colour by shuffle) in a level
+    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a; API 1 oxyd(): b), colour by shuffle, in a level
     // that starts without any (Pentomino). Replacing existing Oxyd stones, fixed colours or other
     // flavors are not built.
     const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
@@ -835,16 +835,19 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening']) imgs.add(i);
+      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening', 'st_oxydb', 'st_oxydb_open', 'st_oxydb_opening']) imgs.add(i); // flavor a (API 2), b (API 1 oxyd())
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
-    for (const k of allTileKinds(lua.code)) {
+    // API 1: functions handed on as values (rails of lib/ant: construct → set_floor("fl-metal"))
+    // escape the call analysis; floors named in the code are harmless, the supported ones may be set
+    const api1Floors = lua.api1 ? [...new Set([...lua.code.matchAll(/"(fl-[\w-]+)"/g)].map((m) => api1Kind(m[1]) ?? m[1].replace(/-/g, '_')))] : [];
+    for (const k of [...allTileKinds(lua.code), ...api1Floors]) {
       const v = kinds[k] === undefined ? runtimeKind(k) : null;
       if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening']) imgs.add(i);
+      else if (v === 'oxyd') for (const i of ['st_oxyda', 'st_oxyda_open', 'st_oxyda_opening', 'st_oxydb', 'st_oxydb_open', 'st_oxydb_opening']) imgs.add(i); // flavor a (API 2), b (API 1 oxyd())
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
