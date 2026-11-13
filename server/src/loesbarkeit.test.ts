@@ -189,6 +189,26 @@ for (const backend of backends) {
       assert.equal((await store.runs(10)).length, 1);
     });
 
+    test('Nachtlauf: Levels mit gleicher Kennung (opal_dance) werden nach Reihenfolge unterschieden', async () => {
+      const r = await night({ probes: [probe('a', 'ok'), probe('a', 'ok'), probe('a', 'fehler')], solutions: [] });
+      const hist = await store.levelHistory('a', 1);
+      assert.deepEqual(hist.map((h) => [h.ref, h.status]).sort((x, y) => x[0].localeCompare(y[0])), [['', 'ok'], ['#2', 'ok'], ['#3', 'fehler']]);
+      assert.equal(r.counts.levels, 3);
+    });
+
+    test('Nachtlauf: kann der Lauf nicht gespeichert werden, kommt trotzdem eine Mail und der Job scheitert', async () => {
+      const real = store;
+      store = { ...real, saveRun: async () => Promise.reject(new Error('duplicate key value')) };
+      try {
+        await assert.rejects(night({ probes: [probe('a', 'ok')], solutions: [] }), /duplicate key/);
+      } finally {
+        store = real;
+      }
+      assert.equal(sent.length, 1);
+      assert.match(sent[0].subject, /gescheitert/);
+      assert.match(sent[0].text, /duplicate key value/);
+    });
+
     // ---------- admin API ----------
 
     const app = (): FastifyInstance =>

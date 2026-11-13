@@ -154,9 +154,17 @@ export function markNew(before: CheckResult[], now: CheckResult[]): CheckResult[
 
 export function toResults(out: ToolOutput): CheckResult[] {
   const text = (s: string | undefined) => (s ? s.slice(0, 500) : null);
+  // A few imported levels share an id (opal_dance: 12 × "…_solvables"); their probes are told apart by
+  // order: '' for the first, '#2', '#3', … for the next ones.
+  const seen = new Map<string, number>();
+  const probeRef = (level: string) => {
+    const n = (seen.get(level) ?? 0) + 1;
+    seen.set(level, n);
+    return n === 1 ? '' : `#${n}`;
+  };
   return [
     ...out.probes.map((p): CheckResult => ({
-      level: p.level, kind: 'probe', ref: '', status: p.status, steps: p.steps ?? null, recordedSteps: null, levelChanged: false, isNew: false, error: text(p.error),
+      level: p.level, kind: 'probe', ref: probeRef(p.level), status: p.status, steps: p.steps ?? null, recordedSteps: null, levelChanged: false, isNew: false, error: text(p.error),
     })),
     ...out.solutions.map((s): CheckResult => ({
       level: s.level ?? '?', kind: 'solution', ref: s.ref, status: s.status, steps: s.steps ?? null, recordedSteps: s.recordedSteps ?? null,
@@ -242,8 +250,21 @@ export async function runNight(o: NightOptions): Promise<{ runId: number; counts
     log(`Lauf gescheitert: ${error}`);
   }
   const counts = countResults(results);
-  const runId = await o.store.saveRun({ startedAt, finishedAt: now(), version: o.version, error, ...counts }, results);
-  await o.store.prune(new Date(now().getTime() - (o.keepDays ?? 90) * 86_400_000));
+  let runId: number;
+  try {
+    runId = await o.store.saveRun({ startedAt, finishedAt: now(), version: o.version, error, ...counts }, results);
+    await o.store.prune(new Date(now().getTime() - (o.keepDays ?? 90) * 86_400_000));
+  } catch (e) {
+    // the database refused the run: still tell the admins, then fail the job (systemd shows it)
+    const why = (e instanceof Error ? e.message : String(e)).slice(0, 1000);
+    log(`Speichern gescheitert: ${why}`);
+    if (o.mailer) {
+      for (const to of o.admins) {
+        await o.mailer.send(to, 'Murmel: Lösbarkeitsprüfung gescheitert', `Der Nachtlauf (Stand ${o.version}) konnte sein Ergebnis nicht speichern:\n\n${why}\n\n${o.origin}${ADMIN_PAGE}`).catch(() => {});
+      }
+    }
+    throw e;
+  }
   const fresh = results.filter((r) => r.isNew);
   log(`Lauf ${runId}: ${counts.levels} Levels, ${counts.solutions} Lösungen, ${counts.solved} gelöst, ${fresh.length} neu kaputt`);
   const mail = fresh.length ? failureMail(o.origin, o.version, counts, fresh) : error ? { subject: 'Murmel: Lösbarkeitsprüfung gescheitert', text: `Der Nachtlauf (Stand ${o.version}) ist gescheitert:\n\n${error}\n\n${o.origin}${ADMIN_PAGE}` } : null;
@@ -266,7 +287,8 @@ const ID = '^[1-9][0-9]{0,15}$';
 /** /api/admin/loesungen (save, list, download, delete) and /api/admin/loesbarkeit (results). */
 export function solvabilityRoutes(app: FastifyInstance, store: SolvabilityStore): void {
   // A won run; its size grows with play time and mouse movement (one entry per changed step).
-  app.post('/api/admin/loesungen', { preHandler: requireAdmin, bodyLimit: 8 * 1024 * 1024 }, async (req, reply) => {
+  // onRequest: refuse non-admins before the (large) body is read and parsed.
+  app.post('/api/admin/loesungen', { onRequest: requireAdmin, bodyLimit: 8 * 1024 * 1024 }, async (req, reply) => {
     const rec = parseRecording(req.body);
     if (typeof rec === 'string') return reply.code(400).send({ error: rec });
     const { id, created } = await store.addSolution({ level: rec.level, recordingHash: recordingHash(rec), recording: rec, steps: rec.steps, accountId: req.account!.id });

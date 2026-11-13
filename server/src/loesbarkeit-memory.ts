@@ -46,6 +46,9 @@ export function memorySolvabilityStore(): SolvabilityStore {
       return run ? (results.get(run.id) ?? []) : [];
     },
     async saveRun({ startedAt, finishedAt, ...rest }, list) {
+      // like the primary key in PostgreSQL
+      const keys = new Set(list.map((r) => `${r.kind}\n${r.level}\n${r.ref}`));
+      if (keys.size !== list.length) throw new Error('doppeltes Ergebnis (kind, level, ref)');
       const id = nextRun++;
       runs.unshift({ id, startedAt: startedAt.toISOString(), finishedAt: finishedAt.toISOString(), ...rest });
       results.set(id, list.map((r) => ({ ...r })));

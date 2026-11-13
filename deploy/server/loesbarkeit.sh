@@ -17,14 +17,19 @@ v=$(grep '^MURMEL_VERSION=' .env | cut -d= -f2)
 rm -rf "$WORK"
 mkdir -p "$WORK/node_modules"
 trap 'rm -rf "$WORK"' EXIT
-paths=()
-for p in package.json src public/levels solutions tools; do
-  git -C "$ROOT/repo" cat-file -e "$v:$p" 2>/dev/null && paths+=("$p")
-done
-git -C "$ROOT/repo" archive "$v" "${paths[@]}" | tar -C "$WORK" -xf -
-# Lua für Node: fengari und seine Abhängigkeiten aus dem gebauten Repo
-for m in fengari $(jq -r '.dependencies // {} | keys[]' "$ROOT/repo/node_modules/fengari/package.json"); do
-  cp -a "$ROOT/repo/node_modules/$m" "$WORK/node_modules/"
-done
+# Kopieren unter der Sperre des Rollouts: update.sh baut in $ROOT/repo (npm ci ersetzt node_modules).
+# Der Rollout wartet nur die Sekunden der Kopie; die Prüfung selbst läuft danach ohne Sperre.
+(
+  flock -w 1200 9 || { echo "[loesbarkeit] Rollout hält die Sperre zu lange"; exit 1; }
+  paths=()
+  for p in package.json src public/levels solutions tools; do
+    git -C "$ROOT/repo" cat-file -e "$v:$p" 2>/dev/null && paths+=("$p")
+  done
+  git -C "$ROOT/repo" archive "$v" "${paths[@]}" | tar -C "$WORK" -xf -
+  # Lua für Node: fengari und seine Abhängigkeiten aus dem gebauten Repo
+  for m in fengari $(jq -r '.dependencies // {} | keys[]' "$ROOT/repo/node_modules/fengari/package.json"); do
+    cp -a "$ROOT/repo/node_modules/$m" "$WORK/node_modules/"
+  done
+) 9>"$ROOT/update.lock"
 
 LOESBARKEIT_DIR="$WORK" docker compose --profile nacht run --rm -T loesbarkeit

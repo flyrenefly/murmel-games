@@ -33,7 +33,7 @@ test('Prüfprozesse: Zeitlimit kostet nur das eine Ergebnis, danach geht es weit
       { kind: 'probe', file: level01, seconds: 36_000 }, // 14,4 Mio. Schritte: weit länger als das Limit
       { kind: 'probe', file: level01, seconds: 0.5 },
     ],
-    { parallel: 1, timeoutMs: 1500, onResult: (r, i) => seen.push(i) },
+    { parallel: 1, timeoutMs: 1500, msPerStep: 0, onResult: (r, i) => seen.push(i) },
   );
 
   assert.equal(results[0].status, 'fehler');
