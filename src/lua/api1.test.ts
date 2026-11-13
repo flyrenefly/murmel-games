@@ -102,6 +102,22 @@ end`,
     ]);
   });
 
+  it('gives a wormhole made during play its destination from targetx/targety (Lost in Time and Space)', async () => {
+    const w = fakeHost([{ ref: 'sw', l: 'st', x: 2, y: 2, a: { kind: 'st_switch' } }]);
+    const lua = await startLua(
+      `
+function build()
+  set_item("it-wormhole", 13, 9, {targetx = 17.5, targety = "9.5"})
+end`,
+      w.host,
+    );
+    lua.callback('build', true, 'sw');
+    expect(lua.lastError).toBe('');
+    expect(w.tiles).toHaveLength(1);
+    expect(w.tiles[0]).toMatch(/^13,9 it_wormhole(_on)? /);
+    expect(JSON.parse(w.tiles[0].replace(/^\S+ \S+ /, ''))).toMatchObject({ dest: '17.5,9.5' });
+  });
+
   it('reads Lua 5.0 code: arg in vararg functions, unknown string escapes', async () => {
     expect(api1Source('function f(a, ...)\n  return getn(arg)\nend')).toBe('function f(a, ...) local arg = {n = select("#", ...), ...};\n  return getn(arg)\nend');
     expect(api1Source('s = "\\(x\\)\\n\\\\("')).toBe('s = "(x)\\n\\\\("');

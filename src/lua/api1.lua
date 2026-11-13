@@ -706,6 +706,9 @@ local function translate(o, kind, key, val)
   end
   if key == "targetx" or key == "targety" or string.match(key, "^target[1-4]$") then
     if isinit() then return nil end
+    -- an object made during play (set_item("it-wormhole", x, y, {targetx=…, targety=…})):
+    -- place() joins both into its destination "x,y"
+    if getmetatable(o) == NEW and (key == "targetx" or key == "targety") then return "_" .. key, tonumber(val) or 0 end
     unsupported("das Attribut " .. key)
   end
   return RENAMED[key] or key, val
@@ -740,6 +743,12 @@ local function place(layer, x, y, o)
   -- lua.cc en_set_floor: lua_tonumber, so a missing coordinate is 0
   x, y = math.floor(tonumber(x) or 0), math.floor(tonumber(y) or 0)
   if not isinit() then
+    -- API 1 targetx/targety (wormholes): the destination as "x,y", like the export writes it
+    local tx, ty = o._attrs._targetx, o._attrs._targety
+    if tx ~= nil or ty ~= nil then
+      o._attrs._targetx, o._attrs._targety = nil, nil
+      o._attrs.dest = encode(tx or 0) .. "," .. encode(ty or 0)
+    end
     local args = {}
     if o._attrs.name ~= nil then args[1], args[2] = "name", tostring(o._attrs.name) end
     for k, v in pairs(o._attrs) do

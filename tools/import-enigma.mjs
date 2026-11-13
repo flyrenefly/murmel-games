@@ -923,7 +923,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // Lua: names and custom attributes of floors and plain stones (objects carry their own).
   let luaPart = null;
   if (needsLua) {
-    const inObjs = new Set(objs.map((o) => o.a.$id));
+    // fl_ref only stands in for a named floor (messages): the floor keeps its own attributes here
+    const inObjs = new Set(objs.filter((o) => o.k !== 'fl_ref').map((o) => o.a.$id));
     const named = [];
     for (const c of allCells(w)) {
       if (inObjs.has(c.o.$id)) continue;
