@@ -38,6 +38,8 @@ jobs:
       - run: npm run check:levels
       - run: npm run check:solutions
       - run: npm run build
+      # Levelseiten (docs/SPEC-levelseiten.md): je Seite ein h1 und Canonical, Metadaten, Links, Sitemap
+      - run: npm run check:levelseiten
       # Server (API): eigene Abhängigkeiten, Typprüfung und Tests
       - run: npm ci --ignore-scripts
         working-directory: server

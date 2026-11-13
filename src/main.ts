@@ -28,6 +28,7 @@ import { auswahl, eigenenLaufSpeichern, eigenerLauf, geistLaden, geisterListe, t
 import { editorButton, LINK_PACK, noteLinkWin, openLinkFromHash } from './editor/game-link';
 import { encodeLevel, LINK_PREFIX } from './editor/link';
 import { LICENSE_LABEL, listUrl, loadPlayerLevel, PLAYER_PACK } from './spielerlevels';
+import { indexOfLevel, startFromHash } from './startlink';
 import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
 import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
@@ -572,6 +573,30 @@ async function openPlayerFromHash(hash: string): Promise<boolean> {
   setPlayerPack(r.file);
   await loadLevel(PLAYER_PACK, 0);
   if (r.offline) showToast('Offline: gespeicherte Fassung des Levels.', 2600);
+  return true;
+}
+
+/**
+ * Opens a '#start=<pack>/<level-id>' hash from the level pages (docs/SPEC-levelseiten.md) and removes
+ * it from the address; false if the hash is no start link or the level is unknown (with a toast).
+ */
+async function openStartFromHash(hash: string): Promise<boolean> {
+  const link = startFromHash(hash);
+  if (!link) return false;
+  history.replaceState(null, '', location.pathname + location.search);
+  let i = -1;
+  if (link.pack !== LINK_PACK && link.pack !== PLAYER_PACK) {
+    try {
+      i = indexOfLevel(await packLevels(link.pack), link.id);
+    } catch {
+      i = -1;
+    }
+  }
+  if (i < 0) {
+    showToast('Dieses Level gibt es hier nicht (mehr).', 4000);
+    return false;
+  }
+  await loadLevel(link.pack, i);
   return true;
 }
 
@@ -1162,7 +1187,7 @@ for (const l of LEVELS) if (solved.has(l.id)) noteSolved('murmel', l.id);
 // a shared level in the link (#level=…, src/editor/game-link.ts) starts instead of the last level
 const linkStart = await openLinkFromHash(location.hash);
 if (linkStart?.ok) await loadLevel(LINK_PACK, 0);
-else if (!(await openPlayerFromHash(location.hash))) await loadLevel(packId, levelIndex);
+else if (!(await openPlayerFromHash(location.hash)) && !(await openStartFromHash(location.hash))) await loadLevel(packId, levelIndex);
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
 void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
@@ -1184,7 +1209,7 @@ window.addEventListener('hashchange', async () => {
   if (r?.ok) {
     await loadLevel(LINK_PACK, 0);
     showStart();
-  } else if (!r && (await openPlayerFromHash(location.hash))) showStart();
+  } else if (!r && ((await openPlayerFromHash(location.hash)) || (await openStartFromHash(location.hash)))) showStart();
 });
 $('loading').remove();
 requestAnimationFrame((t) => {

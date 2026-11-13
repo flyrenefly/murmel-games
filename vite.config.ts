@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -50,8 +50,9 @@ function offline(): Plugin {
       outDir = resolve(c.root, c.build.outDir);
     },
     closeBundle() {
-      // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached
-      const skip = /^(\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached;
+      // the level pages (level/, docs/SPEC-levelseiten.md) are for search engines and links, not for offline play
+      const skip = /^(level\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
@@ -61,6 +62,28 @@ function offline(): Plugin {
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('__PRECACHE__', JSON.stringify(precache));
       writeFileSync(join(outDir, 'sw.js'), sw);
+    },
+  };
+}
+
+/**
+ * Levelseiten (docs/SPEC-levelseiten.md): one static page per level with a preview image, plus
+ * dist/sitemap.xml. Runs after the offline plugin (closeBundle), so level/ never goes into sw.js.
+ * Part of every `vite build` (CI and the server build); MURMEL_LEVELSEITEN=0 skips it locally.
+ */
+function levelPages(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'murmel-levelseiten',
+    apply: 'build',
+    configResolved(c) {
+      outDir = resolve(c.root, c.build.outDir);
+    },
+    closeBundle() {
+      if (process.env.MURMEL_LEVELSEITEN === '0') return;
+      const script = resolve(__dirname, 'tools/levelseiten/bauen.mjs');
+      const r = spawnSync(process.execPath, ['--experimental-transform-types', '--no-warnings', script, '--dist', outDir], { stdio: 'inherit' });
+      if (r.status !== 0) throw new Error(`Levelseiten: Build gescheitert (${r.status ?? r.signal})`);
     },
   };
 }
@@ -80,7 +103,7 @@ export default defineConfig({
   define: { __MURMEL_VERSION__: JSON.stringify(gameVersion()) },
   // Relative paths so the build works in any webspace folder.
   base: './',
-  plugins: [cspSafeFengari(), offline()],
+  plugins: [cspSafeFengari(), offline(), levelPages()],
   // npm run dev: the API (server/, port 3000) under the same address as on the server
   server: { proxy: { '/api': { target: process.env.MURMEL_API ?? 'http://localhost:3000', ws: true } } },
   build: {
