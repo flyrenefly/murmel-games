@@ -39,8 +39,18 @@ export interface LeaderboardStore {
   remove(id: number): Promise<boolean>;
 }
 
+/** A level of the game: id, pack and position in it (as the game's level lists count), title. */
+export interface CatalogEntry {
+  id: string;
+  pack: string;
+  index: number;
+  title: string;
+}
+
 /** Replays a recording with the game code of the running version. */
 export interface Checker {
+  /** All levels of the running version (Tageslevel); absent or rejecting without game code. */
+  catalog?(): Promise<CatalogEntry[]>;
   /** false: no game code here (the API still runs, submitting answers 503). */
   available(): boolean;
   /**

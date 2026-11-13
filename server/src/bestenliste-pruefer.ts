@@ -12,7 +12,7 @@ import { existsSync } from 'node:fs';
 import { setPriority } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { Checker, LevelJson } from './bestenliste.ts';
+import type { Checker, LevelJson, CatalogEntry } from './bestenliste.ts';
 import type { Recording } from './loesbarkeit.ts';
 
 // Node strips types by itself; the game code also uses parameter properties, which need the transform.
@@ -45,7 +45,7 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
   const levelsModule = join(dir, 'tools', 'lib', 'levels.mjs');
   let child: ChildProcess | null = null;
   let starting: Promise<ChildProcess> | null = null;
-  let levels: { byId: Map<string, LevelFile>; hash: (f: LevelFile) => string } | null = null;
+  let levels: { byId: Map<string, LevelFile>; hash: (f: LevelFile) => string; catalog: CatalogEntry[] } | null = null;
   let levelsTimer: NodeJS.Timeout | null = null;
   let seq = 0;
 
@@ -54,8 +54,16 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
     levelsTimer = setTimeout(() => (levels = null), LEVELS_IDLE_MS);
     levelsTimer.unref();
     if (!levels) {
-      const m = (await import(pathToFileURL(levelsModule).href)) as { loadLevels(root: string): { file: LevelFile }[]; levelHash(f: LevelFile): string };
-      levels = { byId: new Map(m.loadLevels(dir).map((l) => [l.file.id, l.file])), hash: m.levelHash };
+      const m = (await import(pathToFileURL(levelsModule).href)) as { loadLevels(root: string): { pack: string; file: LevelFile }[]; levelHash(f: LevelFile): string };
+      const all = m.loadLevels(dir);
+      // position in the pack as the game counts it (packLevels order)
+      const seen = new Map<string, number>();
+      const catalog = all.map(({ pack, file }) => {
+        const index = seen.get(pack) ?? 0;
+        seen.set(pack, index + 1);
+        return { id: file.id, pack, index, title: String((file as { title?: unknown }).title ?? file.id) };
+      });
+      levels = { byId: new Map(all.map((l) => [l.file.id, l.file])), hash: m.levelHash, catalog };
     }
     return levels;
   }
@@ -127,6 +135,10 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
 
   return {
     available: () => existsSync(worker) && existsSync(levelsModule),
+
+    async catalog() {
+      return (await levelIndex()).catalog;
+    },
 
     async check(rec) {
       const idx = await levelIndex();

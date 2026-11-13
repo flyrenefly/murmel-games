@@ -314,6 +314,9 @@ die Bestenlisten ohnehin entsteht.
 - Geister (`geister`, docs/SPEC-geister.md): **der eigene beste Lauf immer, fremde Läufe nur mit eigener
   Freigabe im Konto** („Meine Läufe als Geist zeigen“, Standard aus). G1–G3 gebaut (Branch `geister`);
   Datenschutzabsatz „Geister“ vom Nutzer freigegeben (13.11.2026).
+- Tageslevel (`tageslevel`, docs/SPEC-tageslevel.md): Auswahl **nachweislich gelöste Levels zuerst** (Lösung im
+  Nachtlauf oder Bestenlisten-Eintrag, 60 Tage frei), sonst Ladeprobe bestanden. T1–T2 gebaut (Branch
+  `tageslevel`); Datenschutzsatz vom Nutzer freigegeben (13.11.2026); Web Push später.
 - Alle Vorhaben aus Abschnitt 10 gehören zur großen Version (Reihenfolge Abschnitt 3).
 - Datenbank: PostgreSQL (Vorschlag übernommen, da die große Version gesetzt ist).
 - **Mailversand** der Login-Links über ein **IONOS-Postfach von murmel.games**. `info@murmel.games` ist
