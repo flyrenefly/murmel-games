@@ -1,10 +1,10 @@
 # Enigma-Import
 
-920 von 1322 Levels übernommen (18 Pakete).
+922 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 120 | 4 |
+| Lua: :drawMap | 120 | 6 |
 | Lua-Rückruf | 116 | 6 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
@@ -25,8 +25,7 @@
 | Lua: abyss() | 20 | 0 |
 | Lua: fill_floor() | 17 | 0 |
 | Lua: draw_stones() | 14 | 0 |
-| Pferd mit Zielen | 13 | 2 |
-| Lua: :drawRect | 12 | 5 |
+| Lua: :drawRect | 12 | 6 |
 | Stein st_spitter | 9 | 3 |
 | Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
@@ -44,7 +43,7 @@
 | Lua: getn() | 5 | 0 |
 | Lua: mirrorp() | 5 | 0 |
 | Stein st_jamb_black | 5 | 2 |
-| Pferd mit Aktion oder Steuerung | 4 | 0 |
+| Pferd mit Aktion oder Steuerung | 4 | 1 |
 | Lua: fl_fake_abyss | 4 | 0 |
 | Lua: :setfire | 4 | 1 |
 | Aktion inner_pull | 4 | 1 |
@@ -75,6 +74,7 @@
 | Lua: set_attribs() | 2 | 0 |
 | Lua: SetAttrib() | 2 | 0 |
 | Lua: GetKind() | 2 | 0 |
+| Pferd mit Zielen | 2 | 0 |
 | Lua: laser() | 2 | 0 |
 | nur Netzwerkspiel | 2 | 2 |
 | Stein st_yinyang | 2 | 1 |
@@ -130,7 +130,7 @@
 | Lua: math_floor() | 1 | 0 |
 | Lua: wo["SlopeStrength"] | 1 | 0 |
 | zu viele Feldarten | 1 | 0 |
-| Stein st_rawglass | 1 | 0 |
+| Stein st_rawglass | 1 | 1 |
 | Lua: draw_items() | 1 | 0 |
 | Stein fl_concrete | 1 | 1 |
 | Lua: send_message_named() | 1 | 0 |
@@ -174,5 +174,5 @@
 | Lua: :can_go_west | 1 | 0 |
 | Lua: :can_go_north | 1 | 0 |
 | Lua: st_document | 1 | 0 |
-| Lua: wo["ConserveLevel"] | 1 | 0 |
+| Lua: wo["ConserveLevel"] | 1 | 1 |
 | Stein fl_tigris | 1 | 1 |

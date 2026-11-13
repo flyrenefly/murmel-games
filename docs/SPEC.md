@@ -597,9 +597,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **it_glasses / _broken** (`GlassesItem.cc`): trägt der aktuelle Spieler eine Brille, sieht er unsichtbare
   Todessteine, und hohle Glas-, Grünbraun-, Gips- und Flachsteine verschwinden. Ein Stein darauf zerbricht
   sie. Abweichung: versteckte Lichtpassagiere werden noch nicht sichtbar.
-- **ac_horse** (`HorseActor.cc`): als passiver Akteur (Radius 24/64, Masse 1,2), schadet nicht, kann an
-  Gummibändern hängen. Pferde mit Zielen (`destination`, fehlt im Export), Aktion oder Besitzer werden
-  noch abgelehnt.
+- **ac_horse** (`HorseActor.cc`): Radius 24/64, Masse 1,2, schadet nicht, kann an Gummibändern hängen. Mit Zielen
+  (`destination`, seit Export ef0a1ce6 als $destination) reitet es mit Kraft `strength` (10) eines nach dem anderen
+  an; näher als 0,2 (`steady` false: 0,1, bremst rechtzeitig) gilt das Ziel als erreicht, mit `loop` von vorn.
+  Pferde mit Aktion (target) oder Besitzer (steuerbar) werden noch abgelehnt.
 - **st_portal_horse / _pearl** (`PortalStone.cc`): schwebender Stein, nur das Pferd (bzw. die weiße Perle)
   fährt hindurch, alle anderen prallen ab.
 - **Gummibänder an beweglichen Steinen** (Kisten, Felsbrocken, Puzzle …): das Bandende folgt dem

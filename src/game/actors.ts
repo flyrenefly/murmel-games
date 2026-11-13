@@ -62,6 +62,12 @@ export class Enemy {
   /** RotorBase: chase only the nearest ball; probability to chase only the steered marble. */
   readonly attacknearest: boolean;
   readonly prefercurrent: number;
+  /** Horse: destinations, the current one, steady (no braking), loop. */
+  readonly dests: [number, number][];
+  destIdx: number;
+  readonly steady: boolean;
+  readonly loop: boolean;
+  readonly horseStrength: number;
   private keepStrategy = 0;
   private currentOnly = false;
   normals: number[] = [];
@@ -83,6 +89,41 @@ export class Enemy {
     this.color = kind === 'killer' ? num(a.color, def.k === 'ac_killer_black' ? 0 : 1) : 0;
     this.attacknearest = bool(a.attacknearest, false);
     this.prefercurrent = num(a.prefercurrent, 0);
+    // Horse: destinations "x,y;x,y…", strength, steady, loop, destidx
+    this.dests = (a.dests ?? '').split(';').filter(Boolean).map((p) => p.split(',').map(Number) as [number, number]);
+    this.destIdx = num(a.destidx, 0);
+    this.steady = bool(a.steady, true);
+    this.loop = bool(a.loop, true);
+    this.horseStrength = num(a.strength, 10);
+  }
+
+  /**
+   * Horse::think: towards the current destination with strength; a non-steady horse brakes in time.
+   * Close enough (0.2 steady, 0.1 else): the next destination, from the first again with loop.
+   */
+  horseForce(): [number, number] {
+    const t = this.dests[this.destIdx];
+    if (!t || this.horseStrength < 0) return [0, 0];
+    let dx = t[0] - this.pos.x;
+    let dy = t[1] - this.pos.y;
+    let d = Math.hypot(dx, dy);
+    if (d < (this.steady ? 0.2 : 0.1)) {
+      this.destIdx++;
+      if (this.destIdx >= this.dests.length) {
+        if (!this.loop) return [0, 0];
+        this.destIdx = 0;
+      }
+      const n = this.dests[this.destIdx];
+      dx = n[0] - this.pos.x;
+      dy = n[1] - this.pos.y;
+      d = Math.hypot(dx, dy);
+    }
+    const v2 = this.vel.x * this.vel.x + this.vel.y * this.vel.y;
+    if (!this.steady && v2 > 0 && (v2 * 0.6) / this.horseStrength > d - 0.05) {
+      const v = Math.sqrt(v2);
+      return [(-this.vel.x / v) * this.horseStrength, (-this.vel.y / v) * this.horseStrength];
+    }
+    return d > 0 ? [(dx / d) * this.horseStrength, (dy / d) * this.horseStrength] : [0, 0];
   }
 
   /**

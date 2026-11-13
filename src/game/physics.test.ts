@@ -432,3 +432,15 @@ describe('electric charge', () => {
     expect(w.marbles[1].vel.x).toBeGreaterThan(0);
   });
 });
+
+describe('horse', () => {
+  it('a horse rides to its destinations one after another', () => {
+    const lv = parseLevel({ id: 't', title: 'T', author: 'x', license: 'GPL', map: ['##########', '#@......A#', '#........#', '#A.......#', '##########'], actors: [{ k: 'ac_horse', x: 2.5, y: 2.5, a: { dests: '6.5,2.5;2.5,2.5', strength: '10' } }] });
+    const w = new PhysicsWorld(lv);
+    const h = w.enemies[0];
+    run(w, 1.5);
+    expect(h.pos.x).toBeGreaterThan(4);
+    for (let k = 0; k < 400 && h.destIdx === 0; k++) run(w, 0.01);
+    expect(h.destIdx).toBe(1);
+  });
+});

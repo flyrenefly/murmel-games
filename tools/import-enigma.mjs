@@ -275,7 +275,7 @@ function actorImages(k, color) {
   }
   return [];
 }
-const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential)$/;
+const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential|dests|steady|loop|destidx)$/;
 
 const reasons = new Map(); // blocker -> levels it blocks (among others)
 const only = new Map(); // blocker -> levels it alone blocks
@@ -384,8 +384,23 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
   // Horse: only the passive one is built – destinations (not in the export), actions and owners are not
-  for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) if (h.o.target || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
-  if (actors.includes('ac_horse') && /ac_horse"[^}]*destination|horse[^}\n]*\.destination|"destination"/.test(xml)) reject('Pferd mit Zielen');
+  for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) {
+    if (h.o.target || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
+    // the export (enigma-web ef0a1ce6) carries the horse's $destination, $strength, $steady, $loop, $destidx
+    for (const k of ['strength', 'steady', 'loop', 'destidx']) if (h.o['$' + k] !== undefined && h.o['$' + k] !== '') h.o[k] = h.o['$' + k];
+    if (h.o.$destination) {
+      const pts = [];
+      for (const t of tokens(h.o.$destination)) {
+        const pos = /^(-?[\d.]+)\s+(-?[\d.]+)$|^(-?[\d.]+),(-?[\d.]+)$/.exec(t);
+        const c = pos ? null : [...allCells(w)].find((x) => x.o.name === t || '#' + x.o.$id === t);
+        if (pos) pts.push([Number(pos[1] ?? pos[3]), Number(pos[2] ?? pos[4])]);
+        else if (c) pts.push([c.x + 0.5, c.y + 0.5]);
+        else reject('Pferd mit Zielen');
+      }
+      h.o.dests = pts.map((p) => p.join(',')).join(';');
+    }
+  }
+  if (actors.includes('ac_horse') && !w.actors.some((x) => x.o.$destination !== undefined || x.o.$strength !== undefined) && /destination/.test(xml)) reject('Pferd mit Zielen');
   // No black marble but pearls: the first pearl is the main ball (mainPearl)
   const blacks = actors.filter((k) => k === 'ac_marble_black').length;
   // further black marbles are steered together with the first (all of player 1)

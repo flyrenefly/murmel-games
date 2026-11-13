@@ -378,7 +378,10 @@ export class PhysicsWorld {
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
         add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR + ffx, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR + ffy, friction);
-      } else if (e.kind === 'bug' || e.kind === 'horse') {
+      } else if (e.kind === 'horse') {
+        const [hx, hy] = e.horseForce();
+        add(e, hx + ffx, hy + ffy, friction);
+      } else if (e.kind === 'bug') {
         // Bug: a plain actor without a will – only floor forces and collisions move it
         add(e, ffx, ffy, friction);
       } else {
