@@ -2,8 +2,17 @@
 # internen Netz (Docker umgeht ufw bei veröffentlichten Ports).
 name: murmel
 
+# Protokolle aller Dienste: höchstens 3 × 10 MB je Dienst, ältere Einträge werden überschrieben
+# (Datenschutzerklärung „Hosting und Server-Protokolle“).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   caddy:
+    logging: *logging
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
@@ -21,6 +30,7 @@ services:
       - api
 
   api:
+    logging: *logging
     image: murmel-api:${MURMEL_VERSION}
     restart: unless-stopped
     environment:
@@ -54,6 +64,7 @@ services:
   # /opt/murmel/loesbarkeit.sh (murmel-loesbarkeit.timer). Ein Kern, kleiner CPU-Anteil, nice 19 –
   # die API behält Vorrang. Das Spiel der aktiven Version liegt schreibgeschützt unter /game.
   loesbarkeit:
+    logging: *logging
     image: murmel-api:${MURMEL_VERSION}
     profiles: ["nacht"]
     command: ["nice", "-n", "19", "node", "src/loesbarkeit-job.ts"]
@@ -83,6 +94,7 @@ services:
   # Das Geheimnis landet in einer Datei im Container, nicht auf der Kommandozeile.
   # Rückweg: docker compose stop turn; ufw-Regeln „turn“ löschen (docs/SERVER.md).
   turn:
+    logging: *logging
     image: coturn/coturn:4.7-alpine
     restart: unless-stopped
     network_mode: host
@@ -108,6 +120,7 @@ services:
     cpus: 1
 
   db:
+    logging: *logging
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
