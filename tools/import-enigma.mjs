@@ -117,6 +117,7 @@ const OBJECTS = [
   [/^st_surprise$/, ['st_surprise', 'sh_solid', 'st_grate_cross', 'sh_grate_cross', 'st_death', 'sh_round', 'st_lightglass', 'sh_rawglass', 'st_knight', 'st_bluegray', 'thief_template', 'st_thief_capture', 'it_bag', 'st_flat', 'st_flat_break', 'st_puzzle_yellow', 'sh_puzzle_hollow']],
   [/^it_pencil$/, ['it_pencil', 'it_cross', 'it_crack_water']],
   [/^it_rubberband$/, ['it_rubberband']],
+  [/^it_drop$/, ['it_drop', 'ac_rotor', 'sh_rotor']],
   [/^it_glasses(_broken)?$/, ['it_glasses', 'it_glasses_broken', 'st_death']],
   [/^it_bottle(_idle|_broken)?$/, ['it_bottle_idle', 'it_bottle_broken']],
   [/^it_burnable(_invisible|_oil|_ignited|_burning|_ash|_fireproof)?$/, FIRE_IMAGES],

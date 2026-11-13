@@ -90,6 +90,8 @@ const livesLeft = (): number => objects.inventories[0].filter((k) => k === 'it_e
 let invis: number[] = [];
 /** BasicBall drunk time (it_bottle): seconds left per marble. */
 let drunk: number[] = [];
+/** Drop::activate: seconds a marble stays a rotor (ROTOR_LIFETIME 5). */
+let rotorTime: number[] = [];
 /** BasicBall shield (it_umbrella): seconds of protection left per marble. */
 let shield: number[] = [];
 /** Marbles a vortex has swallowed: since when (ms of play), -1 = not. */
@@ -206,6 +208,7 @@ async function loadLevel(pack: string, i: number): Promise<void> {
   shield = physics.marbles.map(() => 0);
   invis = physics.marbles.map(() => 0);
   drunk = physics.marbles.map(() => 0);
+  rotorTime = physics.marbles.map(() => 0);
   if (physics.steerable > 1) for (const inv of objects.inventories) inv.unshift('it_yinyang');
   lua = null;
   if (lv.lua) {
@@ -464,8 +467,8 @@ function handlePairEvents(events: PairEvent[]): void {
 
 function onContact(c: Contact): void {
   if (c.kind === 'actor') {
-    // Rotor::on_collision, Top::on_collision, Killer::on_collision: the marble shatters.
-    marbleDies(c.marble, true);
+    // Rotor::on_collision, Top::on_collision, Killer::on_collision: the marble shatters (not as a rotor itself).
+    if ((rotorTime[c.marble] ?? 0) <= 0) marbleDies(c.marble, true);
     return;
   }
   if (c.kind === 'sunk') {
@@ -497,6 +500,7 @@ function marbleDies(i: number, how: boolean | 'sink'): void {
   if ((shield[i] ?? 0) > 0) return; // BasicBall::change_state_noshield
   const shatter = how === true;
   invis[i] = 0; // BasicBall: dead marbles are visible again
+  rotorTime[i] = 0;
   drunk[i] = 0;
   deathKind[i] = how === 'sink' ? 'sink' : shatter ? 'shatter' : 'fall';
   falling[i] = 0;
@@ -683,10 +687,14 @@ function frame(now: number): void {
       shield = shield.map((s) => Math.max(0, s - dt));
       invis = invis.map((s) => Math.max(0, s - dt));
       drunk = drunk.map((s) => Math.max(0, s - dt));
+      rotorTime = rotorTime.map((s) => Math.max(0, s - dt));
       physics?.marbles.forEach((m, i) => {
         m.shielded = (shield[i] ?? 0) > 0;
         m.invisible = (invis[i] ?? 0) > 0;
         m.drunk = (drunk[i] ?? 0) > 0;
+        // DropCallback::alarm: back to a marble after 5 s
+        m.rotor = (rotorTime[i] ?? 0) > 0;
+        m.radius = m.rotor ? 22 / 64 : m.pearl ? 13 / 64 : 19 / 64;
         // Actor "_update_mass": the inventory's weights (it_weight, mass 10) add to the marble
         m.mass = (m.pearl ? 0.7 : 1) + 10 * (objects.inventories[ownerOf(i)] ?? objects.inventory).filter((k) => k === 'it_weight').length;
         m.spikes = (objects.inventories[ownerOf(i)] ?? objects.inventory).includes('it_pin'); // Actor "_update_pin"
@@ -712,6 +720,8 @@ function frame(now: number): void {
         if (inVortex[i]) return; // swallowed: nothing else happens to it
         // A jumping marble touches no items and presses no triggers (is_flying).
         if (m.jump > 0) return;
+        // a marble turned into a rotor flies too (Rotor: is_flying)
+        if ((rotorTime[i] ?? 0) > 0) return;
         objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
         objects.actorStep(m.pos.x, m.pos.y, i, m.radius);
       });
@@ -722,7 +732,7 @@ function frame(now: number): void {
       if (mode === 'play' && objects.meditationDone(ph.marbles.filter((m) => m.pearl).length)) onWin();
       ph.marbles.forEach((m, i) => {
         const under = cellAt(level, Math.floor(m.pos.x), Math.floor(m.pos.y));
-        if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y, Math.hypot(m.vel.x, m.vel.y))) marbleDies(i, false);
+        if (falling[i] < 0 && m.jump <= 0 && !inVortex[i] && !((rotorTime[i] ?? 0) > 0) && under && isDeadly(under.floor) && !objects.coversFloor(m.pos.x, m.pos.y, Math.hypot(m.vel.x, m.vel.y))) marbleDies(i, false);
       });
       acc -= PHYSICS_DT;
     }
@@ -776,7 +786,11 @@ function frame(now: number): void {
     x: e.prev.x + (e.pos.x - e.prev.x) * a,
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
-  actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i] && !((invis[i] ?? 0) > 0)));
+  actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i] && !((invis[i] ?? 0) > 0) && !((rotorTime[i] ?? 0) > 0)));
+  // marbles turned into rotors (it_drop) are drawn as rotors
+  marbles.forEach((mm, i) => {
+    if ((rotorTime[i] ?? 0) > 0 && !deadForever[i]) actors.push({ kind: 'rotor', color: 0, x: mm.x, y: mm.y });
+  });
   // Rubber bands: flat list x1, y1, x2, y2 (interpolated like the actors).
   const lerp = (b: { pos: { x: number; y: number }; prev: { x: number; y: number } }) => [b.prev.x + (b.pos.x - b.prev.x) * a, b.prev.y + (b.pos.y - b.prev.y) * a];
   const bands: number[] = [];
@@ -786,7 +800,7 @@ function frame(now: number): void {
     classic.status.right = `${pairsText()}${falls ? ` · Abstürze ${falls}` : ''}`;
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
-    classic.hideMarble = (invis[ci] ?? 0) > 0; // BasicBall::update_model hides an invisible marble
+    classic.hideMarble = (invis[ci] ?? 0) > 0 || (rotorTime[ci] ?? 0) > 0; // invisible (it_cherry) or a rotor (it_drop)
     classic.setGlasses(objects.glassesBits());
     classic.updateRubbers(bands);
     classic.updateHalos(marbles.flatMap((m, i) => ((shield[i] ?? 0) > 0 && !deadForever[i] ? [{ x: m.x, y: m.y, rest: shield[i], small: !!m.pearl }] : [])));
@@ -871,6 +885,16 @@ function dropItem(): boolean {
       marbleJumps(i);
       updateItems();
     }
+    return true;
+  }
+  // Drop::activate: the marble becomes a rotor for 5 s (its rubber bands snap); the drop is used up
+  if (first === 'it_drop') {
+    if (!m.pearl) {
+      ph.cutRubbers(i);
+      rotorTime[i] = 5;
+    }
+    objects.useFirst();
+    updateItems();
     return true;
   }
   // RubberbandItem::activate: a band to anchor2 (an actor "a:n", a named object, "@@pattern" the nearest);

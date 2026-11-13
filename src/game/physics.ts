@@ -92,6 +92,8 @@ export interface Marble extends Body {
   drunk?: boolean;
   /** Carries it_pin: friction + 7 (World::advance_actor, spikes). */
   spikes?: boolean;
+  /** Turned into a rotor (it_drop): flies over abyss and water, does not sink. */
+  rotor?: boolean;
   /** A further black marble: steered together with the current marble of player 1 (controllers 1). */
   follow?: boolean;
   /** "essential" actor: its final death restarts the level. */
@@ -137,7 +139,8 @@ interface Body {
   /** Position before the last physics step (for interpolation). */
   readonly prev: { x: number; y: number };
   readonly vel: { x: number; y: number };
-  readonly radius: number;
+  /** Radius (a marble turned into a rotor by it_drop grows to 22/64). */
+  radius: number;
   /** Mass (marbles: + the it_weight items they carry). */
   mass: number;
   normals: number[]; // contact normals of the last step (x, y pairs)
@@ -410,9 +413,9 @@ export class PhysicsWorld {
       const f = forces.get(m);
       if (!f) return;
       this.advance(m, f);
-      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded, actor: m.pearl && m.color === 1 ? 'pearl_white' : '' });
+      this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded, actor: m.rotor ? 'rotor' : m.pearl && m.color === 1 ? 'pearl_white' : '' });
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
-      else if (!m.shielded) this.sinkStep(m, i, onContact);
+      else if (!m.shielded && !m.rotor) this.sinkStep(m, i, onContact);
     });
     for (const e of this.enemies) {
       this.advance(e, forces.get(e)!);

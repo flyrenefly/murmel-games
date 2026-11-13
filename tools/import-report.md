@@ -1,15 +1,15 @@
 # Enigma-Import
 
-916 von 1322 Levels übernommen (18 Pakete).
+920 von 1322 Levels übernommen (18 Pakete).
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
-| Lua: :drawMap | 120 | 3 |
+| Lua: :drawMap | 120 | 4 |
 | Lua-Rückruf | 116 | 6 |
 | keine Oxyd-Steine | 111 | 3 |
 | Lua: :shuffleOxyd | 106 | 0 |
 | Lua: st_oxyd | 104 | 0 |
-| Lua-Init | 103 | 4 |
+| Lua-Init | 103 | 5 |
 | Lua: API 1 | 69 | 1 |
 | XML fehlt | 50 | 50 |
 | Lua: set_stone() | 43 | 0 |
@@ -27,8 +27,7 @@
 | Lua: draw_stones() | 14 | 0 |
 | Pferd mit Zielen | 13 | 2 |
 | Lua: :drawRect | 12 | 5 |
-| Gegenstand it_drop | 10 | 3 |
-| Stein st_spitter | 9 | 2 |
+| Stein st_spitter | 9 | 3 |
 | Lua: :add | 9 | 3 |
 | nicht exportiert | 9 | 9 |
 | Lua: doorv() | 8 | 0 |
@@ -161,7 +160,6 @@
 | Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Stein st_barrier (it_drop) | 1 | 0 |
 | Überraschung mit =i | 1 | 1 |
 | Lua: res.random | 1 | 0 |
 | Lua: wo["SwampSinkTime"] | 1 | 0 |

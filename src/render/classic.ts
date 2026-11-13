@@ -192,6 +192,7 @@ export function objectImages(kind: string): string[] {
   if (kind === 'it_death') return ['it_death'];
   if (/^it_(coffee|coffee_drop)$/.test(kind)) return ['it_coffee'];
   if (/^it_(spade|brush|cherry|banana|cross|squashed|pin|weight|pencil|rubberband)$/.test(kind)) return [kind, 'it_squashed', 'it_cross', 'it_crack_water'];
+  if (kind === 'it_drop') return ['it_drop', 'ac_rotor', 'sh_rotor'];
   if (/^it_glasses/.test(kind)) return ['it_glasses', 'it_glasses_broken', 'st_death'];
   if (kind === 'it_trap') return ['it_trap'];
   if (kind === 'it_surprise') return ['it_surprise', 'it_umbrella', 'it_spring', 'it_dynamite', 'it_dynamite_burning', 'it_explosion', 'it_coffee', 'it_hammer'];
