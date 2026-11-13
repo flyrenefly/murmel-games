@@ -237,7 +237,11 @@ export class View {
       m.scale.setScalar(fall >= 0 ? r * (1 - fall * 0.6) : r);
       m.position.set(a.x, r - (fall >= 0 ? fall * fall * 1.6 : 0), a.y);
       const white = a.kind === 'marble' || a.kind === 'killer' ? a.color !== 0 : false;
-      (m.material as THREE.MeshStandardMaterial).color.set(white ? 0xf0f0f0 : a.kind === 'rotor' ? 0x8a1c1c : a.kind === 'top' ? 0xb06a10 : 0x202020);
+      const mat = m.material as THREE.MeshStandardMaterial;
+      mat.color.set(white ? 0xf0f0f0 : a.kind === 'rotor' ? 0x8a1c1c : a.kind === 'top' ? 0xb06a10 : 0x202020);
+      // Zu zweit (Wettrennen): the other player's marble is a half transparent ghost
+      mat.transparent = !!a.ghost;
+      mat.opacity = a.ghost ? 0.45 : 1;
     });
   }
 

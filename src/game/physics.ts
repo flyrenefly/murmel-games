@@ -195,6 +195,15 @@ export class PhysicsWorld {
   private readonly mouse = { x: 0, y: 0 };
   private mouseTime = 0;
   private readonly axisForce = { x: 0, y: 0 };
+  /**
+   * Zu zweit, gemeinsam (docs/SPEC-mehrspieler.md): both players steer at the same time – player 1
+   * the black marbles and pearls, player 2 the white marbles with their own mouse and key force.
+   * Off (single play) nothing changes.
+   */
+  coop = false;
+  private readonly mouse2 = { x: 0, y: 0 };
+  private mouseTime2 = 0;
+  private readonly axisForce2 = { x: 0, y: 0 };
   /** Global forces (wormholes): added unscaled, like Enigma's force fields. */
   /** Force field at x/y; flying = a jumping marble (only global forces act on it). */
   private field: ((x: number, y: number, flying: boolean) => [number, number]) | null = null;
@@ -297,13 +306,13 @@ export class PhysicsWorld {
     return this.cells[r * this.width + c].force ?? [0, 0];
   }
 
-  private floorProps(pos: { x: number; y: number }): { friction: number; adhesion: number } {
+  private floorProps(pos: { x: number; y: number }, color = this.marbles[this.cur]?.color ?? 0): { friction: number; adhesion: number } {
     const c = Math.floor(pos.x);
     const r = Math.floor(pos.y);
     const kind = c >= 0 && r >= 0 && c < this.width && r < this.height ? this.cells[r * this.width + c].floor : 'fl_gray';
     // YinyangFloor::process_mouseforce: the mouse acts only while its player (yin black, yang white) is current
     const yy = /^fl_yinyang(_yin|_yang)?/.exec(kind);
-    if (yy && (yy[1] === '_yang' ? 1 : 0) !== (this.marbles[this.cur]?.color ?? 0)) return { ...floorProps(kind), adhesion: 0 };
+    if (yy && (yy[1] === '_yang' ? 1 : 0) !== color) return { ...floorProps(kind), adhesion: 0 };
     return floorProps(kind);
   }
 
@@ -313,6 +322,24 @@ export class PhysicsWorld {
     this.mouse.x += fx;
     this.mouse.y += fy;
     this.mouseTime = WORLD_TICK;
+  }
+
+  /** Zu zweit: mouse movement of player 2 (white marbles). */
+  addMouseForce2(fx: number, fy: number): void {
+    this.mouse2.x += fx;
+    this.mouse2.y += fy;
+    this.mouseTime2 = WORLD_TICK;
+  }
+
+  /** Zu zweit: key/tilt force of player 2. */
+  setAxisForce2(fx: number, fy: number): void {
+    this.axisForce2.x = fx;
+    this.axisForce2.y = fy;
+  }
+
+  /** Zu zweit: the marble a player's actions (items) refer to; the run sets it around an action. */
+  setCurrent(i: number): void {
+    if (i >= 0 && i < this.marbles.length) this.cur = i;
   }
 
   /** wo["FrictionStrength"] (server::FrictionFactor); negative values accelerate. */
@@ -369,6 +396,17 @@ export class PhysicsWorld {
         this.mouseTime = 0;
       }
     }
+    let mx2 = 0;
+    let my2 = 0;
+    if (this.mouseTime2 > 0) {
+      mx2 = this.mouse2.x;
+      my2 = this.mouse2.y;
+      this.mouseTime2 -= dt;
+      if (this.mouseTime2 <= 1e-9) {
+        this.mouse2.x = this.mouse2.y = 0;
+        this.mouseTime2 = 0;
+      }
+    }
     for (const b of [...this.enemies, ...this.marbles]) {
       b.prev.x = b.pos.x;
       b.prev.y = b.pos.y;
@@ -397,14 +435,16 @@ export class PhysicsWorld {
         add(m, 0, 0, 0, true);
         return;
       }
-      const { friction, adhesion } = this.floorProps(m.pos);
+      const { friction, adhesion } = this.coop ? this.floorProps(m.pos, m.color) : this.floorProps(m.pos);
       // Only the marble of the current player feels the mouse (Floor::process_mouseforce);
       // pearls have controllers = 3 and always do.
       const cur = this.marbles[this.cur];
-      const k = i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0;
+      // Zu zweit: every steered marble feels the force of its own player at the same time.
+      const two = this.coop && m.color === 1 && !m.pearl;
+      const k = this.coop ? (m.passive || m.ownerless ? 0 : adhesion) : i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0;
       const [ffx, ffy] = this.floorForce(m.pos);
-      let ux = this.axisForce.x + mx;
-      let uy = this.axisForce.y + my;
+      let ux = two ? this.axisForce2.x + mx2 : this.axisForce.x + mx;
+      let uy = two ? this.axisForce2.y + my2 : this.axisForce.y + my;
       if (m.drunk) [ux, uy] = [ux * Math.cos(drunkAngle) - uy * Math.sin(drunkAngle), ux * Math.sin(drunkAngle) + uy * Math.cos(drunkAngle)];
       add(m, ux * k + ffx, uy * k + ffy, friction + (m.spikes ? 7 : 0));
     });

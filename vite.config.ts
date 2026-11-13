@@ -82,7 +82,7 @@ export default defineConfig({
   base: './',
   plugins: [cspSafeFengari(), offline()],
   // npm run dev: the API (server/, port 3000) under the same address as on the server
-  server: { proxy: { '/api': 'http://localhost:3000' } },
+  server: { proxy: { '/api': { target: process.env.MURMEL_API ?? 'http://localhost:3000', ws: true } } },
   build: {
     target: 'es2022',
     assetsInlineLimit: 0,

@@ -17,6 +17,8 @@ export interface ActorSprite {
   jump?: number;
   /** A pearl (ac_pearl): smaller ball with its own images. */
   pearl?: boolean;
+  /** Zu zweit (Wettrennen): the other player's marble, drawn half transparent. */
+  ghost?: boolean;
 }
 
 // "Klassisch": 2D top-down view with Enigma's GPL graphics (public/enigma/),
@@ -1159,7 +1161,9 @@ export class ClassicView {
         continue;
       }
       if (a.kind === 'marble') {
+        if (a.ghost) ctx.globalAlpha = 0.45;
         this.drawMarble(ox, oy, { x: a.x, y: a.y, fall: a.fall ?? -1, color: a.color, sink: a.sink ?? 0, jump: a.jump ?? -1 });
+        ctx.globalAlpha = 1;
         continue;
       }
       if (a.kind === 'horse') {

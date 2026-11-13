@@ -628,8 +628,53 @@ export class GameSession {
     return { ...encodeInput(this.recorder), level: this.level.id, seed: this.seed, dt: PHYSICS_DT, result: this.won ? 'sieg' : 'offen' };
   }
 
+  // ---------- zu zweit, gemeinsam (docs/SPEC-mehrspieler.md) ----------
+
+  /** Both players steer at once (player 2 the white marbles); the yin-yang does not switch. */
+  coop = false;
+
+  enableCoop(): void {
+    this.coop = true;
+    this.physics.coop = true;
+  }
+
+  /** The steered marble of a player (0 black/pearls, 1 white), -1 = none. */
+  marbleOf(player: number): number {
+    if (player === 0) return this.physics.marbles.findIndex((m) => m.color !== 1 || m.pearl);
+    return this.physics.marbles.findIndex((m) => m.color === 1 && !m.pearl && !m.passive && !m.ownerless && !m.follow);
+  }
+
+  /** One step with the input of both players. */
+  coopStep(host: StepControl, guest: StepControl): void {
+    const ph = this.physics;
+    const i2 = this.marbleOf(1);
+    if (this.playing && i2 >= 0 && this.falling[i2] < 0) {
+      if (guest.fx !== 0 || guest.fy !== 0) ph.addMouseForce2(guest.fx, guest.fy);
+      ph.setAxisForce2(guest.ax, guest.ay);
+    } else ph.setAxisForce2(0, 0);
+    this.step(host);
+  }
+
+  /** An action (use, drop, rotate) of one player, on that player's marble and inventory. */
+  coopAct(player: number, action: Action): boolean {
+    if (!this.playing || action === 'swap') return false;
+    const ph = this.physics;
+    const cur = ph.current;
+    const mine = this.marbleOf(player);
+    if (mine < 0) return false;
+    ph.setCurrent(mine);
+    this.objects.player = player;
+    try {
+      return this.act(action);
+    } finally {
+      ph.setCurrent(cur);
+      this.objects.player = this.ownerOf(cur);
+    }
+  }
+
   /** Yin-yang (it_yinyang): steer the other marble. */
   swapMarble(): boolean {
+    if (this.coop) return false;
     if (!this.playing || !this.physics.swap()) return false;
     this.objects.player = this.ownerOf(this.physics.current);
     this.ui.items();

@@ -19,6 +19,7 @@ import { istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLin
 import { loesungSpeichern } from './loesung';
 import { reportEvent } from './stats';
 import { fehlerLink } from './forum-text';
+import { zuZweit } from './mehrspieler';
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -128,7 +129,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
-  const created = await GameSession.create(packList[i], { seed: seed ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
+  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
   if (token !== loadToken) return; // another level was loaded meanwhile
   s = created;
   session = s;
@@ -145,6 +146,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   startTime = 0;
   buildRenderer();
   updateHud();
+  zz.levelGeladen(s);
 }
 
 function styleLabel(): string {
@@ -345,6 +347,7 @@ function showStart(): void {
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + controlsHelp(), [
     [isTouch ? 'Los (Neigen)' : 'Spielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Levels', showLevels],
+    ['Zu zweit', zz.menue],
     [kontoLabel(), openKonto],
   ]);
 }
@@ -355,6 +358,7 @@ function showPause(): void {
     ['Weiterspielen', startPlaying],
     ['Neustart', restart],
     ['Levels', showLevels],
+    ['Zu zweit', zz.menue],
     [kontoLabel(), openKonto],
     ['Fehler melden', reportBug],
   ]);
@@ -491,6 +495,7 @@ function onWin(): void {
   if (!session) return;
   const s = session;
   mode = 'won';
+  if (zz.gewonnen(s)) return input.releaseLock(); // zu zweit: no single-player progress, own result
   solved.add(level.id);
   reportEvent('solve', level.id);
   store.set('solved', [...solved]);
@@ -592,6 +597,20 @@ let loadToken = 0;
 /** Set by the run when the level starts over; frame() reloads it. */
 let restartNow: 'new' | 'keep' | null = null;
 
+// Zu zweit spielen (docs/SPEC-mehrspieler.md): everything else lives in src/mehrspieler/
+const zz = zuZweit({
+  session: () => session,
+  packId: () => packId,
+  levelIndex: () => levelIndex,
+  loadLevel,
+  spielen: () => (isTouch ? void startTouch() : startPlaying()),
+  neustart: () => void restart(),
+  showOverlay,
+  showStart,
+  showToast,
+  formatTime: formatBest,
+});
+
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, 0.1);
   last = now;
@@ -599,14 +618,20 @@ function frame(now: number): void {
   if (document.body.dataset.mode !== mode) document.body.dataset.mode = mode;
 
   const s = session;
-  if (s && mode !== 'menu') {
+  if (s && (mode !== 'menu' || zz.laeuft())) {
     // Mouse movement goes to the next physics step (also when this frame has none); keys and tilt act on every step.
     const [mdx, mdy] = mode === 'play' ? input.takeMouse() : [0, 0];
     pendingMouse.x += mdx * mouseSpeed;
     pendingMouse.y += mdy * mouseSpeed;
     const [ax, ay] = mode === 'play' ? input.axis() : [0, 0];
     acc += dt;
-    while (acc >= PHYSICS_DT) {
+    // zu zweit, gemeinsam: src/mehrspieler plays the steps of both players
+    const net = zz.rechnen(s, acc, { fx: pendingMouse.x, fy: pendingMouse.y, ax: ax * AXIS_FORCE, ay: ay * AXIS_FORCE });
+    if (net !== null) {
+      acc = net;
+      pendingMouse = { x: 0, y: 0 };
+    }
+    while (net === null && acc >= PHYSICS_DT) {
       s.step({ fx: pendingMouse.x, fy: pendingMouse.y, ax: ax * AXIS_FORCE, ay: ay * AXIS_FORCE });
       pendingMouse = { x: 0, y: 0 };
       acc -= PHYSICS_DT;
@@ -618,7 +643,7 @@ function frame(now: number): void {
   }
 
   // the level starts over after the last life (decided by the run, the reload is asynchronous)
-  if (restartNow && s) {
+  if (restartNow && s && !zz.folgt()) {
     const how = restartNow;
     restartNow = null;
     if (how === 'keep') carryLives = s.livesLeft();
@@ -639,7 +664,7 @@ function frame(now: number): void {
 
   // Interpolate between the last two physics states: smooth on any refresh rate.
   const a = acc / PHYSICS_DT;
-  const ci = physics?.current ?? 0;
+  const ci = (s && zz.kamera(s)) ?? physics?.current ?? 0;
   const marbles = (physics?.marbles ?? []).map((m, i) => ({
     kind: 'marble' as const,
     color: m.color,
@@ -661,6 +686,7 @@ function frame(now: number): void {
     y: e.prev.y + (e.pos.y - e.prev.y) * a,
   }));
   actors.push(...marbles.filter((_, i) => i !== ci && !deadForever[i] && !((invis[i] ?? 0) > 0) && !((rotorTime[i] ?? 0) > 0)));
+  actors.push(...zz.geister(dt));
   // marbles turned into rotors (it_drop) are drawn as rotors
   marbles.forEach((mm, i) => {
     if ((rotorTime[i] ?? 0) > 0 && !deadForever[i]) actors.push({ kind: 'rotor', color: 0, x: mm.x, y: mm.y });
@@ -716,7 +742,7 @@ btnRestart.addEventListener('click', (e) => {
 });
 /** Yin-yang (it_yinyang): steer the other marble. */
 function swapMarble(): void {
-  if (mode === 'play') session?.act('swap');
+  if (mode === 'play') zz.aktion('swap') ?? session?.act('swap');
 }
 btnSwap.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -724,7 +750,7 @@ btnSwap.addEventListener('click', (e) => {
 });
 /** player::ActivateFirstItem: use or drop the first item; false = no item. */
 function dropItem(): boolean {
-  return mode === 'play' && !!session?.act('drop');
+  return mode === 'play' && !!(zz.aktion('drop') ?? session?.act('drop'));
 }
 /** The level has a spring to pick up. */
 function hasSpring(): boolean {
@@ -740,7 +766,7 @@ function hasSeeds(): boolean {
 }
 /** Inventory display: the first item is the one in hand (Enigma's inventory, left to right). */
 function updateItems(): void {
-  const inv = objects.inventory;
+  const inv = zz.inventar(objects) ?? objects.inventory;
   const n = inv.length;
   hudItems.hidden = n === 0;
   btnDrop.hidden = n === 0;
@@ -752,7 +778,7 @@ function updateItems(): void {
 }
 /** Right click / Tab: rotate the inventory (player::RotateInventory). */
 function rotateItems(): void {
-  if (mode === 'play') session?.act('rotate');
+  if (mode === 'play') zz.aktion('rotate') ?? session?.act('rotate');
 }
 btnRotate.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -763,7 +789,7 @@ window.addEventListener('contextmenu', (e) => {
 });
 /** Left click / Space: use the first inventory item; without items the yin-yang swaps marbles. */
 function useItem(): void {
-  if (mode === 'play') session?.act('use');
+  if (mode === 'play') zz.aktion('use') ?? session?.act('use');
 }
 btnDrop.addEventListener('click', (e) => {
   e.stopPropagation();

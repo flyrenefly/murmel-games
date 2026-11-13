@@ -39,7 +39,7 @@ test('TURN-Zugangsdaten: HMAC-SHA1 über ablauf:kennung, base64 (fester Prüfwer
 
 test('TURN-Adressen: aus TURN_URLS, sonst UDP und TCP am Port 3478 der Seite', () => {
   assert.deepEqual(turnUrls({ TURN_URLS: 'turn:a:1, turn:b:2' }), ['turn:a:1', 'turn:b:2']);
-  assert.deepEqual(turnUrls({ SITE_ADDRESS: 'murmel.games' }), ['turn:murmel.games:3478?transport=udp', 'turn:murmel.games:3478?transport=tcp']);
+  assert.deepEqual(turnUrls({ SITE_ADDRESS: 'murmel.games, 054heee.cserverhost.cloud' }),['turn:murmel.games:3478?transport=udp', 'turn:murmel.games:3478?transport=tcp']);
 });
 
 test('Raum öffnen liefert einen 4-stelligen Code und TURN-Daten nur für den offenen Raum', () => {

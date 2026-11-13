@@ -44,7 +44,8 @@ export function turnCredentials(turn: TurnConfig, nowMs: number, id: string = ra
 /** TURN_URLS from the environment, else the two ports of our coturn at the site address. */
 export function turnUrls(env: { TURN_URLS?: string; SITE_ADDRESS?: string; PUBLIC_ORIGIN?: string }): string[] {
   if (env.TURN_URLS) return env.TURN_URLS.split(',').map((s) => s.trim()).filter(Boolean);
-  const host = env.SITE_ADDRESS || (env.PUBLIC_ORIGIN ? new URL(env.PUBLIC_ORIGIN).hostname : 'murmel.games');
+  // SITE_ADDRESS may list several addresses for Caddy ("murmel.games, 054heee…"): the first one counts
+  const host = env.SITE_ADDRESS?.split(/[\s,]+/).find(Boolean) || (env.PUBLIC_ORIGIN ? new URL(env.PUBLIC_ORIGIN).hostname : 'murmel.games');
   return [`turn:${host}:3478?transport=udp`, `turn:${host}:3478?transport=tcp`];
 }
 

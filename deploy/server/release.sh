@@ -69,7 +69,7 @@ mv "$RELEASES/$v.tmp" "$RELEASES/$v"
 
 # API-Image bauen, Betriebsdateien übernehmen
 docker build -q -t "murmel-api:$v" "$src" >/dev/null
-cp "$src/../deploy/server/compose.yml" "$src/../deploy/server/Caddyfile" "$ROOT/"
+cp "$src/../deploy/server/compose.yml" "$src/../deploy/server/Caddyfile" "$src/../deploy/server/turnserver.conf" "$ROOT/"
 
 if activate "$v"; then
   [ -n "$cur" ] && echo "$cur" > "$ROOT/previous-version"
