@@ -33,6 +33,9 @@ activate() { # activate VERSION – Spiel umhängen, API-Image tauschen, prüfen
   setenv MURMEL_VERSION "$v"
   # Spielcode für die Bestenliste (siehe unten); notfalls leer, damit Docker ihn nicht als root anlegt
   mkdir -p "$ROOT/game/$v"
+  # Apple-Schlüssel (compose.yml): ohne Datei /dev/null einhängen (Apple-Anmeldung aus), damit Docker
+  # nicht als root ein leeres Verzeichnis apple-signin.p8 anlegt
+  if [ -f "$ROOT/apple-signin.p8" ]; then unset APPLE_KEY_HOST; else export APPLE_KEY_HOST=/dev/null; log "apple-signin.p8 fehlt – Apple-Anmeldung aus"; fi
   docker compose up -d --remove-orphans
   # ein geändertes Caddyfile übernimmt Caddy nur nach einem Neuladen
   docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile >/dev/null 2>&1 || log "Caddy-Neuladen gescheitert"

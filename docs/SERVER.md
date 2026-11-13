@@ -80,7 +80,8 @@ Jeder Baustein bekommt vor dem Bau eine eigene Spezifikation (`docs/SPEC-<id>.md
 
 - **Anmeldung ohne Passwort:** Login-Link per Mail, **Passkey** (Fingerabdruck/Face ID) und
   **Google, Apple, GitHub** (OpenID Connect/OAuth). Murmel speichert keine Passwörter; ein Konto kann
-  mehrere Anmeldewege verknüpfen.
+  mehrere Anmeldewege verknüpfen. Stand: Stufe 1 (Mail, Passkey) live, Stufe 2 (Google, Apple, GitHub)
+  siehe `docs/SPEC-konten.md`; Werte in `/opt/murmel/.env`, Apple-Schlüssel `/opt/murmel/apple-signin.p8`.
 - **Daten je Konto:** Mailadresse, frei wählbarer Anzeigename, Erstellungsdatum. Keine Klarnamen.
 - **Sitzung:** sicheres HttpOnly-Cookie auf `api.murmel.games` oder kurzlebiges Token; Abmelden
   auf allen Geräten möglich.

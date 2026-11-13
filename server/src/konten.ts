@@ -8,13 +8,14 @@ import {
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { activeProviders, LAST_WAY, type ProviderConfig, providerRoutes } from './anbieter.ts';
 import { RateLimit } from './limit.ts';
 import { berlinDay } from './stats.ts';
 
 // ---------- data model ----------
 
 export type Role = 'player' | 'admin';
-/** Sign-in methods. Only 'mail' (and passkeys, which belong to an account) exist yet; the others follow via OpenID Connect/OAuth. */
+/** Sign-in methods: mail link, and Google, Apple, GitHub (src/anbieter.ts). Passkeys belong to an account. */
 export type Provider = 'mail' | 'google' | 'apple' | 'github';
 
 export interface Account {
@@ -45,6 +46,15 @@ export interface Identity {
   email: string;
 }
 
+/** A sign-in method linked to an account, as the account page shows it. */
+export interface LinkedIdentity {
+  provider: Provider;
+  subject: string;
+  /** Last verified address from this method (null for links made before migration 012). */
+  email: string | null;
+  createdAt: Date;
+}
+
 /** Storage for accounts (PostgreSQL: src/konten-db.ts). Secret values arrive only as SHA-256 hashes. */
 export interface AccountStore {
   addLoginToken(email: string, hash: Buffer, now: Date, expires: Date): Promise<void>;
@@ -54,6 +64,12 @@ export interface AccountStore {
   redeemLoginToken(hash: Buffer, now: Date): Promise<string | null>;
   /** Finds the account by identity, else by address (linking the identity), else creates it; sets the role. */
   signIn(identity: Identity, role: Role): Promise<Account>;
+  /** Sign-in methods of an account, oldest first. */
+  identities(accountId: number): Promise<LinkedIdentity[]>;
+  /** Adds a sign-in method to an account; 'vergeben' if it already belongs to another account. */
+  linkIdentity(accountId: number, identity: Identity): Promise<'ok' | 'vergeben'>;
+  /** Removes a sign-in method of this account; false if it has no such method. */
+  unlinkIdentity(accountId: number, provider: Provider, subject: string): Promise<boolean>;
   /** The account by id, or null (admins, e.g. blocking in the forum). */
   account(accountId: number): Promise<Account | null>;
   setRole(accountId: number, role: Role): Promise<void>;
@@ -101,6 +117,10 @@ export interface AccountOptions {
   origin: string;
   /** Addresses that get the admin role (ADMIN_EMAILS in /opt/murmel/.env). */
   adminEmails: string[];
+  /** Google, Apple, GitHub (src/anbieter.ts); missing ones are off. */
+  providers?: ProviderConfig;
+  /** For calls to the providers (replaced in tests). */
+  fetch?: typeof fetch;
   now?: () => Date;
 }
 
@@ -144,13 +164,14 @@ function sessionCookie(value: string, maxAge: number): string {
   return `${COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`;
 }
 
-function accountJson(a: Account, passkeys: Passkey[]) {
+function accountJson(a: Account, passkeys: Passkey[], identities: LinkedIdentity[]) {
   return {
     email: a.email,
     rolle: a.role,
     gesperrt: a.blocked,
     erstellt: a.createdAt.toISOString(),
     passkeys: passkeys.map((p) => ({ id: p.id, name: p.name, erstellt: p.createdAt.toISOString(), zuletzt: p.lastUsedAt?.toISOString() ?? null })),
+    anmeldewege: identities.map((i) => ({ anbieter: i.provider, kennung: i.subject, email: i.email, seit: i.createdAt.toISOString() })),
   };
 }
 
@@ -198,9 +219,15 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   const mailLimit = new RateLimit(5, 15 * MINUTE);
   const stepLimit = new RateLimit(60, 15 * MINUTE);
 
+  const providers = opts.providers ?? {};
+  const active = activeProviders(providers);
+  const kontoJson = async (a: Account) => accountJson(a, await store.passkeys(a.id), await store.identities(a.id));
+
   app.decorateRequest('account', null);
 
   const scoped = (url: string) => url.startsWith('/api/konto') || url.startsWith('/api/admin');
+  // Apple answers with a form POST from appleid.apple.com; state, binding cookie and nonce protect it (src/anbieter.ts)
+  const crossSiteAllowed = (req: FastifyRequest) => req.method === 'POST' && req.url === '/api/konto/apple/zurueck' && providers.apple !== undefined;
 
   app.addHook('onRequest', async (req, reply) => {
     if (!req.url.startsWith('/api/') || req.url.startsWith('/api/health')) return;
@@ -208,7 +235,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
     req.account = token ? await store.sessionAccount(hash(token), now()) : null;
     if (!scoped(req.url)) return;
     // CSRF: state-changing calls only from the game's own page (SameSite=Strict as a second fence).
-    if (req.method !== 'GET' && req.headers.origin !== undefined && req.headers.origin !== origin) {
+    if (req.method !== 'GET' && req.headers.origin !== undefined && req.headers.origin !== origin && !crossSiteAllowed(req)) {
       return reply.code(403).send({ error: 'fremde Herkunft' });
     }
     if (req.method !== 'GET' && !stepLimit.take(req.ip, now().getTime())) {
@@ -222,15 +249,32 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
     // Admin statistics: count the sign-in (a lost count never blocks the sign-in)
     await store.recordSignIn(account.id, berlinDay(now())).catch(() => {});
     reply.header('Set-Cookie', sessionCookie(token, SESSION_DAYS * 86_400));
-    return { angemeldet: true, konto: accountJson(account, await store.passkeys(account.id)) };
+    return { angemeldet: true, konto: await kontoJson(account) };
   }
 
   // Who am I? Always 200, so the game can ask without errors in the console.
   app.get('/api/konto', async (req, reply) => {
     reply.header('Cache-Control', 'no-store');
     const mail = mailer !== null;
-    if (!req.account) return { angemeldet: false, mail };
-    return { angemeldet: true, mail, konto: accountJson(req.account, await store.passkeys(req.account.id)) };
+    if (!req.account) return { angemeldet: false, mail, anbieter: active };
+    return { angemeldet: true, mail, anbieter: active, konto: await kontoJson(req.account) };
+  });
+
+  // Google, Apple, GitHub (Konten Stufe 2)
+  providerRoutes(app, {
+    store,
+    config: providers,
+    origin,
+    now,
+    fetch: opts.fetch ?? ((...a) => fetch(...a)),
+    roleOf,
+    accountJson: kontoJson,
+    async signedIn(reply, account) {
+      // Role follows ADMIN_EMAILS for the account's own address at every sign-in.
+      const role = roleOf(account.email);
+      if (role !== account.role) await store.setRole(account.id, role);
+      return startSession(reply, { ...account, role });
+    },
   });
 
   // Step 1 of the mail link: send a one-time link (also the way back in, "Passwort vergessen").
@@ -332,7 +376,7 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
         transports: cred.transports ?? [],
         name: passkeyName(req.headers['user-agent']),
       });
-      return { angemeldet: true, konto: accountJson(account, await store.passkeys(account.id)) };
+      return { angemeldet: true, konto: await kontoJson(account) };
     },
   );
 
@@ -377,8 +421,13 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
   );
 
   app.delete<{ Params: { id: string } }>('/api/konto/passkey/:id', { preHandler: requireSignedIn }, async (req, reply) => {
-    if (!(await store.deletePasskey(req.account!.id, req.params.id))) return reply.code(404).send({ error: 'Passkey nicht gefunden' });
-    return { angemeldet: true, konto: accountJson(req.account!, await store.passkeys(req.account!.id)) };
+    const account = req.account!;
+    const passkeys = await store.passkeys(account.id);
+    if (!passkeys.some((p) => p.id === req.params.id)) return reply.code(404).send({ error: 'Passkey nicht gefunden' });
+    // never the last way in (Konten Stufe 2)
+    if (passkeys.length + (await store.identities(account.id)).length <= 1) return reply.code(409).send({ error: LAST_WAY });
+    if (!(await store.deletePasskey(account.id, req.params.id))) return reply.code(404).send({ error: 'Passkey nicht gefunden' });
+    return { angemeldet: true, konto: await kontoJson(req.account!) };
   });
 
   // Sign out here, or everywhere ({ alle: true }).
