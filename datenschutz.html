@@ -133,11 +133,11 @@
 
       <h2>Kurz gesagt</h2>
       <p>
-        Murmel setzt keine Tracking-Werkzeuge fremder Anbieter und keine Werbung ein und lädt keine Inhalte von
-        fremden Servern (keine externen Schriften, Skripte oder Videos). Ein Konto ist freiwillig; nur wenn Sie
-        sich anmelden, setzen wir ein technisch notwendiges Anmelde-Cookie. Personenbezogene Daten fallen beim
-        Abruf der Seite, kurzzeitig für unsere anonyme Spielstatistik und – nur wenn Sie ein Konto anlegen – für
-        Ihr Konto an (siehe unten).
+        Murmel setzt Cookies nur, wenn Sie sich freiwillig anmelden (ein technisch notwendiges Anmelde-Cookie),
+        verwendet keine Tracking-Werkzeuge fremder Anbieter und keine Werbung, lädt keine Inhalte von fremden
+        Servern (keine externen Schriften, Skripte oder Videos) und verlangt keine Anmeldung; ein Konto ist
+        freiwillig. Personenbezogene Daten fallen beim Abruf der Seite durch den Webserver, kurzzeitig für
+        unsere eigene, anonyme Spielstatistik und, wenn Sie eines anlegen, für Ihr Konto an (siehe unten).
       </p>
 
       <h2>Hosting und Server-Logdateien</h2>
@@ -164,28 +164,27 @@
 
       <h2>Konto (freiwillig)</h2>
       <p>
-        Sie können Murmel ohne Konto spielen. Legen Sie ein Konto an, speichern wir Ihre E-Mail-Adresse, den
-        Zeitpunkt der Anlage und Ihre Rolle (Spieler oder Administrator). Ein Passwort gibt es nicht. Für jeden
-        Passkey, den Sie einrichten, speichern wir dessen öffentlichen Schlüssel, einen Zähler, eine
-        Gerätebezeichnung (etwa „Chrome auf Windows“) und die Zeitpunkte von Einrichtung und letzter Nutzung; der
-        private Schlüssel verlässt Ihr Gerät nicht.
+        Murmel lässt sich ohne Konto vollständig spielen. Wenn Sie ein Konto anlegen, speichern wir Ihre
+        E-Mail-Adresse, optional einen selbst gewählten Anzeigenamen, das Datum der Anlage und Ihre Rolle
+        (Spieler oder Administrator). Passwörter speichern wir nicht: Sie melden sich mit einem Anmeldelink an,
+        den wir an Ihre E-Mail-Adresse senden und der 15 Minuten lang einmal gültig ist, oder mit einem Passkey
+        Ihres Geräts. Bei einem Passkey speichern wir nur dessen öffentlichen Schlüssel, eine Bezeichnung (z. B.
+        „iPhone“) und wann er zuletzt benutzt wurde; Fingerabdruck oder Gesichtsdaten verlassen Ihr Gerät nie.
+        Anmeldelinks und Sitzungen speichern wir nur als Prüfwert (Hash). Abgelaufene Anmeldelinks löschen wir
+        nach einem Tag, abgelaufene Sitzungen sofort.
       </p>
       <p>
-        Zur Anmeldung per E-Mail schicken wir Ihnen einen Anmeldelink über unser Postfach bei IONOS. Dafür
-        speichern wir die Adresse, den Zeitpunkt und einen Prüfwert des Links; der Link gilt 15 Minuten, der
-        Eintrag wird spätestens einen Tag nach Ablauf gelöscht.
+        Nach der Anmeldung setzt der Server ein technisch notwendiges Cookie (<code>__Host-murmel</code>), das Sie
+        90 Tage angemeldet hält; beim Abmelden wird es gelöscht (§ 25 Abs. 2 Nr. 2 TDDDG). Zum Schutz vor
+        Missbrauch begrenzen wir die Zahl der Anmeldeversuche je IP-Adresse; dafür wird die Adresse kurzzeitig im
+        Arbeitsspeicher gehalten, aber nicht gespeichert.
       </p>
       <p>
-        Nach der Anmeldung setzen wir das Cookie <code>__Host-murmel</code> mit einer zufälligen
-        Sitzungskennung. Es gilt 90 Tage oder bis Sie sich abmelden und ist für die von Ihnen gewünschte
-        Anmeldung erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Um Missbrauch zu begrenzen, hält der Server Ihre
-        IP-Adresse höchstens 15 Minuten im Arbeitsspeicher, ohne sie zu speichern.
-      </p>
-      <p>
-        Rechtsgrundlage ist die Bereitstellung des von Ihnen gewünschten Kontos (Art. 6 Abs. 1 lit. b DSGVO).
-        Die Daten liegen auf unserem Server bei IONOS in Deutschland, der sie in unserem Auftrag verarbeitet
-        (Art. 28 DSGVO). Mit „Konto löschen“ entfernen Sie Konto, Passkeys und Sitzungen sofort; in unseren
-        Datensicherungen sind sie nach spätestens 14 Tagen nicht mehr enthalten.
+        Die Anmeldemails versenden wir über ein E-Mail-Postfach bei der IONOS SE, die dafür in unserem Auftrag
+        tätig ist (Art. 28 DSGVO). Rechtsgrundlage ist die Bereitstellung des von Ihnen gewünschten Kontos
+        (Art. 6 Abs. 1 lit. b DSGVO). Sie können Ihr Konto jederzeit auf der Kontoseite löschen; dabei werden
+        Konto, Passkeys, Sitzungen und Anmeldelinks sofort entfernt. Die Daten werden auf unserem Server in
+        Deutschland verarbeitet.
       </p>
 
       <h2>Speicherung im Browser</h2>
