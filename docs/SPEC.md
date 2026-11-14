@@ -209,6 +209,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   OBJBIT_HOLLOW): sehen aus wie der Grundstein, Akteure rollen hindurch (`STONE_PASS`); für
   andere Steine bleiben sie ein Stein. Der Konverter setzt `hollow` in der Legende, die Physik
   macht das Feld nicht fest. Brillen (it_glasses, die hohle Steine ausblenden) fehlen.
+  Seit 14.11. auch zur Laufzeit (Lua `wo[pos] = {"st_lightglass_hollow"}`): der Importer trägt
+  das Grundbild als Art ein, der Lua-Host macht das Feld hohl, weil der Artname auf `_hollow`
+  endet; ein später gesetzter fester Stein hebt das wieder auf (Psycho Pushing, One Way Ticket).
 - **st_boulder** (`BoulderStone.cc`): rollt in seine Richtung (Standard Nord), gesteuert vom
   Ende jedes Animationsdurchlaufs (3 × 120 ms): frei → ein Feld weiter (Murmel im Zielfeld
   zerspringt), sonst warten. Beim Ankommen und beim Drehen erhält der Stein davor einen
@@ -802,7 +805,18 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   bei Levels ab 1.10 (`set_stone`, `enigma.*` …),
   Bibliotheken (`lib.*`, `res.*` im Spiel), Akteure zur Laufzeit, unbekannte Kachelarten,
   Fehler beim Init. Ziele, die nichts benennen, ignoriert Enigma – der Importer auch
-  (außer bei Bibliotheken oder Namen, die im Skript vorkommen).
+  (außer bei Bibliotheken oder Namen, die im Skript vorkommen). Seit 14.11.: ein Muster
+  („bridge%b#*“), das kein Objekt trifft, ist eine leere Gruppe und wird ignoriert, solange
+  keine Funktion des Levels die Welt ändert (`callbacksBuild`: `wo[…]`, `wo(…)`,
+  `wo:draw…/add`) – auch wenn das Muster im Skript steht (ZigZag, Red Cave, 2 + 2).
+  Auflöser, die der Shim baut (`res.autotile`, `res.random`, `res.pento`), sind in Rückrufen
+  erlaubt; Zeichenkettenliterale, die selbst Arten sind (`{"it_cross"}`), zählen beim Sammeln
+  der Laufzeit-Arten nicht mehr als Kartenschlüssel (Gaps).
+- **fl_inverse zur Laufzeit** (seit 14.11.): schlichtes `fl_inverse` ist die Sorte weiß
+  (`SimpleFloors.cc`), wie der Export es benennt → `fl_inverse_white` (Kaleidoscope,
+  Wildflowers Party, Waste).
+- **API 1 `options.Difficulty`** (seit 14.11., `lua.cc` InitLevel): 2 (schwer), passend zu
+  `difficult = true` (How Many Spirals?).
 - **Offen:** 3D-Stil zeichnet zur Laufzeit gesetzte Steine/Böden nicht neu; `postinit`
   wird nicht aufgerufen (der Export ist nach `postinit` entstanden); Akteur in einem neu
   gesetzten Stein ungeprüft.
