@@ -19,7 +19,8 @@ import { anbieterRueckkehrPruefen, beiKontoWechsel, darfEinreichen, istAdmin, ko
 import { Abgleich, statusText, type SyncStatus } from './sync';
 import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
-import { reportEvent } from './stats';
+import { browserAuswertung, type Ende } from './auswertung';
+import { reportEvent, setStatistikAus, statistikAus } from './stats';
 import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
 import { Geist, vergleich } from './game/geist';
@@ -142,7 +143,7 @@ async function loadLevel(pack: string, i: number, seed?: number, carry?: number 
   }
   // one random sequence per run (docs/SPEC-aufzeichnung.md): every random choice of the level uses it
   const token = ++loadToken;
-  noteRunEnded(session);
+  noteRunEnded(session, session?.level.id === packList[i].id ? 'neustart' : 'abbruch');
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
@@ -341,10 +342,37 @@ function noteRunStarted(s: GameSession): void {
   runStarted.add(s);
   progress = recordAttempt(progress, s.level.id, nowIso());
   saveProgress();
+  // Auswertung (docs/SPEC-auswertung.md): not zu zweit or in a race; links never get here
+  if (!zz.laeuft()) {
+    laufPaket.set(s, packId);
+    auswertung.start(packId, s.level.id);
+  }
 }
 
+/** Auswertung: counters of runs per level, in memory only, sent in bundles without time or id. */
+const auswertung = browserAuswertung();
+/** Runs the Auswertung counted as started (with their pack), and those it counted as ended. */
+const laufPaket = new WeakMap<GameSession, string>();
+const laufGezaehlt = new WeakSet<GameSession>();
+function auswertungEnde(s: GameSession | null, art: Ende): void {
+  const pack = s ? laufPaket.get(s) : undefined;
+  if (!s || pack === undefined || laufGezaehlt.has(s)) return;
+  laufGezaehlt.add(s);
+  auswertung.ende(pack, s.level.id, art, s.steps * PHYSICS_DT, s.falls);
+}
+// sent when the page is hidden or left and when the browser is back online; leaving mid-run is an abandon
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') auswertung.senden();
+});
+window.addEventListener('pagehide', () => {
+  if (!session?.won) auswertungEnde(session, 'abbruch');
+  auswertung.senden();
+});
+window.addEventListener('online', () => auswertung.senden());
+
 /** A run ends (won, left, restarted): its play time and falls count. */
-function noteRunEnded(s: GameSession | null): void {
+function noteRunEnded(s: GameSession | null, art: Ende): void {
+  auswertungEnde(s, art);
   if (!s || runCounted.has(s)) return;
   runCounted.add(s);
   if (s.steps === 0 && s.falls === 0) return;
@@ -388,7 +416,31 @@ function showProgress(message = ''): void {
     ['Sichern', saveProgressFile],
     ['Laden', loadProgressFile],
   ]);
+  ovForm.replaceChildren(statistikSchalter());
+  ovForm.hidden = false;
   if (mitKonto && abgleich.status.art !== 'laeuft') abgleich.bald(0);
+}
+
+/** The switch „Anonyme Statistik senden“ (docs/SPEC-auswertung.md): start/solve reports and the Auswertung. */
+function statistikSchalter(): HTMLLabelElement {
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.id = 'statistik-schalter';
+  box.setAttribute('role', 'switch');
+  box.checked = !statistikAus();
+  box.addEventListener('change', () => {
+    setStatistikAus(!box.checked);
+    if (!box.checked) auswertung.senden(); // drops what was collected
+  });
+  const text = document.createElement('span');
+  text.append('Anonyme Statistik senden', document.createElement('br'), Object.assign(document.createElement('small'), { textContent: 'Zählt ohne Kennung, welche Levels gelöst oder abgebrochen werden.' }));
+  const label = document.createElement('label');
+  label.className = 'konto-schalter';
+  label.htmlFor = box.id;
+  // like the overlay buttons: the click belongs to the card, not to the game
+  label.addEventListener('click', (e) => e.stopPropagation());
+  label.append(box, text);
+  return label;
 }
 // While the progress page is open: the status line, and the numbers after a sync brought something.
 abgleich.beobachten((s: SyncStatus) => {
@@ -896,7 +948,7 @@ function onWin(): void {
   store.set('solved', [...solved]);
   const prevBest = progress.levels[level.id]?.best;
   progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());
-  noteRunEnded(s); // saves the progress
+  noteRunEnded(s, 'geloest'); // saves the progress
   abgleich.bald();
   const newBest = progress.levels[level.id]?.best;
   const bestLine = !prevBest
