@@ -148,3 +148,11 @@ end`,
     }
   });
 });
+
+describe('API 1 options', () => {
+  it('options.Difficulty is hard (2), as Murmel plays the difficult variant', async () => {
+    const { host } = fakeHost([]);
+    const lua = await startLua('assert(options.Difficulty == 2 and difficult)', host);
+    expect(lua.lastError).toBe('');
+  });
+});

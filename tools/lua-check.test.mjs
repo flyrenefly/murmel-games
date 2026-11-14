@@ -80,3 +80,23 @@ test('Laufzeit-Arten: Ersatzschlüssel von res.random und ti-Verweise zählen mi
   const code = 'ti["h1"] = {"fl_sand"}\nti["hG"] = ti["h1"] .. {"it_trap"}\n--ti["hX"] = ti["h1"] .. {"st_chameleon"}\nlocal r = res.random(ti, "h#", {{"hG", 1}})\nfunction f()\n    wo:drawRect(po(1, 1), po(1, 1), "h#", r)\nend';
   assert.deepEqual(runtimeKinds(code).sort(), ['fl_sand', 'it_trap']);
 });
+
+test('Resolver im Rückruf: res.autotile direkt im Zeichenaufruf ja, res.composer nein', () => {
+  const code = `ti["+"] = {"fl_red"}\nti["="] = {"st_greenbrown_hollow"}\nfunction drawLine()\n    wo:drawMap(res.autotile(ti), po(1, 1), " ", {"  +="})\nend`;
+  assert.deepEqual(problems(code), []);
+  assert.deepEqual(problems(code.replace('res.autotile', 'res.composer')).sort(), [':drawMap', 'res.composer']);
+});
+
+test('callbacksBuild: nur Funktionen, die die Welt ändern, zählen', async () => {
+  const { callbacksBuild } = await import('./lua-check.mjs');
+  assert.equal(callbacksBuild('ti["x"] = {"fl_bridge", name="bridge%%#"}\nwo(ti, " ", {"x"})'), false);
+  assert.equal(callbacksBuild('function f()\n    no["a"]["adhesion"] = 0\nend'), false);
+  assert.equal(callbacksBuild('function f()\n    wo[po(1, 1)] = ti["x"]\nend'), true);
+  assert.equal(callbacksBuild('function f()\n    wo:drawMap(ti, po(1, 1), " ", {"x"})\nend'), true);
+});
+
+test('Laufzeit-Arten: eine Art im Zeichenaufruf ist kein Kartenschlüssel', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["~"] = {"fl_water"}\nti["o"] = {"st_oxyd_d"} .. ti["~"]\nfunction f()\n    wo:drawRect({2,0},{17,0},{"it_cross"} .. ti({"st_nil"}))\nend';
+  assert.deepEqual(runtimeKinds(code).sort(), ['it_cross', 'st_nil']);
+});

@@ -851,6 +851,8 @@ display = setmetatable({}, {__index = function() return function() end end})
 
 TRUE, FALSE = 1, 0
 difficult = true
+-- lua.cc InitLevel: options.Difficulty (DIFFICULTY_HARD = 2, as difficult above)
+options = {Difficulty = 2}
 level_width, level_height = 0, 0
 oxyd_default_flavor = "b"
 oxyd_count, oxyd_current_color, oxyd_max_color = 0, 0, 8
