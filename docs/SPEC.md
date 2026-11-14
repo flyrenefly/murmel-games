@@ -817,7 +817,10 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
 
 - **Bibliotheken:** `libpento` liegt unverändert (GPL v2+, Ronald Lamprecht) in
   `src/lua/lib/`; der Importer trägt sie aus `el:dependency` als `lua.libs` ein, Murmel führt sie
-  vor dem Levelskript als eigenen Chunk aus (wie Enigmas `preload`). Andere Bibliotheken fehlen.
+  vor dem Levelskript als eigenen Chunk aus (wie Enigmas `preload`). Ebenso unverändert (ab
+  13.11.2026): `liblua`, `libmath` (lädt `liblua` vorher), `natmaze` und `libmap` (siehe Karten).
+  Die Importprüfung kennt die Funktionen geladener Bibliotheken und die Methoden, die sie in
+  Tabellen legen (`maze.can_go_east`). `libmaze`, `libpuzzle`, `libtrain`, `libsoko` fehlen.
 - **Auflöser (api2init.lua):** echte Auflöser-Kontexte `{Implementierung, Finalisierer, Unterauflöser, …}`
   mit `evaluateKey`-Kette (ti, Funktion, Kontext), `res.metatable`, `is_resolver`,
   `assert_bool`/`assert_type`, `res.autotile` (Bereichs- und Präfixregeln, `%%` im Muster) und
@@ -828,7 +831,14 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
 - **Karten (Teil von libmap):** `wo:newMap(key, zeilen | b, h)` mit `width`, `height`,
   `defaultkey`, `keylength`, `map[{x, y}]`; `map ^ transformation` (`lib.map.transform`);
   `MAP_IDENT … MAP_FLIP_VERTICAL`, `MAP_ALL`, Verknüpfung `*`, Potenz `^`, Umkehrung `-` nach
-  `lib.map.transformation_compose`. Weitere libmap-Funktionen fehlen (der Import lehnt `lib.map` ab).
+  `lib.map.transformation_compose`. Levels mit `lib/libmap` laden stattdessen die ganze Bibliothek
+  (`"k" * map`, `map .. map`, `map:sub/paste/replace` …); dafür kennt der Shim `wo:_register`,
+  `usertype`, Typnamen aus `_type` und `pos:grid()`/`obj:grid()`.
+- **Zeichnen in Rückrufen:** `wo:drawMap/drawRect/drawBorder` prüft der Import je Aufruf: Auflöser
+  `ti`, `res.autotile`, `res.random` (nachgebaut), `res.pento` oder Karten; bei reinem `ti` muss
+  jeder gezeichnete Schlüssel einen Eintrag haben. Andere Auflöser im Init stören nicht mehr.
+- **`wo:add` in Rückrufen:** außer Inventar-Gegenständen und Gummibändern auch `ot_timer` und
+  `ot_counter` (Objekte ohne Zelle, wie aus dem Init).
 - **Rückrufe mit Punkt:** Ziele wie `pento.next` werden wie `lua::CallFunc` über Tabellen
   aufgelöst; der Importer fragt nach dem Init, ob das Ziel eine Funktion ist.
 - **Puzzlesteine zur Laufzeit** (`PuzzleStone::on_creation` → `Stone::autoJoinCluster`): ein neuer
@@ -839,8 +849,9 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   Physik, Paarbrett, Renderer); Farben bekommen sie wie bei `OxydStone::initColors` paarweise,
   sobald `wo:shuffleOxyd()` läuft oder der erste getroffen wird. Levels ohne Oxyd-Steine, deren
   Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Nur in
-  Levels, die ohne Oxyd-Steine beginnen, und nur schlichtes `{"st_oxyd"}`: Ersetzen vorhandener
-  Oxyd-Steine, feste Farben (`oxydcolor`), andere Formen oder `noshuffle` lehnt der Import ab.
+  Levels, die ohne Oxyd-Steine beginnen, und nur schlichtes `{"st_oxyd"}` oder eine Sorte als Art
+  (`{"st_oxyd_d"}`, ab 13.11.2026): Ersetzen vorhandener Oxyd-Steine, feste Farben (`oxydcolor`),
+  `flavor`-Attribute oder `noshuffle` lehnt der Import ab.
 - **`wo:shuffleOxyd()` während des Spiels** mischt die Farben der geschlossenen Steine (wie
   die Nachricht `shuffle`).
 - **`po["name"]`** (lua.cc dispatchPositionsReadAccess): benannte Position oder Position des

@@ -1,14 +1,18 @@
 /** The Lua runtime with Murmel's Enigma API shim, for the browser. */
 import api1 from './api1.lua?raw';
 import shim from './enigma.lua?raw';
+import liblua from './lib/liblua.lua?raw';
+import libmap from './lib/libmap.lua?raw';
+import libmath from './lib/libmath.lua?raw';
 import libpento from './lib/libpento.lua?raw';
+import natmaze from './lib/natmaze.lua?raw';
 import { type Fengari, type LuaHost, LuaLevel } from './runtime';
 
 export type { LuaHost };
 export { LuaLevel };
 
 /** Enigma libraries a level may name in lua.libs (src/lua/lib). */
-export const LIBS: Record<string, string> = { libpento };
+export const LIBS: Record<string, string> = { libpento, liblua, libmath, libmap, natmaze };
 
 /**
  * fengari-web is fengari's browser build: the plain package decides by `typeof process`

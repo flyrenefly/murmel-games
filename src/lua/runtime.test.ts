@@ -221,3 +221,75 @@ describe('wo:drawMap during play', () => {
     expect(set).toEqual(['2,3,st_granite', '3,4,st_granite', '0,0,st_granite', '1,0,st_granite']);
   });
 });
+
+describe('res.random during play', () => {
+  it('replaces hit keys by a key chosen by frequency, other keys pass through', async () => {
+    const w = fakeHost([]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await startLua(
+      `ti["-"] = {"fl_sand"}\nti["1"] = {"fl_red"}\nti["2"] = {"fl_blue"}\nti["#"] = {"st_granite"}
+local r = res.random(ti, "-", {{"1", 0}, {"2", 1}})
+local s = res.random(ti, {{"x", "#"}}, "1")
+function f() wo:drawRect(po(0, 0), po(1, 0), "-", r) wo:drawRect(po(2, 0), po(2, 0), "#", r) wo:drawRect(po(3, 0), po(3, 0), "x", s) end`,
+      w.host,
+    );
+    lua.callback('f', true, 'x');
+    expect(lua.lastError).toBe('');
+    // frequency 0 is never chosen; the superkey's tile comes first
+    expect(set).toEqual(['0,0,fl_blue', '1,0,fl_blue', '2,0,st_granite', '3,0,st_granite', '3,0,fl_red']);
+  });
+});
+
+describe('Enigma libraries', () => {
+  it('libmath (with liblua before it) and natmaze run before the level and in its callbacks', async () => {
+    const [liblua, libmath, natmaze] = await Promise.all([import('./lib/liblua.lua?raw'), import('./lib/libmath.lua?raw'), import('./lib/natmaze.lua?raw')]);
+    const w = fakeHost([{ ref: 's', l: 'it', x: 1, y: 1, a: {} }]);
+    const lua = await LuaLevel.create(
+      `maze = new_kruskal_maze(4, 3)
+function f()
+  local d = lib.math.digits(13, 2)
+  local links = 0
+  for y = 0, 2 do for x = 0, 3 do
+    if maze:can_go_east(x, y) then links = links + 1 end
+    if maze:can_go_south(x, y) then links = links + 1 end
+  end end
+  wo["GlobalForce"] = po(#d * 10 + d[4], links)
+end`,
+      w.host,
+      shim,
+      await import('fengari'),
+      [liblua.default, libmath.default, natmaze.default],
+    );
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    // 13 = 1101 (lowest digit first); a spanning tree of 12 cells has 11 links
+    expect(w.force()).toBe('41,11');
+  });
+});
+
+describe('libmap', () => {
+  it('replaces the shim maps: "k" * map, map:replace, map .. map, map ^ transformation, drawn during play', async () => {
+    const [liblua, libmap] = await Promise.all([import('./lib/liblua.lua?raw'), import('./lib/libmap.lua?raw')]);
+    const w = fakeHost([{ ref: 's', l: 'it', x: 1, y: 1, a: {} }]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await LuaLevel.create(
+      `ti["r#"] = {"st_granite"}\nti["rx"] = {"st_brick"}\nti["r "] = {"fl_sand"}
+local m = wo:newMap(" ", {"# ", " #"})
+local wide = m .. wo:newMap(" ", {"x", "x"})
+wide:replace(" ", "#")
+local big = "r" * (wide ^ MAP_ROT_CW)
+function f() wo:drawMap(ti, po(0, 0), big) end`,
+      w.host,
+      shim,
+      await import('fengari'),
+      [liblua.default, libmap.default],
+    );
+    expect(lua.lastError).toBe('');
+    lua.callback('f', true, 's');
+    expect(lua.lastError).toBe('');
+    // wide = {"##x", "##x"}; turned clockwise: 2 wide, 3 high, the x row at the bottom
+    expect(set).toEqual(['0,0,st_granite', '1,0,st_granite', '0,1,st_granite', '1,1,st_granite', '0,2,st_brick', '1,2,st_brick']);
+  });
+});

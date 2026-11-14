@@ -36,9 +36,10 @@ end
 local POS, POLIST, OBJ, GROUP, TILE = {}, {}, {}, {}, {}
 POS.__name, POLIST.__name, OBJ.__name, GROUP.__name, TILE.__name = "position", "polist", "object", "group", "tile"
 
+-- libraries name their types in _type (libmap: lib.map.metatable._type = "map")
 local function etype_of(v)
   local mt = getmetatable(v)
-  return mt and mt.__name or type(v)
+  return mt and (mt.__name or (type(mt) == "table" and rawget(mt, "_type"))) or type(v)
 end
 
 -- Lua 5.1 prints 8.0 as "8", Lua 5.3 as "8.0": keep whole coordinates integers, since
@@ -65,6 +66,8 @@ POS.__index = function(p, k)
   if k == "grid" then return newpos(math.floor(p.x), math.floor(p.y)) end
   return nil
 end
+-- pos:grid() (libmap): p.grid is the grid position, calling it returns that position
+POS.__call = function(p) return p end
 local function haslist(a, b) return etype_of(a) == "polist" or etype_of(b) == "polist" end
 POS.__add = function(a, b)
   if haslist(a, b) then return POLIST.__add(a, b) end
@@ -277,6 +280,11 @@ function methods.get_cluster(self)
     for _, r in ipairs(M.cluster(self._ref)) do l[#l + 1] = obj(r) end
   end
   return newgroup(l)
+end
+-- obj:grid() (libmap): the grid position of the object
+function methods.grid(self)
+  local p = topos(self)
+  return p and newpos(math.floor(p.x), math.floor(p.y))
 end
 function methods.xy(self)
   local p = topos(self)
@@ -577,7 +585,7 @@ end
 
 function wmethods.add(_, a, b)
   if not INIT then
-    -- during play: an item into a player's inventory, or a rubber band
+    -- during play: an item into a player's inventory, a timer or counter, or a rubber band
     if type(a) == "number" and type(b) == "table" and type(b[1]) == "string" then
       local k = b[1]
       -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
@@ -586,6 +594,11 @@ function wmethods.add(_, a, b)
       return
     end
     local d = b or a
+    -- a timer or counter gadget (TimerGadget, CounterGadget): an object without a cell
+    if type(d) == "table" and (d[1] == "ot_timer" or d[1] == "ot_counter") then
+      M.addobject(d[1], table.unpack(declargs(d)))
+      return
+    end
     if type(d) == "table" and d[1] == "ot_rubberband" then
       M.addrubber(refof(d.anchor1), refof(d.anchor2), d.strength, d.length, d.threshold, d.min, d.max)
       return
@@ -704,10 +717,12 @@ function wmethods.fl(_, p) return fl(p) end
 function wmethods.st(_, p) return st(p) end
 function wmethods.it(_, p) return it(p) end
 
-for _, m in ipairs({"world", "_register"}) do
-  wmethods[m] = function()
-    if not INIT then unsupported("wo:" .. m) end
-  end
+function wmethods.world()
+  if not INIT then unsupported("wo:world") end
+end
+-- wo:_register(name, f) (libmap registers wo:newMap): f(world, …) becomes a world method
+function wmethods._register(_, name, f)
+  wmethods[name] = f
 end
 -- wo:shuffleOxyd() during play (Oxyd stones made by Lua get their colours here); in init mode
 -- the export already holds the colours.
@@ -966,6 +981,49 @@ function res.autotile(subresolver, ...)
   return setmetatable({res.autotile_implementation, nil, subresolver, args}, res.metatable)
 end
 
+-- api2init.lua res.random: hit keys become a randomly chosen replacement key (by frequency),
+-- optionally on top of a superkey's tile. Callbacks redraw floors with it (wo:drawRect).
+function res.random_implementation(context, evaluator, key, x, y)
+  for _, hit in ipairs(context[4]) do
+    if key == hit[1] then
+      local super = nil
+      if hit[2] ~= nil then super = evaluator(context[3], hit[2], x, y) end
+      local r = math.random() * context[6]
+      local i = 1
+      local s = context[5][i][2]
+      while s < r and context[5][i + 1] do
+        i = i + 1
+        s = s + context[5][i][2]
+      end
+      local replacement = evaluator(context[3], context[5][i][1], x, y)
+      if super == nil then return replacement end
+      return astile(super) .. replacement
+    end
+  end
+  return evaluator(context[3], key, x, y)
+end
+
+function res.random(subresolver, hits, replacements)
+  assert_bool(is_resolver(subresolver), "res.random first argument (subresolver)", 2)
+  assert_type(hits, "res.random second argument (hits)", 2, "non-empty string", "table")
+  assert_type(replacements, "res.random third argument (replacements)", 2, "string", "table")
+  local hit_table = {}
+  if type(hits) == "string" then
+    hit_table[1] = {hits, nil}
+  else
+    for i, v in ipairs(hits) do hit_table[i] = type(v) == "string" and {v, nil} or v end
+  end
+  local repl_table = {}
+  if type(replacements) == "string" then
+    repl_table[1] = {replacements, 1}
+  else
+    for i, v in ipairs(replacements) do repl_table[i] = type(v) == "string" and {v, 1} or v end
+  end
+  local sum = 0
+  for _, v in ipairs(repl_table) do sum = sum + v[2] end
+  return setmetatable({res.random_implementation, nil, subresolver, hit_table, repl_table, sum}, res.metatable)
+end
+
 function cond(condition, iftrue, iffalse)
   if condition then return iftrue end
   return iffalse
@@ -976,6 +1034,10 @@ function etype(v)
   local t = etype_of(v)
   if t == "object" then return v._ref and "object" or "nil" end
   return t
+end
+-- lua.cc usertype: the Enigma type of a value (position, object, group, polist …)
+function usertype(v)
+  return etype(v)
 end
 
 -------------------------------------------------------------------------------

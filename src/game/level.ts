@@ -177,8 +177,8 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   // Meditation levels (Enigma ChangeMeditation): pearls and hollows instead of Oxyd stones
   // Meditation levels: pearls (also the main pearl, which is not in actors) and meditation hollows
   const meditation = (!!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k))) && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
-  // Lua may set Oxyd stones during play (Pentomino: wo[…] = {"st_oxyd"} once the puzzle is done)
-  const luaOxyds = file.lua?.kinds.st_oxyd === 'oxyd';
+  // Lua may set Oxyd stones during play (Pentomino: wo[…] = {"st_oxyd"} once the puzzle is done; st_oxyd_d …)
+  const luaOxyds = Object.values(file.lua?.kinds ?? {}).includes('oxyd');
   if (signals.length === 0 && !meditation && !luaOxyds) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
 
   // initColors leaves a colour without partner alone; only a meditation level stays solvable then
