@@ -107,7 +107,7 @@ Schritt gespielt ist. Sonst geschieht nichts – wie heute.
 
 - **Sichern im Pausenmenü:** Öffnet sich die Pause, wird der Stand gesichert, wenn er sich seit dem
   letzten Sichern geändert hat. Eine Statuszeile im Pausenmenü (`role="status"`): „Wird in der Cloud
-  gesichert …“ → „In der Cloud gesichert – auf einem anderen Gerät weiterspielen.“ bzw. „Sichern gerade
+  gesichert …“ → „In der Cloud gesichert.“ bzw. „Sichern gerade
   nicht möglich.“ / „Dieser Lauf ist zu lang für die Cloud.“
 - **Sichern beim Verlassen:** Wird die Seite verborgen oder geschlossen (`visibilitychange` → `hidden`),
   wird ebenfalls gesichert (`fetch` mit `keepalive`, solange der Stand unter 60 KB liegt; größere Stände

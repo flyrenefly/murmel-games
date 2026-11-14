@@ -17,6 +17,7 @@ import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 import { anbieterRueckkehrPruefen, beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
 import { Abgleich, statusText, type SyncStatus } from './sync';
+import { cloudMoeglich, CloudSpeicher, MAX_STEPS as CLOUD_MAX_STEPS, nachspielen, SICHERN_TEXT } from './cloudstand';
 import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { reportEvent } from './stats';
@@ -123,8 +124,11 @@ function buildRenderer(): void {
   } else view.build(level, style as ThemeId, board.states);
 }
 
-/** `carry`: extra lives to start with (Wettkampf spectators replaying a restart); default: the carried ones. */
-async function loadLevel(pack: string, i: number, seed?: number, carry?: number | null): Promise<void> {
+/**
+ * `carry`: extra lives to start with (Wettkampf spectators replaying a restart); default: the carried ones.
+ * `vorlauf`: runs on the new run before it takes over (Cloudstand: replays the saved input; throws to abort).
+ */
+async function loadLevel(pack: string, i: number, seed?: number, carry?: number | null, vorlauf?: (s: GameSession) => Promise<void>): Promise<void> {
   try {
     packList = await packLevels(pack);
     packName = await packTitle(pack);
@@ -146,7 +150,10 @@ async function loadLevel(pack: string, i: number, seed?: number, carry?: number 
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
-  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? aufgabenSeed(pack, packList[i]) ?? randomSeed(), carryLives: carry !== undefined ? carry : carryLives, ui: sessionUI(() => s), startLua });
+  const leben = carry !== undefined ? carry : carryLives;
+  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? aufgabenSeed(pack, packList[i]) ?? randomSeed(), carryLives: leben, ui: sessionUI(() => s), startLua });
+  startLeben.set(created, leben);
+  if (vorlauf) await vorlauf(created);
   const ghost = await geistFuer(packList[i], startLua);
   if (token !== loadToken) return; // another level was loaded meanwhile
   geist = ghost;
@@ -329,7 +336,95 @@ const abgleich = new Abgleich(
   },
 );
 beiKontoWechsel((angemeldet) => (angemeldet ? void abgleich.jetzt() : abgleich.abgemeldet()));
+
+// Spielstand in der Cloud (docs/SPEC-cloudstand.md): only signed in, only regular packs, never zu zweit.
+const cloud = new CloudSpeicher();
+beiKontoWechsel((angemeldet) => (angemeldet ? void cloud.liste(true).then(startNeu()) : cloud.vergessen()));
+/** After the list of saves arrives: if it changed while the same start screen is shown, draw it again. */
+function startNeu(): (changed: boolean) => void {
+  const titel = session ? `${levelIndex + 1}. ${level.title}` : null;
+  return (changed) => {
+    if (changed && titel && mode === 'menu' && !overlay.hidden && ovTitle.textContent === titel) showStart();
+  };
+}
+/** Levels of this pack can have a cloud save at all (signed in, not blocked). */
+const cloudPaket = (): boolean => cloudMoeglich() && darfEinreichen() && packId !== LINK_PACK && packId !== PLAYER_PACK && !zz.laeuft();
+/** The current run is worth saving. */
+function cloudLauf(): GameSession | null {
+  const s = session;
+  return s && cloudPaket() && !s.won && !s.restartRequested && !restartNow && s.steps > 0 && s.steps <= CLOUD_MAX_STEPS ? s : null;
+}
+/** Saves the current run; the status line of the pause menu (if shown) follows. */
+async function cloudSichern(keepalive = false): Promise<void> {
+  const s = cloudLauf();
+  if (!s) return;
+  const zeigen = (art: keyof typeof SICHERN_TEXT) => {
+    const el = document.getElementById('cloud-status');
+    if (!el) return;
+    el.textContent = SICHERN_TEXT[art];
+    el.dataset.art = art === 'laeuft' || art === 'ok' ? art : 'fehler';
+  };
+  zeigen('laeuft');
+  let r: Awaited<ReturnType<CloudSpeicher['sichern']>>;
+  try {
+    r = await cloud.sichern(s, packId, startLeben.get(s) ?? null, __MURMEL_VERSION__, keepalive);
+  } catch {
+    r = 'fehler';
+  }
+  zeigen(r);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') void cloudSichern(true);
+});
+
+/** Continues the saved run of the current level: fetch, replay with progress, check, then pause. */
+async function weiterspielen(): Promise<void> {
+  const pack = packId;
+  const index = levelIndex;
+  const id = level.id;
+  mode = 'menu';
+  showOverlay(
+    'Spielstand',
+    '<p class="sync-status" data-art="laeuft" role="status" aria-live="polite" id="cloud-laden">Spielstand wird geladen …</p><progress id="cloud-fortschritt" class="cloud-fortschritt" max="100" value="0" aria-label="Wiederherstellen"></progress>',
+    [],
+  );
+  const r = await cloud.laden(id);
+  if (!r.ok) {
+    showToast(r.grund, 3500);
+    showStart();
+    return;
+  }
+  const balken = document.getElementById('cloud-fortschritt') as HTMLProgressElement | null;
+  const text = document.getElementById('cloud-laden');
+  try {
+    await loadLevel(pack, index, r.stand.seed, r.stand.leben, async (s) => {
+      await nachspielen(s, r.eingabe, r.stand.pruef, (anteil) => {
+        const p = Math.round(anteil * 100);
+        if (balken) balken.value = p;
+        if (text) text.textContent = `Spielstand wird wiederhergestellt … ${p} %`;
+      });
+      fortgesetzt.set(s, { steps: s.steps, falls: s.falls });
+      runStarted.add(s); // the attempt was counted where it began
+      cloud.gesichert(s);
+    });
+  } catch {
+    cloud.passtNicht(id);
+    await loadLevel(pack, index);
+    showToast('Der gesicherte Stand passt nicht zu dieser Spielversion oder diesem Browser – das Level beginnt neu.', 5000);
+    showStart();
+    return;
+  }
+  if (session && fortgesetzt.has(session)) {
+    showToast(`Spielstand wiederhergestellt (${formatTime(session.steps * PHYSICS_DT)})`, 2500);
+    showPause();
+  }
+}
 window.addEventListener('online', () => abgleich.online());
+
+/** Lives each run started with (a cloud save stores them). */
+const startLeben = new WeakMap<GameSession, number | null>();
+/** Runs continued from a cloud save: steps and falls played before (counted on the other device). */
+const fortgesetzt = new WeakMap<GameSession, { steps: number; falls: number }>();
 
 /** Runs already counted: started (attempt) and finished (play time, falls). */
 const runStarted = new WeakSet<GameSession>();
@@ -347,8 +442,9 @@ function noteRunStarted(s: GameSession): void {
 function noteRunEnded(s: GameSession | null): void {
   if (!s || runCounted.has(s)) return;
   runCounted.add(s);
-  if (s.steps === 0 && s.falls === 0) return;
-  progress = recordPlay(progress, s.level.id, s.steps, s.falls);
+  const vorher = fortgesetzt.get(s) ?? { steps: 0, falls: 0 };
+  if (s.steps === vorher.steps && s.falls === vorher.falls) return;
+  progress = recordPlay(progress, s.level.id, s.steps - vorher.steps, s.falls - vorher.falls);
   saveProgress();
 }
 
@@ -439,8 +535,14 @@ function showStart(): void {
   const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}</span><br>`;
   const ghostNote = (aufgabe ? `<span class="credit">${escapeHtml(titelZeile(aufgabe))}</span><br>` : '') + (geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '');
   const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? 'Geist ändern' : 'Mit Geist', () => void showGeister()]];
+  const play = () => (isTouch ? void startTouch() : startPlaying());
+  // a cloud save of this level (and the run here not begun yet): continuing comes first
+  const stand = cloudPaket() && (session?.steps ?? 0) === 0 ? cloud.staende.get(level.id) : undefined;
+  const spielen: [string, () => void][] =
+    stand && stand.pack === packId ? [[`Weiterspielen (${formatTime(stand.steps * PHYSICS_DT)})`, () => void weiterspielen()], ['Neu beginnen', play]] : [['Spielen', play]];
+  if (cloudPaket()) void cloud.liste().then(startNeu());
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + ghostNote + controlsHelp(), [
-    ['Spielen', () => (isTouch ? void startTouch() : startPlaying())],
+    ...spielen,
     ...ghostButton,
     ['Levels', showLevels],
     ['Zu zweit', zz.menue],
@@ -701,7 +803,8 @@ async function openStartFromHash(hash: string): Promise<boolean> {
 
 function showPause(): void {
   mode = 'menu';
-  showOverlay('Pause', controlsHelp(), [
+  const cloudZeile = cloudLauf() ? `<p id="cloud-status" class="sync-status" role="status" aria-live="polite" data-art="laeuft">${SICHERN_TEXT.laeuft}</p>` : '';
+  showOverlay('Pause', cloudZeile + controlsHelp(), [
     ['Weiterspielen', () => (isTouch ? void startTouch() : startPlaying())],
     ['Neustart', restart],
     ['Levels', showLevels],
@@ -713,6 +816,7 @@ function showPause(): void {
     ['Fehler melden', reportBug],
   ]);
   addSteeringChoice(showPause);
+  if (cloudZeile) void cloudSichern();
 }
 
 /** Admins only: the statistics page (statistik.html; the server checks the role again). */
@@ -898,6 +1002,7 @@ function onWin(): void {
   progress = recordWin(progress, level.id, { steps: s.steps, falls: s.falls, seed: s.seed }, nowIso());
   noteRunEnded(s); // saves the progress
   abgleich.bald();
+  if (cloudPaket()) void cloud.loeschen(level.id).catch(() => {}); // the save of a solved level goes
   const newBest = progress.levels[level.id]?.best;
   const bestLine = !prevBest
     ? ''
@@ -917,7 +1022,9 @@ function onWin(): void {
     void restart();
   }]];
   // a run with a shown way goes to no ranking (docs/SPEC-tipps.md)
-  const ohneRangliste = tipps.wegGezeigt();
+  // nor does a run continued from a cloud save (docs/SPEC-cloudstand.md)
+  const weiter = fortgesetzt.has(s);
+  const ohneRangliste = tipps.wegGezeigt() || weiter;
   const board = ohneRangliste ? () => '' : leaderboardLine(recording, s.steps, level.id);
   const task = !ohneRangliste && aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
   const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
@@ -926,7 +1033,7 @@ function onWin(): void {
   setTimeout(() => {
     showOverlay(
       'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${tipps.siegZeile()}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${tipps.siegZeile()}${weiter ? '<br><span class="note">Fortgesetzter Lauf – zählt nicht für die Bestenliste.</span>' : ''}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
       last
         ? [['Levels', showLevels], ['Nochmal', restart], ...raceIt, ...ranking, ...rate, ...asSolution]
         : [

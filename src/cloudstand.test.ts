@@ -176,8 +176,6 @@ describe('CloudSpeicher', () => {
     const file = byId('enigma:rb01');
     const s = await GameSession.create(file, { seed: 3, startLua });
 
-    await cloud.loeschen(file.id);
-    expect(calls, 'ohne Stand keine Anfrage').toEqual([]);
     play(s, 0, 500);
     expect(await cloud.sichern(s, 'enigma_i', null, 'v', true)).toBe('ok');
     expect(await cloud.sichern(s, 'enigma_i', null, 'v')).toBe('ok');
@@ -217,5 +215,28 @@ describe('CloudSpeicher', () => {
     status = 413;
     expect(await cloud.sichern(s, 'p', null, 'v')).toBe('zu-lang');
     expect(calls).toEqual([0, 500, 413]);
+  });
+
+  it('ein unpassender Stand wird nicht wieder angeboten, bis ein neuerer gesichert ist', async () => {
+    let gespeichert = 't1';
+    const api = { liste: async () => ({ ok: true, daten: { staende: [{ level: 'a', pack: 'p', steps: 5, gespeichert }] } }) } as unknown as CloudApi;
+    const cloud = new CloudSpeicher(api);
+    await cloud.liste(true);
+    cloud.passtNicht('a');
+    expect(cloud.staende.has('a')).toBe(false);
+    await cloud.liste(true);
+    expect(cloud.staende.has('a')).toBe(false);
+    gespeichert = 't2';
+    await cloud.liste(true);
+    expect(cloud.staende.has('a')).toBe(true);
+  });
+
+  it('zweimal gleichzeitig derselbe Stand: eine Anfrage', async () => {
+    const { api, calls } = fakeApi();
+    const cloud = new CloudSpeicher(api);
+    const s = await GameSession.create(byId('enigma:rb01'), { seed: 3, startLua });
+    play(s, 0, 200);
+    expect(await Promise.all([cloud.sichern(s, 'p', null, 'v'), cloud.sichern(s, 'p', null, 'v', true)])).toEqual(['ok', 'ok']);
+    expect(calls).toHaveLength(1);
   });
 });

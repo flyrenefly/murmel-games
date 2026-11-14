@@ -184,7 +184,7 @@ export type SichernErgebnis = 'ok' | 'zu-lang' | 'offline' | 'fehler';
 
 export const SICHERN_TEXT: Record<SichernErgebnis | 'laeuft', string> = {
   laeuft: 'Wird in der Cloud gesichert …',
-  ok: 'In der Cloud gesichert – auf einem anderen Gerät weiterspielen.',
+  ok: 'In der Cloud gesichert.',
   'zu-lang': 'Dieser Lauf ist zu lang für die Cloud.',
   offline: 'Sichern gerade nicht möglich – kein Netz.',
   fehler: 'Sichern gerade nicht möglich.',
@@ -195,6 +195,9 @@ export class CloudSpeicher {
   /** Known saves by level (from the list, and own saves). */
   readonly staende = new Map<string, StandInfo>();
   private readonly zuletzt = new Map<string, string>();
+  private readonly unterwegs = new Map<string, { key: string; ergebnis: Promise<SichernErgebnis> }>();
+  /** Saves (level → time saved) whose replay did not match here. */
+  private readonly unpassend = new Map<string, string>();
   private listeZeit = 0;
   private readonly api: CloudApi;
   private readonly now: () => number;
@@ -214,23 +217,41 @@ export class CloudSpeicher {
     if (!r.ok) return false;
     const vorher = JSON.stringify([...this.staende.values()]);
     this.staende.clear();
-    for (const s of r.daten.staende) this.staende.set(s.level, s);
+    for (const s of r.daten.staende) if (this.unpassend.get(s.level) !== s.gespeichert) this.staende.set(s.level, s);
     return JSON.stringify([...this.staende.values()]) !== vorher;
+  }
+
+  /** A save this device cannot replay: not offered again until a newer one is saved. */
+  passtNicht(level: string): void {
+    const s = this.staende.get(level);
+    if (s) this.unpassend.set(level, s.gespeichert);
+    this.staende.delete(level);
   }
 
   /** Saves the run unless this device already saved exactly this state. */
   async sichern(s: GameSession, pack: string, leben: number | null, version: string, keepalive = false): Promise<SichernErgebnis> {
     const level = s.level.id;
     if (s.won || s.steps <= 0) return 'fehler'; // nothing to continue
-    if (this.zuletzt.get(level) === this.key(s)) return 'ok';
     const key = this.key(s);
-    const stand = await standAus(s, pack, leben, version);
-    if (!stand || stand.daten.length > MAX_DATA) return 'zu-lang';
-    const r = await this.api.sichern(level, stand, keepalive && stand.daten.length < KEEPALIVE_MAX);
-    if (!r.ok) return r.status === 0 ? 'offline' : r.status === 413 ? 'zu-lang' : 'fehler';
-    this.zuletzt.set(level, key);
-    this.staende.set(level, { level, pack, steps: stand.steps, gespeichert: r.daten.gespeichert });
-    return 'ok';
+    if (this.zuletzt.get(level) === key) return 'ok';
+    // the same state already on its way (pause and page hidden at once): one request
+    const running = this.unterwegs.get(level);
+    if (running?.key === key) return running.ergebnis;
+    const ergebnis = (async (): Promise<SichernErgebnis> => {
+      const stand = await standAus(s, pack, leben, version);
+      if (!stand || stand.daten.length > MAX_DATA) return 'zu-lang';
+      const r = await this.api.sichern(level, stand, keepalive && stand.daten.length < KEEPALIVE_MAX);
+      if (!r.ok) return r.status === 0 ? 'offline' : r.status === 413 ? 'zu-lang' : 'fehler';
+      this.zuletzt.set(level, key);
+      this.staende.set(level, { level, pack, steps: stand.steps, gespeichert: r.daten.gespeichert });
+      return 'ok';
+    })();
+    this.unterwegs.set(level, { key, ergebnis });
+    try {
+      return await ergebnis;
+    } finally {
+      if (this.unterwegs.get(level)?.ergebnis === ergebnis) this.unterwegs.delete(level);
+    }
   }
 
   /** A restored run counts as saved as it is. */
@@ -248,13 +269,13 @@ export class CloudSpeicher {
     try {
       return { ok: true, stand: r.daten, eingabe: await eingabeAus(r.daten) };
     } catch {
+      this.passtNicht(level);
       return { ok: false, grund: 'Der Spielstand ist beschädigt.' };
     }
   }
 
-  /** After a win: the save of this level goes (only if there is one). */
+  /** After a win: the save of this level goes (also one this device has not heard of yet). */
   async loeschen(level: string): Promise<void> {
-    if (!this.staende.has(level) && !this.zuletzt.has(level)) return;
     this.staende.delete(level);
     this.zuletzt.delete(level);
     await this.api.loeschen(level);
@@ -264,6 +285,7 @@ export class CloudSpeicher {
   vergessen(): void {
     this.staende.clear();
     this.zuletzt.clear();
+    this.unpassend.clear();
     this.listeZeit = 0;
   }
 }
