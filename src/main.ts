@@ -123,7 +123,8 @@ function buildRenderer(): void {
   } else view.build(level, style as ThemeId, board.states);
 }
 
-async function loadLevel(pack: string, i: number, seed?: number): Promise<void> {
+/** `carry`: extra lives to start with (Wettkampf spectators replaying a restart); default: the carried ones. */
+async function loadLevel(pack: string, i: number, seed?: number, carry?: number | null): Promise<void> {
   try {
     packList = await packLevels(pack);
     packName = await packTitle(pack);
@@ -145,7 +146,7 @@ async function loadLevel(pack: string, i: number, seed?: number): Promise<void> 
   physics?.dispose();
   const { startLua } = await import('./lua');
   let s: GameSession | null = null;
-  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? aufgabenSeed(pack, packList[i]) ?? randomSeed(), carryLives, ui: sessionUI(() => s), startLua });
+  const created = await GameSession.create(packList[i], { seed: seed ?? zz.seed(pack, i) ?? aufgabenSeed(pack, packList[i]) ?? randomSeed(), carryLives: carry !== undefined ? carry : carryLives, ui: sessionUI(() => s), startLua });
   const ghost = await geistFuer(packList[i], startLua);
   if (token !== loadToken) return; // another level was loaded meanwhile
   geist = ghost;

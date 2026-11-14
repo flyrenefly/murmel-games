@@ -17,6 +17,8 @@ import { pushStore } from './webpush-db.ts';
 import { mailerFromEnv } from './mail.ts';
 import { migrate } from './migrate.ts';
 import { RoomHub, turnUrls } from './raum.ts';
+import { WettkampfHub } from './wettkampf.ts';
+import { wettkampfRechner } from './wettkampf-rechner.ts';
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL fehlt');
@@ -39,6 +41,8 @@ const turnSecret = process.env.TURN_SECRET;
 const raum = new RoomHub({ turn: turnSecret ? { secret: turnSecret, urls: turnUrls(process.env) } : null });
 const gameDir = process.env.GAME_DIR || '/game';
 const checker = gameChecker(gameDir);
+// Wettkampf (docs/SPEC-wettkampf.md): the referee plays the races with the same game code; WETTKAMPF=aus turns it off
+const wettkampf = process.env.WETTKAMPF === 'aus' ? undefined : new WettkampfHub({ rechner: wettkampfRechner(gameDir) });
 // Erinnerung per Web Push (docs/SPEC-webpush.md): VAPID keys from /opt/murmel/.env; without them it is off
 const vapid = vapidFromEnv(process.env);
 const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
@@ -51,6 +55,7 @@ const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS
   playerLevels: { store: playerLevelStore(sql) },
   sync: syncStore(sql),
   raum,
+  wettkampf,
   logger: true,
 });
 if (!checker.available()) app.log.warn({ gameDir }, 'no game code: leaderboard submissions are off');

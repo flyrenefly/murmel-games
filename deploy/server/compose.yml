@@ -60,6 +60,8 @@ services:
       TURN_SECRET: ${TURN_SECRET:-}
       TURN_URLS: ${TURN_URLS:-}
       SITE_ADDRESS: ${SITE_ADDRESS}
+      # Wettkampf (docs/SPEC-wettkampf.md): "aus" schaltet /api/wettkampf ab; sonst rechnet der Spielcode unter /game mit
+      WETTKAMPF: ${WETTKAMPF:-}
       # Erinnerung an das Tageslevel (docs/SPEC-webpush.md): VAPID-Schlüssel; fehlt einer, ist Web Push aus
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}

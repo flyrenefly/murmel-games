@@ -11,13 +11,14 @@ import { KoopGast, KoopGastgeber } from './koop';
 import type { Aktion, Art, Nachricht } from './nachrichten';
 import { Rennen } from './rennen';
 import { FEHLERTEXT, type Status, Verbindung } from './verbindung';
+import { wettkampf } from './wettkampf-ui';
 
 /** What the module needs from the game (src/main.ts). */
 export interface SpielHost {
   session(): GameSession | null;
   packId(): string;
   levelIndex(): number;
-  loadLevel(pack: string, index: number, seed?: number): Promise<void>;
+  loadLevel(pack: string, index: number, seed?: number, carry?: number | null): Promise<void>;
   /** Like the "Spielen" button: pointer lock or tilt, then play. */
   spielen(): void;
   /** The level from the start (the R key). */
@@ -62,6 +63,16 @@ export function zuZweit(host: SpielHost) {
   let vorlauf = 0;
   let letzteSchritte = 0;
   const gastgeber = () => v?.rolle === 'gastgeber';
+  /** Wettkampf (docs/SPEC-wettkampf.md): set while its level list is open, called with the choice. */
+  let nachWahl: { fertig: (w: { pack: string; index: number }) => void; zurueck: () => void } | null = null;
+  const wk = wettkampf({
+    ...host,
+    levelAuswahl(fertig, zurueck) {
+      art = 'rennen';
+      nachWahl = { fertig, zurueck };
+      void paketWaehlen();
+    },
+  });
 
   // ---------- status mark ----------
   const marke = document.createElement('div');
@@ -110,6 +121,8 @@ export function zuZweit(host: SpielHost) {
 
   /** Menu entry „Zu zweit“. */
   function menue(): void {
+    nachWahl = null;
+    if (wk.aktiv()) return wk.menue();
     if (v && v.status !== 'getrennt') return verbindungsMenue();
     host.showOverlay(
       'Zu zweit',
@@ -117,6 +130,7 @@ export function zuZweit(host: SpielHost) {
       [
         ['Raum öffnen', artWaehlen],
         ['Beitreten', beitretenForm],
+        ['Wettkampf (bis 4)', wk.menue],
         ['Zurück', host.showStart],
       ],
     );
@@ -140,7 +154,7 @@ export function zuZweit(host: SpielHost) {
   }
 
   async function paketWaehlen(): Promise<void> {
-    host.showOverlay(art === 'gemeinsam' ? 'Zwei-Murmel-Levels' : 'Level fürs Wettrennen', art === 'gemeinsam' ? 'Levelpaket wählen' : '', [['Zurück', artWaehlen]]);
+    host.showOverlay(art === 'gemeinsam' ? 'Zwei-Murmel-Levels' : 'Level fürs Wettrennen', art === 'gemeinsam' ? 'Levelpaket wählen' : '', [['Zurück', nachWahl ? nachWahl.zurueck : artWaehlen]]);
     const packs = await listPacks();
     liste(
       packs.map((p) => [`<span>›</span><b>${esc(p.title)}</b>`, () => void levelWaehlen(p.id)]),
@@ -154,10 +168,18 @@ export function zuZweit(host: SpielHost) {
     if (!levels) return liste([], 'Das Paket ließ sich nicht laden.');
     liste(
       levels.flatMap((l, i): [string, () => void][] =>
-        art === 'gemeinsam' && !istKoopLevel(l) ? [] : [[`<span>${i + 1}</span>${esc(l.title)}`, () => ((wahl = { pack, index: i }), void raumOeffnen())]],
+        art === 'gemeinsam' && !istKoopLevel(l) ? [] : [[`<span>${i + 1}</span>${esc(l.title)}`, () => gewaehlt({ pack, index: i })]],
       ),
       'In diesem Paket gibt es kein Level für zwei Murmeln.',
     );
+  }
+
+  function gewaehlt(w: { pack: string; index: number }): void {
+    const n = nachWahl;
+    nachWahl = null;
+    if (n) return n.fertig(w);
+    wahl = w;
+    void raumOeffnen();
   }
 
   function beitretenForm(): void {
@@ -442,10 +464,12 @@ export function zuZweit(host: SpielHost) {
     menue,
     /** Start value for a level load: the race keeps its seed when a player starts over. */
     seed(pack: string, index: number): number | undefined {
+      if (wk.aktiv()) return wk.seed(pack, index);
       return phase !== 'aus' && art === 'rennen' && runde && runde.pack === pack && runde.index === index ? runde.seed : undefined;
     },
     /** After every level load. */
     levelGeladen(s: GameSession): void {
+      if (wk.levelGeladen(s)) return;
       if (eigenesLaden || phase === 'aus' || !v) return;
       if (art === 'rennen') {
         // starting over in a race: same level and seed, the clock keeps running, the partner keeps going
@@ -469,6 +493,7 @@ export function zuZweit(host: SpielHost) {
      * null and main.ts steps as usual.
      */
     rechnen(s: GameSession, acc: number, control: StepControl): number | null {
+      if (wk.aktiv()) return wk.rechnen(s, acc, control);
       if (rennen && phase !== 'aus') {
         const m = s.physics.marbles[s.physics.current];
         letzteSchritte = s.steps;
@@ -489,10 +514,12 @@ export function zuZweit(host: SpielHost) {
     },
     /** The run goes on while a player looks at a menu (the partner keeps playing). */
     laeuft(): boolean {
+      if (wk.aktiv()) return wk.laeuft();
       return phase === 'spiel' || phase === 'ende';
     },
     /** Guest in co-op: the host decides restarts, the own session does not reload by itself. */
     folgt(): boolean {
+      if (wk.aktiv()) return wk.folgt();
       return !!koopGast;
     },
     /** The marble the camera follows: the guest's white one in co-op. */
@@ -503,11 +530,13 @@ export function zuZweit(host: SpielHost) {
     },
     /** The race partner as a ghost. */
     geister(dt: number): ActorSprite[] {
+      if (wk.aktiv()) return wk.geister(dt);
       const g = phase === 'spiel' || phase === 'ende' ? rennen?.geistSprite(dt) : null;
       return g ? [g] : [];
     },
     /** A win: true = handled here (no single-player progress, own overlay). */
     gewonnen(s: GameSession): boolean {
+      if (wk.gewonnen(s)) return true;
       if (phase === 'aus' || !v) return false;
       rennen?.imZiel(vorlauf + s.steps);
       gewonnenZeigen(s);

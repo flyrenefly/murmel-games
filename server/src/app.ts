@@ -8,6 +8,7 @@ import { type PushStore, pushRoutes, startPushTimer, type Vapid } from './webpus
 import { type AccountOptions, accountRoutes } from './konten.ts';
 import { type SolvabilityStore, solvabilityRoutes } from './loesbarkeit.ts';
 import { raumRoutes, type RoomHub } from './raum.ts';
+import { type WettkampfHub, wettkampfRoutes } from './wettkampf.ts';
 import { type PlayerLevelStore, playerFileFor, playerLevelRoutes } from './spielerlevels.ts';
 import { type SyncStore, syncRoutes } from './sync.ts';
 import { berlinDay, LEVEL_ID, type StatEvent, type Statistics, type StatType, tokenMatches } from './stats.ts';
@@ -34,6 +35,8 @@ export interface AppOptions {
   solvability?: SolvabilityStore;
   /** Zu zweit spielen: rooms and the WebRTC handshake (WebSocket /api/raum); without it the route is absent. */
   raum?: RoomHub;
+  /** Wettkampf: races with the server as referee (WebSocket /api/wettkampf); without it the route is absent. */
+  wettkampf?: WettkampfHub;
   /** Fortschritt auf allen Geräten (needs accounts); without it the routes are absent. */
   sync?: SyncStore;
   /** Bestenliste: rankings and the replay of submitted runs (needs accounts). */
@@ -67,7 +70,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, raum, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -111,6 +114,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   if (accounts && leaderboard && ghosts) ghostRoutes(app, { store: ghosts, leaderboard: leaderboard.store, accounts: accounts.store, origin: accounts.origin, now: clock });
   if (accounts && sync) syncRoutes(app, { store: sync, origin: accounts.origin, now: accounts.now ?? now });
   if (raum) raumRoutes(app, raum);
+  if (wettkampf) wettkampfRoutes(app, wettkampf);
 
   // Statistics: the game reports level starts and solves (navigator.sendBeacon, no cookie).
   app.post<{ Body: { type: StatType; level: string } }>(
