@@ -3,6 +3,7 @@
 
 import './editor.css';
 import { drawEntry, drawLevel, ED_STYLES, type EdStyle, loadImages, symbolColor } from './draw';
+import { enigmaStart, ENIGMA_ACCEPT, type EnigmaHost, importEnigma, isEnigmaFile } from '../enigma-upload/dialog';
 import { History } from './history';
 import { decodeLevel, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
@@ -691,10 +692,12 @@ function exportFile(): void {
 function importFile(): void {
   const pick = document.createElement('input');
   pick.type = 'file';
-  pick.accept = '.json,application/json';
+  pick.accept = `.json,application/json,${ENIGMA_ACCEPT}`;
   pick.addEventListener('change', async () => {
     const f = pick.files?.[0];
     if (!f) return;
+    // Enigma levels (docs/SPEC-enigma-upload.md): converted in the browser, then opened like an import
+    if (isEnigmaFile(f.name)) return void importEnigma(enigmaHost, f);
     try {
       if (f.size > 1_000_000) throw new LinkError('Die Datei ist zu groß.');
       let raw: unknown;
@@ -714,6 +717,8 @@ function importFile(): void {
   });
   pick.click();
 }
+
+const enigmaHost: EnigmaHost = { showDialog, close, note, toast, open: (l) => open(newId(), l) };
 
 // ---------- playtest and share ----------
 const gameUrl = () => new URL('./', location.href);
@@ -824,5 +829,10 @@ async function start(): Promise<void> {
   const stored = cid ? loadStored(cid) : null;
   if (cid && stored) open(cid, stored, History.from(loadHistory(cid)));
   else open(newId(), newLevel());
+  // spielerlevels.html → „Enigma-Level umwandeln“
+  if (location.hash === '#enigma') {
+    window.history.replaceState(null, '', location.pathname + location.search);
+    enigmaStart(enigmaHost);
+  }
 }
 void start();
