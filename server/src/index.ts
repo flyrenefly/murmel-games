@@ -13,6 +13,7 @@ import { accountStore } from './konten-db.ts';
 import { solvabilityStore } from './loesbarkeit-db.ts';
 import { playerLevelStore } from './spielerlevels-db.ts';
 import { syncStore } from './sync-db.ts';
+import { cloudSaveStore } from './cloudstand-db.ts';
 import { vapidFromEnv } from './webpush.ts';
 import { pushStore } from './webpush-db.ts';
 import { mailerFromEnv } from './mail.ts';
@@ -55,6 +56,7 @@ const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS
   // Spieler-Levels: same checker process and queue as the leaderboard
   playerLevels: { store: playerLevelStore(sql) },
   sync: syncStore(sql),
+  cloudSaves: { store: cloudSaveStore(sql), timer: true },
   raum,
   wettkampf,
   logger: true,
