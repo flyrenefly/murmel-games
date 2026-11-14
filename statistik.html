@@ -148,6 +148,13 @@
       td:not(:first-child) {
         text-align: right;
       }
+      h3 {
+        font-size: 17px;
+        margin: 20px 0 8px;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
       #status:empty {
         display: none;
       }
@@ -199,6 +206,35 @@
         </table>
       </section>
 
+      <section id="auswertung" hidden>
+        <h2>Wo Spieler hängen</h2>
+        <p class="muted">Beendete Läufe je Level: gelöst, neu gestartet oder abgebrochen (anderes Level, Seite verlassen). Ohne Kennung gezählt.</p>
+        <h3>Schwerste Levels</h3>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Level</th>
+                <th scope="col">Paket</th>
+                <th scope="col" title="Beendete Läufe">Läufe</th>
+                <th scope="col" title="Gelöste ÷ beendete Läufe">Gelöst</th>
+                <th scope="col" title="Neustarts je Lauf">Neustarts</th>
+                <th scope="col">Abbrüche</th>
+                <th scope="col" title="Abstürze je Lauf">Abstürze</th>
+                <th scope="col" title="Häufigste Spielzeit gelöster Läufe">Zeit</th>
+              </tr>
+            </thead>
+            <tbody id="a-levels"></tbody>
+          </table>
+        </div>
+        <h3>Abbruchquote je Paket</h3>
+        <table>
+          <thead>
+            <tr><th scope="col">Paket</th><th scope="col">Läufe</th><th scope="col">Gelöst</th><th scope="col" title="Abbrüche ÷ beendete Läufe">Abbruch</th></tr>
+          </thead>
+          <tbody id="a-packs"></tbody>
+        </table>
+      </section>
       <section id="konten" hidden>
         <h2>Konten</h2>
         <div class="tiles">

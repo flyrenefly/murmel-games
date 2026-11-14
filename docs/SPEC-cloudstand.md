@@ -122,6 +122,10 @@ Schritt gespielt ist. Sonst geschieht nichts – wie heute.
 - **Nach dem Sieg** wird der Stand dieses Levels gelöscht.
 - **Fortschritt:** Ein fortgesetzter Lauf zählt keinen zweiten Versuch; Spielzeit und Abstürze zählen nur
   den Teil, der auf diesem Gerät gespielt wurde.
+- **Auswertung** (`docs/SPEC-auswertung.md`): Ein fortgesetzter Lauf wird nicht noch einmal gezählt. Sein
+  Start ist auf dem ersten Gerät gezählt, beim Verlassen von Level oder Seite dort auch ein Abbruch; ein
+  zweiter Start würde einen Lauf doppelt zählen. Folge: Ein später fortgesetzt gelöster Lauf erscheint in
+  der Auswertung als Abbruch (selten, nur mit Konto).
 - Ohne `CompressionStream` (sehr alte Browser) gibt es keinen Cloudstand; alles andere bleibt.
 
 ## Tests

@@ -1,4 +1,5 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
+import { type AuswertungStore, auswertungRoutes } from './auswertung.ts';
 import { type Checker, type LeaderboardStore, leaderboardRoutes } from './bestenliste.ts';
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type GhostStore, ghostRoutes } from './geister.ts';
@@ -55,6 +56,8 @@ export interface AppOptions {
   push?: { store: PushStore; vapid: Vapid; timer?: boolean };
   /** Spieler-Levels (needs accounts): upload, release, list, ratings. Uses the leaderboard's checker and queue. */
   playerLevels?: { store: PlayerLevelStore; checker?: Checker };
+  /** Auswertung (docs/SPEC-auswertung.md): daily counters of ended runs per level; without it the routes are absent. */
+  auswertung?: AuswertungStore;
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
   statsToken?: string;
   /** Clock (tests). */
@@ -73,7 +76,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, auswertung, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -150,9 +153,11 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
     },
   );
 
-  // Reading the statistics needs the token from /opt/murmel/.env (STATS_TOKEN).
+  // Reading the statistics needs the token from /opt/murmel/.env (STATS_TOKEN) or a signed-in admin.
+  const mayRead = (req: FastifyRequest) => req.account?.role === 'admin' || tokenMatches(statsToken, req.headers.authorization);
+  if (auswertung) auswertungRoutes(app, { store: auswertung, mayRead, now });
   app.get<{ Querystring: { tage?: string } }>('/api/statistik', async (req, reply) => {
-    if (req.account?.role !== 'admin' && !tokenMatches(statsToken, req.headers.authorization)) return reply.code(401).send({ error: 'nicht berechtigt' });
+    if (!mayRead(req)) return reply.code(401).send({ error: 'nicht berechtigt' });
     const days = Math.min(Math.max(Math.trunc(Number(req.query.tage ?? 30)) || 30, 1), 366);
     const since = berlinDay(new Date(now().getTime() - (days - 1) * 86_400_000));
     reply.header('Cache-Control', 'no-store');
