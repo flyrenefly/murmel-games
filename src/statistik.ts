@@ -1,6 +1,8 @@
 // statistik.html: reads GET /api/statistik with the token from /opt/murmel/.env (STATS_TOKEN), or as a
 // signed-in admin without it; admins also see the section „Konten“ (GET /api/admin/konten).
 // The token stays in this browser only (sessionStorage) and is sent as a bearer header.
+// The section „Wo Spieler hängen“ reads GET /api/statistik/auswertung with the same rights.
+import { type LevelCounts, paketQuoten, schwersteLevels } from './auswertung-seite';
 interface StatDay {
   day: string;
   players: number;
@@ -152,13 +154,69 @@ async function loadAccounts(count: number): Promise<void> {
   }
 }
 
+const pct = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 });
+const dec = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+
+/** One table row of texts; or one muted row spanning the table when there is nothing to show. */
+function rows(body: HTMLElement, cols: number, lines: string[][], empty: string): void {
+  body.replaceChildren(
+    ...lines.map((cells) => {
+      const tr = document.createElement('tr');
+      for (const text of cells) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        tr.append(td);
+      }
+      return tr;
+    }),
+  );
+  if (!lines.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = cols;
+    td.className = 'muted';
+    td.textContent = empty;
+    tr.append(td);
+    body.append(tr);
+  }
+}
+
+/** Section „Wo Spieler hängen“ (docs/SPEC-auswertung.md): hidden unless the server answers. */
+async function loadAuswertung(count: number, headers: Record<string, string>): Promise<void> {
+  const section = $<HTMLElement>('auswertung');
+  try {
+    const res = await fetch(`/api/statistik/auswertung?tage=${count}`, { headers, cache: 'no-store' });
+    if (!res.ok) {
+      section.hidden = true;
+      return;
+    }
+    const { levels } = (await res.json()) as { levels: LevelCounts[] };
+    rows(
+      $('a-levels'),
+      8,
+      schwersteLevels(levels).map((l) => [l.level, l.pack, fmt.format(l.laeufe), pct.format(l.geloest), dec.format(l.neustartsJeLauf), fmt.format(l.abbrueche), dec.format(l.abstuerzeJeLauf), l.typischeZeit ?? '–']),
+      'Noch kein Level mit mindestens 5 beendeten Läufen in diesem Zeitraum.',
+    );
+    rows(
+      $('a-packs'),
+      4,
+      paketQuoten(levels).map((p) => [p.pack, fmt.format(p.laeufe), pct.format(p.geloest), pct.format(p.abbruch)]),
+      'In diesem Zeitraum wurde noch kein Lauf beendet.',
+    );
+    section.hidden = false;
+  } catch {
+    section.hidden = true;
+  }
+}
+
 /** Loads the statistics: with the token from the form, or without it for a signed-in admin (cookie). */
 async function load(quiet = false): Promise<void> {
   const token = tokenInput.value.trim();
   const count = Number(range.value);
   if (!quiet) statusEl.textContent = 'Lade …';
   try {
-    const res = await fetch(`/api/statistik?tage=${count}`, { headers: token ? { authorization: `Bearer ${token}` } : {}, cache: 'no-store' });
+    const headers: Record<string, string> = token ? { authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`/api/statistik?tage=${count}`, { headers, cache: 'no-store' });
     if (res.status === 401) {
       statusEl.textContent = token
         ? 'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.'
@@ -171,6 +229,7 @@ async function load(quiet = false): Promise<void> {
     // signed in as admin: no key needed
     if (!token) form.hidden = true;
     void loadAccounts(count);
+    void loadAuswertung(count, headers);
     if (token) {
       try {
         sessionStorage.setItem('murmel-stats-token', token);
