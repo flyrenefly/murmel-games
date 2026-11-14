@@ -86,7 +86,7 @@ genauen Zeiten: Wer die Bestenliste will, meldet sich dort an.
 Ein Puffer im `localStorage` würde auch Zähler über das Schließen der Seite hinaus retten, ist aber ein
 Speichern auf dem Endgerät, das für das Spielen nicht nötig ist (§ 25 TDDDG, wohl Einwilligung nötig).
 Deshalb **nur im Arbeitsspeicher**: Wird die Seite offline geschlossen, gehen diese Zähler verloren.
-(Offene Frage an den Nutzer, siehe unten.) Der Schalter selbst liegt als Einstellung im `localStorage`
+(Von der Koordination am 14.11.2026 so bestätigt; liegt dem Nutzer vor.) Der Schalter selbst liegt als Einstellung im `localStorage`
 (`murmel.statistikAus`), wie Stil und Steuerung.
 
 ## API
@@ -158,8 +158,9 @@ Ergänzung am Ende des Abschnitts „Spielstatistik“ in `datenschutz.html`:
 > Sie offline gespielt haben, sobald wieder eine Verbindung besteht. Der Server addiert sie zu Tageszahlen
 > je Level; IP-Adressen, Prüfwerte oder einzelne Spielverläufe werden dafür nicht gespeichert, ein Konto
 > wird nicht zugeordnet. Die Tageszahlen löschen wir nach 365 Tagen. Unter „Fortschritt“ können Sie die
-> gesamte Spielstatistik mit dem Schalter „Anonyme Statistik senden“ abschalten; „Do Not Track“ und
-> „Global Privacy Control“ wirken ebenso. Rechtsgrundlage ist unser berechtigtes Interesse an der
+> gesamte Spielstatistik mit dem Schalter „Anonyme Statistik senden“ abschalten; diese Entscheidung
+> speichert das Spiel im Browser-Speicher (`localStorage`), weil es sie sonst nicht beachten könnte –
+> gespeichert wird nur, dass der Schalter aus ist. „Do Not Track“ und „Global Privacy Control“ wirken ebenso. Rechtsgrundlage ist unser berechtigtes Interesse an der
 > Verbesserung des Spiels (Art. 6 Abs. 1 lit. f DSGVO).
 
 Außerdem muss der bestehende Satz „Wenn Ihr Browser „Do Not Track“ … sendet, meldet das Spiel nichts.“
@@ -176,8 +177,8 @@ um den neuen Schalter ergänzt werden (im Entwurf oben enthalten).
 
 ## Offene Fragen
 
-1. **Offline-Puffer im Browser-Speicher** (überlebt Schließen der Seite) nur mit Einwilligung – lohnt sich
-   das? Gebaut ist die Variante ohne Speicher.
+1. **Offline-Puffer im Browser-Speicher** (überlebt Schließen der Seite) nur mit Einwilligung – von der
+   Koordination verworfen (14.11.2026), Variante ohne Speicher bestätigt; liegt dem Nutzer vor.
 2. **Missbrauch:** Wie `/api/event` ist der Schreibweg offen; Obergrenzen je Sendung begrenzen Ausreißer,
    gezielte Verfälschung verhindert das nicht. Bei Bedarf ein Anfragelimit je IP nur im Arbeitsspeicher
    (wie `limit.ts`).
