@@ -177,7 +177,7 @@ describe('CloudSpeicher', () => {
     const s = await GameSession.create(file, { seed: 3, startLua });
 
     await cloud.loeschen(file.id);
-    expect(calls).toEqual([], 'ohne Stand keine Anfrage');
+    expect(calls, 'ohne Stand keine Anfrage').toEqual([]);
     play(s, 0, 500);
     expect(await cloud.sichern(s, 'enigma_i', null, 'v', true)).toBe('ok');
     expect(await cloud.sichern(s, 'enigma_i', null, 'v')).toBe('ok');
