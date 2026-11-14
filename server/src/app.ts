@@ -11,6 +11,7 @@ import { raumRoutes, type RoomHub } from './raum.ts';
 import { type WettkampfHub, wettkampfRoutes } from './wettkampf.ts';
 import { type PlayerLevelStore, playerFileFor, playerLevelRoutes } from './spielerlevels.ts';
 import { type SyncStore, syncRoutes } from './sync.ts';
+import { type CloudSaveStore, cloudSaveRoutes } from './cloudstand.ts';
 import { berlinDay, LEVEL_ID, type StatEvent, type Statistics, type StatType, tokenMatches } from './stats.ts';
 
 /** What the API needs from the database (the real one: src/db.ts). */
@@ -39,6 +40,8 @@ export interface AppOptions {
   wettkampf?: WettkampfHub;
   /** Fortschritt auf allen Geräten (needs accounts); without it the routes are absent. */
   sync?: SyncStore;
+  /** Spielstand in der Cloud (needs accounts); `timer` drops old saves once a day (index.ts; off in tests). */
+  cloudSaves?: { store: CloudSaveStore; timer?: boolean };
   /** Bestenliste: rankings and the replay of submitted runs (needs accounts). */
   leaderboard?: { store: LeaderboardStore; checker: Checker };
   /** Geister: leaderboard runs as ghosts, with the players' consent (needs accounts and leaderboard). */
@@ -70,7 +73,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
 
@@ -113,6 +116,7 @@ export function buildApp({ version, db, statsToken, accounts, forum, solvability
   }
   if (accounts && leaderboard && ghosts) ghostRoutes(app, { store: ghosts, leaderboard: leaderboard.store, accounts: accounts.store, origin: accounts.origin, now: clock });
   if (accounts && sync) syncRoutes(app, { store: sync, origin: accounts.origin, now: accounts.now ?? now });
+  if (accounts && cloudSaves) cloudSaveRoutes(app, { store: cloudSaves.store, timer: cloudSaves.timer, origin: accounts.origin, now: clock });
   if (raum) raumRoutes(app, raum);
   if (wettkampf) wettkampfRoutes(app, wettkampf);
 
