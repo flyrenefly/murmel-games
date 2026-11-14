@@ -197,8 +197,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       } else if (kind.startsWith('st_')) {
         removeStone(x, y);
         if (look === 'oxyd') {
-          // OxydStone: a closed stone of the flavor (default "a"); named ones receive messages
-          w.addOxyd?.(x, y, decl.flavor ?? 'a');
+          // OxydStone: a closed stone of the flavor (st_oxyd_d: d, default "a"); named ones receive messages
+          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a');
           if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
         } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {
@@ -238,6 +238,17 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       const inv = objects.inventories[Number(player)] ?? objects.inventory;
       if (inv.length < 13) inv.unshift(String(kind));
       w.redraw();
+    },
+    /**
+     * wo:add({"ot_timer"/"ot_counter", …}) during play: a gadget without a cell, as the importer
+     * makes them from the init (TimerGadget ON unless state is OFF; CounterGadget state 0).
+     */
+    addObject(kind, attrs) {
+      if (kind !== 'ot_timer' && kind !== 'ot_counter') throw new Error(`Murmel kann ${kind} nicht hinzufügen`);
+      const decl = { ...attrs };
+      if (decl.name) decl.name = uniqueName(decl.name);
+      decl.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
+      objects.create(kind, -1, -1, decl);
     },
     /** wo:add({"ot_rubberband", anchor1 = a marble, anchor2 = a stone or marble}) during play. */
     addRubber(a1, a2, strength, length, threshold, min, max) {
