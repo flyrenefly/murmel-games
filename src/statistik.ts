@@ -160,7 +160,9 @@ async function load(quiet = false): Promise<void> {
   try {
     const res = await fetch(`/api/statistik?tage=${count}`, { headers: token ? { authorization: `Bearer ${token}` } : {}, cache: 'no-store' });
     if (res.status === 401) {
-      if (!quiet) statusEl.textContent = 'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.';
+      statusEl.textContent = token
+        ? 'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.'
+        : 'Nicht als Admin angemeldet. Melde dich im Spiel unter „Konto“ an, dann erscheint die Statistik ohne Schlüssel – oder gib den Zugangsschlüssel ein.';
       result.hidden = true;
       return;
     }
