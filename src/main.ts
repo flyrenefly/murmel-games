@@ -445,6 +445,7 @@ function showStart(): void {
     ['Levels', showLevels],
     ['Zu zweit', zz.menue],
     ...linkButtons(),
+    ...adminButtons(),
     [kontoLabel(), openKonto],
   ]);
   addSteeringChoice(showStart);
@@ -707,10 +708,16 @@ function showPause(): void {
     ...tipps.menuePunkt(),
     ['Zu zweit', zz.menue],
     ...linkButtons(),
+    ...adminButtons(),
     [kontoLabel(), openKonto],
     ['Fehler melden', reportBug],
   ]);
   addSteeringChoice(showPause);
+}
+
+/** Admins only: the statistics page (statistik.html; the server checks the role again). */
+function adminButtons(): [string, () => void][] {
+  return istAdmin() ? [['Statistik', () => location.assign('./statistik.html')]] : [];
 }
 
 /** Opens the forum in a new tab with a bug topic for this level and game version (src/forum-text.ts). */
@@ -1308,7 +1315,16 @@ else if (!(await openPlayerFromHash(location.hash)) && !(await openStartFromHash
 // Accounts are optional: the status call runs in the background; a mail link opens its dialog.
 void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
-  for (const b of ovButtons.querySelectorAll('button')) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
+  const buttons = [...ovButtons.querySelectorAll('button')];
+  for (const b of buttons) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
+  // the menu was drawn before the account was known: add the admin button next to „Konto“
+  const konto = buttons.find((b) => b.textContent === kontoLabel());
+  if (istAdmin() && konto && !buttons.some((b) => b.textContent === 'Statistik')) {
+    const stat = konto.cloneNode() as HTMLButtonElement;
+    stat.textContent = 'Statistik';
+    stat.addEventListener('click', () => location.assign('./statistik.html'));
+    konto.before(stat);
+  }
 });
 if (mailLinkPruefen(kontoHost) || anbieterRueckkehrPruefen(kontoHost)) {
   /* a mail link or the way back from Google, Apple, GitHub opened its dialog */
