@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { buildApp } from './app.ts';
+import { auswertungStore } from './auswertung-db.ts';
 import { leaderboardStore } from './bestenliste-db.ts';
 import { gameChecker } from './bestenliste-pruefer.ts';
 import { connect, database } from './db.ts';
@@ -45,7 +46,7 @@ const checker = gameChecker(gameDir);
 const wettkampf = process.env.WETTKAMPF === 'aus' ? undefined : new WettkampfHub({ rechner: wettkampfRechner(gameDir) });
 // Erinnerung per Web Push (docs/SPEC-webpush.md): VAPID keys from /opt/murmel/.env; without them it is off
 const vapid = vapidFromEnv(process.env);
-const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
+const app = buildApp({ version, db: database(sql), statsToken: process.env.STATS_TOKEN || undefined, auswertung: auswertungStore(sql), accounts, forum: forumStore(sql), solvability: solvabilityStore(sql),
   // the game code of the active version, read-only (compose.yml); without it submitting answers 503
   leaderboard: { store: leaderboardStore(sql), checker },
   ghosts: ghostStore(sql),
