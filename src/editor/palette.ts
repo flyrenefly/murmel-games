@@ -1,5 +1,10 @@
 // What the editor can place: a curated list of kinds Murmel really supports (src/game/objects.ts,
 // src/game/actors.ts, floors.generated.json). palette.test.ts checks every entry against the game.
+// Labels, groups and property texts stay German in the data (they are ids and dictionary keys);
+// paletteText() shows them in the page's language (src/i18n/en/editor-palette.ts).
+
+import { sprache } from '../i18n';
+import EN from '../i18n/en/editor-palette';
 
 /** Where an entry goes: cell floor, cell stone (wall, object stone or Oxyd), cell item, actor, start. */
 export type Layer = 'floor' | 'stone' | 'item' | 'actor' | 'start' | 'oxyd';
@@ -66,6 +71,9 @@ const actor = (group: string, kind: string, label: string, image = kind, badge?:
 const ORIENTATION: Prop = { key: 'orientation', label: 'Ausrichtung', options: [['3', 'Norden ↑'], ['2', 'Osten →'], ['1', 'Süden ↓'], ['0', 'Westen ←']] };
 const yesNo = (key: string, label: string): Prop => ({ key, label, options: [['false', 'nein'], ['true', 'ja']] });
 const ARROW: Record<string, string> = { n: '↑', e: '→', s: '↓', w: '←' };
+/** Labels with a direction written out, so each is a dictionary key. */
+const BOULDER: Record<string, string> = { n: 'Rollstein ↑', e: 'Rollstein →', s: 'Rollstein ↓', w: 'Rollstein ←' };
+const TURNSTILE_ARM: Record<string, string> = { n: 'Drehkreuzarm ↑', e: 'Drehkreuzarm →', s: 'Drehkreuzarm ↓', w: 'Drehkreuzarm ←' };
 
 /**
  * Slopes (SlopeFloor.cc, models-2d.lua): shape, label, direction of the force and the subimage in the
@@ -221,7 +229,7 @@ export const PALETTE: PaletteEntry[] = [
   stone('Schalter und Türen', 'st_coinslot', 'Münzschlitz', 'st_coinslot', { role: 'source' }),
   { ...item('it_sensor', 'Sensor', 'it_sensor', 'Schalter und Türen'), role: 'source' },
   ...(['black', 'white'] as const).map((c) =>
-    stone('Schalter und Türen', `st_passage_${c}`, `Farbdurchlass ${c === 'black' ? 'schwarz' : 'weiß'}`, `st_passage_${c}_square`, {
+    stone('Schalter und Türen', `st_passage_${c}`, c === 'black' ? 'Farbdurchlass schwarz' : 'Farbdurchlass weiß', `st_passage_${c}_square`, {
       props: [{ key: 'flavor', label: 'Form', options: [['square', 'Quadrat'], ['slash', 'Schräg /'], ['backslash', 'Schräg \\'], ['cross', 'Kreuz'], ['frame', 'Rahmen']] }],
     }),
   ),
@@ -240,11 +248,11 @@ export const PALETTE: PaletteEntry[] = [
   stone('Mechanik', 'st_stoneimpulse_movable', 'Impulsstein, schiebbar', 'st_stoneimpulse', { badge: '⇄' }),
   stone('Mechanik', 'st_actorimpulse', 'Flipper'),
   stone('Mechanik', 'st_actorimpulse_invisible', 'Flipper, unsichtbar', 'st_actorimpulse', { badge: '◌' }),
-  ...(['n', 'e', 's', 'w'] as const).map((d, i) => stone('Mechanik', `st_boulder_${d}`, `Rollstein ${ARROW[d]}`, 'st_boulder', { frame: [i, 0] })),
+  ...(['n', 'e', 's', 'w'] as const).map((d, i) => stone('Mechanik', `st_boulder_${d}`, BOULDER[d], 'st_boulder', { frame: [i, 0] })),
   stone('Mechanik', 'st_rotator_cw', 'Drehstein ↻', 'st_rotator_cw'),
   stone('Mechanik', 'st_rotator_ccw', 'Drehstein ↺', 'st_rotator_ccw'),
   stone('Mechanik', 'st_turnstile', 'Drehkreuz', 'st_turnstile'),
-  ...(['n', 'e', 's', 'w'] as const).map((d) => stone('Mechanik', `st_turnstilearm_${d}`, `Drehkreuzarm ${ARROW[d]}`, 'st_puzzle_blue', { frame: [0, 0], badge: ARROW[d] })),
+  ...(['n', 'e', 's', 'w'] as const).map((d) => stone('Mechanik', `st_turnstilearm_${d}`, TURNSTILE_ARM[d], 'st_puzzle_blue', { frame: [0, 0], badge: ARROW[d] })),
   stone('Mechanik', 'st_pull', 'Zugstein'),
   stone('Mechanik', 'st_quake', 'Bebenstein'),
   stone('Mechanik', 'st_fake_quake', 'Bebenstein, harmlos', 'st_quake', { badge: '✓' }),
@@ -319,14 +327,20 @@ export const OXYD_COLORS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
 /** Oxyd looks (flavor). */
 export const OXYD_FLAVORS = ['a', 'b', 'c', 'd'] as const;
 
-/** Entries matching a search text (label, kind or group, case-insensitive). */
+/** A palette text (label, group, property, option) in the page's language; unknown texts stay as they are. */
+export function paletteText(de: string): string {
+  return sprache() === 'en' ? ((EN as Record<string, string>)[de] ?? de) : de;
+}
+
+/** Entries matching a search text (label or group in German or the page's language, or kind; case-insensitive). */
 export function searchPalette(text: string): PaletteEntry[] {
   const q = text.trim().toLowerCase();
   if (!q) return PALETTE;
-  return PALETTE.filter((e) => e.label.toLowerCase().includes(q) || e.kind.includes(q) || e.group.toLowerCase().includes(q));
+  const has = (s: string) => s.toLowerCase().includes(q) || paletteText(s).toLowerCase().includes(q);
+  return PALETTE.filter((e) => has(e.label) || e.kind.includes(q) || has(e.group));
 }
 
-/** Action names a source may use (SUPPORTED_ACTIONS), with German labels. */
+/** Action names a source may use (SUPPORTED_ACTIONS), with German labels (shown via paletteText). */
 export const ACTIONS: [string, string][] = [
   ['', 'umschalten'],
   ['open', 'öffnen'],

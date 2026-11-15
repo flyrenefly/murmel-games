@@ -13,6 +13,7 @@ import { type WettkampfHub, wettkampfRoutes } from './wettkampf.ts';
 import { type PlayerLevelStore, playerFileFor, playerLevelRoutes } from './spielerlevels.ts';
 import { type SyncStore, syncRoutes } from './sync.ts';
 import { type CloudSaveStore, cloudSaveRoutes } from './cloudstand.ts';
+import { fehlerUebersetzen } from './sprache.ts';
 import { berlinDay, LEVEL_ID, type StatEvent, type Statistics, type StatType, tokenMatches } from './stats.ts';
 
 /** What the API needs from the database (the real one: src/db.ts). */
@@ -79,6 +80,8 @@ export const LOG_OPTIONS = {
 export function buildApp({ version, db, statsToken, auswertung, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
+  // English requests get English error texts (docs/SPEC-englisch.md); before all routes, so every answer passes it.
+  fehlerUebersetzen(app);
 
   // Operations: is the API up and does the database answer? Details stay in the server log.
   app.get('/api/health', async (req, reply) => {

@@ -1,7 +1,11 @@
 // The connection of two players (docs/SPEC-mehrspieler.md 5.1): a room on our server
 // (WebSocket /api/raum) hands over the WebRTC handshake; the data channel then runs only through
 // our TURN server (iceTransportPolicy 'relay'), so neither browser learns the other's IP address.
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/mehrspieler';
 import { encode, type Nachricht, parseNachricht } from './nachrichten';
+
+const t = woerterbuch(EN);
 
 export type Rolle = 'gastgeber' | 'gast';
 export type Status = 'getrennt' | 'raum' | 'verbinde' | 'verbunden' | 'abgebrochen';
@@ -19,13 +23,13 @@ type ServerNachricht =
 type Signal = { typ: 'angebot' | 'antwort'; sdp: string } | { typ: 'ice'; c: RTCIceCandidateInit } | { typ: 'neu' };
 
 export const FEHLERTEXT: Record<string, string> = {
-  'code-unbekannt': 'Diesen Code gibt es nicht. Prüfe die vier Ziffern.',
-  'raum-voll': 'In diesem Raum spielen schon zwei.',
-  'zu-viele-raeume': 'Du hast schon mehrere Räume offen. Schließe einen und versuche es erneut.',
-  'zu-viele-versuche': 'Zu viele Versuche. Warte ein paar Minuten.',
-  verfallen: 'Der Raum ist nach 30 Minuten ohne Aktivität verfallen.',
-  'kein-turn': 'Der Verbindungsserver ist gerade nicht erreichbar.',
-  'kein-server': 'Keine Verbindung zum Server. Bist du online?',
+  'code-unbekannt': t('Diesen Code gibt es nicht. Prüfe die vier Ziffern.'),
+  'raum-voll': t('In diesem Raum spielen schon zwei.'),
+  'zu-viele-raeume': t('Du hast schon mehrere Räume offen. Schließe einen und versuche es erneut.'),
+  'zu-viele-versuche': t('Zu viele Versuche. Warte ein paar Minuten.'),
+  verfallen: t('Der Raum ist nach 30 Minuten ohne Aktivität verfallen.'),
+  'kein-turn': t('Der Verbindungsserver ist gerade nicht erreichbar.'),
+  'kein-server': t('Keine Verbindung zum Server. Bist du online?'),
 };
 
 export interface VerbindungOptionen {

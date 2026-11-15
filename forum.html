@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b0b12" media="(prefers-color-scheme: dark)" />
     <title>Forum – Murmel</title>
-    <meta name="description" content="Forum zu Murmel: Fehler melden, Verbesserungen vorschlagen, Fragen stellen und über Levels reden." />
+    <meta name="description" data-i18n-attr="content" content="Forum zu Murmel: Fehler melden, Verbesserungen vorschlagen, Fragen stellen und über Levels reden." />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <style>
       :root {
@@ -90,8 +90,28 @@
         text-decoration: none;
         font-weight: 600;
       }
+      /* language switch (src/i18n.ts sprachKnopf): last item in the bar, a 44 px target */
+      .top > a:first-child {
+        margin-right: auto;
+      }
+      .top {
+        flex-wrap: wrap;
+      }
+      .top .sprache {
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--accent);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
       #ich {
         display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         align-items: center;
         gap: 8px;
         color: var(--muted);
@@ -456,15 +476,15 @@
   </head>
   <body>
     <nav class="top" aria-label="Forum">
-      <a href="./">‹ Zum Spiel</a>
+      <a href="./" data-i18n>‹ Zum Spiel</a>
       <div id="ich" aria-live="polite"></div>
     </nav>
     <main>
       <div id="view" aria-live="polite"><div class="skeleton"></div><div class="skeleton"></div></div>
     </main>
     <footer>
-      Beiträge sind öffentlich und erscheinen mit deinem Anzeigenamen, nie mit deiner Mailadresse.
-      <a href="datenschutz.html">Datenschutz</a> · <a href="impressum.html">Impressum</a>
+      <span data-i18n>Beiträge sind öffentlich und erscheinen mit deinem Anzeigenamen, nie mit deiner Mailadresse.</span>
+      <a href="datenschutz.html" data-i18n>Datenschutz</a> · <a href="impressum.html" data-i18n>Impressum</a>
     </footer>
     <noscript><p style="padding: 16px">Das Forum braucht JavaScript.</p></noscript>
   </body>

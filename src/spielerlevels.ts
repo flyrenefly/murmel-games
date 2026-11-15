@@ -3,6 +3,10 @@
 // offline or without the API the game and the editor work as before.
 import type { LevelFile } from './game/level';
 import type { Recording } from './game/session';
+import { gebietsschema, sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/spielerlevels';
+
+const t = woerterbuch(EN);
 
 type Fetch = typeof fetch;
 const doFetch: Fetch = (...a) => fetch(...a);
@@ -11,7 +15,7 @@ export const PLAYER_PACK = 'spieler';
 export const LICENSE = 'CC-BY-SA-4.0';
 export const LICENSE_LABEL = 'CC BY-SA 4.0';
 export const isPlayerLevel = (id: string): boolean => id.startsWith('spieler:');
-export const NICHT_ERREICHBAR = 'Spieler-Levels sind gerade nicht erreichbar.';
+export const NICHT_ERREICHBAR = t('Spieler-Levels sind gerade nicht erreichbar.');
 
 // ---------- storage (localStorage, never required) ----------
 
@@ -79,12 +83,12 @@ export async function loadPlayerLevel(hash: string, fetchFn: Fetch = doFetch): P
   const cached = () => read<LevelFile[]>(CACHE, []).find((f) => f.id === `spieler:${n}`) ?? null;
   let res: Response;
   try {
-    res = await fetchFn(`/api/spielerlevels/${n}/datei`, { credentials: 'same-origin', cache: 'no-store' });
+    res = await fetchFn(`/api/spielerlevels/${n}/datei`, { credentials: 'same-origin', cache: 'no-store', headers: sprachKopf() });
   } catch {
     const c = cached();
-    return c ? { ok: true, file: c, offline: true } : { ok: false, error: `${NICHT_ERREICHBAR} Dieses Level war noch nicht auf diesem Gerät.` };
+    return c ? { ok: true, file: c, offline: true } : { ok: false, error: t('Spieler-Levels sind gerade nicht erreichbar. Dieses Level war noch nicht auf diesem Gerät.') };
   }
-  if (res.status === 404) return { ok: false, error: 'Dieses Spieler-Level gibt es nicht (mehr) oder es wartet noch auf Freigabe.' };
+  if (res.status === 404) return { ok: false, error: t('Dieses Spieler-Level gibt es nicht (mehr) oder es wartet noch auf Freigabe.') };
   let file: LevelFile | null = null;
   try {
     file = res.ok ? ((await res.json()) as LevelFile) : null;
@@ -130,7 +134,7 @@ export async function hochladen(req: UploadRequest, fetchFn: Fetch = doFetch): P
     res = await fetchFn('/api/spielerlevels', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...sprachKopf(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...req, lizenz: LICENSE }),
     });
   } catch {
@@ -138,8 +142,8 @@ export async function hochladen(req: UploadRequest, fetchFn: Fetch = doFetch): P
   }
   const data = await json(res);
   if (res.status === 202 && typeof data?.id === 'string') return { id: data.id };
-  if (res.status === 401) return { fehler: 'Bitte melde dich zuerst an.' };
-  if (res.status === 413) return { fehler: 'Das Level oder die Lösung ist zu groß.' };
+  if (res.status === 401) return { fehler: t('Bitte melde dich zuerst an.') };
+  if (res.status === 413) return { fehler: t('Das Level oder die Lösung ist zu groß.') };
   const fehler = typeof data?.error === 'string' && res.status !== 404 ? data.error : NICHT_ERREICHBAR;
   return data?.name === true ? { fehler, name: true } : { fehler };
 }
@@ -155,17 +159,17 @@ export async function pruefungAbwarten(
     await pause(i < 5 ? 400 : 1500);
     let res: Response;
     try {
-      res = await fetchFn(`/api/spielerlevels/pruefung/${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store' });
+      res = await fetchFn(`/api/spielerlevels/pruefung/${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store', headers: sprachKopf() });
     } catch {
       continue;
     }
     const data = await json(res);
-    if (res.status === 404) return { status: 'abgelehnt', grund: typeof data?.error === 'string' ? data.error : 'Prüfung abgebrochen.' };
+    if (res.status === 404) return { status: 'abgelehnt', grund: typeof data?.error === 'string' ? data.error : t('Prüfung abgebrochen.') };
     if (!res.ok || !data) continue;
     if (data.status === 'angenommen' && typeof data.level === 'number') return { status: 'angenommen', level: data.level };
-    if (data.status === 'abgelehnt') return { status: 'abgelehnt', grund: String(data.grund ?? 'Abgelehnt.') };
+    if (data.status === 'abgelehnt') return { status: 'abgelehnt', grund: String(data.grund ?? t('Abgelehnt.')) };
   }
-  return { status: 'abgelehnt', grund: 'Die Prüfung dauert ungewöhnlich lange. Unter „Meine Levels“ siehst du später, ob es geklappt hat.' };
+  return { status: 'abgelehnt', grund: t('Die Prüfung dauert ungewöhnlich lange. Unter „Meine Levels“ siehst du später, ob es geklappt hat.') };
 }
 
 // ---------- texts ----------
@@ -173,15 +177,16 @@ export async function pruefungAbwarten(
 export type LevelStatus = 'wartet' | 'frei' | 'abgelehnt' | 'zurueckgezogen' | 'ersetzt';
 
 export const STATUS_TEXT: Record<LevelStatus, string> = {
-  wartet: 'Wartet auf Freigabe',
-  frei: 'Veröffentlicht',
-  abgelehnt: 'Abgelehnt',
-  zurueckgezogen: 'Zurückgezogen',
-  ersetzt: 'Durch neue Version ersetzt',
+  wartet: t('Wartet auf Freigabe'),
+  frei: t('Veröffentlicht'),
+  abgelehnt: t('Abgelehnt'),
+  zurueckgezogen: t('Zurückgezogen'),
+  ersetzt: t('Durch neue Version ersetzt'),
 };
 
 /** "4,5 ★ (12 Bewertungen)" or "Noch nicht bewertet". */
 export function ratingText(stars: number | null, votes: number): string {
-  if (stars === null || votes === 0) return 'Noch nicht bewertet';
-  return `${stars.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ★ (${votes === 1 ? '1 Bewertung' : `${votes} Bewertungen`})`;
+  if (stars === null || votes === 0) return t('Noch nicht bewertet');
+  const s = stars.toLocaleString(gebietsschema(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return votes === 1 ? t('{sterne} ★ (1 Bewertung)', { sterne: s }) : t('{sterne} ★ ({n} Bewertungen)', { sterne: s, n: votes });
 }

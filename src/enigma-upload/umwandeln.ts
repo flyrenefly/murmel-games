@@ -7,6 +7,10 @@ import type { Fengari } from '../lua/runtime';
 import { type EnigmaDatei, leseDatei, UploadError } from './datei';
 import { type Umgewandelt, zuEditorLevel } from './editorlevel';
 import { baueWelt } from './welt';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/enigma-upload';
+
+const t = woerterbuch(EN);
 
 export interface Ergebnis extends Umgewandelt {
   /** Author and licence as the file names them (for the rights confirmation). */
@@ -17,6 +21,6 @@ export async function wandleUm(name: string, text: string, f: Fengari, shim: str
   const datei: EnigmaDatei = leseDatei(name, text);
   const welt = await baueWelt(datei.code, f, shim, datei.libs.map((l) => LIBS[l]));
   if (welt.w < MIN_W || welt.h < MIN_H || welt.w > MAX_W || welt.h > MAX_H)
-    throw new UploadError(`Das Level ist ${welt.w}×${welt.h} groß; der Editor nimmt ${MIN_W}×${MIN_H} bis ${MAX_W}×${MAX_H}.`);
+    throw new UploadError(t('Das Level ist {w}×{h} groß; der Editor nimmt {minW}×{minH} bis {maxW}×{maxH}.', { w: welt.w, h: welt.h, minW: MIN_W, minH: MIN_H, maxW: MAX_W, maxH: MAX_H }));
   return { ...zuEditorLevel(datei, welt), herkunft: { autor: datei.author, lizenz: datei.license } };
 }

@@ -58,6 +58,22 @@
         min-height: 44px;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+      }
+      /* language switch (src/i18n.ts sprachKnopf): a 44 px target at the end of the top row */
+      .sprache {
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--accent);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
       }
       h1 {
         font-size: 28px;
@@ -207,21 +223,21 @@
   </head>
   <body>
     <main>
-      <nav><a href="./">← Zurück zum Spiel</a></nav>
-      <h1 id="title">Rangliste</h1>
-      <p id="sub" class="muted">Zeiten je Level, jede durch Nachspielen auf dem Server geprüft.</p>
-      <p id="status" role="status" aria-live="polite">Lade …</p>
+      <nav><a href="./" data-i18n>← Zurück zum Spiel</a></nav>
+      <h1 id="title" data-i18n>Rangliste</h1>
+      <p id="sub" class="muted" data-i18n>Zeiten je Level, jede durch Nachspielen auf dem Server geprüft.</p>
+      <p id="status" role="status" aria-live="polite" data-i18n>Lade …</p>
       <section id="me" class="me" hidden></section>
       <div id="list" class="card" hidden>
         <table>
-          <caption class="muted" style="position: absolute; left: -9999px">Die besten 100 Zeiten</caption>
+          <caption class="muted" style="position: absolute; left: -9999px" data-i18n>Die besten 100 Zeiten</caption>
           <thead>
-            <tr><th scope="col">Platz</th><th scope="col">Name</th><th scope="col" class="num">Zeit</th><th scope="col" class="date">Datum</th><th scope="col"><span style="position: absolute; left: -9999px">Aktionen</span></th></tr>
+            <tr><th scope="col" data-i18n>Platz</th><th scope="col" data-i18n>Name</th><th scope="col" class="num" data-i18n>Zeit</th><th scope="col" class="date" data-i18n>Datum</th><th scope="col"><span style="position: absolute; left: -9999px" data-i18n>Aktionen</span></th></tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <footer class="muted">Es zählen nur Läufe angemeldeter Spieler; bei gleicher Zeit liegt vorn, wer sie zuerst geschafft hat. Den Anzeigenamen wählst du im <a href="forum.html">Forum</a>.</footer>
+      <footer class="muted" data-i18n-html>Es zählen nur Läufe angemeldeter Spieler; bei gleicher Zeit liegt vorn, wer sie zuerst geschafft hat. Den Anzeigenamen wählst du im <a href="forum.html">Forum</a>.</footer>
     </main>
   </body>
 </html>

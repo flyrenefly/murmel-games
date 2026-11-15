@@ -2,6 +2,10 @@
 // the run's recording, catching up with the clock, the other racers as ghosts, the standings.
 import type { Entry } from '../game/recording';
 import type { ActorSprite } from '../render/classic';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/mehrspieler';
+
+const t = woerterbuch(EN);
 
 /** Physics step in ms (PHYSICS_DT); the server judges by the same clock. */
 export const SCHRITT_MS = 2.5;
@@ -189,14 +193,14 @@ export class Geister {
 }
 
 export const GRUND_TEXT: Record<string, string> = {
-  aufgegeben: 'aufgegeben',
-  weg: 'hat den Raum verlassen',
-  abweichung: 'vom Server nicht bestätigt',
-  'zu-schnell': 'zu schnell (Uhr)',
-  'zu-langsam': 'zu lange weg',
-  zeit: 'Zeit abgelaufen',
-  ungueltig: 'ungültige Eingaben',
-  fehler: 'Fehler beim Rechnen',
+  aufgegeben: t('aufgegeben'),
+  weg: t('hat den Raum verlassen'),
+  abweichung: t('vom Server nicht bestätigt'),
+  'zu-schnell': t('zu schnell (Uhr)'),
+  'zu-langsam': t('zu lange weg'),
+  zeit: t('Zeit abgelaufen'),
+  ungueltig: t('ungültige Eingaben'),
+  fehler: t('Fehler beim Rechnen'),
 };
 
 export interface RanglistenZeile {

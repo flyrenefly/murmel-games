@@ -4,6 +4,10 @@ import { LIBS } from '../lua/index';
 import type { Fengari } from '../lua/runtime';
 import { UploadError } from './datei';
 import { baueWelt, buildShim } from './welt';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 const bau = async (code: string, libs: string[] = []) => baueWelt(code, (await import('fengari')) as unknown as Fengari, shim, libs.map((l) => LIBS[l]));
 const kind = (w: Awaited<ReturnType<typeof bau>>, x: number, y: number, l: 'fl' | 'st' | 'it') => w.cells[y * w.w + x][l]?.k;

@@ -2,6 +2,14 @@
 // reporting; "Meine Levels" for authors; "Freigabe" for admins. Uses the game's session cookie.
 import { PHYSICS_DT } from './game/physics';
 import { LICENSE_LABEL, type LevelStatus, ratingText, STATUS_TEXT } from './spielerlevels';
+import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/spielerlevels-seite';
+import EN_SEITE from './i18n/en/seite-spielerlevels';
+
+// `t` is a level text in this file, so the translator is `tr`.
+const tr = woerterbuch(EN);
+seiteUebersetzen(EN_SEITE);
+document.querySelector('nav.back .back-rechts')?.append(sprachKnopf('sprache'));
 
 interface Card {
   id: number;
@@ -48,11 +56,13 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLEl
   return e;
 }
 
-const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+const datum = (iso: string) => new Date(iso).toLocaleDateString(gebietsschema(), { day: 'numeric', month: 'short', year: 'numeric' });
+/** Decimal separator of the page language (1:23,4 or 1:23.4). */
+const KOMMA = (0.5).toLocaleString(gebietsschema()).charAt(1);
 function zeit(steps: number): string {
   const t = Math.round(steps * PHYSICS_DT * 10);
   const s = Math.floor(t / 10);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')},${t % 10}`;
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}${KOMMA}${t % 10}`;
 }
 const status = (text: string) => ($('status').textContent = text);
 
@@ -62,14 +72,15 @@ async function api<T>(method: string, url: string, body?: unknown): Promise<{ ok
       method,
       credentials: 'same-origin',
       cache: 'no-store',
-      ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      headers: body === undefined ? sprachKopf() : { ...sprachKopf(), 'Content-Type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const data = res.status === 204 ? null : await res.json().catch(() => null);
     if (res.ok) return { ok: true, data: data as T };
     const msg = (data as { error?: string } | null)?.error;
-    return { ok: false, status: res.status, fehler: res.status === 401 ? 'Bitte melde dich zuerst im Spiel an.' : msg && res.status !== 404 ? msg : res.status === 404 ? msg ?? 'Nicht gefunden.' : 'Gerade nicht erreichbar.' };
+    return { ok: false, status: res.status, fehler: res.status === 401 ? tr('Bitte melde dich zuerst im Spiel an.') : msg && res.status !== 404 ? msg : res.status === 404 ? msg ?? tr('Nicht gefunden.') : tr('Gerade nicht erreichbar.') };
   } catch {
-    return { ok: false, status: 0, fehler: 'Spieler-Levels sind gerade nicht erreichbar. Spielen geht trotzdem.' };
+    return { ok: false, status: 0, fehler: tr('Spieler-Levels sind gerade nicht erreichbar. Spielen geht trotzdem.') };
   }
 }
 
@@ -80,13 +91,13 @@ function cardBody(c: Card, h: 'h2' | 'h3' = 'h2'): Node[] {
   const stars = el('span', { className: c.stimmen ? 'stars' : '' }, ratingText(c.sterne, c.stimmen));
   return [
     el(h, { textContent: c.titel }),
-    el('p', { className: 'meta' }, `von ${c.autor} · ${c.breite}×${c.hoehe} · ${datum(c.datum)} · `, stars),
-    ...(c.vorlage ? [el('p', { className: 'meta vorlage', textContent: `Vorlage: ${c.vorlage}` })] : []),
+    el('p', { className: 'meta' }, tr('von {autor} · {breite}×{hoehe} · {datum} · ', { autor: c.autor, breite: c.breite, hoehe: c.hoehe, datum: datum(c.datum) }), stars),
+    ...(c.vorlage ? [el('p', { className: 'meta vorlage', textContent: tr('Vorlage: {vorlage}', { vorlage: c.vorlage }) })] : []),
     ...(c.beschreibung ? [el('p', { className: 'desc', textContent: c.beschreibung })] : []),
   ];
 }
 
-const licence = () => el('p', { className: 'lic' }, `Lizenz ${LICENSE_LABEL} – spielen, verändern und weitergeben mit Nennung des Autors.`);
+const licence = () => el('p', { className: 'lic' }, tr('Lizenz {lizenz} – spielen, verändern und weitergeben mit Nennung des Autors.', { lizenz: LICENSE_LABEL }));
 
 // ---------- Entdecken ----------
 
@@ -95,8 +106,8 @@ function publicCard(c: Card): HTMLLIElement {
   const li = el('li', { className: 'card', id: `level-${c.id}` });
   const panel = el('div', { className: 'panel', hidden: true });
   panel.setAttribute('aria-live', 'polite');
-  const rateB = el('button', { type: 'button', textContent: 'Bewerten' });
-  const reportB = el('button', { type: 'button', textContent: 'Melden' });
+  const rateB = el('button', { type: 'button', textContent: tr('Bewerten') });
+  const reportB = el('button', { type: 'button', textContent: tr('Melden') });
   rateB.setAttribute('aria-expanded', 'false');
   reportB.setAttribute('aria-expanded', 'false');
   const toggle = (b: HTMLButtonElement, fill: () => Promise<void> | void) => {
@@ -109,31 +120,31 @@ function publicCard(c: Card): HTMLLIElement {
   };
   rateB.addEventListener('click', () => toggle(rateB, () => ratePanel(c, panel, li)));
   reportB.addEventListener('click', () => toggle(reportB, () => reportPanel(c, panel, li)));
-  li.append(...cardBody(c), licence(), el('div', { className: 'actions' }, el('a', { className: 'button primary', href: playUrl(c.id), textContent: 'Spielen' }), rateB, reportB), panel);
+  li.append(...cardBody(c), licence(), el('div', { className: 'actions' }, el('a', { className: 'button primary', href: playUrl(c.id), textContent: tr('Spielen') }), rateB, reportB), panel);
   return li;
 }
 
 async function ratePanel(c: Card, panel: HTMLElement, li: HTMLElement): Promise<void> {
-  panel.replaceChildren(el('p', { className: 'muted', textContent: 'Lade …' }));
-  if (!ich.angemeldet) return void panel.replaceChildren(el('p', {}, 'Bewerten kann, wer angemeldet ist und das Level gelöst hat. ', el('a', { href: './#konto', textContent: 'Anmelden' })));
+  panel.replaceChildren(el('p', { className: 'muted', textContent: tr('Lade …') }));
+  if (!ich.angemeldet) return void panel.replaceChildren(el('p', {}, tr('Bewerten kann, wer angemeldet ist und das Level gelöst hat.'), ' ', el('a', { href: './#konto', textContent: tr('Anmelden') })));
   const d = await api<Detail>('GET', `/api/spielerlevels/${c.id}`);
   if (!d.ok) return void panel.replaceChildren(el('p', { textContent: d.fehler }));
-  if (d.data.eigen) return void panel.replaceChildren(el('p', { textContent: 'Eigene Levels kannst du nicht bewerten.' }));
+  if (d.data.eigen) return void panel.replaceChildren(el('p', { textContent: tr('Eigene Levels kannst du nicht bewerten.') }));
   if (!d.data.darfBewerten) {
-    return void panel.replaceChildren(el('p', {}, 'Bewerten kannst du, sobald du das Level angemeldet gelöst hast (dein Lauf kommt dabei in die Bestenliste). ', el('a', { href: playUrl(c.id), textContent: 'Jetzt spielen' })));
+    return void panel.replaceChildren(el('p', {}, tr('Bewerten kannst du, sobald du das Level angemeldet gelöst hast (dein Lauf kommt dabei in die Bestenliste).'), ' ', el('a', { href: playUrl(c.id), textContent: tr('Jetzt spielen') })));
   }
   const row = el('div', { className: 'rate', role: 'group' });
-  row.setAttribute('aria-label', 'Sterne vergeben');
-  const msg = el('p', { className: 'muted' }, d.data.meineSterne ? `Deine Bewertung: ${d.data.meineSterne} von 5.` : 'Wie gut ist das Level? 1 = gar nicht, 5 = großartig.');
+  row.setAttribute('aria-label', tr('Sterne vergeben'));
+  const msg = el('p', { className: 'muted' }, d.data.meineSterne ? tr('Deine Bewertung: {n} von 5.', { n: d.data.meineSterne }) : tr('Wie gut ist das Level? 1 = gar nicht, 5 = großartig.'));
   for (let n = 1; n <= 5; n++) {
     const b = el('button', { type: 'button', textContent: `${n} ★` });
-    b.setAttribute('aria-label', `${n} von 5 Sternen`);
+    b.setAttribute('aria-label', tr('{n} von 5 Sternen', { n }));
     b.setAttribute('aria-pressed', String(d.data.meineSterne === n));
     b.addEventListener('click', async () => {
       const r = await api<{ sterne: number; stimmen: number; meineSterne: number }>('PUT', `/api/spielerlevels/${c.id}/bewertung`, { sterne: n });
       if (!r.ok) return void (msg.textContent = r.fehler);
       for (const x of row.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
-      msg.textContent = `Danke! Deine Bewertung: ${n} von 5.`;
+      msg.textContent = tr('Danke! Deine Bewertung: {n} von 5.', { n });
       c.sterne = r.data.sterne;
       c.stimmen = r.data.stimmen;
       li.querySelector('.meta')?.replaceWith(cardBody(c)[1]);
@@ -144,22 +155,22 @@ async function ratePanel(c: Card, panel: HTMLElement, li: HTMLElement): Promise<
 }
 
 function reportPanel(c: Card, panel: HTMLElement, li: HTMLElement): void {
-  if (!ich.angemeldet) return void panel.replaceChildren(el('p', {}, 'Melden kann, wer angemeldet ist. ', el('a', { href: './#konto', textContent: 'Anmelden' })));
-  const reason = el('textarea', { maxLength: 300, placeholder: 'Was stimmt nicht? Zum Beispiel: beleidigender Titel, kopiertes Level …' });
-  const label = el('label', { className: 'sr', htmlFor: `grund-${c.id}`, textContent: 'Grund der Meldung' });
+  if (!ich.angemeldet) return void panel.replaceChildren(el('p', {}, tr('Melden kann, wer angemeldet ist.'), ' ', el('a', { href: './#konto', textContent: tr('Anmelden') })));
+  const reason = el('textarea', { maxLength: 300, placeholder: tr('Was stimmt nicht? Zum Beispiel: beleidigender Titel, kopiertes Level …') });
+  const label = el('label', { className: 'sr', htmlFor: `grund-${c.id}`, textContent: tr('Grund der Meldung') });
   reason.id = `grund-${c.id}`;
-  const msg = el('p', { className: 'muted', textContent: 'Ein gemeldetes Level ist sofort für alle ausgeblendet, bis ein Admin entscheidet.' });
-  const send = el('button', { type: 'button', className: 'danger', textContent: 'Melden' });
+  const msg = el('p', { className: 'muted', textContent: tr('Ein gemeldetes Level ist sofort für alle ausgeblendet, bis ein Admin entscheidet.') });
+  const send = el('button', { type: 'button', className: 'danger', textContent: tr('Melden') });
   send.addEventListener('click', async () => {
     if (reason.value.trim().length < 3) {
-      msg.textContent = 'Bitte nenne kurz den Grund (mindestens 3 Zeichen).';
+      msg.textContent = tr('Bitte nenne kurz den Grund (mindestens 3 Zeichen).');
       return reason.focus();
     }
     send.disabled = true;
     const r = await api('POST', `/api/spielerlevels/${c.id}/meldung`, { grund: reason.value });
     send.disabled = false;
     if (!r.ok) return void (msg.textContent = r.fehler);
-    li.replaceChildren(el('p', { className: 'muted', textContent: `„${c.titel}“ ist gemeldet und ausgeblendet. Danke!` }));
+    li.replaceChildren(el('p', { className: 'muted', textContent: tr('„{titel}“ ist gemeldet und ausgeblendet. Danke!', { titel: c.titel }) }));
   });
   panel.replaceChildren(msg, label, reason, el('div', { className: 'actions' }, send));
   reason.focus();
@@ -174,7 +185,7 @@ async function loadList(reset = true): Promise<void> {
   const items = r.data.levels.map(publicCard);
   const list = $('liste');
   if (reset) {
-    const empty = el('li', { className: 'card empty muted' }, q ? `Kein Level passt zu „${q}“.` : 'Noch keine Spieler-Levels freigegeben. ', ...(q ? [] : [el('a', { href: 'editor.html', textContent: 'Bau das erste!' })]));
+    const empty = el('li', { className: 'card empty muted' }, q ? tr('Kein Level passt zu „{suche}“.', { suche: q }) : tr('Noch keine Spieler-Levels freigegeben.') + ' ', ...(q ? [] : [el('a', { href: 'editor.html', textContent: tr('Bau das erste!') })]));
     list.replaceChildren(...(items.length ? items : [empty]));
   } else list.append(...items);
   ($('mehr') as HTMLButtonElement).hidden = !r.data.mehr;
@@ -187,7 +198,7 @@ async function showTarget(id: number): Promise<void> {
   let li = document.getElementById(`level-${id}`) as HTMLLIElement | null;
   if (!li) {
     const d = await api<Detail>('GET', `/api/spielerlevels/${id}`);
-    if (!d.ok) return void status('Dieses Level ist nicht (mehr) in der Liste – vielleicht wurde es gemeldet oder zurückgezogen.');
+    if (!d.ok) return void status(tr('Dieses Level ist nicht (mehr) in der Liste – vielleicht wurde es gemeldet oder zurückgezogen.'));
     li = publicCard(d.data);
     $('liste').prepend(li);
   }
@@ -200,10 +211,10 @@ async function showTarget(id: number): Promise<void> {
 
 function ownCard(c: FullCard): HTMLLIElement {
   const li = el('li', { className: 'card' }, ...cardBody(c), el('span', { className: `chip ${c.status}`, textContent: STATUS_TEXT[c.status] }));
-  if (c.status === 'abgelehnt' && c.grund) li.append(el('p', { className: 'reason' }, el('strong', { textContent: 'Grund: ' }), c.grund));
-  if (c.meldungen > 0) li.append(el('p', { className: 'reason', textContent: 'Gemeldet – ausgeblendet, bis ein Admin entscheidet.' }));
-  li.append(el('p', { className: 'lic', textContent: `Deine Lösung: ${zeit(c.zeit)}` }));
-  const actions = el('div', { className: 'actions' }, el('a', { className: 'button primary', href: playUrl(c.id), textContent: 'Spielen' }));
+  if (c.status === 'abgelehnt' && c.grund) li.append(el('p', { className: 'reason' }, el('strong', { textContent: tr('Grund:') + ' ' }), c.grund));
+  if (c.meldungen > 0) li.append(el('p', { className: 'reason', textContent: tr('Gemeldet – ausgeblendet, bis ein Admin entscheidet.') }));
+  li.append(el('p', { className: 'lic', textContent: tr('Deine Lösung: {zeit}', { zeit: zeit(c.zeit) }) }));
+  const actions = el('div', { className: 'actions' }, el('a', { className: 'button primary', href: playUrl(c.id), textContent: tr('Spielen') }));
   const act = (label: string, run: () => Promise<boolean>, cls = '') => {
     const b = el('button', { type: 'button', className: cls, textContent: label });
     b.addEventListener('click', async () => {
@@ -215,17 +226,17 @@ function ownCard(c: FullCard): HTMLLIElement {
   };
   const setStatus = (s: 'zurueckgezogen' | 'wartet') => async () => {
     const r = await api('PUT', `/api/spielerlevels/${c.id}/status`, { status: s });
-    status(r.ok ? (s === 'wartet' ? `„${c.titel}“ wartet wieder auf Freigabe.` : `„${c.titel}“ ist zurückgezogen.`) : r.fehler);
+    status(r.ok ? (s === 'wartet' ? tr('„{titel}“ wartet wieder auf Freigabe.', { titel: c.titel }) : tr('„{titel}“ ist zurückgezogen.', { titel: c.titel })) : r.fehler);
     return r.ok;
   };
-  if (c.status === 'wartet' || c.status === 'frei') act('Zurückziehen', setStatus('zurueckgezogen'));
-  if (c.status === 'zurueckgezogen') act('Wieder einreichen', setStatus('wartet'));
+  if (c.status === 'wartet' || c.status === 'frei') act(tr('Zurückziehen'), setStatus('zurueckgezogen'));
+  if (c.status === 'zurueckgezogen') act(tr('Wieder einreichen'), setStatus('wartet'));
   act(
-    'Löschen',
+    tr('Löschen'),
     async () => {
-      if (!confirm(`„${c.titel}“ endgültig löschen? Bewertungen und Bestenlisten-Einträge des Levels werden mit gelöscht.`)) return false;
+      if (!confirm(tr('„{titel}“ endgültig löschen? Bewertungen und Bestenlisten-Einträge des Levels werden mit gelöscht.', { titel: c.titel }))) return false;
       const r = await api('DELETE', `/api/spielerlevels/${c.id}`);
-      status(r.ok ? `„${c.titel}“ ist gelöscht.` : r.fehler);
+      status(r.ok ? tr('„{titel}“ ist gelöscht.', { titel: c.titel }) : r.fehler);
       return r.ok;
     },
     'danger',
@@ -237,13 +248,13 @@ function ownCard(c: FullCard): HTMLLIElement {
 async function loadMine(): Promise<void> {
   if (!ich.angemeldet) {
     status('');
-    $('meine-liste').replaceChildren(el('li', { className: 'card empty' }, 'Melde dich an, um deine Levels zu sehen. ', el('a', { href: './#konto', textContent: 'Anmelden' })));
+    $('meine-liste').replaceChildren(el('li', { className: 'card empty' }, tr('Melde dich an, um deine Levels zu sehen.'), ' ', el('a', { href: './#konto', textContent: tr('Anmelden') })));
     return;
   }
   const r = await api<{ levels: FullCard[] }>('GET', '/api/spielerlevels/meine');
   if (!r.ok) return void status(r.fehler);
-  if ($('status').textContent === 'Lade …') status('');
-  const empty = el('li', { className: 'card empty muted' }, 'Du hast noch kein Level veröffentlicht. Bau eins im ', el('a', { href: 'editor.html', textContent: 'Editor' }), ', löse es im Probespiel und tippe auf „Veröffentlichen“.');
+  if ($('status').textContent === tr('Lade …')) status('');
+  const empty = el('li', { className: 'card empty muted' }, tr('Du hast noch kein Level veröffentlicht. Bau eins im'), ' ', el('a', { href: 'editor.html', textContent: tr('Editor') }), tr(', löse es im Probespiel und tippe auf „Veröffentlichen“.'));
   $('meine-liste').replaceChildren(...(r.data.levels.length ? r.data.levels.map(ownCard) : [empty]));
 }
 
@@ -251,23 +262,23 @@ async function loadMine(): Promise<void> {
 
 function reviewCard(c: FullCard, reported: boolean): HTMLLIElement {
   const li = el('li', { className: 'card' }, ...cardBody(c), el('span', { className: `chip ${c.status}`, textContent: STATUS_TEXT[c.status] }));
-  if (c.gesperrt) li.append(el('p', { className: 'reason', textContent: 'Der Autor ist gesperrt.' }));
+  if (c.gesperrt) li.append(el('p', { className: 'reason', textContent: tr('Der Autor ist gesperrt.') }));
   if (reported && c.gruende?.length) {
-    li.append(el('p', { className: 'reason' }, el('strong', { textContent: `${c.gruende.length === 1 ? 'Meldung' : `${c.gruende.length} Meldungen`}: ` }), c.gruende.join(' · ')));
+    li.append(el('p', { className: 'reason' }, el('strong', { textContent: c.gruende.length === 1 ? tr('Meldung:') + ' ' : tr('{n} Meldungen:', { n: c.gruende.length }) + ' ' }), c.gruende.join(' · ')));
   }
-  li.append(el('p', { className: 'lic', textContent: `Lösung des Autors: ${zeit(c.zeit)} · eingereicht ${datum(c.erstellt ?? c.datum)}` }));
+  li.append(el('p', { className: 'lic', textContent: tr('Lösung des Autors: {zeit} · eingereicht {datum}', { zeit: zeit(c.zeit), datum: datum(c.erstellt ?? c.datum) }) }));
   // everything the level will show as text, so it can be judged before release (always as text, never HTML)
   if (c.texte?.length) {
-    const list = el('ol', { className: 'texte' }, ...c.texte.map((t) => el('li', {}, el('span', { className: 'pos', textContent: `Feld ${t.x + 1}, ${t.y + 1}: ` }), t.text ? el('span', { textContent: t.text }) : el('em', { textContent: 'ohne Text' }))));
-    li.append(el('details', { className: 'texte', open: true }, el('summary', { textContent: `Texte im Level (${c.texte.length})` }), list));
+    const list = el('ol', { className: 'texte' }, ...c.texte.map((t) => el('li', {}, el('span', { className: 'pos', textContent: tr('Feld {x}, {y}:', { x: t.x + 1, y: t.y + 1 }) + ' ' }), t.text ? el('span', { textContent: t.text }) : el('em', { textContent: tr('ohne Text') }))));
+    li.append(el('details', { className: 'texte', open: true }, el('summary', { textContent: tr('Texte im Level ({n})', { n: c.texte.length }) }), list));
   }
   const panel = el('div', { className: 'panel', hidden: true });
-  const actions = el('div', { className: 'actions' }, el('a', { className: 'button', href: playUrl(c.id), target: '_blank', rel: 'noopener', textContent: 'Probespielen' }));
+  const actions = el('div', { className: 'actions' }, el('a', { className: 'button', href: playUrl(c.id), target: '_blank', rel: 'noopener', textContent: tr('Probespielen') }));
   const run = async (b: HTMLButtonElement, fn: () => Promise<{ ok: boolean; fehler?: string }>, done: string) => {
     b.disabled = true;
     const r = await fn();
     b.disabled = false;
-    status(r.ok ? done : (r.fehler ?? 'Fehler'));
+    status(r.ok ? done : (r.fehler ?? tr('Fehler')));
     if (r.ok) await loadReview();
   };
   const btn = (label: string, cls: string, on: (b: HTMLButtonElement) => void) => {
@@ -275,19 +286,19 @@ function reviewCard(c: FullCard, reported: boolean): HTMLLIElement {
     b.addEventListener('click', () => on(b));
     actions.append(b);
   };
-  if (c.status !== 'frei') btn('Freigeben', 'primary', (b) => void run(b, () => api('PUT', `/api/admin/spielerlevels/${c.id}`, { entscheidung: 'frei' }), `„${c.titel}“ ist freigegeben.`));
-  if (reported) btn('Meldungen verwerfen', '', (b) => void run(b, () => api('DELETE', `/api/admin/spielerlevels/${c.id}/meldungen`), `Meldungen zu „${c.titel}“ verworfen – wieder sichtbar.`));
-  btn('Ablehnen', 'danger', () => {
+  if (c.status !== 'frei') btn(tr('Freigeben'), 'primary', (b) => void run(b, () => api('PUT', `/api/admin/spielerlevels/${c.id}`, { entscheidung: 'frei' }), tr('„{titel}“ ist freigegeben.', { titel: c.titel })));
+  if (reported) btn(tr('Meldungen verwerfen'), '', (b) => void run(b, () => api('DELETE', `/api/admin/spielerlevels/${c.id}/meldungen`), tr('Meldungen zu „{titel}“ verworfen – wieder sichtbar.', { titel: c.titel })));
+  btn(tr('Ablehnen'), 'danger', () => {
     panel.hidden = false;
-    const reason = el('textarea', { maxLength: 300, placeholder: 'Grund für den Autor (Pflicht)' });
-    reason.setAttribute('aria-label', 'Grund der Ablehnung');
-    const send = el('button', { type: 'button', className: 'danger', textContent: 'Ablehnen' });
-    send.addEventListener('click', () => void run(send, () => api('PUT', `/api/admin/spielerlevels/${c.id}`, { entscheidung: 'abgelehnt', grund: reason.value }), `„${c.titel}“ ist abgelehnt.`));
+    const reason = el('textarea', { maxLength: 300, placeholder: tr('Grund für den Autor (Pflicht)') });
+    reason.setAttribute('aria-label', tr('Grund der Ablehnung'));
+    const send = el('button', { type: 'button', className: 'danger', textContent: tr('Ablehnen') });
+    send.addEventListener('click', () => void run(send, () => api('PUT', `/api/admin/spielerlevels/${c.id}`, { entscheidung: 'abgelehnt', grund: reason.value }), tr('„{titel}“ ist abgelehnt.', { titel: c.titel })));
     panel.replaceChildren(reason, el('div', { className: 'actions' }, send));
     reason.focus();
   });
-  btn('Löschen', 'danger', (b) => {
-    if (confirm(`„${c.titel}“ endgültig löschen?`)) void run(b, () => api('DELETE', `/api/spielerlevels/${c.id}`), `„${c.titel}“ ist gelöscht.`);
+  btn(tr('Löschen'), 'danger', (b) => {
+    if (confirm(tr('„{titel}“ endgültig löschen?', { titel: c.titel }))) void run(b, () => api('DELETE', `/api/spielerlevels/${c.id}`), tr('„{titel}“ ist gelöscht.', { titel: c.titel }));
   });
   li.append(actions, panel);
   return li;
@@ -297,14 +308,14 @@ async function loadReview(): Promise<void> {
   const r = await api<{ wartend: FullCard[]; gemeldet: FullCard[] }>('GET', '/api/admin/spielerlevels');
   if (!r.ok) return void status(r.fehler);
   const none = (t: string) => el('li', { className: 'card empty muted', textContent: t });
-  $('wartend').replaceChildren(...(r.data.wartend.length ? r.data.wartend.map((c) => reviewCard(c, false)) : [none('Nichts wartet auf Freigabe.')]));
-  $('gemeldet').replaceChildren(...(r.data.gemeldet.length ? r.data.gemeldet.map((c) => reviewCard(c, true)) : [none('Keine offenen Meldungen.')]));
+  $('wartend').replaceChildren(...(r.data.wartend.length ? r.data.wartend.map((c) => reviewCard(c, false)) : [none(tr('Nichts wartet auf Freigabe.'))]));
+  $('gemeldet').replaceChildren(...(r.data.gemeldet.length ? r.data.gemeldet.map((c) => reviewCard(c, true)) : [none(tr('Keine offenen Meldungen.'))]));
   const n = r.data.wartend.length + r.data.gemeldet.length;
   const tab = document.querySelector('[data-view="freigabe"]')!;
   tab.querySelector('.count')?.remove();
   if (n) {
     const badge = el('span', { className: 'count', textContent: String(n) });
-    badge.setAttribute('aria-label', `${n} offen`);
+    badge.setAttribute('aria-label', tr('{n} offen', { n }));
     tab.append(badge);
   }
 }
@@ -327,7 +338,7 @@ async function show(): Promise<void> {
     else a.removeAttribute('aria-current');
   }
   for (const id of ['alle', 'meine', 'freigabe'] as const) $(id).hidden = id !== v;
-  status('Lade …');
+  status(tr('Lade …'));
   if (v === 'alle') await loadList();
   else if (v === 'meine') await loadMine();
   else {

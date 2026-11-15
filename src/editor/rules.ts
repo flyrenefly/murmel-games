@@ -3,7 +3,11 @@
 import { isDeadly, parseLevel } from '../game/level';
 import { cellOf, type EditorLevel, oxydCounts, sources, targets, toLevelFile } from './model';
 import { MAX_DOCS } from './link';
-import { BY_KIND } from './palette';
+import { BY_KIND, paletteText } from './palette';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/editor';
+
+const t = woerterbuch(EN);
 
 export interface Problem {
   level: 'fehler' | 'hinweis';
@@ -60,14 +64,14 @@ export function check(l: EditorLevel): Problem[] {
   const err = (text: string, cells?: { x: number; y: number }[]) => out.push({ level: 'fehler', text, cells });
   const hint = (text: string, cells?: { x: number; y: number }[]) => out.push({ level: 'hinweis', text, cells });
 
-  if (!l.title.trim()) err('Das Level braucht einen Titel.');
+  if (!l.title.trim()) err(t('Das Level braucht einen Titel.'));
 
   // the marble
-  if (!l.start) err('Die Murmel fehlt: setze genau eine Murmel oder Start-Perle (Spezial).');
+  if (!l.start) err(t('Die Murmel fehlt: setze genau eine Murmel oder Start-Perle (Spezial).'));
   else {
     const c = cellOf(l, l.start.x, l.start.y)!;
-    if (c.s) err('Die Murmel steht auf einem Stein.', [l.start]);
-    if (isDeadly(c.f)) err('Die Murmel startet auf Abgrund oder Wasser.', [l.start]);
+    if (c.s) err(t('Die Murmel steht auf einem Stein.'), [l.start]);
+    if (isDeadly(c.f)) err(t('Die Murmel startet auf Abgrund oder Wasser.'), [l.start]);
   }
 
   // Oxyd stones
@@ -79,13 +83,13 @@ export function check(l: EditorLevel): Problem[] {
   const pearls = (l.mainPearl ? 1 : 0) + l.actors.filter((a) => /^ac_pearl_/.test(a.k)).length;
   const hollows = l.cells.filter((c) => c.i && DENTS.has(c.i)).length;
   const meditation = pearls > 0 && hollows >= pearls;
-  if (pearls > 0 && hollows > 0 && hollows < pearls) err(`Für jede Perle braucht es eine Mulde, Delle oder einen Krater (${pearls} Perlen, ${hollows} Mulden).`);
+  if (pearls > 0 && hollows > 0 && hollows < pearls) err(t('Für jede Perle braucht es eine Mulde, Delle oder einen Krater ({perlen} Perlen, {mulden} Mulden).', { perlen: pearls, mulden: hollows }));
   if (oxyds.length < 2 && !meditation)
-    err(pearls > 0 && hollows === 0 ? 'Es braucht mindestens zwei Oxyd-Steine oder für jede Perle eine Mulde (Meditation).' : 'Es braucht mindestens zwei Oxyd-Steine.', oxyds);
+    err(pearls > 0 && hollows === 0 ? t('Es braucht mindestens zwei Oxyd-Steine oder für jede Perle eine Mulde (Meditation).') : t('Es braucht mindestens zwei Oxyd-Steine.'), oxyds);
   for (const [symbol, n] of oxydCounts(l)) {
     if (n % 2 === 0) continue;
     const cells = oxyds.filter((o) => o.symbol === symbol);
-    err(symbol === '?' ? `Die Zahl der Zufallsfarben-Steine ist ungerade (${n}).` : `Oxyd-Farbe ${symbol} hat keinen Partner (${n}×).`, cells);
+    err(symbol === '?' ? t('Die Zahl der Zufallsfarben-Steine ist ungerade ({n}).', { n }) : t('Oxyd-Farbe {farbe} hat keinen Partner ({n}×).', { farbe: symbol, n }), cells);
   }
 
   // reachability (only certain cases are errors)
@@ -93,11 +97,11 @@ export function check(l: EditorLevel): Problem[] {
     const any = reachable(l, false);
     const safe = reachable(l, true);
     const lost = oxyds.filter((o) => !touched(l, any, o.x, o.y));
-    if (lost.length) err(`${lost.length === 1 ? 'Ein Oxyd-Stein ist' : `${lost.length} Oxyd-Steine sind`} von der Murmel aus nicht erreichbar.`, lost);
+    if (lost.length) err(lost.length === 1 ? t('Ein Oxyd-Stein ist von der Murmel aus nicht erreichbar.') : t('{n} Oxyd-Steine sind von der Murmel aus nicht erreichbar.', { n: lost.length }), lost);
     const risky = oxyds.filter((o) => touched(l, any, o.x, o.y) && !touched(l, safe, o.x, o.y));
-    if (risky.length) hint('Manche Oxyd-Steine sind nur über Abgrund oder Wasser erreichbar.', risky);
+    if (risky.length) hint(t('Manche Oxyd-Steine sind nur über Abgrund oder Wasser erreichbar.'), risky);
     const unreachableSources = sources(l).filter((s) => !any.has(s.y * l.width + s.x) && !touched(l, any, s.x, s.y));
-    if (unreachableSources.length) hint('Manche Schalter sind nicht erreichbar.', unreachableSources);
+    if (unreachableSources.length) hint(t('Manche Schalter sind nicht erreichbar.'), unreachableSources);
   }
 
   // documents (user decision 15.11.2026: plain text, at most MAX_DOCS per level)
@@ -105,15 +109,16 @@ export function check(l: EditorLevel): Problem[] {
   l.cells.forEach((c, i) => {
     if (c.i === 'it_document') docs.push({ x: i % l.width, y: Math.floor(i / l.width), text: c.ia?.text ?? '' });
   });
-  if (docs.length > MAX_DOCS) err(`Höchstens ${MAX_DOCS} Dokumente je Level (jetzt ${docs.length}).`, docs);
+  if (docs.length > MAX_DOCS) err(t('Höchstens {max} Dokumente je Level (jetzt {n}).', { max: MAX_DOCS, n: docs.length }), docs);
   const empty = docs.filter((d) => !d.text.trim());
-  if (empty.length) hint(`${empty.length === 1 ? 'Ein Dokument hat' : `${empty.length} Dokumente haben`} noch keinen Text.`, empty);
+  if (empty.length) hint(empty.length === 1 ? t('Ein Dokument hat noch keinen Text.') : t('{n} Dokumente haben noch keinen Text.', { n: empty.length }), empty);
 
   // connections
   const names = new Set(targets(l).map((t) => t.name));
   for (const s of sources(l)) {
-    if (!s.target) hint(`${s.entry.label} ohne Ziel.`, [s]);
-    else if (!names.has(s.target)) err(`${s.entry.label} zeigt auf „${s.target}“, das es nicht gibt.`, [s]);
+    const name = paletteText(s.entry.label);
+    if (!s.target) hint(t('{name} ohne Ziel.', { name }), [s]);
+    else if (!names.has(s.target)) err(t('{name} zeigt auf „{ziel}“, das es nicht gibt.', { name, ziel: s.target }), [s]);
   }
 
   // open border: the marble could roll out
@@ -122,12 +127,12 @@ export function check(l: EditorLevel): Problem[] {
     for (const y of [0, l.height - 1]) if (!cellOf(l, x, y)!.s && !isDeadly(cellOf(l, x, y)!.f)) open.push({ x, y });
   for (let y = 1; y < l.height - 1; y++)
     for (const x of [0, l.width - 1]) if (!cellOf(l, x, y)!.s && !isDeadly(cellOf(l, x, y)!.f)) open.push({ x, y });
-  if (open.length) hint('Der Rand ist offen: die Murmel kann aus dem Level rollen.', open);
+  if (open.length) hint(t('Der Rand ist offen: die Murmel kann aus dem Level rollen.'), open);
 
   // whatever else the game would refuse
   if (!out.some((p) => p.level === 'fehler')) {
     const msg = loadError(l);
-    if (msg) err(`Das Spiel kann das Level nicht laden: ${msg}`);
+    if (msg) err(t('Das Spiel kann das Level nicht laden: {grund}', { grund: msg }));
   }
   return out;
 }

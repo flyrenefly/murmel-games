@@ -72,8 +72,22 @@
       }
       .back-rechts {
         display: flex;
-        gap: 16px;
+        align-items: center;
+        gap: 8px 16px;
         flex-wrap: wrap;
+      }
+      /* language switch (src/i18n.ts sprachKnopf): a 44 px target at the end of the top row */
+      .sprache {
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--accent);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
       }
       h1 {
         font-size: 28px;
@@ -366,37 +380,37 @@
   </head>
   <body>
     <main>
-      <nav class="back"><a href="./">← Zurück zum Spiel</a><span class="back-rechts"><a href="editor.html">Eigenes Level bauen</a><a href="editor.html#enigma">Enigma-Level umwandeln</a></span></nav>
-      <h1>Spieler-Levels</h1>
-      <p class="muted">Von Spielern gebaut, selbst gelöst und von einem Admin freigegeben. Alle Spieler-Levels stehen unter <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" rel="license noopener" target="_blank">CC BY-SA 4.0</a>.</p>
-      <nav class="seg" id="views" aria-label="Ansicht">
-        <a href="#" data-view="alle">Entdecken</a>
-        <a href="#meine" data-view="meine">Meine Levels</a>
-        <a href="#freigabe" data-view="freigabe" hidden>Freigabe</a>
+      <nav class="back"><a href="./" data-i18n>← Zurück zum Spiel</a><span class="back-rechts"><a href="editor.html" data-i18n>Eigenes Level bauen</a><a href="editor.html#enigma" data-i18n>Enigma-Level umwandeln</a></span></nav>
+      <h1 data-i18n>Spieler-Levels</h1>
+      <p class="muted" data-i18n-html>Von Spielern gebaut, selbst gelöst und von einem Admin freigegeben. Alle Spieler-Levels stehen unter <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" rel="license noopener" target="_blank">CC BY-SA 4.0</a>.</p>
+      <nav class="seg" id="views" aria-label="Ansicht" data-i18n-attr="aria-label">
+        <a href="#" data-view="alle" data-i18n>Entdecken</a>
+        <a href="#meine" data-view="meine" data-i18n>Meine Levels</a>
+        <a href="#freigabe" data-view="freigabe" hidden data-i18n>Freigabe</a>
       </nav>
-      <p id="status" role="status" aria-live="polite">Lade …</p>
+      <p id="status" role="status" aria-live="polite" data-i18n>Lade …</p>
       <section id="alle" hidden>
         <div class="tools">
-          <label class="sr" for="suche">Suchen</label>
-          <input id="suche" type="search" placeholder="Titel, Beschreibung oder Autor" autocomplete="off" enterkeyhint="search" />
-          <div class="seg" role="group" aria-label="Sortierung">
-            <button type="button" data-sort="neu" aria-pressed="true">Neu</button>
-            <button type="button" data-sort="beliebt" aria-pressed="false">Beliebt</button>
+          <label class="sr" for="suche" data-i18n>Suchen</label>
+          <input id="suche" type="search" placeholder="Titel, Beschreibung oder Autor" data-i18n-attr="placeholder" autocomplete="off" enterkeyhint="search" />
+          <div class="seg" role="group" aria-label="Sortierung" data-i18n-attr="aria-label">
+            <button type="button" data-sort="neu" aria-pressed="true" data-i18n>Neu</button>
+            <button type="button" data-sort="beliebt" aria-pressed="false" data-i18n>Beliebt</button>
           </div>
         </div>
         <ul class="levels" id="liste"></ul>
-        <div class="more"><button type="button" id="mehr" hidden>Mehr laden</button></div>
+        <div class="more"><button type="button" id="mehr" hidden data-i18n>Mehr laden</button></div>
       </section>
       <section id="meine" hidden>
         <ul class="levels" id="meine-liste"></ul>
       </section>
       <section id="freigabe" hidden>
-        <h3 id="h-wartend">Wartet auf Freigabe</h3>
+        <h3 id="h-wartend" data-i18n>Wartet auf Freigabe</h3>
         <ul class="levels" id="wartend" aria-labelledby="h-wartend"></ul>
-        <h3 id="h-gemeldet">Gemeldet (ausgeblendet)</h3>
+        <h3 id="h-gemeldet" data-i18n>Gemeldet (ausgeblendet)</h3>
         <ul class="levels" id="gemeldet" aria-labelledby="h-gemeldet"></ul>
       </section>
-      <footer class="muted">Bewerten kann, wer ein Level angemeldet gelöst hat. Gemeldete Levels sind ausgeblendet, bis ein Admin entscheidet. Den Anzeigenamen wählst du im <a href="forum.html">Forum</a>.</footer>
+      <footer class="muted" data-i18n-html>Bewerten kann, wer ein Level angemeldet gelöst hat. Gemeldete Levels sind ausgeblendet, bis ein Admin entscheidet. Den Anzeigenamen wählst du im <a href="forum.html">Forum</a>.</footer>
     </main>
   </body>
 </html>

@@ -144,6 +144,27 @@ for (const backend of backends) {
       assert.match(again.json().error, /abgelaufen oder wurde schon benutzt/);
     });
 
+    test('Anmelde-Mail in der Sprache der Anfrage (Accept-Language); ohne Kopf deutsch', async () => {
+      const a = app();
+      const ask = (email: string, lang?: string) =>
+        a.inject({ method: 'POST', url: '/api/konto/mail', payload: { email }, headers: { origin: ORIGIN, ...(lang ? { 'accept-language': lang } : {}) } });
+      assert.equal((await ask('en@example.de', 'en-US,en;q=0.9')).statusCode, 202);
+      assert.equal(sent[0].subject, 'Your sign-in link for Murmel');
+      assert.match(sent[0].text, /^Hello,/);
+      assert.match(sent[0].text, new RegExp(`${ORIGIN}/#anmelden=`));
+      assert.match(sent[0].text, /valid for 15 minutes/);
+      assert.doesNotMatch(sent[0].text, /Minuten|Hallo/);
+      assert.equal((await ask('de@example.de', 'de-AT,en;q=0.5')).statusCode, 202);
+      assert.equal(sent[1].subject, 'Dein Anmeldelink für Murmel');
+      assert.match(sent[1].text, /15 Minuten/);
+      assert.equal((await ask('ohne@example.de')).statusCode, 202);
+      assert.equal(sent[2].subject, 'Dein Anmeldelink für Murmel');
+      // the error text follows the language too
+      const bad = await ask('kaputt', 'en');
+      assert.equal(bad.statusCode, 400);
+      assert.deepEqual(bad.json(), { error: 'Please enter a valid email address.' });
+    });
+
     test('Mail-Link verfällt nach 15 Minuten; erneutes Anmelden landet im selben Konto', async () => {
       const a = app();
       const old = await requestLink(a, 'zeit@example.de');
