@@ -605,6 +605,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
         FIRE_IMAGES.forEach((i) => imgs.add(i));
       }
       const force = floorForce(fl, slopeForce);
+      // a slope with its own strength keeps it when wo["SlopeStrength"] changes during play: not built
+      if (/^fl_slope/.test(fl.k) && fl.strength !== undefined && fl.strength !== '' && /\bfunction\b[\s\S]*wo\[\s*"SlopeStrength"\s*\]\s*=/.test(lua?.code ?? '')) reject('Gefälle mit eigener Stärke');
       if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
       // OBJBIT_MOVABLE (export $movable since enigma-web 420a9755): mirrors, rotators, death stones read
       // `movable`; a plain stone made movable is pushed like its _movable kind

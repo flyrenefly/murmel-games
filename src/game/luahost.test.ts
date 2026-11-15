@@ -103,3 +103,18 @@ end`, { st_box: 'object' });
     expect(lua.lastError).toMatch(/Draht/);
   });
 });
+
+describe('wo["SlopeStrength"] during play', () => {
+  it('scales the force of slope floors from the old strength (default 25) to the new one', async () => {
+    const { lua, level } = await withScript('function f() wo["SlopeStrength"] = 10 end');
+    const slope = level.cells[2 * level.width + 2];
+    slope.floor = 'fl_slope';
+    slope.force = [0, 25];
+    const other = level.cells[2 * level.width + 3];
+    other.force = [5, 0]; // a force floor that is no slope stays
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(slope.force).toEqual([0, 10]);
+    expect(other.force).toEqual([5, 0]);
+  });
+});

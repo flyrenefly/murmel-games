@@ -375,11 +375,17 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Spieler nichts auf – sonst läge ein abgelegter Gegenstand gleich wieder im Inventar.
 - **fl_slope_*** (`SlopeFloor.cc`): konstante Bodenkraft auf Murmeln und Akteure am Boden
   (nicht im Sprung) – Richtung aus der Form (pw/ps/pe/pn gerade, i…/o… Ecken diagonal,
-  t… Röhren), normiert, mal `strength` oder `wo["SlopeForce"]` (Standard 25); `slope` setzt
+  t… Röhren), normiert, mal `strength` oder `wo["SlopeStrength"]` (WorldProxy → server::SlopeForce,
+  Standard 25; bis 15.11.2026 las der Import fälschlich `SlopeForce` und nahm in rund 50 Levels 25;
+  API 1 `enigma.SlopeForce` wirkt auch in Enigma nicht); `slope` setzt
   die Richtung, `force_x`/`force_y` ersetzen alles. Der Konverter legt die Kraft je Feld ab
   (`force` in der Legende); jeder andere Boden mit `force_x`/`force_y` wirkt ebenso. Bild aus
   dem 6 × 4-Bogen `fl_slope` (DefSubimages spaltenweise). Wechselt der Boden zur Laufzeit,
   entfällt die Kraft. Die 3D-Ansicht zeigt Gefälle nicht.
+  `wo["SlopeStrength"] = …` während des Spiels (ab 15.11.2026) skaliert die Kraft aller Gefälle
+  vom alten auf den neuen Wert. Abweichung: Gefälle mit eigener `strength` behielte Enigma bei;
+  solche Levels lehnt der Import ab, wenn ein Rückruf die Stärke ändert. Ein Gefälle bei Stärke 0
+  kann Murmel nicht hochskalieren. Freigeschaltet: Pipes and Plumbing (andreas27_2).
 - **st_actorimpulse / _invisible** (`ActorImpulseStone.cc`): fester Stein; berührt ihn eine
   Murmel (auf ihn zu), bekommt sie einen Stoß weg von seiner Mitte: `distortedVelocity`
   (Richtung × `hit_strength` bzw. `strength`, Standard BumperForce 200, Verzerrung

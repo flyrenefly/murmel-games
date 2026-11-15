@@ -94,6 +94,15 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     attrs.delete(`c:st:${x}:${y}`);
   };
 
+  /** Slope floors scale their force (direction × SlopeForce) from the old to the new strength. */
+  const scaleSlopes = (from: number, to: number) => {
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === 0 || from === to) return;
+    for (const c of level.cells) {
+      if (!c.floor.startsWith('fl_slope') || !c.force) continue;
+      c.force = [c.force[0] * (to / from), c.force[1] * (to / from)];
+    }
+  };
+
   const host: LuaHost = {
     find(pattern) {
       const re = glob(pattern);
@@ -252,6 +261,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       return world[key] ?? null;
     },
     setWorld(key, value) {
+      // wo["SlopeStrength"] (server::SlopeForce): slopes without their own strength pull with the new force
+      if (key === 'SlopeStrength') scaleSlopes(Number(world.SlopeStrength ?? 25), Number(value ?? 25));
       if (value === null) delete world[key];
       else world[key] = value;
       if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
