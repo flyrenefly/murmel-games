@@ -2,6 +2,7 @@
 
 import { isDeadly, parseLevel } from '../game/level';
 import { cellOf, type EditorLevel, oxydCounts, sources, targets, toLevelFile } from './model';
+import { MAX_DOCS } from './link';
 import { BY_KIND } from './palette';
 
 export interface Problem {
@@ -98,6 +99,15 @@ export function check(l: EditorLevel): Problem[] {
     const unreachableSources = sources(l).filter((s) => !any.has(s.y * l.width + s.x) && !touched(l, any, s.x, s.y));
     if (unreachableSources.length) hint('Manche Schalter sind nicht erreichbar.', unreachableSources);
   }
+
+  // documents (user decision 15.11.2026: plain text, at most MAX_DOCS per level)
+  const docs: { x: number; y: number; text: string }[] = [];
+  l.cells.forEach((c, i) => {
+    if (c.i === 'it_document') docs.push({ x: i % l.width, y: Math.floor(i / l.width), text: c.ia?.text ?? '' });
+  });
+  if (docs.length > MAX_DOCS) err(`Höchstens ${MAX_DOCS} Dokumente je Level (jetzt ${docs.length}).`, docs);
+  const empty = docs.filter((d) => !d.text.trim());
+  if (empty.length) hint(`${empty.length === 1 ? 'Ein Dokument hat' : `${empty.length} Dokumente haben`} noch keinen Text.`, empty);
 
   // connections
   const names = new Set(targets(l).map((t) => t.name));

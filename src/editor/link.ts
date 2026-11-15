@@ -24,6 +24,24 @@ const CELL_KEYS = new Set(['floor', 'stone', 'symbol', 'flavor', 'start', 'force
 /** Pearls that may be the main ball of a meditation level (no black marble). */
 export const MAIN_PEARLS = new Set(['ac_pearl_white', 'ac_pearl_black']);
 
+/** Documents (it_document) per level and characters per text (user decision 15.11.2026); server/src/spielerlevels.ts checks the same. */
+export const MAX_DOCS = 10;
+export const MAX_DOC_TEXT = 300;
+
+/**
+ * A document text as plain text: control characters (C0, DEL, C1), invisible and direction-changing
+ * characters become spaces, spaces are collapsed, at most MAX_DOC_TEXT characters. The game shows it
+ * with textContent, never as HTML, so a link stays text.
+ */
+export function docText(v: unknown): string {
+  if (typeof v !== 'string') return '';
+  const clean = v
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [...clean].slice(0, MAX_DOC_TEXT).join('').trim();
+}
+
 export class LinkError extends Error {}
 
 // ---------- base64url ----------
@@ -142,6 +160,10 @@ function attrs(v: unknown, e: PaletteEntry): Record<string, string> | undefined 
   for (const [k, x] of Object.entries(v)) {
     if (typeof x !== 'string') continue;
     if (ATTRS.has(k)) out[k] = text(x, 40);
+    else if (k === 'text' && e.text) {
+      const t = docText(x);
+      if (t) out.text = t;
+    }
     else if (e.props?.some((p) => p.key === k && p.options.some(([value]) => value === x))) out[k] = x;
   }
   return Object.keys(out).length ? out : undefined;
@@ -184,6 +206,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   const objects = Array.isArray(raw.objects) ? raw.objects : raw.objects === undefined ? [] : null;
   const actors = Array.isArray(raw.actors) ? raw.actors : raw.actors === undefined ? [] : null;
   if (!objects || !actors || objects.length > MAX_OBJECTS || actors.length > MAX_ACTORS) throw new LinkError('Das Level enthält zu viele oder ungültige Objekte.');
+  if (objects.filter((o) => isObj(o) && o.k === 'it_document').length > MAX_DOCS) throw new LinkError(`Ein Level darf höchstens ${MAX_DOCS} Dokumente enthalten.`);
   const file: LevelFile = {
     id,
     title: text(raw.title) || 'Ohne Titel',
