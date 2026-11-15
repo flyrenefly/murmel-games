@@ -139,3 +139,14 @@ end`, { fl_bridge_bw: 'object', fl_fake_abyss: 'fl_fake_abyss' });
     expect(bridge.gone).toBe(true);
   });
 });
+
+describe('wo:add(YIN, {"it_document", text = …}) during play', () => {
+  it('shows the text at once (Murmel reads documents when picked up) instead of carrying it', async () => {
+    const { lua, objects } = await withScript('function f() wo:add(YIN, {"it_document", text = "failed"}) end');
+    const before = objects.inventories[0].length;
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(objects.inventories[0].length).toBe(before);
+    expect(objects.events).toContainEqual({ type: 'text', text: 'failed' });
+  });
+});

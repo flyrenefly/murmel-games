@@ -590,7 +590,8 @@ function wmethods.add(_, a, b)
       local k = b[1]
       -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
       if k == "it_pipe" and type(b.connections) == "string" and b.connections ~= "" then k = "it_pipe_" .. b.connections end
-      M.addinventory(a, k)
+      -- a document carries its text: Murmel shows it at once, as when one is picked up
+      M.addinventory(a, k, k == "it_document" and b.text or nil)
       return
     end
     local d = b or a

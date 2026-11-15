@@ -117,6 +117,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_grate_cross/framed:** für die rollende Murmel durchlässig.
 - **it_document:** beim Überrollen erscheint der Text (aus `el:string` des Levels,
   deutsch falls übersetzt); Abweichung: kein Inventar, der Zettel verschwindet sofort.
+  Ebenso zeigt `wo:add(YIN, {"it_document", text = …})` während des Spiels (ab 15.11.2026) den
+  Text sofort, statt den Zettel ins Inventar zu legen. Freigeschaltet: more is not less (devnull23_1).
 - **st_box_wood/hay/rock** (`BoxStone.cc`, `maybe_push_stone`): trifft die Murmel eine
   Seite (nicht die Ecke) mit mehr als 4 Feldern/s, rückt die Kiste ein Feld weiter,
   wenn dort kein Stein ist; schiebt sie sich auf die Murmel, zerspringt diese. Auf

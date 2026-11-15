@@ -26,7 +26,7 @@ export interface LuaHost {
   /** wo:add({kind, …}) in init mode (the importer records ot_timer); the game ignores it. */
   add?(kind: string, attrs: Record<string, string>): void;
   /** wo:add(YIN/YANG, {"it_…"}) during play. */
-  addInventory?(player: number, kind: string): void;
+  addInventory?(player: number, kind: string, text?: string | null): void;
   /** wo:add({"ot_timer"/"ot_counter", …}) during play: a new object without a cell. */
   addObject?(kind: string, attrs: Record<string, string>): void;
   /** wo:add({"ot_rubberband", …}) during play: anchor refs and the band's attributes. */
@@ -248,7 +248,7 @@ export class LuaLevel {
         return 0;
       },
       addinventory: () => {
-        host.addInventory?.(num(1), arg(2) ?? '');
+        host.addInventory?.(num(1), arg(2) ?? '', arg(3));
         return 0;
       },
       addwire: () => {

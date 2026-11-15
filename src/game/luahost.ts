@@ -292,7 +292,12 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       w.shuffleOxyd?.();
     },
     /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
-    addInventory(player, kind) {
+    addInventory(player, kind, text) {
+      // DocumentItem: Murmel reads documents when they are picked up instead of carrying them
+      if (kind === 'it_document') {
+        objects.showText(text ?? '');
+        return;
+      }
       const inv = objects.inventories[Number(player)] ?? objects.inventory;
       if (inv.length < 13) inv.unshift(String(kind));
       w.redraw();

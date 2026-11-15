@@ -4000,6 +4000,11 @@ export class ObjectWorld {
     this.slot(i).init = false;
   }
 
+  /** A document's text (key into the level's texts, or the text itself) on the screen. */
+  showText(key: string): void {
+    this.events.push({ type: 'sound', name: 'pickup' }, { type: 'text', text: this.texts[key] ?? key });
+  }
+
   private pickUp(col: number, row: number): void {
     for (const o of this.at(col, row)) {
       if (o.cls !== 'document' || o.gone) continue;
