@@ -111,7 +111,8 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
 
 | Fall | Meldung |
 |---|---|
-| Objekt nicht in der Palette | „Diese Objekte kann ein Spieler-Level noch nicht enthalten: it_document (2×), st_mirror …“ |
+| Objekt nicht in der Palette | „Diese Objekte kann ein Spieler-Level noch nicht enthalten: it_wormhole (2×), st_mirror_sheets …“ |
+| Zu viele Dokumente | „Das Level enthält 11 Dokumente; ein Spieler-Level darf höchstens 10 enthalten.“ |
 | Unbekannter Resolver | „Murmel kennt res.random noch nicht“ |
 | Lua-Rückruf | „Das Level steuert st_switch über die Lua-Funktion ‚oeffne‘. Lua ist in Spieler-Levels nicht erlaubt.“ |
 | Laufzeitfehler | „Fehler im Lua-Teil: <Meldung mit Zeile>“ |
@@ -139,7 +140,9 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
 
 **Stand 15.11.2026 (Branch `editor-palette`):** `res.composer` im Aufbau-Modus; größere Palette (Gefälle, Laser und Spiegel, Impuls- und Rollsteine, Drehkreuze, Farbdurchlässe, Meditation mit Perle als Hauptkugel, weiße Murmel, Perlen, Killer u. a.; siehe `docs/SPEC-editor.md` §2) samt Abbildung im Umwandler (`editorKind`, Eigenschaften aus Attributen und Artnamen, `fl_slope` mit `slope`, `fl_inverse` → `fl_inverse_white`); Karten bis 100×64. Probelauf über 1 553 Level-Dateien: **48 → 308 vollständig umwandelbar**. Häufigste Gründe danach: Lua-Rückrufe, `it_document` (Nutzerentscheidung offen), API 1, `lib/libpuzzle`, Gummibänder, Wurmlöcher.
 
-**Nächste Schritte (wenn gewünscht):** Dokumenttexte und Lua nach Nutzerentscheidung; Wurmlöcher (Koordinaten-Eigenschaft), Puzzle- und Brückensteine; API 1.
+**Stand 15.11.2026 (Branch `dokumenttexte`):** Dokumente mit Text. Der Umwandler liest den `el:i18n`-Abschnitt mit festen Mustern (höchstens 200 Schlüssel) und nimmt die deutsche Übersetzung, sonst den englischen Text, sonst den Schlüssel selbst (wie Enigma). Texte über 300 Zeichen werden mit Hinweis gekürzt, mehr als 10 Dokumente abgelehnt.
+
+**Nächste Schritte (wenn gewünscht):** Lua bleibt nach Nutzerentscheidung draußen; Wurmlöcher (Koordinaten-Eigenschaft), Puzzle- und Brückensteine; API 1.
 
 ## Datenschutz
 
@@ -150,6 +153,6 @@ Datenschutzerklärung ändert sich nur nach seiner Freigabe.
 ## Grenzen
 
 - **Immer:** Datei nur im Browser umwandeln; nur Editor-Inhalte veröffentlichen; Rechte-Häkchen.
-- **Erst fragen:** Lua, Dokumenttexte oder Objekte außerhalb der Palette in Spieler-Levels; Umwandlung
+- **Erst fragen:** Lua oder Objekte außerhalb der Palette in Spieler-Levels; Umwandlung
   auf dem Server; Änderungen der Datenschutzerklärung.
 - **Nie:** fremde Dateien auf dem Server ausführen; Lua mit Zugriff auf Netz, DOM oder Speicher.

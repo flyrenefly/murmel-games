@@ -205,6 +205,8 @@ Lösung, Bewertungen und Meldungen, Löschen).
 
 - **Immer:** nur geprüfte Editor-Inhalte speichern und ausliefern; Nachspielen bremst die API nicht;
   Tests zuerst; Spiel ohne Konto und offline spielbar.
-- **Erst fragen:** Änderungen der Datenschutzerklärung; Lua oder Dokumenttexte in Spieler-Levels;
+- **Erst fragen:** Änderungen der Datenschutzerklärung; Lua in Spieler-Levels (Dokumenttexte sind seit 15.11.2026
+  erlaubt: höchstens 10 Dokumente mit je 300 Zeichen reinem Text; `parseUpload` prüft die Grenzen, `sanitizeLevel`
+  bereinigt, die Freigabe listet alle Texte, Datenschutzerklärung ergänzt);
   automatische Freigabe.
 - **Nie:** Mailadressen zeigen, ungeprüftes JSON ausliefern, Levels ohne gültige Lösung annehmen.
