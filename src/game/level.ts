@@ -180,10 +180,14 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   if (!start) throw new LevelError(`${file.id}: kein Startpunkt '@'`);
   // Meditation levels (Enigma ChangeMeditation): pearls and hollows instead of Oxyd stones
   // Meditation levels: pearls (also the main pearl, which is not in actors) and meditation hollows
-  const meditation = (!!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k))) && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
+  const pearls = !!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k));
+  const meditation = pearls && (file.objects ?? []).some((o) => o.k.startsWith('it_meditation'));
+  // without Oxyd stones also hollows still to come: Dynamite/Landmine leave one (Explosion::animcb),
+  // so does a breaking spitter (Riverside, Turbulencia, Meditation IV)
+  const blastMeditation = pearls && (file.objects ?? []).some((o) => HOLLOW_MAKERS.test(o.k));
   // Lua may set Oxyd stones during play (Pentomino: wo[…] = {"st_oxyd"} once the puzzle is done; st_oxyd_d …)
   const luaOxyds = Object.values(file.lua?.kinds ?? {}).includes('oxyd');
-  if (signals.length === 0 && !meditation && !luaOxyds) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
+  if (signals.length === 0 && !blastMeditation && !luaOxyds) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
 
   // initColors leaves a colour without partner alone; only a meditation level stays solvable then
   assignRandomSymbols(file.id, signals, random, meditation);
@@ -216,6 +220,9 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     lua: file.lua ?? null,
   };
 }
+
+/** Meditation hollows and the objects that leave one (tools/import-enigma.mjs HOLLOW_MAKERS). */
+const HOLLOW_MAKERS = /^(it_meditation|it_dynamite$|it_landmine$|st_spitter$|st_dispenser_dynamite$)/;
 
 /** Symbol of a fake Oxyd stone (OxydStone FAKE): never opens, closes a single open stone. */
 export const FAKE_OXYD = '-';

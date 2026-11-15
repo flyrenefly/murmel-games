@@ -185,7 +185,11 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Springen, Sterben oder Versetzen. Sind alle Perlen eingenommen und alle Mulden mit
   `essential=1` belegt, ist das Level gelöst – auch in Levels mit Oxyd-Steinen. Levels ohne
   Oxyd-Steine sind erlaubt, wenn sie Perlen und Mulden haben; die Statuszeile zeigt dann
-  „Perlen eingenommen/gesamt“.
+  „Perlen eingenommen/gesamt“. Seit 15.11.2026 (Runde 4) genügen statt der Mulden auch
+  Gegenstände, die eine hinterlassen (`Explosion::animcb`: it_dynamite, it_landmine →
+  it_explosion_hollow → it_meditation_hollow; ein zerbrechender st_spitter; st_dispenser_dynamite):
+  Riverside, Turbulencia und Meditation IV sprengen ihre Mulden selbst. Die Regel für ungerade
+  Oxyd-Farben (nur Meditationslevel mit echten Mulden dürfen eine einzelne Farbe haben) bleibt.
 - **it_landmine** (`Landmine.cc`): explodiert, wenn ein Akteur näher als 0,3 an die Mitte
   kommt oder ein Stein daraufgeschoben wird (Klang explosion2). Die Explosion (50 ms)
   zerschmettert Murmeln im Feld und hinterlässt eine Mulde (it_meditation_hollow), außer
@@ -383,7 +387,12 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   die Richtung, `force_x`/`force_y` ersetzen alles. Der Konverter legt die Kraft je Feld ab
   (`force` in der Legende); jeder andere Boden mit `force_x`/`force_y` wirkt ebenso. Bild aus
   dem 6 × 4-Bogen `fl_slope` (DefSubimages spaltenweise). Wechselt der Boden zur Laufzeit,
-  entfällt die Kraft. Die 3D-Ansicht zeigt Gefälle nicht.
+  entfällt die Kraft – außer der neue Boden hat selbst eine: Seit 15.11.2026 (Runde 4) zieht ein
+  Gefälle, das Lua während des Spiels legt, wie eines der Karte (Form bzw. `slope`, `strength`
+  oder der aktuelle `SlopeStrength`; `force_x`/`force_y` jedes Bodens ebenso; `floorForce` in
+  `luahost.ts`). Vorher hatten solche Gefälle keine Kraft – das ändert das Spiel in allen Levels,
+  deren Rückrufe Gefälle legen (Liste im PR zu Runde 4). API 1 `fl-gradient` mit `type` aus
+  einer Variablen (Tilt Board: `{type = gdir}`) darf jede Form setzen. Die 3D-Ansicht zeigt Gefälle nicht.
   `wo["SlopeStrength"] = …` während des Spiels (ab 15.11.2026) skaliert die Kraft aller Gefälle
   vom alten auf den neuen Wert. Abweichung: Gefälle mit eigener `strength` behielte Enigma bei;
   solche Levels lehnt der Import ab, wenn ein Rückruf die Stärke ändert. Ein Gefälle bei Stärke 0
@@ -742,7 +751,16 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   `gohome` zurück zur Startposition. Rollen mit Bodenreibung, prallen an Steinen ab, lösen
   aber keine Steine aus.
 - **ac_killer** (`KillerActor.cc`): sieht aus wie eine Perle (Radius 13/64, Masse 0,7) und
-  folgt der Maus wie die Murmel, mit doppelter Mauskraft (Attribut adhesion 2).
+  folgt der Maus wie die Murmel, mit doppelter Mauskraft (Attribut adhesion 2; seit 15.11.2026
+  wirkt ein eigener Wert, Tutoxyd's Pyramid setzt Skorpione mit kleinerem).
+- **Akteure zur Laufzeit** (ab 15.11.2026, `lua.cc` setObjectByTable → AddActor): `wo[pos] =
+  {"ac_rotor", dx, dy, …}` setzt Rotoren, Kreisel, Killer und Käfer genau an `pos` (Zahlen an
+  Stelle 2 und 3 verschieben), `{"#ac_…"}` in die Zellmitte, außerhalb des Levels nichts; API 1
+  `set_actor` ebenso. Der neue Akteur hängt an `level.actors` und `physics.enemies` an, ist
+  per Name (`a:<n>`) erreichbar, und beide Ansichten zeichnen ihn. Der Import erlaubt diese
+  Arten als Laufzeitart `actor` (mit Bildern). Murmeln, Perlen und Pferde zur Laufzeit fehlen
+  weiter (Encased, Rotor Guards). Freigeschaltet: Out of Hand, Tutoxyd's Pyramid; Road to Eden
+  (Rotoren aus einem Auslöser) brach vorher beim ersten Rotor ab.
 - Berührt einer davon die Murmel, zerspringt sie. Akteure prallen elastisch voneinander ab
   (`World::handle_actor_contact`, reduzierte Masse, Rückprall 1).
 - Gegner lösen Steine aus wie die Murmel (Oxyd-Steine öffnen sich für jeden Akteur,
@@ -817,8 +835,11 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Lua 5.0/5.1 (`runtime.ts` `api1Source`): `arg` in Vararg-Funktionen, unbekannte
   Escapes wie `"\("`. Bibliotheken mit `el:preload="true"` (`lib/ant`, `lib/natmaze`,
   `lib/ralf` …, rekursiv, nur mit freier Lizenz) stellt der Importer vor den Levelcode.
-  Nicht nachgebaut: `set_actor`/`AddSignal`/`oxyd_shuffle` während des Spiels, Wurmlochziele
-  per Attribut zur Laufzeit.
+  Nicht nachgebaut: `AddSignal` während des Spiels. Seit 15.11.2026 (Runde 4): `set_actor`
+  während des Spiels (siehe „Akteure zur Laufzeit“); `targetx`/`targety` eines liegenden
+  Wurmlochs ändern eine Koordinate seines Ziels `dest` (Designed with love); `document(x, y,
+  "text1")` als Alias von `Document` zählt beim Import mit (Khun Phan: Hinweise nach 3 und 6
+  Minuten), und der Import legt die Dokumenttexte bei, sobald Lua `it_document` setzen darf.
 - **Init-Grenze:** Die Init läuft auf der fertigen Welt; ein Level, das würfelt, bis es ein
   von seinem eigenen Aufbau noch freies Feld findet, endet dort nie. Nach 50 Mio.
   Lua-Anweisungen bricht `LuaLevel` die Init ab („Level-Init läuft endlos“).
@@ -827,7 +848,8 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Levelobjekte erreichen (Aufbaufunktionen laufen nur in der Init), samt alter Artnamen in
   Literalen und in Globalen wie `mainstone = "st-rock1"`. Abgelehnt werden API 1 nur noch
   bei Levels ab 1.10 (`set_stone`, `enigma.*` …),
-  Bibliotheken (`lib.*`, `res.*` im Spiel), Akteure zur Laufzeit, unbekannte Kachelarten,
+  Bibliotheken (`lib.*`, `res.*` im Spiel), Murmeln, Perlen und Pferde zur Laufzeit (Rotoren,
+  Kreisel, Killer und Käfer seit 15.11.2026 nicht mehr), unbekannte Kachelarten,
   Fehler beim Init. Ziele, die nichts benennen, ignoriert Enigma – der Importer auch
   (außer bei Bibliotheken oder Namen, die im Skript vorkommen). Seit 14.11.: ein Muster
   („bridge%b#*“), das kein Objekt trifft, ist eine leere Gruppe und wird ignoriert, solange
@@ -836,6 +858,33 @@ mit `(value, sender)`). Nutzerentscheidung 12.11.: Lua-Interpreter statt Nachbau
   Auflöser, die der Shim baut (`res.autotile`, `res.random`, `res.pento`), sind in Rückrufen
   erlaubt; Zeichenkettenliterale, die selbst Arten sind (`{"it_cross"}`), zählen beim Sammeln
   der Laufzeit-Arten nicht mehr als Kartenschlüssel (Gaps).
+  Seit 15.11.2026 (Runde 4, gefunden mit der Laufprobe, s. u.):
+  - eingerückte Funktionen zählen (4 - 8 - 4 rückt alle um ein Leerzeichen ein; vorher fehlten
+    seine Laufzeitarten, `blockE` brach mit „st_yellow“ ab);
+  - Akteure als `"#ac_…"` und in `ti`-Einträgen;
+  - „API 1“ nur bei echten API-1-Aufrufen: nicht bei eigenen Funktionen wie `draw_line()`
+    (Sunrise Sunset) und nicht bei `enigma.random`, das API 2 auch hat (`RegisterFuncs`, Panic
+    Room; der Shim bietet es an);
+  - `cond(wo["CreatingPreview"], vorschau, spiel)` zählt nur mit dem Spielzweig (Murmel macht keine
+    Vorschau), und der Ignorierschlüssel von `wo:drawMap` ist kein gesetzter Schlüssel (Sunrise Sunset);
+  - API 1: setzt ein Rückruf Steine oder Gegenstände einer Art aus einer Variablen
+    (`set_stone(tab.face, …)`, The Turtle), darf er jede unterstützte Stein- bzw. Gegenstandsart, die
+    der Code nennt; nicht unterstützte überspringt der Import (wie bei API-1-Böden), lehnt also nicht ab.
+- **`pos:xy()`** (`lua.cc`, ab 15.11.2026): beide Koordinaten einer Position (libmap
+  `lib.map.set`, Styles Change).
+- **Akteure aus Lua ansprechen** (ab 15.11.2026): `a:<n>` führt zur Kugel in der Reihenfolge der
+  Physik (Hauptkugel, dann schwarze und weiße Murmeln von `level.actors`, dann die Perlen). Vorher
+  kannte Lua nur die erste weiße Murmel; ein Gummiband zur zweiten (The Pilgrim's Progress:
+  Christian ↔ Hopeful/Faithful) brach ab, Positionen von Perlen las Lua falsch.
+  `wo:add({"ot_rubberband", …})` spannt jetzt auch Bänder zwischen zwei anderen Akteuren und von
+  einer Murmel zu einem Rotor o. Ä. (4 - 8 - 4 bindet zwei Käfer aneinander; vorher brach `rbK2I`
+  vor dem Öffnen der Tür ab).
+- **Akteur-Attribut `adhesion`** (ab 15.11.2026, `Actor::getAttr/setAttr`, `MouseForce::get_force`):
+  Lua liest und setzt es an Murmeln (Standard 1,0) und Killern (2,0); die Mauskraft wird damit
+  multipliziert, ein negativer Wert kehrt sie um (Tutoxyd's Pyramid: „verfluchte Beine“).
+- **Laufprobe** (Werkzeug außerhalb des Repos, Runden 3 und 4): Session mit 60 s Zufallssteuerung,
+  danach jede Rückruf-Funktion der Levelobjekte einmal mit wahr/falsch. Rückrufe ohne echten
+  Sender (`sender._color`, `sender["_marble"]`) ergeben dabei Fehlalarme.
 - **fl_inverse zur Laufzeit** (seit 14.11.): schlichtes `fl_inverse` ist die Sorte weiß
   (`SimpleFloors.cc`), wie der Export es benennt → `fl_inverse_white` (Kaleidoscope,
   Wildflowers Party, Waste).

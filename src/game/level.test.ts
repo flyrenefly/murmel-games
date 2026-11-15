@@ -78,4 +78,11 @@ describe('meditation levels with a main pearl', () => {
     const file: LevelFile = { id: 't', title: 'T', author: 'x', license: 'GPL', map: ['####', '#@.#', '####'], mainPearl: { k: 'ac_pearl_white' }, objects: [{ x: 2, y: 1, k: 'it_meditation_hollow' }] };
     expect(() => parseLevel(file)).not.toThrow();
   });
+
+  it('also when the hollows are still to be blasted (dynamite, landmine: Riverside, Meditation IV), not without pearls', () => {
+    const file: LevelFile = { id: 't', title: 'T', author: 'x', license: 'GPL', map: ['####', '#@.#', '####'], mainPearl: { k: 'ac_pearl_white' }, objects: [{ x: 2, y: 1, k: 'it_dynamite' }] };
+    expect(() => parseLevel(file)).not.toThrow();
+    expect(() => parseLevel({ ...file, objects: [{ x: 2, y: 1, k: 'it_landmine' }] })).not.toThrow();
+    expect(() => parseLevel({ ...file, mainPearl: undefined })).toThrow(/keine Oxyd-Steine/);
+  });
 });

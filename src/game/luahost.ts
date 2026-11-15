@@ -4,7 +4,7 @@
  * plain floors and stones, "a:<n>" actors (0 = black marble, n = level.actors[n − 1]).
  */
 import type { LuaHost } from '../lua/runtime';
-import { type Enemy, enemyKind } from './actors';
+import { Enemy, enemyKind } from './actors';
 import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
 import type { PhysicsWorld } from './physics';
@@ -29,6 +29,30 @@ export function enemyOf(level: Level, physics: PhysicsWorld, n: number): Enemy |
   const a = level.actors[n - 1];
   if (!a || !enemyKind(a.k)) return null;
   return physics.enemies[level.actors.slice(0, n - 1).filter((x) => enemyKind(x.k)).length] ?? null;
+}
+
+/** SlopeFloor.cc: shape → direction index (xforce/yforce), as tools/import-enigma.mjs SLOPE_DIR. */
+const SLOPE_DIR: Record<string, number> = { '': -1, pw: 0, ps: 1, pe: 2, pn: 3, inw: 4, isw: 5, ise: 6, ine: 7, onw: 4, osw: 5, ose: 6, one: 7, tw: 0, ts: 1, te: 2, tn: 3, twl: 4, tsl: 5, tel: 6, tnl: 7, twr: 5, tsr: 6, ter: 7, tnr: 4 };
+const SLOPE_X = [-1, 0, 1, 0, -1, -1, 1, 1];
+const SLOPE_Y = [0, 1, 0, -1, -1, 1, 1, -1];
+
+/**
+ * Floor::add_force of a floor Lua sets during play, like the importer stores it: force_x/force_y,
+ * else for fl_slope_<shape> the direction (attribute `slope` or the shape) normalised × `strength`
+ * or the world's SlopeStrength. Null: no force.
+ */
+export function floorForce(kind: string, a: Record<string, string>, slopeStrength: number): [number, number] | null {
+  const fx = Number(a.force_x) || 0;
+  const fy = Number(a.force_y) || 0;
+  if (fx !== 0 || fy !== 0) return [fx, fy];
+  const m = /^fl_slope(?:_(\w+))?$/.exec(kind);
+  if (!m) return null;
+  const dir = a.slope !== undefined && a.slope !== '' ? Number(a.slope) : SLOPE_DIR[m[1] ?? ''];
+  if (!(dir >= 0 && dir < 8)) return null;
+  const s = a.strength !== undefined && a.strength !== '' ? Number(a.strength) : slopeStrength;
+  const n = Math.hypot(SLOPE_X[dir], SLOPE_Y[dir]);
+  const r = (v: number) => Math.round(v * 1000) / 1000;
+  return [r((SLOPE_X[dir] / n) * s), r((SLOPE_Y[dir] / n) * s)];
 }
 
 const glob = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
@@ -65,11 +89,26 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     const [, l, x, y] = ref.split(':');
     return { l, x: Number(x), y: Number(y) };
   };
-  const actorPos = (i: number): [number, number] => {
-    if (i === 0) return [physics.marbles[0].pos.x, physics.marbles[0].pos.y];
+  /**
+   * The marble of actor ref a:<i> as PhysicsWorld orders them (0 = main ball, then the black and
+   * white marbles of level.actors, then its pearls, each in actor order), or -1 for other actors.
+   */
+  const marbleIndex = (i: number): number => {
+    if (i === 0) return 0;
     const a = level.actors[i - 1];
-    if (a?.k === 'ac_marble_white' && physics.marbles[1]) return [physics.marbles[1].pos.x, physics.marbles[1].pos.y];
-    const e = physics.enemies[level.actors.slice(0, i - 1).filter((x) => x.k !== 'ac_marble_white').length];
+    const before = level.actors.slice(0, i - 1);
+    const ball = (k: string) => k === 'ac_marble_white' || k === 'ac_marble_black';
+    const pearl = (k: string) => /^ac_pearl(_white|_black)?$/.test(k);
+    let m = -1;
+    if (a && ball(a.k)) m = 1 + before.filter((x) => ball(x.k)).length;
+    else if (a && pearl(a.k)) m = 1 + level.actors.filter((x) => ball(x.k)).length + before.filter((x) => pearl(x.k)).length;
+    return m > 0 && physics.marbles[m] ? m : -1;
+  };
+  const actorPos = (i: number): [number, number] => {
+    const m = marbleIndex(i);
+    if (m >= 0) return [physics.marbles[m].pos.x, physics.marbles[m].pos.y];
+    const a = level.actors[i - 1];
+    const e = enemyOf(level, physics, i);
     return e ? [e.pos.x, e.pos.y] : [a?.x ?? 0, a?.y ?? 0];
   };
   const uniqueName = (name: string): string => {
@@ -190,6 +229,14 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         const { l, x, y } = parse(ref);
         return l === 'fl' ? cell(x, y).floor : cell(x, y).stone;
       }
+      // Actor::getAttr("adhesion"): factor on the mouse force (marbles 1.0, killers 2.0)
+      if (key === 'adhesion' && ref.startsWith('a:')) {
+        const n = Number(ref.slice(2));
+        const m = marbleIndex(n);
+        if (m >= 0) return String(physics.marbles[m].adhesion ?? 1);
+        const e = enemyOf(level, physics, n);
+        if (e?.kind === 'killer') return String(e.mouseFactor);
+      }
       return attrs.get(ref)?.[key] ?? null;
     },
     set(ref, key, value) {
@@ -197,6 +244,15 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (ref.startsWith('a:') && /^(destination|destidx|strength|steady|loop)$/.test(key)) {
         const e = enemyOf(level, physics, Number(ref.slice(2)));
         if (e?.kind === 'horse') setHorse(e, key, value);
+      }
+      // Actor::setAttr("adhesion") of a marble or killer (Tutoxyd's Pyramid curses the legs)
+      if (key === 'adhesion' && ref.startsWith('a:')) {
+        const n = Number(ref.slice(2));
+        const v = Number(value ?? '');
+        const m = marbleIndex(n);
+        if (m >= 0) physics.marbles[m].adhesion = Number.isFinite(v) ? v : 1;
+        const e = enemyOf(level, physics, n);
+        if (e?.kind === 'killer') e.mouseFactor = Number.isFinite(v) ? v : 2;
       }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
@@ -280,6 +336,9 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
           return;
         }
         cell(x, y).floor = look;
+        // slopes and floors with force_x/force_y pull like those of the map
+        const f = floorForce(kind, decl, Number(world.SlopeStrength ?? 25));
+        if (f) cell(x, y).force = f;
         attrs.set(`c:fl:${x}:${y}`, decl);
         // BoxStone::on_floor_change: a box on new abyss, water or swamp sinks
         objects.floorChanged(x, y);
@@ -305,6 +364,19 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         if (look === 'object') objects.create(kind, x, y, decl);
       } else throw new Error(`Murmel kann ${kind} nicht setzen`);
       w.redraw();
+    },
+    addActor(x, y, kind, a) {
+      // lua.cc setObjectByTable → AddActor: rotors, tops, killers and bugs (lua.kinds 'actor'); outside the level nothing
+      const ek = enemyKind(kind);
+      if (lua.kinds[kind] !== 'actor' || !ek) throw new Error(`Murmel kann ${kind} nicht setzen`);
+      if (!inside(Math.floor(x), Math.floor(y))) return;
+      const decl = { ...a };
+      if (decl.name) decl.name = uniqueName(decl.name);
+      const def = { k: kind, x, y, ...(Object.keys(decl).length ? { a: decl } : {}) };
+      // appended to both lists, so a:<n> keeps pointing at the same body (enemyOf, actorPos)
+      level.actors.push(def);
+      physics.enemies.push(new Enemy(ek, def));
+      attrs.set(`a:${level.actors.length}`, decl);
     },
     world(key) {
       if (key === 'GlobalForce') return `${force.x},${force.y}`;
@@ -368,17 +440,30 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     addRubber(a1, a2, strength, length, threshold, min, max) {
       const marbleOf = (ref: string | null): number => {
         if (!ref?.startsWith('a:')) return -1;
-        const i = Number(ref.slice(2));
-        if (i === 0) return 0;
-        return level.actors[i - 1]?.k === 'ac_marble_white' && physics.marbles[1] ? 1 : -1;
+        return marbleIndex(Number(ref.slice(2)));
       };
-      const m = marbleOf(a1);
-      if (m < 0 || !a2) throw new Error('Murmel kann dieses Gummiband nicht spannen');
       const num = (v: string | null) => (v === null || v === '' ? undefined : Number(v));
       const def = { strength: num(strength), length: num(length), threshold: num(threshold), min: num(min), max: num(max) };
+      // between two other actors (rotors, bugs …: 4 - 8 - 4 ties bugI to bugK)
+      const enemy = (ref: string | null) => (ref?.startsWith('a:') ? enemyOf(level, physics, Number(ref.slice(2))) : null);
+      const m = marbleOf(a1);
+      const e1 = m < 0 ? enemy(a1) : null;
+      if (e1 && a2) {
+        const m2 = marbleOf(a2);
+        const b = m2 >= 0 ? physics.marbles[m2] : enemy(a2);
+        if (!b) throw new Error('Murmel kann dieses Gummiband nicht spannen');
+        physics.addRubberBodies(e1, b, def);
+        return;
+      }
+      if (m < 0 || !a2) throw new Error('Murmel kann dieses Gummiband nicht spannen');
       const m2 = marbleOf(a2);
       if (m2 >= 0) {
         physics.addRubberBetween(m, m2, def);
+        return;
+      }
+      const e2 = enemy(a2);
+      if (e2) {
+        physics.addRubberBodies(physics.marbles[m], e2, def, m);
         return;
       }
       const [x, y] = host.pos(a2);

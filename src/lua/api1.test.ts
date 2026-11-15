@@ -156,3 +156,25 @@ describe('API 1 options', () => {
     expect(lua.lastError).toBe('');
   });
 });
+
+describe('API 1 set_actor during play (Armageddon)', () => {
+  it('adds the actor with its new kind and translated attributes at the exact position', async () => {
+    const w = fakeHost([]);
+    const actors: string[] = [];
+    w.host.addActor = (x, y, k, a) => void actors.push(`${x},${y} ${k} ${JSON.stringify(a)}`);
+    const lua = await startLua('function more()\n  set_actor("ac-rotor", 40.5, 32.5, {range = 100, force = 4})\nend', w.host);
+    lua.callback('more', true, '');
+    expect(lua.lastError).toBe('');
+    expect(actors).toEqual(['40.5,32.5 ac_rotor {"range":"100","strength":"4"}']);
+  });
+});
+
+describe('API 1 targetx/targety of a placed wormhole during play (Designed with love)', () => {
+  it('changes one coordinate of its destination', async () => {
+    const w = fakeHost([{ ref: 'wh', l: 'it', x: 3, y: 3, a: { kind: 'it_wormhole_on', name: 'wh3', dest: '13.5,47.5' } }]);
+    const lua = await startLua('function s1()\n  set_attribs(enigma.GetNamedObject("wh3"), {targetx = 37.5, targety = 35.5})\nend', w.host);
+    lua.callback('s1', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.host.get('wh', 'dest')).toBe('37.5,35.5');
+  });
+});

@@ -1,4 +1,4 @@
-import { type ActorDef, createEnemies, type Enemy, enemyKind, type EnemyKind, KILLER_MOUSE_FACTOR } from './actors';
+import { type ActorDef, createEnemies, type Enemy, enemyKind, type EnemyKind } from './actors';
 import type { Level } from './level';
 import { type BodyForce, Rubberband, type RubberDef } from './rubber';
 import { ALL_FACES, EAST, NORTH, PANES, SOUTH, WEST } from './objects';
@@ -90,6 +90,8 @@ export interface Marble extends Body {
   shielded?: boolean;
   /** Invisible (it_cherry): glass lets it pass, rotors do not see it. */
   invisible?: boolean;
+  /** Actor attribute adhesion (MouseForce::get_force: force × get_mouseforce; marbles 1.0); Lua may change it (Tutoxyd's Pyramid: −1 turns the mouse round). */
+  adhesion?: number;
   /** Drunk (it_bottle): the mouse force turns by a changing angle (World::drunkenMouseforce). */
   drunk?: boolean;
   /** Carries it_pin: friction + 7 (World::advance_actor, spikes). */
@@ -448,7 +450,7 @@ export class PhysicsWorld {
       const cur = this.marbles[this.cur];
       // Zu zweit: every steered marble feels the force of its own player at the same time.
       const two = this.coop && m.color === 1 && !m.pearl;
-      const k = this.coop ? (m.passive || m.ownerless ? 0 : adhesion) : i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0;
+      const k = (this.coop ? (m.passive || m.ownerless ? 0 : adhesion) : i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0) * (m.adhesion ?? 1);
       const [ffx, ffy] = this.floorForce(m.pos);
       let ux = two ? this.axisForce2.x + mx2 : this.axisForce.x + mx;
       let uy = two ? this.axisForce2.y + my2 : this.axisForce.y + my;
@@ -462,7 +464,7 @@ export class PhysicsWorld {
       const [ffx, ffy] = this.floorForce(e.pos);
       if (e.kind === 'killer') {
         // Steered like the marble (controllers = 3), with the killer's mouse force factor.
-        add(e, (this.axisForce.x + mx) * adhesion * KILLER_MOUSE_FACTOR + ffx, (this.axisForce.y + my) * adhesion * KILLER_MOUSE_FACTOR + ffy, friction);
+        add(e, (this.axisForce.x + mx) * adhesion * e.mouseFactor + ffx, (this.axisForce.y + my) * adhesion * e.mouseFactor + ffy, friction);
       } else if (e.kind === 'horse') {
         const [hx, hy] = e.horseForce();
         add(e, hx + ffx, hy + ffy, friction);
@@ -804,7 +806,12 @@ export class PhysicsWorld {
 
   /** A new band between two marbles. */
   addRubberBetween(i: number, j: number, def: Omit<RubberDef, 'a' | 'b'>): void {
-    this.rubbers.push(new Rubberband({ ...def, a: i, b: j }, this.marbles[i], this.marbles[j], null));
+    this.addRubberBodies(this.marbles[i], this.marbles[j], def, i, j);
+  }
+
+  /** A band between any two actors (Lua during play: 4 - 8 - 4 ties two bugs together). */
+  addRubberBodies(a: Body, b: Body, def: Omit<RubberDef, 'a' | 'b'>, i = -1, j = -1): void {
+    this.rubbers.push(new Rubberband({ ...def, a: i, b: j }, a, b, null));
     this.recountBands();
   }
 
