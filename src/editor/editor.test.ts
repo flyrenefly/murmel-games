@@ -16,6 +16,10 @@ import { canShare, check } from './rules';
 
 const startLua: StartLua = async (code, host) => LuaLevel.create(code, host, shim, await import('fengari'));
 const P = (k: string) => BY_KIND.get(k)!;
+const floorBase = (k: string): string => {
+  while (!(k in floors) && k.lastIndexOf('_') > 2) k = k.slice(0, k.lastIndexOf('_'));
+  return k;
+};
 const IMAGES = new Set(Object.keys(import.meta.glob('/public/enigma/gfx32/*.png')).map((f) => f.replace(/^.*\/|\.png$/g, '')));
 const b64url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 /** deflate-raw like the link, for hand-made broken links. */
@@ -42,10 +46,12 @@ describe('palette', () => {
   it('offers only what the game supports, with existing images', () => {
     for (const e of PALETTE) {
       expect(IMAGES.has(e.image), `${e.kind}: ${e.image}.png`).toBe(true);
-      if (e.layer === 'floor') expect(e.kind in floors, e.kind).toBe(true);
+      // like floorProps: variants (fl_inverse_white, fl_slope_ps) take the values of their base kind
+      if (e.layer === 'floor') expect(floorBase(e.kind) in floors, e.kind).toBe(true);
       if (e.layer === 'stone' && e.wall) expect(objectClass(e.kind), e.kind).toBeNull();
       if ((e.layer === 'stone' && !e.wall) || e.layer === 'item') expect(objectClass(e.kind), e.kind).not.toBeNull();
-      if (e.layer === 'actor') expect(enemyKind(e.kind), e.kind).not.toBeNull();
+      if (e.layer === 'actor') expect(enemyKind(e.kind) !== null || /^ac_(marble_white|pearl_white|pearl_black)$/.test(e.kind), e.kind).toBe(true);
+      for (const p of e.props ?? []) expect(new Set(p.options.map(([v]) => v)).size, `${e.kind}.${p.key}`).toBe(p.options.length);
     }
     expect(new Set(PALETTE.map((e) => e.kind)).size).toBe(PALETTE.length);
   });
@@ -105,7 +111,7 @@ describe('model', () => {
     const small = resize(sample(), 7, 7);
     expect(small.actors).toEqual([]);
     expect(small.start).toBeNull(); // the marble was at 10,6
-    expect(resize(l, 1, 999)).toMatchObject({ width: 5, height: 40 });
+    expect(resize(l, 1, 999)).toMatchObject({ width: 5, height: 64 });
   });
 
   it('an editor level runs in the game (load probe)', async () => {
@@ -196,7 +202,7 @@ describe('rules', () => {
   it('needs a marble that does not start on a stone or the abyss', () => {
     const l = sample();
     l.start = null;
-    expect(texts(l)).toContain('fehler: Die Murmel fehlt: setze genau eine Murmel (Spezial → Murmel).');
+    expect(texts(l)).toContain('fehler: Die Murmel fehlt: setze genau eine Murmel oder Start-Perle (Spezial).');
     const m = sample();
     paint(m, 10, 6, P('fl_abyss'));
     expect(texts(m)).toContain('fehler: Die Murmel startet auf Abgrund oder Wasser.');

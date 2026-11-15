@@ -231,6 +231,37 @@ button.icon svg {
   outline: 2px solid var(--accent);
 }
 
+/* Group chips: a scope bar over the palette (one group, or all); scrolls sideways when it does not fit. */
+.ed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ed-chip {
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ed-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+@media (pointer: coarse) {
+  .ed-chip {
+    min-height: 36px;
+  }
+}
+
 .ed-groups h3 {
   margin: 12px 0 6px;
   font-size: 12px;
@@ -582,6 +613,14 @@ dialog ul {
     border-top: 1px solid var(--line);
     padding: 8px 12px;
     overflow: visible;
+  }
+
+  .ed-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 6px;
   }
 
   .ed-groups {

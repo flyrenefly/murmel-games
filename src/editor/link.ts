@@ -3,7 +3,7 @@
 
 import { type LevelFile, parseLevel } from '../game/level';
 import { LICENSE, MAX_H, MAX_W } from './model';
-import { BY_KIND } from './palette';
+import { BY_KIND, type PaletteEntry } from './palette';
 
 export const LINK_PREFIX = '#level=';
 const VERSION = '1.';
@@ -16,8 +16,11 @@ export const MAX_UNPACKED = 512 * 1024;
 const MAX_OBJECTS = 2400;
 const MAX_ACTORS = 40;
 const MAX_TEXT = 80;
+/** Connection attributes every object may carry; others only as a property of its palette entry. */
 const ATTRS = new Set(['name', 'target', 'action', 'interval']);
-const CELL_KEYS = new Set(['floor', 'stone', 'symbol', 'flavor', 'start']);
+const CELL_KEYS = new Set(['floor', 'stone', 'symbol', 'flavor', 'start', 'force']);
+/** Pearls that may be the main ball of a meditation level (no black marble). */
+export const MAIN_PEARLS = new Set(['ac_pearl_white', 'ac_pearl_black']);
 
 export class LinkError extends Error {}
 
@@ -69,8 +72,8 @@ async function pipe(bytes: Uint8Array, stream: CompressionStream | Decompression
 
 /** The compact form in the link: a LevelFile without id and licence. */
 function linkJson(file: LevelFile): string {
-  const { title, author, map, legend, start, objects, actors } = file;
-  return JSON.stringify({ title, author, map, legend, start, objects, actors });
+  const { title, author, map, legend, start, objects, actors, mainPearl } = file;
+  return JSON.stringify({ title, author, map, legend, start, objects, actors, mainPearl });
 }
 
 /** Data part of the link (without '#level='). */
@@ -129,10 +132,15 @@ const coord = (v: unknown, max: number): number => {
   return v;
 };
 
-function attrs(v: unknown): Record<string, string> | undefined {
+/** Connection attributes, and the entry's properties with one of their allowed values (others are dropped). */
+function attrs(v: unknown, e: PaletteEntry): Record<string, string> | undefined {
   if (!isObj(v)) return undefined;
   const out: Record<string, string> = {};
-  for (const [k, x] of Object.entries(v)) if (ATTRS.has(k) && typeof x === 'string') out[k] = text(x, 40);
+  for (const [k, x] of Object.entries(v)) {
+    if (typeof x !== 'string') continue;
+    if (ATTRS.has(k)) out[k] = text(x, 40);
+    else if (e.props?.some((p) => p.key === k && p.options.some(([value]) => value === x))) out[k] = x;
+  }
   return Object.keys(out).length ? out : undefined;
 }
 
@@ -158,6 +166,9 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
       if (floor !== undefined && BY_KIND.get(floor)?.layer !== 'floor') throw new LinkError(`Der Boden „${floor}“ ist im Editor nicht erlaubt.`);
       if (stone !== undefined && stone !== 'st_oxyd' && !BY_KIND.get(stone)?.wall) throw new LinkError(`Der Stein „${stone}“ ist im Editor nicht erlaubt.`);
       legend[ch] = { ...(floor ? { floor } : {}), ...(stone ? { stone } : {}) };
+      // a slope's force comes from its kind, never from the file
+      const force = floor ? BY_KIND.get(floor)?.force : undefined;
+      if (force) legend[ch].force = [force[0], force[1]];
       if (stone === 'st_oxyd') {
         const symbol = text(d.symbol, 1);
         if (!/^[A-Z?]$/.test(symbol)) throw new LinkError('Ein Oxyd-Stein hat keine gültige Farbe.');
@@ -185,7 +196,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
       const x = coord(o.x, width);
       const y = coord(o.y, height);
       if (!Number.isInteger(x) || !Number.isInteger(y)) throw new LinkError('Das Level enthält ungültige Positionen.');
-      const a = attrs(o.a);
+      const a = attrs(o.a, e);
       return a ? { x, y, k, a } : { x, y, k };
     }),
     actors: actors.map((o) => {
@@ -198,6 +209,12 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   if (raw.start !== undefined) {
     if (!isObj(raw.start)) throw new LinkError('Der Startpunkt ist ungültig.');
     file.start = { x: coord(raw.start.x, width), y: coord(raw.start.y, height) };
+  }
+  if (raw.mainPearl !== undefined) {
+    const k = isObj(raw.mainPearl) ? text(raw.mainPearl.k, 40) : '';
+    if (!MAIN_PEARLS.has(k)) throw new LinkError('Die Start-Perle des Levels ist ungültig.');
+    if (!file.start) throw new LinkError('Die Start-Perle braucht einen Startpunkt.');
+    file.mainPearl = { k };
   }
   try {
     parseLevel(file, () => 0.5);

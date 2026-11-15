@@ -11,6 +11,9 @@ export interface Problem {
   cells?: { x: number; y: number }[];
 }
 
+/** Meditation items a pearl rests in (negative states in Meditation.cc). */
+const DENTS = new Set(['it_meditation_hollow', 'it_meditation_dent', 'it_meditation_caldera']);
+
 const DIRS = [
   [1, 0],
   [-1, 0],
@@ -59,7 +62,7 @@ export function check(l: EditorLevel): Problem[] {
   if (!l.title.trim()) err('Das Level braucht einen Titel.');
 
   // the marble
-  if (!l.start) err('Die Murmel fehlt: setze genau eine Murmel (Spezial → Murmel).');
+  if (!l.start) err('Die Murmel fehlt: setze genau eine Murmel oder Start-Perle (Spezial).');
   else {
     const c = cellOf(l, l.start.x, l.start.y)!;
     if (c.s) err('Die Murmel steht auf einem Stein.', [l.start]);
@@ -71,7 +74,13 @@ export function check(l: EditorLevel): Problem[] {
   l.cells.forEach((c, i) => {
     if (c.s === 'st_oxyd') oxyds.push({ x: i % l.width, y: Math.floor(i / l.width), symbol: c.sa?.symbol ?? '?' });
   });
-  if (oxyds.length < 2) err('Es braucht mindestens zwei Oxyd-Steine.', oxyds);
+  // Meditation (Meditation.cc): the level is also won when every pearl rests in a hollow
+  const pearls = (l.mainPearl ? 1 : 0) + l.actors.filter((a) => /^ac_pearl_/.test(a.k)).length;
+  const hollows = l.cells.filter((c) => c.i && DENTS.has(c.i)).length;
+  const meditation = pearls > 0 && hollows >= pearls;
+  if (pearls > 0 && hollows > 0 && hollows < pearls) err(`Für jede Perle braucht es eine Mulde, Delle oder einen Krater (${pearls} Perlen, ${hollows} Mulden).`);
+  if (oxyds.length < 2 && !meditation)
+    err(pearls > 0 && hollows === 0 ? 'Es braucht mindestens zwei Oxyd-Steine oder für jede Perle eine Mulde (Meditation).' : 'Es braucht mindestens zwei Oxyd-Steine.', oxyds);
   for (const [symbol, n] of oxydCounts(l)) {
     if (n % 2 === 0) continue;
     const cells = oxyds.filter((o) => o.symbol === symbol);

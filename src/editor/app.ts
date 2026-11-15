@@ -22,6 +22,7 @@ const stage = $('ed-stage');
 const titleIn = $<HTMLInputElement>('ed-title');
 const authorIn = $<HTMLInputElement>('ed-author');
 const groupsEl = $('ed-groups');
+const chipsEl = $('ed-chips');
 const currentEl = $('ed-current');
 const selectionEl = $('ed-selection');
 const statusEl = $('ed-status');
@@ -33,6 +34,8 @@ let id = '';
 let level: EditorLevel;
 let history = new History<EditorLevel>();
 let entry: PaletteEntry = BY_KIND.get('st_granite')!;
+/** Palette group shown ('' = all; narrow screens start with one group, the strip stays short). */
+let group: string = window.matchMedia('(max-width: 900px)').matches ? 'Spezial' : '';
 let tool: Tool = 'paint';
 let oxydColor = 'auto';
 let oxydFlavor = 'b';
@@ -170,11 +173,33 @@ function tileCanvas(e: PaletteEntry, size = 32): HTMLCanvasElement {
   return c;
 }
 
+/** Group chips (a scope bar): one group at a time, or all; a search always looks in all groups. */
+function renderChips(searching: boolean): void {
+  const chips = (['', ...GROUPS] as string[]).map((g) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ed-chip';
+    b.textContent = g || 'Alle';
+    b.setAttribute('aria-pressed', String(!searching && g === group));
+    b.addEventListener('click', () => {
+      group = g;
+      const search = $<HTMLInputElement>('ed-search');
+      search.value = '';
+      renderPalette();
+      groupsEl.scrollTo?.({ left: 0, top: 0 });
+    });
+    return b;
+  });
+  chipsEl.replaceChildren(...chips);
+}
+
 function renderPalette(): void {
   const q = $<HTMLInputElement>('ed-search').value;
   const list = searchPalette(q);
+  renderChips(!!q.trim());
   const parts: HTMLElement[] = [];
   for (const g of GROUPS) {
+    if (!q.trim() && group && g !== group) continue;
     const items = list.filter((e) => e.group === g);
     if (!items.length) continue;
     const sec = document.createElement('section');
@@ -212,6 +237,11 @@ function renderPalette(): void {
 
 function choose(e: PaletteEntry): void {
   entry = e;
+  if (group && group !== e.group) {
+    // the pipette picked something of another group: show that group
+    group = e.group;
+    renderPalette();
+  }
   if (tool === 'erase' || tool === 'select') setTool('paint');
   picking = false;
   for (const b of groupsEl.querySelectorAll<HTMLButtonElement>('.ed-tile')) b.setAttribute('aria-selected', String(b.title === `${e.label} (${e.kind})`));
@@ -297,8 +327,8 @@ function renderSelection(): void {
   if (c.s) rows.push(['Stein', c.s === 'st_oxyd' ? `Oxyd ${c.sa?.symbol === '?' ? 'Zufall' : c.sa?.symbol}` : (BY_KIND.get(c.s)?.label ?? c.s)]);
   if (c.i) rows.push(['Gegenstand', BY_KIND.get(c.i)?.label ?? c.i]);
   const actor = level.actors.find((a) => Math.floor(a.x) === x && Math.floor(a.y) === y);
-  if (actor) rows.push(['Gegner', BY_KIND.get(actor.k)?.label ?? actor.k]);
-  if (level.start?.x === x && level.start.y === y) rows.push(['Start', 'Murmel']);
+  if (actor) rows.push([BY_KIND.get(actor.k)?.group === 'Gegner' ? 'Gegner' : 'Kugel', BY_KIND.get(actor.k)?.label ?? actor.k]);
+  if (level.start?.x === x && level.start.y === y) rows.push(['Start', level.mainPearl ? (BY_KIND.get(`start_${level.mainPearl.slice(3)}`)?.label ?? 'Perle') : 'Murmel']);
   const dl = document.createElement('dl');
   for (const [k, v] of rows) {
     const dt = document.createElement('dt');
@@ -314,6 +344,27 @@ function renderSelection(): void {
     parts.push(flavorChooser(c.sa?.flavor ?? 'b', (f) => change(() => (c.sa = { ...(c.sa ?? {}), flavor: f }))));
   }
 
+  // properties with fixed values (orientation, start state …): the same lists sanitizeLevel accepts
+  for (const layer of ['s', 'i'] as const) {
+    const kind = c[layer];
+    const e = kind ? BY_KIND.get(kind) : undefined;
+    for (const prop of e?.props ?? []) {
+      const sel = document.createElement('select');
+      const attrs = layer === 's' ? c.sa : c.ia;
+      for (const [v, label] of prop.options) sel.append(new Option(label, v, false, (attrs?.[prop.key] ?? prop.options[0][0]) === v));
+      sel.addEventListener('change', () =>
+        change(() => {
+          const cell = cellOf(level, x, y)!;
+          const a = (layer === 's' ? (cell.sa ??= {}) : (cell.ia ??= {}));
+          // the first value is the game's default: not stored
+          if (sel.value === prop.options[0][0]) delete a[prop.key];
+          else a[prop.key] = sel.value;
+        }),
+      );
+      parts.push(field(prop.label, sel));
+    }
+  }
+
   const src = sourceAt(level, x, y);
   if (src) {
     const tg = targets(level);
@@ -325,7 +376,7 @@ function renderSelection(): void {
     parts.push(field('Ziel', sel));
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.textContent = picking ? 'Tippe auf eine Tür … (Esc bricht ab)' : 'Ziel auf der Karte wählen';
+    pick.textContent = picking ? 'Tippe auf ein Ziel … (Esc bricht ab)' : 'Ziel auf der Karte wählen';
     pick.setAttribute('aria-pressed', String(picking));
     pick.disabled = tg.length === 0;
     pick.addEventListener('click', () => {
@@ -333,7 +384,7 @@ function renderSelection(): void {
       renderSelection();
     });
     parts.push(pick);
-    if (!tg.length) parts.push(note('Setze zuerst eine Tür (Schalter und Türen).'));
+    if (!tg.length) parts.push(note('Setze zuerst ein Ziel: eine Tür (Schalter und Türen) oder einen Laser.'));
     const act = document.createElement('select');
     for (const [v, label] of ACTIONS) act.append(new Option(label, v, false, (src.attrs.action ?? '') === v));
     act.addEventListener('change', () => change(() => (sourceAt(level, x, y)!.attrs.action = act.value)));
@@ -425,7 +476,7 @@ function line(a: Cell, b: Cell): Cell[] {
 function pipette(c: Cell): void {
   const cell = cellOf(level, c.x, c.y)!;
   const actor = level.actors.find((a) => Math.floor(a.x) === c.x && Math.floor(a.y) === c.y);
-  const kind = level.start?.x === c.x && level.start.y === c.y ? 'start' : (actor?.k ?? cell.s ?? cell.i ?? cell.f);
+  const kind = level.start?.x === c.x && level.start.y === c.y ? (level.mainPearl ? `start_${level.mainPearl.slice(3)}` : 'start') : (actor?.k ?? cell.s ?? cell.i ?? cell.f);
   const e = BY_KIND.get(kind);
   if (!e) return;
   if (e.layer === 'oxyd') {
@@ -451,7 +502,7 @@ canvas.addEventListener('pointerdown', (e) => {
       picking = false;
       renderSelection();
       toast(`Verbunden mit ${t.name}`, 1500);
-    } else toast('Das ist keine Tür. Tippe auf eine Tür oder drücke Esc.', 2000);
+    } else toast('Das ist kein Ziel. Tippe auf eine Tür oder einen Laser, oder drücke Esc.', 2000);
     return;
   }
   if (tool === 'select') {
