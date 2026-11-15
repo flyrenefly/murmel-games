@@ -179,6 +179,30 @@ describe('Spieler-Levels-API', () => {
     assert.equal('basedOn' in (await call(s.app, 'GET', '/api/spielerlevels/2/datei', anna)).json(), false);
   });
 
+  test('Herkunft bei neuen Versionen und selbst gebauten Levels: setzen, ändern, leeren', async () => {
+    const s = setup();
+    const anna = await author(s, 'anna@example.de', 'Anna');
+    const admin = await author(s, 'admin@example.de', 'Chefin');
+    const vorlage = async (id: number) => (await call(s.app, 'GET', '/api/spielerlevels/meine', anna)).json().levels.find((l: { id: number }) => l.id === id).vorlage;
+    // a level built in the editor, without credit; released
+    assert.deepEqual(await publish(s.app, anna, upload({ titel: 'Eigenbau' })), { status: 'angenommen', level: 1 });
+    await call(s.app, 'PUT', '/api/admin/spielerlevels/1', admin, { entscheidung: 'frei' });
+    assert.equal(await vorlage(1), null);
+    // new version with a credit added in the publish dialog (one line)
+    assert.deepEqual(await publish(s.app, anna, upload({ titel: 'Eigenbau 2', ersetzt: 1, level: { ...SAMPLE.level, basedOn: ' nach  Anna\n(Skizze) ' } })), { status: 'angenommen', level: 2 });
+    assert.equal(await vorlage(2), 'nach Anna (Skizze)');
+    await call(s.app, 'PUT', '/api/admin/spielerlevels/2', admin, { entscheidung: 'frei' });
+    assert.equal((await call(s.app, 'GET', '/api/spielerlevels')).json().levels[0].vorlage, 'nach Anna (Skizze)');
+    // the next version keeps it when sent again, and an empty one removes it
+    assert.deepEqual(await publish(s.app, anna, upload({ titel: 'Eigenbau 3', ersetzt: 2, level: { ...SAMPLE.level, basedOn: 'nach Anna (Skizze)' } })), { status: 'angenommen', level: 3 });
+    assert.equal(await vorlage(3), 'nach Anna (Skizze)');
+    assert.deepEqual(await publish(s.app, anna, upload({ titel: 'Eigenbau 4', ersetzt: 2, level: { ...SAMPLE.level, basedOn: '   ' } })), { status: 'angenommen', level: 4 });
+    assert.equal(await vorlage(4), null);
+    assert.equal('basedOn' in (await call(s.app, 'GET', '/api/spielerlevels/4/datei', anna)).json(), false);
+    // the released version is untouched until a new one is released
+    assert.equal(await vorlage(2), 'nach Anna (Skizze)');
+  });
+
   test('Abgelehnt: Lösung gewinnt nicht, unerlaubter Inhalt, alte Spielversion', async () => {
     const s = setup();
     const anna = await author(s, 'anna@example.de', 'Anna');

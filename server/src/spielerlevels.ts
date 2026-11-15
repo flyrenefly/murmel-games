@@ -295,7 +295,9 @@ export function playerLevelRoutes(app: FastifyInstance, opts: PlayerLevelOptions
     // the stored level: checked content, the upload's title; id, author and basedOn (own column) are set on delivery
     const { id: _id, author: _author, basedOn, ...rest } = r.file;
     const file: LevelJson = { ...rest, title: u.title, license: LICENSE };
-    const id = await store.create({ accountId, title: u.title, description: u.description, basedOn: typeof basedOn === 'string' && basedOn ? basedOn : null, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
+    // a new version (replaces) carries the Herkunft of its upload: changed, kept or removed (empty)
+    const credit = typeof basedOn === 'string' ? line(basedOn) : '';
+    const id = await store.create({ accountId, title: u.title, description: u.description, basedOn: credit || null, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
     void notify();
     return { status: 'angenommen', level: id };
   }
