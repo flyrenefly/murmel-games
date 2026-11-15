@@ -62,12 +62,18 @@ export class Enemy {
   /** RotorBase: chase only the nearest ball; probability to chase only the steered marble. */
   readonly attacknearest: boolean;
   readonly prefercurrent: number;
-  /** Horse: destinations, the current one, steady (no braking), loop. */
-  readonly dests: [number, number][];
+  /** Horse: destinations, the current one, steady (no braking), loop (Lua may change them). */
+  dests: [number, number][];
   destIdx: number;
-  readonly steady: boolean;
-  readonly loop: boolean;
-  readonly horseStrength: number;
+  steady: boolean;
+  loop: boolean;
+  horseStrength: number;
+  /** Horse OBJBIT_NEWDEST: a new destination list from Lua; the target follows on the next step. */
+  newDest = false;
+  /** Horse target (Horse::target): the destination it heads for. */
+  private horseTarget: [number, number] | null = null;
+  /** Horse::performAction at a reached target (its Lua callback); may change the destinations. */
+  onReached: (() => void) | null = null;
   private keepStrategy = 0;
   private currentOnly = false;
   normals: number[] = [];
@@ -99,23 +105,37 @@ export class Enemy {
 
   /**
    * Horse::think: towards the current destination with strength; a non-steady horse brakes in time.
-   * Close enough (0.2 steady, 0.1 else): the next destination, from the first again with loop.
+   * Close enough (0.2 steady, 0.1 else): Horse::updateTarget performs its action (onReached, Lua
+   * may set new destinations), then the next destination, from the first again with loop.
    */
   horseForce(): [number, number] {
-    const t = this.dests[this.destIdx];
-    if (!t || this.horseStrength < 0) return [0, 0];
+    if (this.horseStrength < 0) return [0, 0];
+    if (this.horseTarget === null || this.newDest) {
+      // OBJBIT_NEWDEST: the target is the destination at destidx
+      this.newDest = false;
+      this.horseTarget = this.dests[this.destIdx] ?? null;
+      if (!this.horseTarget) return [0, 0];
+    }
+    let t = this.horseTarget;
     let dx = t[0] - this.pos.x;
     let dy = t[1] - this.pos.y;
     let d = Math.hypot(dx, dy);
     if (d < (this.steady ? 0.2 : 0.1)) {
+      this.onReached?.();
+      if (this.horseStrength < 0) return [0, 0];
       this.destIdx++;
       if (this.destIdx >= this.dests.length) {
-        if (!this.loop) return [0, 0];
+        if (!this.loop) {
+          this.destIdx = this.dests.length; // AUTOMOVE off until Lua sets new destinations
+          this.horseTarget = null;
+          return [0, 0];
+        }
         this.destIdx = 0;
       }
-      const n = this.dests[this.destIdx];
-      dx = n[0] - this.pos.x;
-      dy = n[1] - this.pos.y;
+      t = this.horseTarget = this.dests[this.destIdx];
+      if (!t) return [0, 0];
+      dx = t[0] - this.pos.x;
+      dy = t[1] - this.pos.y;
       d = Math.hypot(dx, dy);
     }
     const v2 = this.vel.x * this.vel.x + this.vel.y * this.vel.y;

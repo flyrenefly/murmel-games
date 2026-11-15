@@ -348,7 +348,7 @@ export class ClassicView {
     if (this.level && this.img) this.staticLayer = this.renderStatic(this.level, this.img);
   }
 
-  /** Oxyd stones made during play (Lua): closed state slots, redraw (images came with the level). */
+  /** Oxyd stones made or removed during play (Lua): closed state slots, redraw (images came with the level). */
   signalsAdded(): void {
     const n = this.level?.signals.length ?? 0;
     while (this.stones.length < n) this.stones.push({ state: 'closed', prev: 'closed', since: -1e9, opened: false });
@@ -454,6 +454,7 @@ export class ClassicView {
     if (this.objects) this.drawObjects(this.objects, ox, oy);
 
     for (const s of level.signals) {
+      if (s.gone) continue; // killed by Lua during play
       const px = ox + s.col * T;
       const py = oy + s.row * T;
       if (px < -T || py < -T || px > this.vw || py > this.ph) continue;
@@ -530,7 +531,7 @@ export class ClassicView {
       g.drawImage(im, sheetCol * T, v * T, T, T, col * T, row * T, T, T);
     });
     // Shadows fall onto the floor before the stones are drawn.
-    for (const s of level.signals) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
+    for (const s of level.signals) if (!s.gone) g.drawImage(img[OXYD_ANIM[s.flavor]?.shadow ?? 'sh_round'], s.col * T, s.row * T);
     // Glass, greenbrown, plaster and flat stones that are hollow vanish behind glasses ("_glasses" HOLLOW)
     const seenThrough = (cell: { stone: string | null; hollow?: boolean }) => (this.glasses & 2) !== 0 && !!cell.hollow && /^st_(rawglass|lightglass|darkglass|greenbrown|plaster|flat)/.test(cell.stone ?? '');
     level.cells.forEach((cell, i) => {

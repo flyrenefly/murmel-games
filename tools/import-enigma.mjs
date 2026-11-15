@@ -86,7 +86,7 @@ const OBJECTS = [
   [/^(it_seed_volcano|st_volcano(_idle|_active|_new|_growing)?)$/, ['it_seed', 'st_volcano_growing', 'st_quake', 'st_quake_break', 'st_flat', 'sh_round', 'sh_solid']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow|_movable|_steady)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
-  [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
+  [/^st_puzzle(_blue|_yellow)?(_[nesw]+)?(_hollow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
   [/^it_magicwand$/, ['it_magicwand']],
@@ -163,7 +163,7 @@ const OBJECTS = [
   [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
   [/^fl_scales$/, ['fl_scales']],
   [/^fl_forward$/, ['fl_forward']],
-  [/^fl_bridge$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
+  [/^fl_bridge(_(gc|bw|bs|be|bn))?$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
@@ -384,6 +384,9 @@ async function analyzeLua(xml, exp) {
   return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
 }
 
+/** Images of an Oxyd stone of a flavor (e: b's images plus the peephole mask st_oxyde, models-2d.lua). */
+const oxydImages = (f) => [...['', '_open', '_opening'].map((i) => `st_oxyd${f === 'e' ? 'b' : f}${i}`), ...(f === 'e' ? ['st_oxyde'] : [])];
+
 /** Flavors of an Oxyd stone kind made during play: st_oxyd_d → d; plain st_oxyd a (API 2) and b (API 1 oxyd()). */
 const oxydFlavors = (k) => (OXYD.exec(k)?.[2] ? [OXYD.exec(k)[2]] : ['a', 'b']);
 
@@ -395,6 +398,8 @@ function runtimeKind(kind) {
     if (SPECIAL_FLOORS.test(kind) || FORWARD.test(kind)) return null;
     // InverseFloor: plain fl_inverse is flavor white (SimpleFloors.cc), as the export names it
     if (kind === 'fl_inverse') return 'fl_inverse_white';
+    // BridgeFloor: the Lua host makes floor and state object
+    if (/^fl_bridge(_(gc|bw|bs|be|bn))?$/.test(kind)) return 'object';
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
   if (objectImages(kind)) return 'object';
@@ -411,8 +416,20 @@ function runtimeKind(kind) {
   return null;
 }
 
+/**
+ * Levels that pass every check but would not play right, with the reason (found by playing them
+ * through with tools; each one names what is missing).
+ */
+const KNOWN_BROKEN = new Map([
+  // the banana "pipe_exit" (under the white marble at the start) is not in the export; the flood
+  // never starts in Murmel (Enigma: it travels through the pipes)
+  ['enigma_v/andreas27_2', 'Rohrpost-Banane fehlt im Export'],
+]);
+
 function convert(pack, meta, xml, exp, lua) {
   blockers = new Set();
+  const broken = KNOWN_BROKEN.get(`${pack}/${meta.xpath.replace(/^\.\//, '')}`);
+  if (broken) reject(broken);
   return finish(convertLevel(pack, meta, xml, exp, lua));
 }
 
@@ -432,25 +449,33 @@ function convertLevel(pack, meta, xml, exp, lua) {
     return reject('nur Netzwerkspiel');
   }
   const w = exp.world;
-  // wo["SlopeForce"] (server::SlopeForce, default 25) from the level's init
-  const slopeForce = lua?.world?.SlopeForce !== undefined ? Number(lua.world.SlopeForce) : 25;
-  if (lua?.error && lua.code.includes('SlopeForce')) reject('Lua-Init (Weltwert)');
+  // wo["SlopeStrength"] (WorldProxy → server::SlopeForce, default 25) from the level's init.
+  // (API 1 enigma.SlopeForce = … changes nothing in Enigma 1.x: no code reads it back.)
+  const slopeForce = lua?.world?.SlopeStrength !== undefined ? Number(lua.world.SlopeStrength) : 25;
+  // (an init that fails after setting it still tells the value)
+  if (lua?.error && lua.code.includes('SlopeStrength') && lua.world.SlopeStrength === undefined) reject('Lua-Init (Weltwert)');
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
   // Horse: only the passive one is built – destinations (not in the export), actions and owners are not
+  // Horse::updateTarget → performAction: a Lua function as target (callback) is built
+  const horseCallbacks = [];
   for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) {
-    if (h.o.target || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
+    const fn = h.o.target && (h.o.action ?? '') in { '': 1, callback: 1 } && tokens(h.o.target).length === 1 && lua?.fns.has(h.o.target);
+    if (fn) horseCallbacks.push(h.o.target);
+    if ((h.o.target && !fn) || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
     // the export (enigma-web ef0a1ce6) carries the horse's $destination, $strength, $steady, $loop, $destidx
     for (const k of ['strength', 'steady', 'loop', 'destidx']) if (h.o['$' + k] !== undefined && h.o['$' + k] !== '') h.o[k] = h.o['$' + k];
     if (h.o.$destination) {
       const pts = [];
-      for (const t of tokens(h.o.$destination)) {
+      // the export separates destinations with ";" (a position itself is "x,y"). Object::getDestinationByIndex:
+      // every position at its cell centre (centeredPos), a name that names nothing adds no destination
+      for (const t of h.o.$destination.split(';').map((s) => s.trim()).filter(Boolean)) {
         const pos = /^(-?[\d.]+)\s+(-?[\d.]+)$|^(-?[\d.]+),(-?[\d.]+)$/.exec(t);
         const c = pos ? null : [...allCells(w)].find((x) => x.o.name === t || '#' + x.o.$id === t);
-        if (pos) pts.push([Number(pos[1] ?? pos[3]), Number(pos[2] ?? pos[4])]);
+        if (pos) pts.push([Math.floor(Number(pos[1] ?? pos[3])) + 0.5, Math.floor(Number(pos[2] ?? pos[4])) + 0.5]);
         else if (c) pts.push([c.x + 0.5, c.y + 0.5]);
-        else reject('Pferd mit Zielen');
+        else if (/[*?]/.test(t) || w.actors.some((x) => x.o.name === t)) reject('Pferd mit Zielen');
       }
       h.o.dests = pts.map((p) => p.join(',')).join(';');
     }
@@ -601,6 +626,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
         FIRE_IMAGES.forEach((i) => imgs.add(i));
       }
       const force = floorForce(fl, slopeForce);
+      // a slope with its own strength keeps it when wo["SlopeStrength"] changes during play: not built
+      if (/^fl_slope/.test(fl.k) && fl.strength !== undefined && fl.strength !== '' && /\bfunction\b[\s\S]*wo\[\s*"SlopeStrength"\s*\]\s*=/.test(lua?.code ?? '')) reject('Gefälle mit eigener Stärke');
       if (force && (force[0] !== 0 || force[1] !== 0)) def.force = force;
       // OBJBIT_MOVABLE (export $movable since enigma-web 420a9755): mirrors, rotators, death stones read
       // `movable`; a plain stone made movable is pushed like its _movable kind
@@ -768,7 +795,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // level (Object::performAction: no target object and action "callback" or empty).
   let needsLua = false;
   /** Level functions the objects call (API 1: only what they reach must run during play). */
-  const callbacks = new Set();
+  const callbacks = new Set(horseCallbacks);
+  if (horseCallbacks.length) needsLua = true;
   for (const o of objs) {
     for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
       const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
@@ -819,7 +847,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const world = {};
   if (lua) {
     for (const k of [...RUNTIME_WORLD, ...LIFE_WORLD, '_PeepAll']) if (lua.world[k] !== undefined) world[k] = lua.world[k];
-    if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k))) reject('Lua-Init (Weltwert)');
+    if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k) && (k !== 'SlopeStrength' || lua.world[k] === undefined))) reject('Lua-Init (Weltwert)');
     // Life rules of levels whose init the shim cannot run (API 1: enigma.ConserveLevel = FALSE)
     if (lua.error) {
       for (const k of LIFE_WORLD) {
@@ -833,10 +861,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns, lua.api1, callbacks)) reject(`Lua: ${p}`);
-    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a; API 1 oxyd(): b) or {"st_oxyd_d"}
-    // (that flavor), colour by shuffle, in a level that starts without any (Pentomino, Panelled Puzzle).
-    // Replacing existing Oxyd stones, fixed colours or flavor attributes are not built.
-    const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
+    // Oxyd stones made during play ({"st_oxyd"}, flavor a, API 1 oxyd(): b; {"st_oxyd_d"}: that flavor;
+    // Pentomino, Panelled Puzzle), also where Lua kills or replaces Oxyd stones (be quick or be dead):
+    // a closed stone of its flavor, coloured by shuffle or a fixed oxydcolor (OXYD_<colour>, number ≥ 0).
+    // Not built: noshuffle and the pseudo colours (OXYD_FAKE/QUAKE/BOLD/AUTO, negative numbers).
+    const oxydDecls = [...lua.code.matchAll(/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\}/g)].map((m) => m[0]);
+    const plainOxyds = !oxydDecls.some((d) => /\bnoshuffle\b|\boxydcolor\s*=\s*(-|OXYD_(FAKE|QUAKE|BOLD|AUTO)\b)/.test(d));
+    const oxydFlavorAttrs = [...new Set(oxydDecls.flatMap((d) => [...d.matchAll(/\bflavor\s*=\s*"([abcde])"/g)].map((m) => m[1])))];
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
     for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds)]) {
@@ -847,7 +878,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
+      else if (v === 'oxyd') for (const f of new Set([...oxydFlavors(k), ...oxydFlavorAttrs])) oxydImages(f).forEach((i) => imgs.add(i));
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
@@ -859,7 +890,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
+      else if (v === 'oxyd') for (const f of new Set([...oxydFlavors(k), ...oxydFlavorAttrs])) oxydImages(f).forEach((i) => imgs.add(i));
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }
@@ -887,7 +918,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== '')) };
   if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
-    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
+    // a horse keeps its action (Lua callback at a reached target)
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action)$/.test(k))) && v !== ''));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
     if (/^ac_marble_(white|black)$/.test(x.o.k) && x.o.owner === undefined) {
       attrs.passive = 'true';

@@ -117,6 +117,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **st_grate_cross/framed:** für die rollende Murmel durchlässig.
 - **it_document:** beim Überrollen erscheint der Text (aus `el:string` des Levels,
   deutsch falls übersetzt); Abweichung: kein Inventar, der Zettel verschwindet sofort.
+  Ebenso zeigt `wo:add(YIN, {"it_document", text = …})` während des Spiels (ab 15.11.2026) den
+  Text sofort, statt den Zettel ins Inventar zu legen. Freigeschaltet: more is not less (devnull23_1).
 - **st_box_wood/hay/rock** (`BoxStone.cc`, `maybe_push_stone`): trifft die Murmel eine
   Seite (nicht die Ecke) mit mehr als 4 Feldern/s, rückt die Kiste ein Feld weiter,
   wenn dort kein Stein ist; schiebt sie sich auf die Murmel, zerspringt diese. Auf
@@ -375,11 +377,18 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   Spieler nichts auf – sonst läge ein abgelegter Gegenstand gleich wieder im Inventar.
 - **fl_slope_*** (`SlopeFloor.cc`): konstante Bodenkraft auf Murmeln und Akteure am Boden
   (nicht im Sprung) – Richtung aus der Form (pw/ps/pe/pn gerade, i…/o… Ecken diagonal,
-  t… Röhren), normiert, mal `strength` oder `wo["SlopeForce"]` (Standard 25); `slope` setzt
+  t… Röhren), normiert, mal `strength` oder `wo["SlopeStrength"]` (WorldProxy → server::SlopeForce,
+  Standard 25; bis 15.11.2026 las der Import fälschlich `SlopeForce` und nahm in rund 50 Levels 25;
+  API 1 `enigma.SlopeForce` wirkt auch in Enigma nicht); `slope` setzt
   die Richtung, `force_x`/`force_y` ersetzen alles. Der Konverter legt die Kraft je Feld ab
   (`force` in der Legende); jeder andere Boden mit `force_x`/`force_y` wirkt ebenso. Bild aus
   dem 6 × 4-Bogen `fl_slope` (DefSubimages spaltenweise). Wechselt der Boden zur Laufzeit,
   entfällt die Kraft. Die 3D-Ansicht zeigt Gefälle nicht.
+  `wo["SlopeStrength"] = …` während des Spiels (ab 15.11.2026) skaliert die Kraft aller Gefälle
+  vom alten auf den neuen Wert. Abweichung: Gefälle mit eigener `strength` behielte Enigma bei;
+  solche Levels lehnt der Import ab, wenn ein Rückruf die Stärke ändert. Ein Gefälle bei Stärke 0
+  kann Murmel nicht hochskalieren. (Pipes and Plumbing, andreas27_2, das es nutzt, bleibt gesperrt:
+  seine Rohrpost-Banane fehlt im Export, siehe „Bekannt kaputte Levels“.)
 - **st_actorimpulse / _invisible** (`ActorImpulseStone.cc`): fester Stein; berührt ihn eine
   Murmel (auf ihn zu), bekommt sie einen Stoß weg von seiner Mitte: `distortedVelocity`
   (Richtung × `hit_strength` bzw. `strength`, Standard BumperForce 200, Verzerrung
@@ -392,7 +401,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   während des Öffnens/Schließens (gc 10, sonst 9 Bilder à 70 ms) fällt jede Kugel hinein
   (`isDeadly`); ein nicht hohler Stein schließt sie, ohne Stein öffnet sie sich wieder, außer sie
   wurde ausdrücklich geschlossen. open/on/close/off/signal/toggle; eine laufende Animation kehrt
-  um. Standard offen.
+  um. Standard offen. Zur Laufzeit (ab 15.11.2026, `wo[pos] = {"fl_bridge_bw", "name", state = …}`)
+  legt der Lua-Host Boden und Objekt genauso an (Name am Objekt, `state` CLOSED/OPEN); setzt Lua
+  einen anderen Boden auf die Zelle, verschwindet das Brückenobjekt mit. Freigeschaltet: Bizarro
+  World (duffy73_3, Fallen wechseln zwischen Brücke und Scheinabgrund).
 - **fl_scales_*** (`ScalesFloor.cc`): Der Konverter legt den Grundboden des Geschmacks
   (brick, bridgewood, concrete, darkgray, gray, platinum) und ein Objekt `fl_scales` an, das nicht
   im Zellraster steht (weder Stein noch Gegenstand). Gedrückt, wenn ein nicht hohler Stein darauf
@@ -560,7 +572,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (`res.autotile`, `res.pento`), Leserichtungen und Karten aus `wo:newMap`.
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
 - **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
-- **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
+- **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.; bis 15.11.2026
+  kannte der Shim `setfire/forcefire/stopfire/heat/ignite` nur an Gruppen, an einem einzelnen Objekt
+  brach der Aufruf ab – betraf Double play und Sanssouci) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
 - **Lua-Tabellen als Attributwerte** (`target = {"a#*", "b#*"}`, `action_3 = {"open", "close"}`): werden zu Tokenlisten „a#*,b#*“ (ot_counter/ot_timer aus wo:add).
 - **it_surprise mit "=Taste"**: Der Import löst die Kachel ti[Taste] des Levelskripts auf (Tasten mit Leerzeichen am Ende inklusive); eine Überraschung in der eigenen Auswahl bleibt Überraschung mit derselben Auswahl. Levels, die hohle Puzzlesteine erst zur Laufzeit setzen, werden nicht mehr als „alter Export“ abgelehnt.
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
@@ -657,7 +671,17 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **ac_horse** (`HorseActor.cc`): Radius 24/64, Masse 1,2, schadet nicht, kann an Gummibändern hängen. Mit Zielen
   (`destination`, seit Export ef0a1ce6 als $destination) reitet es mit Kraft `strength` (10) eines nach dem anderen
   an; näher als 0,2 (`steady` false: 0,1, bremst rechtzeitig) gilt das Ziel als erreicht, mit `loop` von vorn.
-  Pferde mit Aktion (target) oder Besitzer (steuerbar) werden noch abgelehnt.
+  Ab 15.11.2026 (`Horse::updateTarget`): am erreichten Ziel ruft das Pferd seine Aktion – nur eine
+  Lua-Funktion als `target` (Aktion leer oder `callback`), Absender ist das Pferd –, erst danach zählt
+  es zum nächsten Ziel weiter, genau wie Enigma (setzt der Rückruf neue Ziele, beginnt der Zähler bei 0
+  und wird noch erhöht; ohne `loop` hält das Pferd danach an, bis Lua wieder Ziele setzt). Lua darf
+  `destination` (Position, Namen, Liste oder nil), `destidx`, `strength`, `steady` und `loop` ändern.
+  Jedes Ziel liegt wie bei `getDestinationByIndex` in der Zellmitte (`centeredPos`), auch im Export;
+  Namen, die nichts benennen, fallen weg. Exportierte Ziellisten trennt der Export mit „;“ (eine
+  Position selbst ist „x,y“; bis 15.11. zerlegte der Import sie am Komma und lehnte Ariadne ab).
+  Abweichung: das Weiterzählen bei Steinberührung am Ziel (`afterStoneBounce`) fehlt. Pferde mit
+  anderer Aktion oder Besitzer (steuerbar) werden weiter abgelehnt. Freigeschaltet: Ariadne
+  (andreas40_2), Pairs II (ssch02_1), Rainbow~Meditation II (mecke72_1, Ziel „ho2“ gibt es nicht).
 - **st_portal_horse / _pearl** (`PortalStone.cc`): schwebender Stein, nur das Pferd (bzw. die weiße Perle)
   fährt hindurch, alle anderen prallen ab.
 - **Gummibänder an beweglichen Steinen** (Kisten, Felsbrocken, Puzzle …): das Bandende folgt dem
@@ -852,20 +876,63 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   `ti`, `res.autotile`, `res.random` (nachgebaut), `res.pento` oder Karten; bei reinem `ti` muss
   jeder gezeichnete Schlüssel einen Eintrag haben. Andere Auflöser im Init stören nicht mehr.
 - **`wo:add` in Rückrufen:** außer Inventar-Gegenständen und Gummibändern auch `ot_timer` und
-  `ot_counter` (Objekte ohne Zelle, wie aus dem Init).
+  `ot_counter` (Objekte ohne Zelle, wie aus dem Init). Die Art eines Inventar-Gegenstands darf
+  aus einem eigenen Attribut kommen (`wo:add(YIN, {sender["_type"]})`, ab 15.11.2026), wenn jede
+  Zuweisung dieses Attributs im Level ein Gegenstand ist; der Import nimmt diese Arten mit.
+  Freigeschaltet: Puzzle Shift (zephyr01_1).
+- **`ot_wire` zur Laufzeit** (ab 15.11.2026; `wo:add({"ot_wire", name?, anchor1, anchor2})`): beide
+  Steine werden gegenseitig `fellows` wie bei Drähten aus dem Export – Stöße wandern mit
+  (`Stone::propagateImpulse`), der klassische Renderer zeichnet die Linie. Anker sind Namen oder
+  Objekte; Objekte, die erst während des Spiels entstehen, verweist Murmel über ihre Laufzeitkennung
+  (`#new<n>`). Ein benannter Draht ist für Lua auffindbar (`no["wire…"]`, `-no[…]`) und mit `kill()`
+  wieder lösbar. Abweichung: Murmel kann nur Objekte verbinden (schlichte Steine ohne Objekt lehnt
+  es zur Laufzeit ab), und ein Draht hat außer Name und Art keine Attribute. Freigeschaltet:
+  Scarlett's Necklace (ral30_1), Wired Strips (ral38_1), Do it (devnull17_1).
 - **Rückrufe mit Punkt:** Ziele wie `pento.next` werden wie `lua::CallFunc` über Tabellen
   aufgelöst; der Importer fragt nach dem Init, ob das Ziel eine Funktion ist.
 - **Puzzlesteine zur Laufzeit** (`PuzzleStone::on_creation` → `Stone::autoJoinCluster`): ein neuer
   Stein mit `cluster` verbindet sich mit Nachbarn gleichen Clusters (und gleicher Farbe) und
   trennt sich von anderen; ohne `cluster` passt er geclusterte Nachbarn an. `obj:get_cluster()`
   liefert das Fragment. Eigene Attribute (`_transform`) bleiben am Stein.
+  Ab 15.11.2026 auch Arten mit Farbe, Verbindungen und Hohlheit im Namen (`st_puzzle_yellow_es`,
+  `st_puzzle_blue_nesw_hollow`, API 1 `st-puzzle-e`) oder dem Attribut `connections = "nw"`: Murmel
+  legt sie als `st_puzzle` (blau, Farbe 4) bzw. `st_puzzle_yellow` (Farbe 3) mit `$connections`
+  (W 1, S 2, E 4, N 8) an, wie der Export. Schlichtes `st_puzzle` ohne beides bleibt wie bisher
+  ohne Farbangabe (Pentomino). Freigeschaltet: Print 23 (richi07_1), Sanssouci (mecke05_1).
 - **Oxyd-Steine zur Laufzeit** (`wo[…] = {"st_oxyd"}`): ein neuer geschlossener Stein (Geschmack a,
   Physik, Paarbrett, Renderer); Farben bekommen sie wie bei `OxydStone::initColors` paarweise,
   sobald `wo:shuffleOxyd()` läuft oder der erste getroffen wird. Levels ohne Oxyd-Steine, deren
-  Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Nur in
-  Levels, die ohne Oxyd-Steine beginnen, und nur schlichtes `{"st_oxyd"}` oder eine Sorte als Art
-  (`{"st_oxyd_d"}`, ab 13.11.2026): Ersetzen vorhandener Oxyd-Steine, feste Farben (`oxydcolor`),
-  `flavor`-Attribute oder `noshuffle` lehnt der Import ab.
+  Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Die Sorte
+  kommt aus der Art (`{"st_oxyd_d"}`) oder dem Attribut `flavor`, eine feste Farbe aus `oxydcolor`
+  (`OXYD_BLUE` = 0 → Symbol A wie beim Import). `noshuffle` und die Pseudofarben
+  (`OXYD_FAKE/QUAKE/BOLD/AUTO`, negative Zahlen) an Laufzeit-Steinen lehnt der Import ab.
+- **Oxyd-Steine zur Laufzeit entfernen oder ersetzen** (ab 15.11.2026; `OxydStone::dispose`: der
+  Stein verlässt `levelOxyds`): `kill()`, `wo[pos] = {"st_nil"}` oder ein anderer Stein auf einem
+  Oxyd-Stein nimmt ihn aus dem Spiel – Zelle leer bzw. neuer Stein, Physik frei, Paarbrett zählt ihn
+  nicht mehr (Paare, Levelende, Mischen, `closeall`), beide Renderer zeichnen ihn nicht mehr
+  (der Index bleibt belegt, sein Platz in den Listen auch). Ein neuer Oxyd-Stein auf derselben Zelle
+  ist ein eigener, geschlossener Stein. War der entfernte Stein der einzelne offene, wartet keiner
+  mehr auf einen Partner. Abweichungen: Fehlt einer Farbe nach dem Entfernen der Partner, bricht
+  Enigma ohne `wo["AllowSingleOxyds"]` mit einem Fehler ab; Murmel spielt weiter (dann ist das
+  Level unlösbar, wie in Enigma mit der Erlaubnis). Das Levelende prüft Murmel wie Enigma nur beim
+  Öffnen eines Paares, nicht beim Entfernen. Umfärben vorhandener Steine (`obj.oxydcolor = …`)
+  ist nicht gebaut. Freigeschaltet: be quick or be dead (illmind12_2, Oxyd-Steine wandern im
+  Takt), Multi-lane (devnull03_1). Tinker, Tailor (andreas46_4) bleibt gesperrt: es liest
+  `sender["rubbers"]`/`["fellows"]` als Objektlisten (siehe unten).
+- **`pos:exists()`** (ab 15.11.2026, lua.cc existsPosition): wahr, wenn die abgerundete Zelle im
+  Level liegt.
+- **Laufzeit-Arten, Korrekturen vom 15.11.2026:** `ti`-Verweise aus Rückrufen folgen auch den
+  Einträgen, auf denen sie aufbauen (`ti[";"] = {…} .. ti["l"]`; vorher fehlte `fl_lawn` in Bizarro
+  World), und API-1-Namen mit Richtungszeichen (`"st-mirror-3>"`, `"st-mirror-3<t"`) zählen mit
+  (vorher fehlten die Spiegel in Print 23).
+- **Abgelehnt: Gummibänder und Drähte eines Objekts als Lua-Objekte** (`sender["rubbers"]:kill()`,
+  `sender["fellows"][1]`): Murmel hat dafür keine Objekte (Tinker, Tailor).
+- **Bekannt kaputte Levels** (`KNOWN_BROKEN` im Importer, ab 15.11.2026): Levels, die alle Prüfungen
+  bestehen, aber nachweislich nicht richtig spielen, mit Grund. Bisher nur Pipes and Plumbing
+  (andreas27_2): die Banane „pipe_exit“ fehlt im Export, die Flut beginnt in Murmel nie.
+- **`pos:grid()` in Rückrufen** (ab 15.11.2026): der Shim konnte es schon (abrunden auf die
+  Zelle), die Importprüfung kennt es jetzt als Methode. Freigeschaltet: Lissajous (andreas01_2,
+  Todessteine laufen auf einer Lissajous-Kurve um die Oxyd-Steine).
 - **`wo:shuffleOxyd()` während des Spiels** mischt die Farben der geschlossenen Steine (wie
   die Nachricht `shuffle`).
 - **`po["name"]`** (lua.cc dispatchPositionsReadAccess): benannte Position oder Position des

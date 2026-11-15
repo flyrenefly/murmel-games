@@ -44,11 +44,12 @@ test('Karten aus wo:newMap: nur die Schlüssel ihrer Zeilen, sonst jede Kachel',
   assert.deepEqual(runtimeKinds(code.replace('wo:newMap(" ", part1)', 'wo:newMap(" ", build())')).sort(), ['st_granite', 'st_oxyd']);
 });
 
-test('wo:add im Rückruf: Timer und Zähler ja, Drähte nein', () => {
+test('wo:add im Rückruf: Timer, Zähler und Drähte (ot_wire) ja, andere Objekte nein', () => {
   const timer = 'function f()\n    wo:add({"ot_timer", interval = 0.5, loop = false, target = "laser#*"})\nend';
   assert.deepEqual(problems(timer), []);
   assert.deepEqual(problems(timer.replace('ot_timer', 'ot_counter')), []);
-  assert.deepEqual(problems('function f()\n    wo:add({"ot_wire", anchor1 = "a", anchor2 = "b"})\nend'), [':add']);
+  assert.deepEqual(problems('function f()\n    wo:add({"ot_wire", anchor1 = "a", anchor2 = "b"})\nend'), []);
+  assert.deepEqual(problems('function f()\n    wo:add({"ot_cannon", anchor1 = "a"})\nend'), [':add']);
 });
 
 test('drawCalls: Zeichenketten in Indexausdrücken sind kein Ignorierschlüssel', () => {
@@ -99,4 +100,32 @@ test('Laufzeit-Arten: eine Art im Zeichenaufruf ist kein Kartenschlüssel', asyn
   const { runtimeKinds } = await import('./lua-check.mjs');
   const code = 'ti["~"] = {"fl_water"}\nti["o"] = {"st_oxyd_d"} .. ti["~"]\nfunction f()\n    wo:drawRect({2,0},{17,0},{"it_cross"} .. ti({"st_nil"}))\nend';
   assert.deepEqual(runtimeKinds(code).sort(), ['it_cross', 'st_nil']);
+});
+
+test('pos:grid() im Rückruf ist erlaubt (Lissajous: Todesstein auf der Lissajous-Kurve)', () => {
+  assert.deepEqual(problems('function cb()\n  local c = po(8.0 * math.cos(1) + 10.0, 6.5):grid()\n  wo[c] = {"st_death"}\nend'), []);
+});
+
+test('wo:add(YIN, {sender["_type"]}): erlaubt, wenn _type überall ein Gegenstand ist (Puzzle Shift)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["H"] = {"st_switch", target = "f", _type = "it_puller_n"}\nti["I"] = {"st_switch", target = "f", _type = "it_puller_e"}\nfunction f(v, sender)\n  wo:add(YIN, {sender["_type"]})\nend';
+  assert.deepEqual(problems(code), []);
+  assert.deepEqual([...runtimeKinds(code)].filter((k) => k.startsWith('it_puller')).sort(), ['it_puller_e', 'it_puller_n']);
+  assert.deepEqual(problems(code.replace('"it_puller_e"', '"st_box"')), [':add']);
+});
+
+test('Laufzeit-Arten: ti-Verweise in Rückrufen folgen verschachtelten Einträgen (Bizarro World)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["l"] = {"fl_lawn"}\nti[";"] = {"st_invisible", "gate"} .. ti["l"]\nfunction cb()\n  wo[no["gate"]] = ti[";"]\nend';
+  assert.deepEqual([...runtimeKinds(code)].sort(), ['fl_lawn', 'st_invisible']);
+});
+
+test('API 1: Spiegel mit Richtung im Namen ("st-mirror-3>") sind Laufzeit-Arten (Print 23)', async () => {
+  const { runtimeKinds, api1Kind } = await import('./lua-check.mjs');
+  assert.equal(api1Kind('st-mirror-3<t'), 'st_mirror_triangle_wt');
+  assert.deepEqual(runtimeKinds('function add3()\n  set_stone("st-mirror-3>", 5, 1)\nend', true).filter((k) => k.includes('mirror')), ['st_mirror_triangle_e']);
+});
+
+test('Gummibänder/Drähte eines Objekts als Lua-Objekte (sender["rubbers"]) werden abgelehnt', () => {
+  assert.deepEqual(problems('function cb(v, sender)\n  sender["rubbers"]:kill()\nend'), ['obj.rubbers']);
 });

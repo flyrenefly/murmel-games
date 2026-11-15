@@ -4000,6 +4000,11 @@ export class ObjectWorld {
     this.slot(i).init = false;
   }
 
+  /** A document's text (key into the level's texts, or the text itself) on the screen. */
+  showText(key: string): void {
+    this.events.push({ type: 'sound', name: 'pickup' }, { type: 'text', text: this.texts[key] ?? key });
+  }
+
   private pickUp(col: number, row: number): void {
     for (const o of this.at(col, row)) {
       if (o.cls !== 'document' || o.gone) continue;
@@ -4228,6 +4233,8 @@ export class ObjectWorld {
 
   /** wo[pos] = {kind, …} from a Lua callback: a new object (null if Murmel has no such object). */
   create(kind: string, col: number, row: number, attrs: Record<string, string>): GameObject | null {
+    const puzzle = puzzleKind(kind, attrs);
+    if (puzzle) [kind, attrs] = puzzle;
     const cls = objectClass(kind);
     if (!cls) return null;
     // BoxStone GROWING (st_box_wood_growing, st_box_hay_growing): a box that grows like one from a seed
@@ -4671,7 +4678,8 @@ export class ObjectWorld {
 
   /** Objects named by a target token: "#id", a name or a name pattern with * and ?. */
   resolve(token: string): GameObject[] {
-    if (/^#\d+$/.test(token)) return this.objects.filter((o) => `#${o.id}` === token);
+    // "#id": exported ids are numbers, objects made during play "new<n>" (wires made by Lua)
+    if (/^#(\d+|new\d+)$/.test(token)) return this.objects.filter((o) => `#${o.id}` === token);
     if (token.startsWith('%')) return [];
     if (/[*?]/.test(token)) {
       const re = new RegExp(`^${token.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
@@ -4698,6 +4706,27 @@ function onewayDir(kind: string, a: Record<string, string>): number {
  */
 function onewayFaces(o: GameObject): number {
   return o.attrs.color === '1' || o.kind.includes('_white') ? ALL_FACES : DIR_FACE[o.state & 3];
+}
+
+/**
+ * PuzzleStone kinds with colour, connections and hollowness in the name (st_puzzle_yellow_es,
+ * st_puzzle_blue_nesw_hollow) or a `connections` attribute ("nw"), as Lua sets them during play:
+ * the object kind the export uses (st_puzzle = blue, colour 4; st_puzzle_yellow, colour 3) with
+ * $connections (W 1, S 2, E 4, N 8) and hollow. Plain st_puzzle without either stays as it is.
+ */
+export function puzzleKind(kind: string, attrs: Record<string, string>): [string, Record<string, string>] | null {
+  const m = /^st_puzzle(_blue|_yellow)?(?:_([nesw]+))?(_hollow)?$/.exec(kind);
+  if (!m || (kind === 'st_puzzle' && attrs.connections === undefined)) return null;
+  const yellow = m[1] === '_yellow';
+  const a = { ...attrs };
+  if (a.color === undefined) a.color = yellow ? '3' : '4';
+  const sides = m[2] ?? a.connections;
+  if (sides !== undefined && a.$connections === undefined) {
+    a.$connections = String([...sides].reduce((c, s) => c | ({ w: 1, s: 2, e: 4, n: 8 }[s] ?? 0), 0));
+  }
+  delete a.connections;
+  if (m[3]) a.$hollow = 'true';
+  return [yellow ? 'st_puzzle_yellow' : 'st_puzzle', a];
 }
 
 function initialState(kind: string, a: Record<string, string>): number {

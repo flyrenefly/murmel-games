@@ -356,6 +356,13 @@ export class PhysicsWorld {
     this.solid[row * this.width + col] = index;
   }
 
+  /** An Oxyd stone killed or replaced by Lua: its cell is free (a new stone may follow). */
+  removeSignal(col: number, row: number): void {
+    if (col < 0 || row < 0 || col >= this.width || row >= this.height) return;
+    const i = row * this.width + col;
+    if (this.solid[i] >= 0) this.solid[i] = -1;
+  }
+
   setSolid(col: number, row: number, solid: boolean): void {
     if (col < 0 || row < 0 || col >= this.width || row >= this.height) return;
     const i = row * this.width + col;
