@@ -118,3 +118,24 @@ describe('wo["SlopeStrength"] during play', () => {
     expect(other.force).toEqual([5, 0]);
   });
 });
+
+describe('fl_bridge during play (Bizarro World)', () => {
+  it('makes the bridge floor with its state object; another floor removes both', async () => {
+    const { lua, level, objects } = await withScript(`function f()
+  wo[po(3, 3)] = {"fl_bridge_bw", "trap", state = CLOSED}
+end
+function g()
+  if no["trap"]:is("fl_bridge") then wo[no["trap"]] = {"fl_fake_abyss", "trap"} end
+end`, { fl_bridge_bw: 'object', fl_fake_abyss: 'fl_fake_abyss' });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    const cell = level.cells[3 * level.width + 3];
+    expect(cell.floor).toBe('fl_bridge_bw_closed');
+    const bridge = objects.objects.find((o) => o.kind === 'fl_bridge' && !o.gone)!;
+    expect([bridge.name, bridge.attrs.flavor, bridge.state]).toEqual(['trap', 'bw', 0]);
+    lua.callback('g', true, '');
+    expect(lua.lastError).toBe('');
+    expect(cell.floor).toBe('fl_fake_abyss');
+    expect(bridge.gone).toBe(true);
+  });
+});

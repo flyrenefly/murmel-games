@@ -227,8 +227,22 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (decl.name) decl.name = uniqueName(decl.name);
       if (kind.startsWith('fl_')) {
         if (look === 'nil') return;
-        cell(x, y).floor = look;
+        // the floor's state object (BridgeFloor) goes with the old floor
+        for (const o of objects.objects) if (!o.gone && o.cls === 'bridge' && o.col === x && o.row === y) objects.remove(o);
+        attrs.delete(`c:fl:${x}:${y}`);
         delete cell(x, y).force;
+        const bridge = /^fl_bridge(?:_(gc|bw|bs|be|bn))?$/.exec(kind);
+        if (bridge && look === 'object') {
+          // BridgeFloor: floor image fl_bridge_<gc|bw>_<open|closed> plus the object fl_bridge, as the import makes them
+          const flavor = decl.flavor || bridge[1] || 'gc';
+          const open = decl.state === undefined || decl.state === '' || Number(decl.state) !== 0;
+          cell(x, y).floor = `${flavor === 'gc' ? 'fl_bridge_gc' : 'fl_bridge_bw'}_${open ? 'open' : 'closed'}`;
+          objects.create('fl_bridge', x, y, { ...decl, flavor, $state: open ? '1' : '0' });
+          objects.floorChanged(x, y);
+          w.redraw();
+          return;
+        }
+        cell(x, y).floor = look;
         attrs.set(`c:fl:${x}:${y}`, decl);
         // BoxStone::on_floor_change: a box on new abyss, water or swamp sinks
         objects.floorChanged(x, y);

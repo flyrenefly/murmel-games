@@ -398,7 +398,10 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   während des Öffnens/Schließens (gc 10, sonst 9 Bilder à 70 ms) fällt jede Kugel hinein
   (`isDeadly`); ein nicht hohler Stein schließt sie, ohne Stein öffnet sie sich wieder, außer sie
   wurde ausdrücklich geschlossen. open/on/close/off/signal/toggle; eine laufende Animation kehrt
-  um. Standard offen.
+  um. Standard offen. Zur Laufzeit (ab 15.11.2026, `wo[pos] = {"fl_bridge_bw", "name", state = …}`)
+  legt der Lua-Host Boden und Objekt genauso an (Name am Objekt, `state` CLOSED/OPEN); setzt Lua
+  einen anderen Boden auf die Zelle, verschwindet das Brückenobjekt mit. Freigeschaltet: Bizarro
+  World (duffy73_3, Fallen wechseln zwischen Brücke und Scheinabgrund).
 - **fl_scales_*** (`ScalesFloor.cc`): Der Konverter legt den Grundboden des Geschmacks
   (brick, bridgewood, concrete, darkgray, gray, platinum) und ein Objekt `fl_scales` an, das nicht
   im Zellraster steht (weder Stein noch Gegenstand). Gedrückt, wenn ein nicht hohler Stein darauf

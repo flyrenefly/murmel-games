@@ -163,7 +163,7 @@ const OBJECTS = [
   [/^it_crack(_[isml])?(_water)?$/, ['it_crack_abyss', 'it_crack_water']],
   [/^fl_scales$/, ['fl_scales']],
   [/^fl_forward$/, ['fl_forward']],
-  [/^fl_bridge$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
+  [/^fl_bridge(_(gc|bw|bs|be|bn))?$/, ['fl_bridge_gc', 'fl_bridge_gc_open', 'fl_bridge_gc_closed', 'fl_bridge_bw', 'fl_bridge_bs', 'fl_bridge_be', 'fl_bridge_bn', 'fl_bridge_bw_open', 'fl_bridge_bw_closed']],
   [/^st_mirror(_(slab|triangle|sheets))?(_[nesw]t?m?c?)?$/, ['st_mirror_static', 'st_mirror_movable', 'sh_rounded', 'it_laser']],
   [/^it_vortex(_open|_closed)?$/, ['it_vortex']],
   [/^st_swap$/, ['st_swap', 'sh_round']],
@@ -398,6 +398,8 @@ function runtimeKind(kind) {
     if (SPECIAL_FLOORS.test(kind) || FORWARD.test(kind)) return null;
     // InverseFloor: plain fl_inverse is flavor white (SimpleFloors.cc), as the export names it
     if (kind === 'fl_inverse') return 'fl_inverse_white';
+    // BridgeFloor: the Lua host makes floor and state object
+    if (/^fl_bridge(_(gc|bw|bs|be|bn))?$/.test(kind)) return 'object';
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
   if (objectImages(kind)) return 'object';
