@@ -4,7 +4,7 @@
  * plain floors and stones, "a:<n>" actors (0 = black marble, n = level.actors[n − 1]).
  */
 import type { LuaHost } from '../lua/runtime';
-import type { Level } from './level';
+import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
 import type { PhysicsWorld } from './physics';
 
@@ -15,8 +15,10 @@ export interface LuaWorld {
   /** Floors or plain stones changed: redraw. */
   redraw(): void;
   random(): number;
-  /** wo[pos] = {"st_oxyd", …} during play: a new closed Oxyd stone at a cell (its flavor). */
-  addOxyd?(x: number, y: number, flavor: string): void;
+  /** wo[pos] = {"st_oxyd", …} during play: a new closed Oxyd stone at a cell (its flavor, oxydcolor as symbol or '?'). */
+  addOxyd?(x: number, y: number, flavor: string, symbol?: string): void;
+  /** An Oxyd stone killed or replaced during play (kill(), wo[pos] = other stone): it leaves the game. */
+  removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
 }
@@ -72,6 +74,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
   const removeStone = (x: number, y: number) => {
     const o = objects.stoneObjectAt(x, y);
     if (o) objects.remove(o);
+    if (cell(x, y).stone === 'st_oxyd' && w.removeOxyd) w.removeOxyd(x, y);
     if (cell(x, y).stone !== null && cell(x, y).stone !== 'st_oxyd') {
       cell(x, y).stone = null;
       delete cell(x, y).hollow;
@@ -199,7 +202,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         removeStone(x, y);
         if (look === 'oxyd') {
           // OxydStone: a closed stone of the flavor (st_oxyd_d: d, default "a"); named ones receive messages
-          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a');
+          // oxydcolor: a fixed colour (OXYD_BLUE = 0 → symbol A, as the importer maps it), else '?'
+          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a', oxydSymbol(decl.oxydcolor) ?? '?');
           if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
         } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {

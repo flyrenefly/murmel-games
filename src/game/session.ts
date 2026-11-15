@@ -4,7 +4,7 @@
  * goes through SessionUI; main.ts draws and plays sounds, a replay in Node passes NO_UI.
  * The code moved here from main.ts unchanged in behaviour.
  */
-import { addSignal, cellAt, colorNewSignals, isDeadly, parseLevel, type Level, type LevelFile } from './level';
+import { addSignal, cellAt, colorNewSignals, isDeadly, liveSignalAt, parseLevel, removeSignal, type Level, type LevelFile } from './level';
 import { applyWorld, makeLuaHost } from './luahost';
 import { ObjectWorld, type ObjectEvent } from './objects';
 import { PairBoard, type PairEvent } from './pairs';
@@ -35,7 +35,7 @@ export interface SessionUI {
   hud(): void;
   floorChanged(): void;
   peepAll(indices: number[]): void;
-  /** Lua made new Oxyd stones. */
+  /** Lua made new Oxyd stones or removed some (gone): redraw them. */
   signalsAdded(): void;
   /** The level is solved. */
   won(): void;
@@ -215,11 +215,7 @@ export class GameSession {
     const ow = this.objects;
     // Oxyd stones made by Lua (Pentomino): a new closed stone; the renderer learns of them once per batch
     let signalsPending = false;
-    const addOxyd = (x: number, y: number, flavor: string): void => {
-      const s = addSignal(lv, x, y, flavor);
-      if (!s || s.index < this.board.states.length) return;
-      this.board.add(s.symbol);
-      ph.addSignal(x, y, s.index);
+    const signalsChanged = (): void => {
       if (signalsPending) return;
       signalsPending = true;
       queueMicrotask(() => {
@@ -227,12 +223,27 @@ export class GameSession {
         this.ui.signalsAdded();
       });
     };
+    const addOxyd = (x: number, y: number, flavor: string, symbol?: string): void => {
+      const s = addSignal(lv, x, y, flavor, symbol);
+      if (!s || s.index < this.board.states.length) return;
+      this.board.add(s.symbol);
+      ph.addSignal(x, y, s.index);
+      signalsChanged();
+    };
+    // Oxyd stones Lua kills or replaces (be quick or be dead: they wander): out of the game
+    const removeOxyd = (x: number, y: number): void => {
+      const s = removeSignal(lv, x, y);
+      if (!s) return;
+      this.board.remove(s.index);
+      ph.removeSignal(x, y);
+      signalsChanged();
+    };
     const shuffleOxyd = (): void => {
       this.colorSignals();
       this.board.shuffle(this.rng);
       lv.signals.forEach((x) => (x.symbol = this.board.symbolOf(x.index)));
     };
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, shuffleOxyd }, this.world, this.globalForce);
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd }, this.world, this.globalForce);
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     this.lua = l;
     this.luaHost = host;
@@ -567,7 +578,7 @@ export class GameSession {
         if (e.rise) physics.jump(e.marble);
       } else if (e.type === 'oxydMsg') {
         // StateObject::message → OxydStone::setState / message
-        const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
+        const s = liveSignalAt(level, e.col, e.row);
         if (!s) continue;
         const st = this.board.states[s.index];
         const open = e.msg === 'open' || e.msg === 'on' || (e.msg === 'signal' && e.value) || (e.msg === 'toggle' && st === 'closed');
@@ -575,14 +586,14 @@ export class GameSession {
         if (open) this.hitSignal(s.index);
         else if (close) this.handlePairEvents(this.board.close(s.index));
         else if (e.msg === 'closeall') this.handlePairEvents(this.board.closeAll());
-        else if (e.msg === 'peepall') this.ui.peepAll(level.signals.filter((x) => x.symbol !== '-').map((x) => x.index));
+        else if (e.msg === 'peepall') this.ui.peepAll(level.signals.filter((x) => x.symbol !== '-' && !x.gone).map((x) => x.index));
         else if (e.msg === 'shuffle') {
           this.board.shuffle(this.rng);
           level.signals.forEach((x) => (x.symbol = this.board.symbolOf(x.index)));
         }
       } else if (e.type === 'oxyd') {
         // a boulder rolled against an Oxyd stone: it opens like on a marble hit
-        const s = level.signals.find((x) => x.col === e.col && x.row === e.row);
+        const s = liveSignalAt(level, e.col, e.row);
         if (s) this.hitSignal(s.index);
       }
       else if (e.type === 'quake') {

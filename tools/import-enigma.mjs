@@ -384,6 +384,9 @@ async function analyzeLua(xml, exp) {
   return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
 }
 
+/** Images of an Oxyd stone of a flavor (e: b's images plus the peephole mask st_oxyde, models-2d.lua). */
+const oxydImages = (f) => [...['', '_open', '_opening'].map((i) => `st_oxyd${f === 'e' ? 'b' : f}${i}`), ...(f === 'e' ? ['st_oxyde'] : [])];
+
 /** Flavors of an Oxyd stone kind made during play: st_oxyd_d → d; plain st_oxyd a (API 2) and b (API 1 oxyd()). */
 const oxydFlavors = (k) => (OXYD.exec(k)?.[2] ? [OXYD.exec(k)[2]] : ['a', 'b']);
 
@@ -833,10 +836,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
     if (lua.error) reject('Lua-Init');
     if (lua.error && process.env.LUAERR) console.log(`LUAERR ${current}: ${String(lua.error).slice(0, 200)}`);
     for (const p of luaProblems(lua.code, lua.fns, lua.api1, callbacks)) reject(`Lua: ${p}`);
-    // Oxyd stones made during play: only plain {"st_oxyd"} (flavor a; API 1 oxyd(): b) or {"st_oxyd_d"}
-    // (that flavor), colour by shuffle, in a level that starts without any (Pentomino, Panelled Puzzle).
-    // Replacing existing Oxyd stones, fixed colours or flavor attributes are not built.
-    const plainOxyds = oxyds === 0 && !/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\b(flavor|oxydcolor|noshuffle)\b/.test(lua.code);
+    // Oxyd stones made during play ({"st_oxyd"}, flavor a, API 1 oxyd(): b; {"st_oxyd_d"}: that flavor;
+    // Pentomino, Panelled Puzzle), also where Lua kills or replaces Oxyd stones (be quick or be dead):
+    // a closed stone of its flavor, coloured by shuffle or a fixed oxydcolor (OXYD_<colour>, number ≥ 0).
+    // Not built: noshuffle and the pseudo colours (OXYD_FAKE/QUAKE/BOLD/AUTO, negative numbers).
+    const oxydDecls = [...lua.code.matchAll(/\{[^}\n]*"st_oxyd(?:_[abcde])?"[^}\n]*\}/g)].map((m) => m[0]);
+    const plainOxyds = !oxydDecls.some((d) => /\bnoshuffle\b|\boxydcolor\s*=\s*(-|OXYD_(FAKE|QUAKE|BOLD|AUTO)\b)/.test(d));
+    const oxydFlavorAttrs = [...new Set(oxydDecls.flatMap((d) => [...d.matchAll(/\bflavor\s*=\s*"([abcde])"/g)].map((m) => m[1])))];
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
     for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds)]) {
@@ -847,7 +853,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
+      else if (v === 'oxyd') for (const f of new Set([...oxydFlavors(k), ...oxydFlavorAttrs])) oxydImages(f).forEach((i) => imgs.add(i));
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
     // tiles a callback may set through its own tables: the supported ones (others would fail at runtime)
@@ -859,7 +865,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
-      else if (v === 'oxyd') for (const f of oxydFlavors(k)) for (const i of ['', '_open', '_opening']) imgs.add(`st_oxyd${f}${i}`);
+      else if (v === 'oxyd') for (const f of new Set([...oxydFlavors(k), ...oxydFlavorAttrs])) oxydImages(f).forEach((i) => imgs.add(i));
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
   }

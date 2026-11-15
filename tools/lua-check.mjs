@@ -117,7 +117,7 @@ function bodies(code, entries) {
   return [...seen].map((n) => byName.get(n)).join('\n');
 }
 
-const METHODS = new Set(['shuffleOxyd', 'open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind',
+const METHODS = new Set(['shuffleOxyd', 'open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind', 'grid',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',

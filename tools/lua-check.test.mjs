@@ -100,3 +100,7 @@ test('Laufzeit-Arten: eine Art im Zeichenaufruf ist kein Kartenschlüssel', asyn
   const code = 'ti["~"] = {"fl_water"}\nti["o"] = {"st_oxyd_d"} .. ti["~"]\nfunction f()\n    wo:drawRect({2,0},{17,0},{"it_cross"} .. ti({"st_nil"}))\nend';
   assert.deepEqual(runtimeKinds(code).sort(), ['it_cross', 'st_nil']);
 });
+
+test('pos:grid() im Rückruf ist erlaubt (Lissajous: Todesstein auf der Lissajous-Kurve)', () => {
+  assert.deepEqual(problems('function cb()\n  local c = po(8.0 * math.cos(1) + 10.0, 6.5):grid()\n  wo[c] = {"st_death"}\nend'), []);
+});

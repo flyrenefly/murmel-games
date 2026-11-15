@@ -18,6 +18,8 @@ const FAKE = '-';
 export class PairBoard {
   readonly states: StoneState[];
   private single: number | null = null;
+  /** Oxyd stones killed or replaced during play (OxydStone::dispose leaves levelOxyds). */
+  private readonly removed = new Set<number>();
 
   private readonly symbols: string[];
 
@@ -37,6 +39,19 @@ export class PairBoard {
     this.states.push('closed');
   }
 
+  /**
+   * OxydStone::dispose (Lua kills or replaces the stone): it leaves the game. Its index stays
+   * (renderers and physics keep their slots); a single open one no longer waits for a partner.
+   */
+  remove(index: number): void {
+    this.removed.add(index);
+    if (this.single === index) this.single = null;
+  }
+
+  isRemoved(index: number): boolean {
+    return this.removed.has(index);
+  }
+
   /** OxydStone::initColors for stones made during play: their colour is known now. */
   setSymbol(index: number, symbol: string): void {
     this.symbols[index] = symbol;
@@ -44,7 +59,7 @@ export class PairBoard {
 
   /** OxydStone::setState(0) ("close", "off", "signal" 0): a single open stone closes. */
   close(index: number): PairEvent[] {
-    if (this.states[index] !== 'open') return [];
+    if (this.states[index] !== 'open' || this.removed.has(index)) return [];
     this.states[index] = 'closed';
     if (this.single === index) this.single = null;
     return [{ type: 'closed', indices: [index] }];
@@ -55,7 +70,7 @@ export class PairBoard {
    * (Enigma's fair shuffle also honours wo:shuffleOxyd rules; here a uniform permutation.)
    */
   shuffle(random: () => number = Math.random): void {
-    const closed = this.states.flatMap((s, i) => (s === 'closed' ? [i] : []));
+    const closed = this.states.flatMap((s, i) => (s === 'closed' && !this.removed.has(i) ? [i] : []));
     const syms = closed.map((i) => this.symbols[i]);
     for (let k = syms.length - 1; k > 0; k--) {
       const j = Math.floor(random() * (k + 1));
@@ -65,28 +80,28 @@ export class PairBoard {
   }
 
   get solvedPairs(): number {
-    return this.states.filter((s) => s === 'solved').length / 2;
+    return Math.floor(this.states.filter((s, i) => s === 'solved' && !this.removed.has(i)).length / 2);
   }
 
   get totalPairs(): number {
-    return Math.floor(this.symbols.filter((s) => s !== FAKE).length / 2);
+    return Math.floor(this.symbols.filter((s, i) => s !== FAKE && !this.removed.has(i)).length / 2);
   }
 
   /** All real stones are solved (a fake one never opens). */
   get complete(): boolean {
-    return this.states.every((s, i) => s === 'solved' || this.symbols[i] === FAKE);
+    return this.states.every((s, i) => s === 'solved' || this.symbols[i] === FAKE || this.removed.has(i));
   }
 
   /** OxydStone::closeAllStandardOxyds (st_quake): every open stone closes, solved pairs too. */
   closeAll(): PairEvent[] {
-    const indices = this.states.flatMap((s, i) => (s === 'closed' ? [] : [i]));
+    const indices = this.states.flatMap((s, i) => (s === 'closed' || this.removed.has(i) ? [] : [i]));
     for (const i of indices) this.states[i] = 'closed';
     this.single = null;
     return indices.length ? [{ type: 'closed', indices }] : [];
   }
 
   hit(index: number): PairEvent[] {
-    if (this.states[index] !== 'closed') return [];
+    if (this.states[index] !== 'closed' || this.removed.has(index)) return [];
 
     const first = this.single;
     // OxydStone::tryOpen with FAKE: a single open stone closes, the fake one stays closed

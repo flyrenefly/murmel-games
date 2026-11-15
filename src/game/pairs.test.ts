@@ -76,3 +76,32 @@ describe('fake Oxyd stone', () => {
     expect(b.hit(2).some((e) => e.type === 'complete')).toBe(true);
   });
 });
+
+describe('remove (Oxyd stone killed or replaced during play)', () => {
+  it('a removed stone no longer counts for completion or pairs', () => {
+    const b = new PairBoard(['A', 'B', 'A', 'B', 'C']);
+    b.remove(4); // the unpaired C goes: the rest can complete the level
+    b.hit(0);
+    b.hit(2);
+    b.hit(1);
+    expect(b.hit(3)).toContainEqual({ type: 'complete' });
+    expect(b.totalPairs).toBe(2);
+  });
+
+  it('a removed open stone is no longer the single open one', () => {
+    const b = new PairBoard(['A', 'B', 'A', 'B']);
+    b.hit(0);
+    b.remove(0);
+    expect(b.hit(2)).toEqual([{ type: 'opened', index: 2 }]);
+    expect(b.isRemoved(0)).toBe(true);
+    expect(b.hit(0)).toEqual([]);
+  });
+
+  it('shuffle and closeAll leave removed stones alone', () => {
+    const b = new PairBoard(['A', 'B', 'A', 'B']);
+    b.remove(1);
+    b.shuffle(() => 0);
+    expect(b.symbolOf(1)).toBe('B');
+    expect(b.closeAll()).toEqual([]);
+  });
+});

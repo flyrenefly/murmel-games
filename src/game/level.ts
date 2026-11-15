@@ -88,6 +88,8 @@ export interface SignalStone {
   row: number;
   symbol: string;
   flavor: string;
+  /** Killed or replaced by Lua during play (OxydStone::dispose); the index stays taken. */
+  gone?: boolean;
 }
 
 export interface Level {
@@ -254,22 +256,60 @@ export function assignRandomSymbols(id: string, signals: SignalStone[], random: 
  * wo[pos] = {"st_oxyd"} during play: a new closed Oxyd stone ('?' until wo:shuffleOxyd or its
  * first hit colours it, see colorNewSignals). Returns it, or null outside the level.
  */
-export function addSignal(level: Level, col: number, row: number, flavor: string): SignalStone | null {
+export function addSignal(level: Level, col: number, row: number, flavor: string, symbol = '?'): SignalStone | null {
   const cell = cellAt(level, col, row);
   if (!cell) return null;
-  const old = level.signals.find((s) => s.col === col && s.row === row);
+  const old = liveSignalAt(level, col, row);
   if (old) return old;
   cell.stone = 'st_oxyd';
   delete cell.hollow;
-  const s: SignalStone = { index: level.signals.length, col, row, symbol: '?', flavor };
+  const s: SignalStone = { index: level.signals.length, col, row, symbol, flavor };
   level.signals.push(s);
   return s;
 }
 
-/** OxydStone::initColors for Oxyd stones made during play: their '?' becomes colours in pairs. */
+/**
+ * Symbol of an Enigma oxydcolor value (OXYD_BLUE = 0 → A, as the importer maps it; OXYD_FAKE → fake;
+ * OXYD_AUTO or nothing → '?'), null for what Murmel has not built (OXYD_QUAKE, OXYD_BOLD).
+ */
+export function oxydSymbol(value: string | null | undefined): string | null {
+  if (value === undefined || value === null || value === '') return '?';
+  const c = Number(String(value).replace(/^%/, ''));
+  if (!Number.isInteger(c)) return null;
+  if (c >= 0 && c < 26) return String.fromCharCode(65 + c);
+  if (c === -1) return '?';
+  if (c === -2) return FAKE_OXYD;
+  return null;
+}
+
+/** The Oxyd stone in a cell that is still in the game (not killed by Lua). */
+export function liveSignalAt(level: Level, col: number, row: number): SignalStone | null {
+  return level.signals.find((s) => !s.gone && s.col === col && s.row === row) ?? null;
+}
+
+/**
+ * Lua kills or replaces an Oxyd stone during play (OxydStone::dispose): it leaves the game, the
+ * cell is empty. Returns the stone, or null if none was there.
+ */
+export function removeSignal(level: Level, col: number, row: number): SignalStone | null {
+  const s = liveSignalAt(level, col, row);
+  if (!s) return null;
+  s.gone = true;
+  const cell = cellAt(level, col, row);
+  if (cell) cell.stone = null;
+  return s;
+}
+
+/**
+ * OxydStone::initColors for Oxyd stones made during play: their '?' becomes colours in pairs.
+ * Only stones still in the game count; once Lua removed one, a colour may stay without partner
+ * (Enigma asserts unless wo["AllowSingleOxyds"]; Murmel does not stop a running level for it).
+ */
 export function colorNewSignals(level: Level, random: () => number): boolean {
-  if (!level.signals.some((s) => s.symbol === '?')) return false;
-  assignRandomSymbols(level.id, level.signals, random);
+  const live = level.signals.filter((s) => !s.gone);
+  if (!live.some((s) => s.symbol === '?')) return false;
+  const lenient = live.length < level.signals.length;
+  assignRandomSymbols(level.id, live, random, lenient);
   return true;
 }
 

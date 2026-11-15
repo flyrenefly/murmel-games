@@ -862,10 +862,25 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
 - **Oxyd-Steine zur Laufzeit** (`wo[…] = {"st_oxyd"}`): ein neuer geschlossener Stein (Geschmack a,
   Physik, Paarbrett, Renderer); Farben bekommen sie wie bei `OxydStone::initColors` paarweise,
   sobald `wo:shuffleOxyd()` läuft oder der erste getroffen wird. Levels ohne Oxyd-Steine, deren
-  Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Nur in
-  Levels, die ohne Oxyd-Steine beginnen, und nur schlichtes `{"st_oxyd"}` oder eine Sorte als Art
-  (`{"st_oxyd_d"}`, ab 13.11.2026): Ersetzen vorhandener Oxyd-Steine, feste Farben (`oxydcolor`),
-  `flavor`-Attribute oder `noshuffle` lehnt der Import ab.
+  Skript welche setzen kann, werden übernommen; die Paaranzeige bleibt bis dahin leer. Die Sorte
+  kommt aus der Art (`{"st_oxyd_d"}`) oder dem Attribut `flavor`, eine feste Farbe aus `oxydcolor`
+  (`OXYD_BLUE` = 0 → Symbol A wie beim Import). `noshuffle` und die Pseudofarben
+  (`OXYD_FAKE/QUAKE/BOLD/AUTO`, negative Zahlen) an Laufzeit-Steinen lehnt der Import ab.
+- **Oxyd-Steine zur Laufzeit entfernen oder ersetzen** (ab 15.11.2026; `OxydStone::dispose`: der
+  Stein verlässt `levelOxyds`): `kill()`, `wo[pos] = {"st_nil"}` oder ein anderer Stein auf einem
+  Oxyd-Stein nimmt ihn aus dem Spiel – Zelle leer bzw. neuer Stein, Physik frei, Paarbrett zählt ihn
+  nicht mehr (Paare, Levelende, Mischen, `closeall`), beide Renderer zeichnen ihn nicht mehr
+  (der Index bleibt belegt, sein Platz in den Listen auch). Ein neuer Oxyd-Stein auf derselben Zelle
+  ist ein eigener, geschlossener Stein. War der entfernte Stein der einzelne offene, wartet keiner
+  mehr auf einen Partner. Abweichungen: Fehlt einer Farbe nach dem Entfernen der Partner, bricht
+  Enigma ohne `wo["AllowSingleOxyds"]` mit einem Fehler ab; Murmel spielt weiter (dann ist das
+  Level unlösbar, wie in Enigma mit der Erlaubnis). Das Levelende prüft Murmel wie Enigma nur beim
+  Öffnen eines Paares, nicht beim Entfernen. Umfärben vorhandener Steine (`obj.oxydcolor = …`)
+  ist nicht gebaut. Freigeschaltet: be quick or be dead (illmind12_2, Oxyd-Steine wandern im
+  Takt), Tinker, Tailor (andreas46_4, Geschmack b per Attribut), Multi-lane (devnull03_1).
+- **`pos:grid()` in Rückrufen** (ab 15.11.2026): der Shim konnte es schon (abrunden auf die
+  Zelle), die Importprüfung kennt es jetzt als Methode. Freigeschaltet: Lissajous (andreas01_2,
+  Todessteine laufen auf einer Lissajous-Kurve um die Oxyd-Steine).
 - **`wo:shuffleOxyd()` während des Spiels** mischt die Farben der geschlossenen Steine (wie
   die Nachricht `shuffle`).
 - **`po["name"]`** (lua.cc dispatchPositionsReadAccess): benannte Position oder Position des

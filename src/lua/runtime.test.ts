@@ -293,3 +293,17 @@ function f() wo:drawMap(ti, po(0, 0), big) end`,
     expect(set).toEqual(['0,0,st_granite', '1,0,st_granite', '0,1,st_granite', '1,1,st_granite', '0,2,st_brick', '1,2,st_brick']);
   });
 });
+
+describe('pos:grid()', () => {
+  it('rounds down to the grid cell (Lissajous moves its death stones along a curve)', async () => {
+    const w = fakeHost([]);
+    const lua = await startLua(`function cb()
+  local c = po(8.0 * math.cos(math.rad(30)) + 10.0, 5.0 * math.sin(math.rad(30)) + 6.5):grid()
+  wo[c] = {"st_death"}
+  wo[{19.0, 12.0} - c] = {"st_death"}
+end`, w.host);
+    lua.callback('cb', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.tiles).toEqual(['16,9 st_death {}', '3,3 st_death {}']);
+  });
+});
