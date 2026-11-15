@@ -432,10 +432,25 @@ button.icon svg {
   max-width: 64%;
 }
 
-/* document text: the label above a full-width field */
-.ed-field:has(textarea) {
+/* document text and Vorlage/Herkunft: the label above a full-width field */
+.ed-field:has(textarea),
+.ed-field-stack {
   flex-direction: column;
   align-items: stretch;
+}
+
+.ed-field-stack {
+  gap: 6px;
+  margin-top: 0;
+}
+
+.ed-field-stack input {
+  width: 100%;
+  max-width: none;
+}
+
+.ed-field-stack + .ed-note {
+  margin-top: 6px;
 }
 
 .ed-field textarea {
@@ -847,4 +862,13 @@ dialog ul {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.4;
+}
+
+/* Vorlage/Herkunft (editor „Level“ and „Veröffentlichen“): one line, its hint right below */
+input.ed-based-on {
+  font-size: 16px; /* no zoom on focus in iOS Safari */
+}
+
+.ed-form .ed-hint {
+  margin: -8px 0 0;
 }

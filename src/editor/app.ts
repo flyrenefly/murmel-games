@@ -5,7 +5,7 @@ import './editor.css';
 import { drawEntry, drawLevel, ED_STYLES, type EdStyle, loadImages, symbolColor } from './draw';
 import { enigmaStart, ENIGMA_ACCEPT, type EnigmaHost, importEnigma, isEnigmaFile } from '../enigma-upload/dialog';
 import { History } from './history';
-import { decodeLevel, docText, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, MAX_DOC_TEXT, sanitizeLevel } from './link';
+import { basedOnText, decodeLevel, docText, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, MAX_BASED_ON, MAX_DOC_TEXT, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
 import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, searchPalette } from './palette';
 import { publish } from './publish';
@@ -661,6 +661,46 @@ function button(label: string, fn: () => void, cls = ''): HTMLButtonElement {
   return b;
 }
 
+/** „Vorlage/Herkunft (optional)“: shown as „nach einem Enigma-Level von …“; empty removes it (docs/SPEC-enigma-upload.md). */
+function basedOnField(): HTMLElement {
+  const input = Object.assign(document.createElement('input'), {
+    type: 'text',
+    value: level.basedOn ?? '',
+    maxLength: MAX_BASED_ON,
+    autocomplete: 'off',
+    enterKeyHint: 'done',
+    className: 'ed-based-on',
+    placeholder: 'etwa „Ronald Lamprecht (GPL)“',
+  });
+  input.setAttribute('aria-describedby', 'ed-based-on-hint');
+  let before = clone(level);
+  input.addEventListener('focus', () => (before = clone(level)));
+  input.addEventListener('input', () => {
+    if (input.value.trim()) level.basedOn = input.value;
+    else delete level.basedOn;
+    saveLevel(id, level);
+  });
+  input.addEventListener('change', () => {
+    // done typing: keep the one line the level file will carry
+    input.value = basedOnText(input.value);
+    if (input.value) level.basedOn = input.value;
+    else delete level.basedOn;
+    if (basedOnText(before.basedOn) !== basedOnText(level.basedOn)) commit(before);
+    else saveLevel(id, level);
+    before = clone(level);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') input.blur();
+  });
+  const box = field('Vorlage/Herkunft (optional)', input);
+  box.classList.add('ed-field-stack');
+  const hint = note(`Erscheint beim Level als „Vorlage: …“, z. B. „Enigma-Level von Autor (Lizenz)“. Höchstens ${MAX_BASED_ON} Zeichen; leer lassen, wenn es keine Vorlage gibt.`);
+  hint.id = 'ed-based-on-hint';
+  const wrap = document.createElement('div');
+  wrap.append(box, hint);
+  return wrap;
+}
+
 function showLevelMenu(): void {
   const size = document.createElement('div');
   size.className = 'ed-size';
@@ -694,6 +734,7 @@ function showLevelMenu(): void {
   showDialog(
     'Level',
     [
+      basedOnField(),
       size,
       note(`Inhalt bleibt oben links. ${MIN_W}–${MAX_W} × ${MIN_H}–${MAX_H} Felder.`),
       field('Stil der Vorschau', styleSel),

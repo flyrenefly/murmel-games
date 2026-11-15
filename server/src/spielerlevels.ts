@@ -166,7 +166,7 @@ export function parseUpload(body: unknown): Upload | string {
   if (docs.length > MAX_DOCS) return `Ein Level darf höchstens ${MAX_DOCS} Dokumente enthalten.`;
   if (docs.some((d) => chars(d.text) > MAX_DOC_TEXT)) return `Ein Dokumenttext darf höchstens ${MAX_DOC_TEXT} Zeichen haben.`;
   if (level.basedOn !== undefined && (typeof level.basedOn !== 'string' || chars(line(level.basedOn)) > MAX_BASED_ON))
-    return `Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`;
+    return `Die Angabe „Vorlage“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`;
   if (level.license !== LICENSE || body.lizenz !== LICENSE) return 'Spieler-Levels stehen unter CC BY-SA 4.0 – bitte die Lizenz bestätigen.';
   const title = typeof body.titel === 'string' ? line(body.titel) : '';
   if (chars(title) < 3 || chars(title) > 60) return 'Der Titel braucht 3 bis 60 Zeichen.';
@@ -295,7 +295,9 @@ export function playerLevelRoutes(app: FastifyInstance, opts: PlayerLevelOptions
     // the stored level: checked content, the upload's title; id, author and basedOn (own column) are set on delivery
     const { id: _id, author: _author, basedOn, ...rest } = r.file;
     const file: LevelJson = { ...rest, title: u.title, license: LICENSE };
-    const id = await store.create({ accountId, title: u.title, description: u.description, basedOn: typeof basedOn === 'string' && basedOn ? basedOn : null, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
+    // a new version (replaces) carries the Herkunft of its upload: changed, kept or removed (empty)
+    const credit = typeof basedOn === 'string' ? line(basedOn) : '';
+    const id = await store.create({ accountId, title: u.title, description: u.description, basedOn: credit || null, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
     void notify();
     return { status: 'angenommen', level: id };
   }

@@ -81,7 +81,7 @@ function cardBody(c: Card, h: 'h2' | 'h3' = 'h2'): Node[] {
   return [
     el(h, { textContent: c.titel }),
     el('p', { className: 'meta' }, `von ${c.autor} · ${c.breite}×${c.hoehe} · ${datum(c.datum)} · `, stars),
-    ...(c.vorlage ? [el('p', { className: 'meta vorlage', textContent: `nach einem Enigma-Level von ${c.vorlage}` })] : []),
+    ...(c.vorlage ? [el('p', { className: 'meta vorlage', textContent: `Vorlage: ${c.vorlage}` })] : []),
     ...(c.beschreibung ? [el('p', { className: 'desc', textContent: c.beschreibung })] : []),
   ];
 }
