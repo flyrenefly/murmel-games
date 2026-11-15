@@ -25,7 +25,7 @@ export interface PlayerLevel {
   authorBlocked: boolean;
   title: string;
   description: string;
-  /** „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md), null: none. */
+  /** Vorlage/Herkunft, shown as „Vorlage: …“ (docs/SPEC-enigma-upload.md), null: none. */
   basedOn: string | null;
   /** The checked level (without id and author); only from level(). */
   file?: LevelJson;
@@ -110,7 +110,7 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const BODY_LIMIT = 2 * 1024 * 1024;
 export const MAX_LEVEL_BYTES = 256 * 1024;
-/** Length of „nach einem Enigma-Level von …“, like MAX_BASED_ON in src/editor/link.ts. */
+/** Length of the Vorlage/Herkunft, like MAX_BASED_ON in src/editor/link.ts. */
 export const MAX_BASED_ON = 80;
 export const UPLOADS_PER_DAY = 5;
 /** Checks per account and day, rejected ones included (they leave no row behind). */

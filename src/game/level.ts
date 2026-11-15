@@ -40,7 +40,7 @@ export interface LevelFile {
   start?: { x: number; y: number };
   /** Origin of an imported level. */
   source?: { pack: string; file: string };
-  /** Player levels converted from Enigma: shown as „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md). */
+  /** Player levels: optional Vorlage/Herkunft, shown as „Vorlage: …“ (docs/SPEC-enigma-upload.md). */
   basedOn?: string;
   /** Interactive objects (doors, switches, triggers, documents, grates). */
   objects?: ObjectDef[];

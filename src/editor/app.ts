@@ -661,7 +661,7 @@ function button(label: string, fn: () => void, cls = ''): HTMLButtonElement {
   return b;
 }
 
-/** „Vorlage/Herkunft (optional)“: shown as „nach einem Enigma-Level von …“; empty removes it (docs/SPEC-enigma-upload.md). */
+/** „Vorlage/Herkunft (optional)“: shown as „Vorlage: …“; empty removes it (docs/SPEC-enigma-upload.md). */
 function basedOnField(): HTMLElement {
   const input = Object.assign(document.createElement('input'), {
     type: 'text',

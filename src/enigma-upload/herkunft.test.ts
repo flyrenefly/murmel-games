@@ -1,4 +1,4 @@
-// Herkunftsangabe „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md, Lizenz und Urheber):
+// Herkunftsangabe („Vorlage: …“) (docs/SPEC-enigma-upload.md, Lizenz und Urheber):
 // prefilled from the file, kept by the editor model and sanitizeLevel, bounded in length.
 import { describe, expect, it } from 'vitest';
 import { decodeLevel, encodeLevel, LinkError, MAX_BASED_ON, sanitizeLevel } from '../editor/link';

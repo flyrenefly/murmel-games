@@ -85,19 +85,20 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
   „Im Editor öffnen“.
 - Der Titel kommt aus der Datei, der Autor des Editor-Levels bleibt leer. Beim Veröffentlichen nennt der
   Server wie bisher den Anzeigenamen; die Lizenzbestätigung im Veröffentlichen-Dialog bleibt.
-- **Herkunftsangabe** (seit 15.11.2026): Der Dialog bietet das Feld „Herkunft: nach einem Enigma-Level von …“,
-  vorbelegt mit Autor und Lizenz laut Datei („Ronald Lamprecht (GPL v2.0 or above)“, ohne Autor leer) und
-  änderbar. Sie geht als optionales `basedOn` im Level mit (Editor-Level, Leveldatei, Probespiel-Link),
+- **Herkunftsangabe** (seit 15.11.2026): Der Dialog bietet das Feld „Vorlage“, vorbelegt mit
+  „Enigma-Level von“ und Autor und Lizenz laut Datei („Enigma-Level von Ronald Lamprecht (GPL v2.0 or above)“,
+  ohne Autor leer) und änderbar. Sie geht als optionales `basedOn` im Level mit (Editor-Level, Leveldatei, Probespiel-Link),
   höchstens 80 Zeichen, eine Zeile; `sanitizeLevel` (Editor und Prüfprozess) und `parseUpload` lehnen
   Längeres ab. Der Server speichert sie in der eigenen Spalte `player_levels.based_on` (Migration 017),
   nicht in der Leveldatei, und liefert sie als `vorlage` in den Karten und als `basedOn` in der Datei aus.
-  Angezeigt auf `spielerlevels.html` unter der Autorzeile und im Startdialog des Levels. Bestehende Levels
-  bleiben ohne Angabe.
+  Angezeigt neutral als „Vorlage: …“ auf `spielerlevels.html` unter der Autorzeile und im Startdialog des
+  Levels (Nutzerentscheidung 15.11.2026; vorher „nach einem Enigma-Level von …“). Bestehende Levels bleiben
+  ohne Angabe.
 - **Herkunft im Editor und beim Veröffentlichen** (seit 15.11.2026): Das Feld „Vorlage/Herkunft (optional)“
   steht auch im Editor-Dialog „Level“ (mit Rückgängig, für jedes Level, auch selbst gebaute) und im
   Veröffentlichen-Dialog. Beide normalisieren mit `basedOnText` (`src/editor/link.ts`) auf eine Zeile mit
   höchstens 80 Zeichen; leeren entfernt die Angabe. Der Hinweis unter dem Feld sagt, dass sie als
-  „nach einem Enigma-Level von …“ erscheint. Wählt man „Neue Version von …“, übernimmt der Dialog die
+  „Vorlage: …“ erscheint. Wählt man „Neue Version von …“, übernimmt der Dialog die
   Angabe der ersetzten Version, solange das Level selbst keine hat und man das Feld nicht angefasst hat;
   die neue Version trägt genau die Angabe ihres Uploads (der Server speichert leer als `null`). Eine im
   Veröffentlichen-Dialog geänderte Angabe geht wie der dort geänderte Titel nur in den Upload, nicht

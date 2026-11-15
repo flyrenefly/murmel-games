@@ -13,7 +13,7 @@ interface Card {
   stimmen: number;
   breite: number;
   hoehe: number;
-  /** „nach einem Enigma-Level von …“, null without (docs/SPEC-enigma-upload.md). */
+  /** Vorlage/Herkunft, shown as „Vorlage: …“; null without (docs/SPEC-enigma-upload.md). */
   vorlage?: string | null;
 }
 interface FullCard extends Card {
