@@ -7,10 +7,12 @@
 // required graphics in public/enigma/<set>/ and tools/import-report.md.
 //
 // Usage: node tools/import-enigma.mjs <exportDir> <enigma>/data
+// PROBE=<regex>: convert only the matching levels ("pack/file (title)"), print their blockers and
+// write nothing (to try a change on the levels it is meant for without the full ~10 min import).
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { allTileKinds, api1Kind, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -310,6 +312,7 @@ function finish(level) {
   if (b.length === 0) return level;
   for (const why of b) reasons.set(why, (reasons.get(why) ?? 0) + 1);
   // BLOCKERS=<file>: one line per rejected level with all its blockers (to plan the next objects)
+  if (process.env.PROBE) console.log('    ', b.join(' | '));
   if (process.env.BLOCKERS) appendFileSync(process.env.BLOCKERS, `${current}\t${b.join('\t')}\n`);
   if (b.length === 1) only.set(b[0], (only.get(b[0]) ?? 0) + 1);
   if (b.length === 1 && process.env.ONLY && b[0].includes(process.env.ONLY)) console.log(`nur ${b[0]}: ${current}`);
@@ -390,6 +393,8 @@ function runtimeKind(kind) {
   if (kind.startsWith('fl_')) {
     if (kind === 'fl_fake_abyss' || kind === 'fl_fake') return 'fl_fake_abyss'; // FakeFloor: looks like abyss
     if (SPECIAL_FLOORS.test(kind) || FORWARD.test(kind)) return null;
+    // InverseFloor: plain fl_inverse is flavor white (SimpleFloors.cc), as the export names it
+    if (kind === 'fl_inverse') return 'fl_inverse_white';
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
   if (objectImages(kind)) return 'object';
@@ -399,6 +404,9 @@ function runtimeKind(kind) {
     if (FAKE_OXYD.test(kind)) return `st_oxyd${FAKE_OXYD.exec(kind)[1]}`;
     if (kind === 'st_invisible') return 'st_invisible';
     if (STONES.has(kind) || STONE_BASE.test(kind)) return STONE_BASE.exec(kind)?.[1] ?? kind;
+    // st_<stone>_hollow: the stone's look; the Lua host makes the cell hollow from the kind's name
+    const hollow = /^(st_\w+)_hollow$/.exec(kind)?.[1];
+    if (hollow && (hollow === 'st_invisible' || STONES.has(hollow))) return hollow;
   }
   return null;
 }
@@ -773,8 +781,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
           const named = [...allObjects.values()].find((x) => x.name === t || '#' + x.$id === t);
           const actor = w.actors.some((x) => x.o.name === t || '#' + x.o.$id === t);
           // Object::performAction ignores a target that names nothing ("no longer valid target"),
-          // unless it is a Lua function (maybe from a library) or an ot_ object we do not have.
-          const unknown = act !== 'callback' && !/<el:dependency/.test(xml) && !(lua?.code ?? '').includes(`"${t}"`) && !/[*?]/.test(t);
+          // unless it is a Lua function (maybe from a library) or an ot_ object we do not have. A pattern
+          // ("bridge%b#*") that matches nothing is an empty group, unless callbacks may make objects later.
+          const pattern = /[*?]/.test(t);
+          const unknown = act !== 'callback' && !/<el:dependency/.test(xml) && (pattern ? !callbacksBuild(lua?.code ?? '') : !(lua?.code ?? '').includes(`"${t}"`));
           // a plain (map) stone killed by an action: an object st_ref for it
           const cell = named && act === 'kill' && !objectImages(named.k) && !OXYD.test(named.k) && (STONES.has(named.k) || STONE_BASE.test(named.k)) ? [...allCells(w)].find((c) => c.o === named) : null;
           if (cell) objs.push({ x: cell.x, y: cell.y, k: 'st_ref', a: { $id: named.$id, name: named.name } });
@@ -976,15 +986,18 @@ for (const pack of readPacks()) {
       continue;
     }
     current = `${pack.name}/${meta.xpath.replace(/^\.\//, '')} (${meta.title})`;
+    if (process.env.PROBE && !new RegExp(process.env.PROBE).test(current)) continue;
     if (process.env.PROGRESS) console.log('>>', current);
     const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp));
     if (lvl) levels.push(lvl);
+    if (process.env.PROBE) console.log(lvl ? 'OK  ' : 'NEIN', current);
   }
   ok += levels.length;
   if (levels.length === 0) continue;
-  writeFileSync(join(OUT, `${pack.name}.json`), JSON.stringify({ pack: pack.name, title: pack.title, levels }) + '\n');
+  if (!process.env.PROBE) writeFileSync(join(OUT, `${pack.name}.json`), JSON.stringify({ pack: pack.name, title: pack.title, levels }) + '\n');
   index.push({ pack: pack.name, title: pack.title, count: levels.length, of: pack.levels.length });
 }
+if (process.env.PROBE) process.exit(0);
 writeFileSync(join(OUT, 'index.json'), JSON.stringify(index, null, 1) + '\n');
 
 for (const set of GFX_SETS) {

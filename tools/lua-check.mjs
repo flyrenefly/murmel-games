@@ -159,10 +159,16 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
     if (!FUNCS.has(n) && !KEYWORDS.has(n) && !fns.has(n) && !locals.has(n) && !(api1 && (API1_GLOBALS.has(n) || assigned.has(n)))) problems.add(`${n}()`);
   }
   // lib.math.permutation is provided (enigma.lua), functions of loaded libraries too; other libraries and resolvers are not
-  for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation') && !(m[1] === 'lib' && fns.has(`lib.${m[2]}.${m[3]}`))) problems.add(`${m[1]}.${m[2]}`);
+  // the resolvers the shim builds (res.autotile, res.random, res.pento) work; draw calls are checked above
+  for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation') && !(m[1] === 'lib' && fns.has(`lib.${m[2]}.${m[3]}`)) && !(m[1] === 'res' && RESOLVERS.has(m[2]))) problems.add(`${m[1]}.${m[2]}`);
   // world attributes changed during play: only those the game applies
   for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];
+}
+
+/** Whether the level's functions may change the world (wo[…] = …, wo(…), wo:drawMap/drawRect/drawBorder/add). */
+export function callbacksBuild(code) {
+  return /\bwo\s*(\[|\(|:\s*(draw\w+|add)\s*\()/.test(bodies(code));
 }
 
 /** The wo:drawMap/drawRect/drawBorder calls in a piece of Lua: method, argument text, drawn keys. */
@@ -274,7 +280,8 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
       i++;
     }
     const args = body.slice(start, i - 1);
-    for (const str of args.matchAll(/"([^"]*)"/g)) for (const ch of str[1]) keys.add(ch);
+    // (a kind such as {"it_cross"} is a tile, not keys "i", "t" … – it counts above as a literal)
+    for (const str of args.matchAll(/"([^"]*)"/g)) if (!/^(st|fl|it|ac)_\w+$/.test(str[1])) for (const ch of str[1]) keys.add(ch);
     // tiles kept in variables (SynapseOn = {"fl_redslab"})
     for (const id of args.replace(/"[^"]*"/g, '').matchAll(/\b([A-Za-z_]\w*)\b/g)) {
       for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);

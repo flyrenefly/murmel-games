@@ -74,6 +74,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     if (o) objects.remove(o);
     if (cell(x, y).stone !== null && cell(x, y).stone !== 'st_oxyd') {
       cell(x, y).stone = null;
+      delete cell(x, y).hollow;
       physics.setSolid(x, y, false);
     }
     attrs.delete(`c:st:${x}:${y}`);
@@ -202,8 +203,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
           if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
         } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {
+          // st_<stone>_hollow (OBJBIT_HOLLOW): the stone's look, actors pass (as cell.hollow from the map)
+          const hollow = /_hollow$/.test(kind);
           cell(x, y).stone = look;
-          physics.setSolid(x, y, true);
+          if (hollow) cell(x, y).hollow = true;
+          physics.setSolid(x, y, !hollow);
           attrs.set(`c:st:${x}:${y}`, decl);
         }
       } else if (kind.startsWith('it_')) {

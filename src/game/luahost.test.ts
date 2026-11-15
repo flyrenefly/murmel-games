@@ -22,7 +22,7 @@ async function withScript(code: string, kinds: Record<string, string> = {}) {
   const addOxyd = (x: number, y: number, flavor: string) => void oxyds.push(`${x},${y},${flavor}`);
   const host = makeLuaHost({ level, objects, physics, redraw: () => {}, random: () => 0.5, addOxyd }, { ...level.world }, { x: 0, y: 0 });
   const lua = await LuaLevel.create(code, host, shim, await import('fengari'));
-  return { objects, lua, oxyds };
+  return { objects, lua, oxyds, physics, level };
 }
 
 describe('wo:add of gadgets during play', () => {
@@ -56,5 +56,19 @@ describe('Oxyd stones made during play', () => {
     lua.callback('f', true, '');
     expect(lua.lastError).toBe('');
     expect(oxyds).toEqual(['2,2,d', '3,2,a']);
+  });
+});
+
+describe('hollow stones made during play', () => {
+  it('look like their stone, let actors pass and become solid again when replaced', async () => {
+    const { lua, physics, level } = await withScript(
+      'function f() wo[po(2, 2)] = {"st_lightglass_hollow"} end function g() wo[po(2, 2)] = {"st_lightglass"} end',
+      { st_lightglass_hollow: 'st_lightglass', st_lightglass: 'st_lightglass' },
+    );
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect([cellAt(level, 2, 2)?.stone, cellAt(level, 2, 2)?.hollow, physics['solidAt'](2, 2)]).toEqual(['st_lightglass', true, -1]);
+    lua.callback('g', true, '');
+    expect([cellAt(level, 2, 2)?.stone, cellAt(level, 2, 2)?.hollow, physics['solidAt'](2, 2)]).toEqual(['st_lightglass', undefined, -2]);
   });
 });
