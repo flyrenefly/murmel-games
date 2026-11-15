@@ -69,6 +69,17 @@ export function liefertAus(ip, { timeoutMs = 10000 } = {}) {
   });
 }
 
+/**
+ * Form des Schlüssels ohne Inhalt, für Fehlermeldungen: Zahl der Teile (am Punkt), ihre Längen,
+ * Leerraum und Zeichen außerhalb von [A-Za-z0-9._-]. Erwartet: 2 Teile „Präfix.Geheimnis“.
+ */
+export function schluesselForm(key) {
+  const teile = key.split('.');
+  const leer = /\s/.test(key) ? 'mit Leerraum' : 'ohne Leerraum';
+  const fremd = /[^A-Za-z0-9._-]/.test(key.replace(/\s/g, '')) ? ', mit Sonderzeichen' : '';
+  return `${teile.length} Teil${teile.length === 1 ? '' : 'e'}, Längen ${teile.map((t) => t.length).join('/')}, ${leer}${fremd}`;
+}
+
 /** Kleiner Client für die IONOS-DNS-API (https://developer.hosting.ionos.de/docs/dns). */
 export function ionosDns(key, fetchFn = fetch) {
   const base = 'https://api.hosting.ionos.com/dns/v1';
@@ -78,7 +89,12 @@ export function ionosDns(key, fetchFn = fetch) {
       headers: { 'X-API-Key': key, accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!r.ok) throw new Error(`IONOS-DNS ${method} ${path.replace(/\?.*$/, '')}: HTTP ${r.status}`);
+    if (!r.ok) {
+      let msg = '';
+      try { msg = String((await r.json())?.message ?? '').slice(0, 120); } catch { /* kein JSON */ }
+      const form = r.status === 400 || r.status === 401 ? ` (Schlüssel: ${schluesselForm(key)})` : '';
+      throw new Error(`IONOS-DNS ${method} ${path.replace(/\?.*$/, '')}: HTTP ${r.status}${msg ? ` „${msg}“` : ''}${form}`);
+    }
     return r.status === 204 ? null : r.json();
   };
   return {

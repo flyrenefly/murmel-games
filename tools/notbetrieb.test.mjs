@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dnsStand, entscheide, ionosDns, VPS_IP, WEBSPACE_IP } from './notbetrieb.mjs';
+import { dnsStand, entscheide, ionosDns, schluesselForm, VPS_IP, WEBSPACE_IP } from './notbetrieb.mjs';
 
 test('dnsStand erkennt VPS, Notbetrieb, gemischt und fremde Adressen', () => {
   assert.equal(dnsStand([VPS_IP, VPS_IP]), 'vps');
@@ -70,4 +70,16 @@ test('IONOS-Client: liest Zone und A-Einträge, setzt Inhalt per PUT', async () 
 test('IONOS-Client: Fehler nennen keine Abfrageparameter und keinen Schlüssel', async () => {
   const dns = ionosDns('k.geheim', async () => ({ ok: false, status: 401 }));
   await assert.rejects(dns.zone(), (e) => /HTTP 401/.test(e.message) && !e.message.includes('geheim'));
+});
+
+test('schluesselForm nennt nur Form, nie Inhalt', () => {
+  assert.equal(schluesselForm('abc.defgh'), '2 Teile, Längen 3/5, ohne Leerraum');
+  assert.equal(schluesselForm('abc defgh'), '1 Teil, Längen 9, mit Leerraum');
+  assert.equal(schluesselForm('a.b.c"'), '3 Teile, Längen 1/1/2, ohne Leerraum, mit Sonderzeichen');
+  assert.ok(!schluesselForm('geheimnis.wert').includes('geheim'));
+});
+
+test('IONOS-Client: 400 nennt die Meldung von IONOS und die Schlüsselform', async () => {
+  const dns = ionosDns('nurEinTeil', async () => ({ ok: false, status: 400, json: async () => ({ message: 'Invalid API key format.' }) }));
+  await assert.rejects(dns.zone(), (e) => e.message.includes('„Invalid API key format.“') && e.message.includes('1 Teil, Längen 10') && !e.message.includes('nurEinTeil'));
 });
