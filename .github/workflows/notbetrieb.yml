@@ -1,0 +1,80 @@
+name: Notbetrieb-Wächter
+
+# Prüft alle 5 Minuten von außen, ob der VPS murmel.games ausliefert, und schaltet die A-Einträge
+# von murmel.games und www bei einem Ausfall auf den IONOS-Webspace (Notbetrieb) und automatisch
+# wieder zurück (docs/SERVER.md Abschnitt 9, tools/notbetrieb.mjs).
+# Braucht das Geheimnis IONOS_DNS_API_KEY („Präfix.Geheimnis“ aus dem IONOS-Entwicklerportal);
+# ohne Schlüssel wird nur geprüft und bei einem Ausfall gewarnt.
+# Jede Umschaltung, Warnung oder Störung des Wächters meldet ein Issue, das den Betreiber erwähnt
+# (Mail und Push über GitHub). Offene Meldungen gleichen Titels werden nicht doppelt angelegt.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      nur_pruefen:
+        description: 'Nur prüfen, nie umschalten'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: notbetrieb
+  cancel-in-progress: false
+
+jobs:
+  waechter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: tools/notbetrieb.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - id: pruefung
+        run: node tools/notbetrieb.mjs
+        env:
+          IONOS_DNS_API_KEY: ${{ secrets.IONOS_DNS_API_KEY }}
+          NUR_PRUEFEN: ${{ github.event_name == 'workflow_dispatch' && inputs.nur_pruefen }}
+      - name: Benachrichtigen
+        if: always() && steps.pruefung.outputs.aktion != '' && steps.pruefung.outputs.aktion != 'keine'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AKTION: ${{ steps.pruefung.outputs.aktion }}
+          TEXT: ${{ steps.pruefung.outputs.text }}
+          LAUF: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          offen() { gh issue list --state open --search "\"$1\" in:title" --json number,title --jq ".[] | select(.title == \"$1\") | .number" | head -1; }
+          body() { printf '@flyrenefly %s\n\n%s\n\nZeit (UTC): %s\nLauf: %s\n' "$1" "$TEXT" "$(date -u '+%Y-%m-%d %H:%M')" "$LAUF"; }
+          case "$AKTION" in
+            zum-notbetrieb)
+              t="Notbetrieb aktiv: murmel.games läuft vom IONOS-Webspace"
+              [ -n "$(offen "$t")" ] || gh issue create --title "$t" --body "$(body 'Der Wächter hat auf den Notbetrieb umgeschaltet. Konto-Funktionen pausieren, das Spiel läuft offline weiter. Zurück schaltet er automatisch, sobald der VPS wieder stabil ausliefert.')"
+              ;;
+            zurueck)
+              t="Notbetrieb aktiv: murmel.games läuft vom IONOS-Webspace"
+              n="$(offen "$t")"
+              if [ -n "$n" ]; then
+                gh issue comment "$n" --body "$(body 'Der Wächter hat zurück auf den VPS geschaltet.')"
+                gh issue close "$n"
+              else
+                gh issue create --title "Notbetrieb beendet: murmel.games wieder auf dem VPS" --body "$(body 'Der Wächter hat zurück auf den VPS geschaltet.')"
+              fi
+              ;;
+            warnung)
+              t="murmel.games nicht erreichbar"
+              [ -n "$(offen "$t")" ] || gh issue create --title "$t" --body "$(body 'Der VPS liefert das Spiel nicht aus. Ohne IONOS_DNS_API_KEY schaltet der Wächter nicht um.')"
+              ;;
+            *)
+              t="Notbetrieb-Wächter gestört"
+              [ -n "$(offen "$t")" ] || gh issue create --title "$t" --body "$(body 'Der Wächter konnte nicht prüfen oder nicht umschalten.')"
+              ;;
+          esac
