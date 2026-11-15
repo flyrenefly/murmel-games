@@ -43,6 +43,11 @@ test('parseUpload: Form, Lizenz, kein Lua, Textlängen, Lösung aus dem Editor',
   assert.match(String(parseUpload(upload({ loesung: { ...SAMPLE.loesung, level: 'enigma:rb01' } }))), /Editor/);
   assert.match(String(parseUpload(upload({ ersetzt: 'eins' }))), /ersetzt/);
   assert.match(String(parseUpload({ titel: 'x' })), /Level fehlt/);
+  // optional „nach einem Enigma-Level von …“: a line of at most 80 characters
+  assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'Ronald Lamprecht (GPL)' } })), 'object');
+  assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'ä'.repeat(80) } })), 'object');
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'x'.repeat(81) } }))), /höchstens 80 Zeichen/);
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 7 } }))), /höchstens 80 Zeichen/);
 });
 
 // ---------- API with a stand-in checker ----------
@@ -149,6 +154,20 @@ describe('Spieler-Levels-API', () => {
     const file = (await call(s.app, 'GET', '/api/spielerlevels/1/datei', anna)).json();
     assert.deepEqual([file.id, file.author, file.license, file.title], ['spieler:1', 'Anna', 'CC-BY-SA-4.0', 'Erstes Paar']);
     assert.doesNotMatch(JSON.stringify(own), /@/);
+  });
+
+  test('Herkunft „nach einem Enigma-Level von …“: eigene Spalte, in Karte und Datei; ohne Angabe nichts', async () => {
+    const s = setup();
+    const anna = await author(s, 'anna@example.de', 'Anna');
+    assert.deepEqual(await publish(s.app, anna, upload({ level: { ...SAMPLE.level, basedOn: 'Ronald Lamprecht (GPL)' } })), { status: 'angenommen', level: 1 });
+    assert.deepEqual(await publish(s.app, anna, upload({ titel: 'Ohne Vorlage' })), { status: 'angenommen', level: 2 });
+    assert.equal(s.store.rows[0].basedOn, 'Ronald Lamprecht (GPL)');
+    assert.equal(s.store.rows[0].file.basedOn, undefined);
+    assert.equal(s.store.rows[1].basedOn, null);
+    const own = (await call(s.app, 'GET', '/api/spielerlevels/meine', anna)).json().levels;
+    assert.deepEqual(own.map((l: { id: number; vorlage: string | null }) => [l.id, l.vorlage]), [[2, null], [1, 'Ronald Lamprecht (GPL)']]);
+    assert.equal((await call(s.app, 'GET', '/api/spielerlevels/1/datei', anna)).json().basedOn, 'Ronald Lamprecht (GPL)');
+    assert.equal('basedOn' in (await call(s.app, 'GET', '/api/spielerlevels/2/datei', anna)).json(), false);
   });
 
   test('Abgelehnt: Lösung gewinnt nicht, unerlaubter Inhalt, alte Spielversion', async () => {
@@ -399,8 +418,10 @@ describe('Spieler-Levels-API', () => {
     assert.equal(changed.status, 'abgelehnt', JSON.stringify(changed));
     assert.equal(s.store.rows.length, 0);
 
-    const ok = await publish(s.app, anna);
+    // with the optional credit of a converted Enigma level (sanitizeLevel keeps it)
+    const ok = await publish(s.app, anna, upload({ level: { ...SAMPLE.level, basedOn: '  Ronald\n Lamprecht (GPL) ' } }));
     assert.deepEqual(ok, { status: 'angenommen', level: 1 });
+    assert.equal(s.store.rows[0].basedOn, 'Ronald Lamprecht (GPL)');
     assert.equal(s.store.rows[0].steps, SAMPLE.loesung.steps);
     assert.equal((await call(s.app, 'GET', '/api/spielerlevels')).json().levels.length, 0);
 
@@ -409,6 +430,7 @@ describe('Spieler-Levels-API', () => {
     assert.deepEqual(list.map((l: { id: number; titel: string; autor: string; breite: number; hoehe: number }) => [l.id, l.titel, l.autor, l.breite, l.hoehe]), [[1, 'Erstes Paar', 'Anna', 11, 7]]);
     const file = (await call(s.app, 'GET', '/api/spielerlevels/1/datei')).json();
     assert.equal(file.id, 'spieler:1');
+    assert.equal(file.basedOn, 'Ronald Lamprecht (GPL)');
 
     // played as spieler:1, the same run goes into the leaderboard (replayed with the stored level)
     const bert = await author(s, 'bert@example.de', 'Bert');
@@ -443,17 +465,19 @@ test('Spieler-Levels in PostgreSQL: Status, Liste, Bewertung, Meldungen, Mail, L
   const anna = await acc(`anna-${tag}@example.de`, `Anna${tag}`);
   const bert = await acc(`bert-${tag}@example.de`, `Bert${tag}`);
   const t0 = new Date('2026-11-13T10:00:00Z');
-  const make = (title: string, replaces: number | null = null, at = t0) =>
-    store.create({ accountId: anna, title, description: `Beschreibung ${title}`, file: SAMPLE.level, levelHash: 'h', recording: SAMPLE.loesung, steps: 1588, replaces, now: at });
+  const make = (title: string, replaces: number | null = null, at = t0, basedOn: string | null = null) =>
+    store.create({ accountId: anna, title, description: `Beschreibung ${title}`, basedOn, file: SAMPLE.level, levelHash: 'h', recording: SAMPLE.loesung, steps: 1588, replaces, now: at });
 
   assert.equal(await store.displayName(anna), `Anna${tag}`);
   const a = await make('Erstes Paar');
-  const b = await make('Zweites 100%', null, new Date('2026-11-13T10:05:00Z'));
+  const b = await make('Zweites 100%', null, new Date('2026-11-13T10:05:00Z'), 'Ronald Lamprecht (GPL)');
   assert.equal(await store.countUploads(anna, t0), 2);
   assert.equal(await store.countWaiting(anna), 2);
   const la = (await store.level(a))!;
   assert.deepEqual([la.title, la.author, la.width, la.height, la.status, la.stars, la.votes, la.reports], ['Erstes Paar', `Anna${tag}`, 11, 7, 'wartet', null, 0, 0]);
   assert.deepEqual(la.file, SAMPLE.level);
+  assert.equal(la.basedOn, null);
+  assert.equal((await store.level(b))!.basedOn, 'Ronald Lamprecht (GPL)');
   assert.deepEqual((await store.list({ search: '', sort: 'neu', limit: 10, offset: 0 })).length, 0);
 
   // mail bookkeeping

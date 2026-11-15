@@ -21,6 +21,8 @@ export interface EdCell {
 export interface EditorLevel {
   title: string;
   author: string;
+  /** From an Enigma file: „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md); optional. */
+  basedOn?: string;
   width: number;
   height: number;
   /** Row by row, width × height. */
@@ -242,6 +244,7 @@ export function toLevelFile(l: EditorLevel, id = 'eigen'): LevelFile {
     map.push(row);
   }
   const file: LevelFile = { id, title: l.title.trim() || 'Ohne Titel', author: l.author.trim(), license: LICENSE, map, legend };
+  if (l.basedOn?.trim()) file.basedOn = l.basedOn.trim();
   if (l.start) file.start = { x: l.start.x + 0.5, y: l.start.y + 0.5 };
   if (objects.length) file.objects = objects;
   if (l.actors.length) file.actors = l.actors.map((a) => ({ k: a.k, x: a.x, y: a.y, ...(a.a && Object.keys(a.a).length ? { a: { ...a.a } } : {}) }));
@@ -288,6 +291,7 @@ export function fromLevelFile(file: LevelFile): Imported {
     }
   }
   const level: EditorLevel = { title: file.title ?? '', author: file.author ?? '', width, height, cells, actors: [], start };
+  if (file.basedOn) level.basedOn = file.basedOn;
   for (const o of file.objects ?? []) {
     const e = BY_KIND.get(o.k);
     const c = cellOf(level, o.x, o.y);
