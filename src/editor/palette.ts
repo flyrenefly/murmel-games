@@ -29,6 +29,8 @@ export interface PaletteEntry {
   force?: [number, number];
   /** Start entries: the main ball is this pearl instead of the black marble. */
   mainPearl?: string;
+  /** Documents: a plain text the player writes (attribute `text`, see docText in link.ts). */
+  text?: boolean;
 }
 
 /** A chooseable attribute: key, label and the allowed values with their labels (first = default). */
@@ -288,6 +290,7 @@ export const PALETTE: PaletteEntry[] = [
   item('it_coin_s', 'Münze, klein', 'it_coin_s'),
   item('it_coin_l', 'Münze, groß', 'it_coin_l'),
   item('it_cross', 'Kreuz'),
+  item('it_document', 'Dokument', 'it_document', 'Gegenstände', { text: true }),
   item('it_shogun_s', 'Shogun-Punkt S', 'it_shogun_s'),
   item('it_shogun_m', 'Shogun-Punkt M', 'it_shogun_m'),
   item('it_shogun_l', 'Shogun-Punkt L', 'it_shogun_l'),

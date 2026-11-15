@@ -4,6 +4,7 @@
 import type { ActorDef } from '../game/actors';
 import { type CellDef, DEFAULT_LEGEND, type LevelFile } from '../game/level';
 import type { ObjectDef } from '../game/objects';
+import { docText } from './link';
 import { BY_KIND, OXYD_COLORS, type PaletteEntry } from './palette';
 
 export interface EdCell {
@@ -343,5 +344,6 @@ function keepAttrs(a: Record<string, string> | undefined, e: PaletteEntry): Reco
   const out: Record<string, string> = {};
   for (const k of KEPT_ATTRS) if (typeof a[k] === 'string') out[k] = a[k];
   for (const p of e.props ?? []) if (p.options.some(([v]) => v === a[p.key])) out[p.key] = a[p.key];
+  if (e.text && docText(a.text)) out.text = docText(a.text);
   return Object.keys(out).length ? out : undefined;
 }

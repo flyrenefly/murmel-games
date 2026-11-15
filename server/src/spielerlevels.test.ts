@@ -46,6 +46,11 @@ test('parseUpload: Form, Lizenz, kein Lua, Textlängen, Lösung aus dem Editor',
   assert.match(String(parseUpload(upload({ loesung: { ...SAMPLE.loesung, result: 'offen' } }))), /gewonnener Lauf/);
   assert.match(String(parseUpload(upload({ loesung: { ...SAMPLE.loesung, level: 'enigma:rb01' } }))), /Editor/);
   assert.match(String(parseUpload(upload({ ersetzt: 'eins' }))), /ersetzt/);
+  // document texts: at most 10 documents, 300 characters each (the checker's sanitizeLevel cleans them)
+  const doc = (text: string, i = 0) => ({ x: i, y: 0, k: 'it_document', a: { text } });
+  assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, objects: Array.from({ length: 10 }, (_, i) => doc('ü'.repeat(300), i)) } })), 'object');
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, objects: Array.from({ length: 11 }, (_, i) => doc('x', i)) } }))), /höchstens 10 Dokumente/);
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, objects: [doc('x'.repeat(301))] } }))), /höchstens 300 Zeichen/);
   assert.match(String(parseUpload({ titel: 'x' })), /Level fehlt/);
   // optional „nach einem Enigma-Level von …“: a line of at most 80 characters
   assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'Ronald Lamprecht (GPL)' } })), 'object');
@@ -193,7 +198,8 @@ describe('Spieler-Levels-API', () => {
     const anna = await author(s, 'anna@example.de', 'Anna');
     const admin = await author(s, 'admin@example.de', 'Chefin');
     await publish(s.app, anna);
-    await publish(s.app, anna, upload({ titel: 'Zweites' }));
+    const brief = { x: 1, y: 1, k: 'it_document', a: { text: 'Lies mich zuerst.' } };
+    await publish(s.app, anna, upload({ titel: 'Zweites', level: { ...SAMPLE.level, objects: [brief] } }));
     // one mail for the first upload; the second waits for the hour
     let mails = sent.filter((m) => m.to === 'admin@example.de' && /Freigabe/.test(m.subject));
     assert.equal(mails.length, 1);
@@ -211,6 +217,8 @@ describe('Spieler-Levels-API', () => {
     assert.equal((await call(s.app, 'GET', '/api/admin/spielerlevels', bert)).statusCode, 403);
     const queue = (await call(s.app, 'GET', '/api/admin/spielerlevels', admin)).json();
     assert.deepEqual(queue.wartend.map((l: { titel: string }) => l.titel), ['Erstes Paar', 'Zweites']);
+    // the review lists every document text (user decision 15.11.2026)
+    assert.deepEqual(queue.wartend.map((l: { texte: unknown }) => l.texte), [[], [{ x: 1, y: 1, text: 'Lies mich zuerst.' }]]);
     // the admin plays it before the release
     assert.equal((await call(s.app, 'GET', '/api/spielerlevels/1/datei', admin)).statusCode, 200);
 
@@ -523,6 +531,7 @@ test('Spieler-Levels in PostgreSQL: Status, Liste, Bewertung, Meldungen, Mail, L
   assert.equal(await store.report(a, bert, 'Grund zwei', t0), false);
   assert.deepEqual(await titles(''), ['Zweites 100%']);
   assert.deepEqual((await store.pending()).map((l) => [l.title, l.reasons]), [['Erstes Paar', ['Grund eins']]]);
+  assert.deepEqual((await store.pending())[0].file, SAMPLE.level); // the review reads the document texts from the file
   await store.dismissReports(a, t0);
   assert.deepEqual(await titles(''), ['Zweites 100%', 'Erstes Paar']);
 

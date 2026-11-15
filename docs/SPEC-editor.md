@@ -62,12 +62,17 @@ Bewerten und Moderieren macht der Baustein `spielerlevels`.
   `transparent`), Farbdurchlass Form (`flavor`). Der erste Wert ist die Vorgabe des Spiels und wird
   nicht gespeichert. Richtungen, die Enigma im Artnamen trägt (`st_laser_n`, `st_boulder_e`,
   `st_turnstilearm_s`), sind eigene Einträge.
+- **Dokumente mit Text** (`it_document`, Nutzerentscheidung 15.11.2026): ein Textfeld im Eigenschaften-
+  Bereich, höchstens **300 Zeichen** je Dokument und **10 Dokumente** je Level. Nur reiner Text: `docText`
+  (`src/editor/link.ts`) ersetzt Steuerzeichen (C0, DEL, C1), unsichtbare und Richtungszeichen durch Leerzeichen,
+  fasst Leerraum zusammen und kürzt. Das Spiel zeigt den Text mit `textContent`; ein Link bleibt Text. Ein leeres
+  Dokument ist ein Hinweis, mehr als 10 sind ein Fehler. Die Admin-Freigabe listet alle Texte eines Levels.
 - **Gefälle** (`fl_slope_p*`, Innen- und Außenecken): die Bodenkraft ergibt sich aus der Art
   (SlopeForce 25 in Richtung des Gefälles) und wird nie aus einer Datei übernommen.
 - Erweiterung 15.11.2026 (Rangliste und Probelauf: Notiz `palette-uebergabe.md`): nur Arten, die die
   Engine schon spielt; jede lädt in einem Test im Spiel und läuft fünf Sekunden ohne Fehler
-  (`src/editor/palette-erweitert.test.ts`). Nicht in der Palette: `it_document` (Text, Nutzerentscheidung
-  offen), Wurmlöcher und Strudel (Koordinaten), Gummibänder, Zähler/Zeitgeber ohne Feld (`ot_*`), Puzzle-
+  (`src/editor/palette-erweitert.test.ts`). Nicht in der Palette:
+  Wurmlöcher und Strudel (Koordinaten), Gummibänder, Zähler/Zeitgeber ohne Feld (`ot_*`), Puzzle-
   und Brückensteine (Verbindungsbits, Zustände), Rohrpost, `ac_horse`.
 - Vorschau im gewählten Stil: „Klassisch“ und „Klassisch Retro“ mit den Enigma-Bildern;
   für die eigenen 3D-Stile (Glas, Neon, Retro16) eine flache Schema-Ansicht mit den
@@ -116,7 +121,7 @@ offener Rand (die Murmel kann hinausrollen).
 - Dekodieren ist streng (Links sind fremde Eingaben): Länge ≤ 16 000, entpackt ≤ 512 KB, nur
   bekannte Felder (`title`, `author`, `map`, `legend`, `start`, `objects`, `actors`), nur Arten
   aus der Palette, nur bekannte Attribute (Eigenschaften nur mit ihren erlaubten Werten), Größe ≤ 100×64, Textlängen begrenzt; **nie Lua**,
-  keine Dokumenttexte. Danach `parseLevel`. Jeder Fehler ergibt eine verständliche Meldung,
+  Dokumenttexte nur bereinigt (`docText`) und höchstens 10 Dokumente. Danach `parseLevel`. Jeder Fehler ergibt eine verständliche Meldung,
   nie eine Ausnahme im Spiel.
 - ID eines Link-Levels: `link:<FNV-1a-Hash der Daten>` – so kollidiert es nie mit Paketlevels.
 - Im Spiel: Ein Link `#level=…` startet das Level (Paket „Geteiltes Level“) mit dem Knopf
@@ -131,7 +136,7 @@ offener Rand (die Murmel kann hinausrollen).
 
 ## Nicht-Ziele
 
-Server, Hochladen, Bewertung (Baustein `spielerlevels`); Lua; Dokumenttexte; Wurmlöcher und
+Server, Hochladen, Bewertung (Baustein `spielerlevels`); Lua; Wurmlöcher und
 andere Objekte mit Koordinaten-Attributen; mehrere Murmeln. Lizenz der Spieler-Levels:
 **CC BY-SA 4.0** (Nutzerentscheidung 13.11.2026); das `license`-Feld jedes Editor-Levels lautet
 `CC-BY-SA-4.0` (SPDX), damit `spielerlevels` sie übernimmt. „Neue Levels erst nach Freigabe“ betrifft

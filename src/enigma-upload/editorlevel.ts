@@ -2,7 +2,7 @@
 // offers, so the result goes through the existing publish path (sanitizeLevel, replay, admin review).
 
 import { DEFAULT_FLOOR, type EdCell, type EditorLevel } from '../editor/model';
-import { MAIN_PEARLS } from '../editor/link';
+import { docText, MAIN_PEARLS, MAX_DOC_TEXT, MAX_DOCS } from '../editor/link';
 import { BY_KIND } from '../editor/palette';
 import { type EnigmaDatei, UploadError } from './datei';
 import type { Decl, Welt } from './welt';
@@ -147,6 +147,7 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
   const hinweise: string[] = [];
   const dropped = new Set<string>();
   const callbacks = new Set<string>();
+  let shortened = 0;
 
   /** Connection attributes, and the properties of the editor kind with an allowed value. */
   const attrs = (d: Decl, k: string, editor: string): Record<string, string> | undefined => {
@@ -156,7 +157,13 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
     for (const [key, v] of Object.entries(a)) {
       const prop = props.find((p) => p.key === key);
       if (KEPT.includes(key)) out[key] = v;
-      else if (prop?.options.some(([value]) => value === v)) {
+      else if (key === 'text' && BY_KIND.get(editor)?.text) {
+        // a document: the text of its i18n key (Enigma shows the key itself when there is none)
+        const raw = datei.texts[v] ?? v;
+        const t = docText(raw);
+        if (t) out.text = t;
+        if ([...raw.replace(/\s+/g, ' ').trim()].length > MAX_DOC_TEXT) shortened++;
+      } else if (prop?.options.some(([value]) => value === v)) {
         if (v !== prop.options[0][0]) out[key] = v; // the first value is the default
       } else if (!READ[k]?.includes(key) && !key.startsWith('_')) dropped.add(`${key} von ${d.k}`);
     }
@@ -235,6 +242,10 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
 
   if (marbles.length !== 1 && !mainPearl)
     throw new UploadError(`Das Level braucht genau eine schwarze Murmel oder, als Meditation, eine Perle (gefunden: ${marbles.length} Murmeln).`);
+
+  const docs = cells.filter((c) => c.i === 'it_document').length;
+  if (docs > MAX_DOCS) throw new UploadError(`Das Level enthält ${docs} Dokumente; ein Spieler-Level darf höchstens ${MAX_DOCS} enthalten.`);
+  if (shortened) hinweise.push(`${shortened === 1 ? 'Ein Dokumenttext wurde' : `${shortened} Dokumenttexte wurden`} auf ${MAX_DOC_TEXT} Zeichen gekürzt.`);
 
   const world = Object.keys(welt.world);
   if (world.length) hinweise.push(`Nicht übernommene Welteinstellungen: ${world.join(', ')}.`);

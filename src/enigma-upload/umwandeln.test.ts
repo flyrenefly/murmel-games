@@ -88,8 +88,8 @@ describe('Umwandeln ins Editor-Level', () => {
   });
 
   it('nennt fehlende Objekte mit Anzahl', async () => {
-    const lua = LEVEL.replace('{"it_hammer"}', '{"it_document", text = "x"}').replace('"#######",\n  "#a', '"###m###",\n  "#a').replace('ti["@"]', 'ti["m"] = {"st_mirror_sheets"}\nti["x"] = {"it_document"}\nti["@"]');
-    await expect(um('t.xml', xml(lua.replace('"#? hr?#"', '"#?xhr?#"')))).rejects.toThrow(/it_document \(2×\), st_mirror_sheets\./);
+    const lua = LEVEL.replace('{"it_hammer"}', '{"it_wormhole"}').replace('"#######",\n  "#a', '"###m###",\n  "#a').replace('ti["@"]', 'ti["m"] = {"st_mirror_sheets"}\nti["x"] = {"it_wormhole"}\nti["@"]');
+    await expect(um('t.xml', xml(lua.replace('"#? hr?#"', '"#?xhr?#"')))).rejects.toThrow(/it_wormhole \(2×\), st_mirror_sheets\./);
   });
 
   it('lehnt Lua-Rückrufe und falsche Murmelzahl ab', async () => {

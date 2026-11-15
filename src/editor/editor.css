@@ -432,6 +432,25 @@ button.icon svg {
   max-width: 64%;
 }
 
+/* document text: the label above a full-width field */
+.ed-field:has(textarea) {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ed-field textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px; /* no zoom on focus in iOS Safari */
+  resize: vertical;
+}
+
 .ed-panel > button {
   margin-top: 10px;
   width: 100%;

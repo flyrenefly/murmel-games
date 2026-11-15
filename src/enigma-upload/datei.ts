@@ -27,6 +27,8 @@ export interface EnigmaDatei {
   /** Murmel library names in load order. */
   libs: string[];
   code: string;
+  /** Texts of the el:i18n section by key (German translation if there is one, else English). */
+  texts: Record<string, string>;
 }
 
 const unxml = (t: string): string =>
@@ -41,7 +43,7 @@ const baseName = (name: string): string => name.replace(/^.*[\\/]/, '').replace(
 export function leseDatei(name: string, text: string, size = new TextEncoder().encode(text).length): EnigmaDatei {
   if (size > MAX_FILE) throw new UploadError(`Die Datei ist ${Math.ceil(size / 1024)} KB groß; erlaubt sind höchstens ${MAX_FILE / 1024} KB.`);
   const lower = name.toLowerCase();
-  if (lower.endsWith('.lua')) return mitLua({ title: clean(baseName(name)), author: '', license: '', compat: luaCompat(text), libs: [], code: text });
+  if (lower.endsWith('.lua')) return mitLua({ title: clean(baseName(name)), author: '', license: '', compat: luaCompat(text), libs: [], code: text, texts: {} });
   if (!lower.endsWith('.xml')) throw new UploadError('Bitte eine Enigma-Leveldatei (.xml oder .lua) wählen.');
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new UploadError('Die Datei enthält eine DOCTYPE- oder ENTITY-Angabe. Aus Sicherheitsgründen liest Murmel solche Dateien nicht.');
   if (!/<el:level\b/.test(text)) throw new UploadError('Das ist keine Enigma-Leveldatei (el:level fehlt).');
@@ -64,7 +66,23 @@ export function leseDatei(name: string, text: string, size = new TextEncoder().e
     compat: Number(attr(text, /<el:compatibility\b[^>]*\bel:enigma="([0-9.]+)"/)) || 1.1,
     libs,
     code,
+    texts: i18n(text),
   });
+}
+
+/** el:i18n strings (fixed patterns, no parser): key → German translation or English text. At most 200 keys. */
+function i18n(xml: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const section = /<el:i18n>([\s\S]*?)<\/el:i18n>/.exec(xml)?.[1] ?? '';
+  let n = 0;
+  for (const m of section.matchAll(/<el:string\b[^>]*\bel:key="([^"]{1,80})"[^>]*>([\s\S]*?)<\/el:string>/g)) {
+    if (++n > 200) break;
+    const de = /<el:translation\b[^>]*\bel:lang="de"[^>]*>([\s\S]*?)<\/el:translation>/.exec(m[2])?.[1];
+    const en = /<el:english\b[^>]*>([\s\S]*?)<\/el:english>/.exec(m[2])?.[1];
+    const t = unxml((de ?? '').trim() || (en ?? '').trim());
+    if (t) out[unxml(m[1])] = t;
+  }
+  return out;
 }
 
 /** Plain Lua: API 1 levels call create_world or the enigma.* functions. */

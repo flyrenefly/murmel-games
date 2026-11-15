@@ -5,7 +5,7 @@ import './editor.css';
 import { drawEntry, drawLevel, ED_STYLES, type EdStyle, loadImages, symbolColor } from './draw';
 import { enigmaStart, ENIGMA_ACCEPT, type EnigmaHost, importEnigma, isEnigmaFile } from '../enigma-upload/dialog';
 import { History } from './history';
-import { decodeLevel, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, sanitizeLevel } from './link';
+import { decodeLevel, docText, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, MAX_DOC_TEXT, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
 import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, searchPalette } from './palette';
 import { publish } from './publish';
@@ -363,6 +363,28 @@ function renderSelection(): void {
       );
       parts.push(field(prop.label, sel));
     }
+  }
+
+  // document text: plain text only, shown in the game as is (docText cleans it the same way sanitizeLevel does)
+  if (c.i && BY_KIND.get(c.i)?.text) {
+    const ta = document.createElement('textarea');
+    ta.maxLength = MAX_DOC_TEXT;
+    ta.rows = 4;
+    ta.value = c.ia?.text ?? '';
+    ta.placeholder = 'Was das Dokument zeigt, wenn die Murmel es aufsammelt';
+    const count = note(`${[...ta.value].length} / ${MAX_DOC_TEXT} Zeichen`);
+    count.setAttribute('aria-live', 'polite');
+    ta.addEventListener('input', () => (count.textContent = `${[...ta.value].length} / ${MAX_DOC_TEXT} Zeichen`));
+    ta.addEventListener('change', () =>
+      change(() => {
+        const cell = cellOf(level, x, y)!;
+        const t = docText(ta.value);
+        cell.ia ??= {};
+        if (t) cell.ia.text = t;
+        else delete cell.ia.text;
+      }),
+    );
+    parts.push(field('Text', ta), count, note('Nur Text, keine Links oder Formatierung. Texte sind mit dem Level öffentlich; bitte keine persönlichen Daten.'));
   }
 
   const src = sourceAt(level, x, y);
