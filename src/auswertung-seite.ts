@@ -10,6 +10,8 @@ export interface LevelCounts {
   neustart: number;
   abbruch: number;
   abstuerze: number;
+  /** How often the way from the tips was shown. */
+  wegGezeigt: number;
   zeitGeloest: number[];
   zeitAbbruch: number[];
 }
@@ -28,6 +30,8 @@ export interface SchweresLevel {
   neustartsJeLauf: number;
   abbrueche: number;
   abstuerzeJeLauf: number;
+  /** Shown tip ways in the period (absolute). */
+  wegGezeigt: number;
   /** Most frequent time class of solved runs, or null when none was solved. */
   typischeZeit: string | null;
 }
@@ -47,6 +51,7 @@ export function schwersteLevels(levels: LevelCounts[], min = 5, n = 20): Schwere
         neustartsJeLauf: l.neustart / laeufe,
         abbrueche: l.abbruch,
         abstuerzeJeLauf: l.abstuerze / laeufe,
+        wegGezeigt: l.wegGezeigt,
         typischeZeit: top > 0 ? ZEITKLASSEN[l.zeitGeloest.indexOf(top)] : null,
       };
     })

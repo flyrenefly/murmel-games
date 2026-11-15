@@ -7,6 +7,7 @@ interface Row {
   accountId: number;
   title: string;
   description: string;
+  basedOn: string | null;
   file: Record<string, unknown>;
   levelHash: string;
   recording: Recording;
@@ -47,6 +48,7 @@ export function memoryPlayerLevelStore(
       authorBlocked: (await accounts.account(r.accountId))?.blocked ?? false,
       title: r.title,
       description: r.description,
+      basedOn: r.basedOn,
       ...(withFile ? { file: structuredClone(r.file) } : {}),
       width: Math.max(...map.map((s) => s.length)),
       height: map.length,
@@ -77,7 +79,7 @@ export function memoryPlayerLevelStore(
     async create(l) {
       const replaces = l.replaces !== null && rows.some((r) => r.id === l.replaces && r.accountId === l.accountId) ? l.replaces : null;
       const id = nextId++;
-      rows.push({ id, accountId: l.accountId, title: l.title, description: l.description, file: structuredClone(l.file), levelHash: l.levelHash, recording: l.recording, steps: l.steps, status: 'wartet', reason: null, replaces, createdAt: l.now, publishedAt: null, notifiedAt: null });
+      rows.push({ id, accountId: l.accountId, title: l.title, description: l.description, basedOn: l.basedOn ?? null, file: structuredClone(l.file), levelHash: l.levelHash, recording: l.recording, steps: l.steps, status: 'wartet', reason: null, replaces, createdAt: l.now, publishedAt: null, notifiedAt: null });
       return id;
     },
     async level(id) {

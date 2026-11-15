@@ -66,7 +66,11 @@ schritte, also ohne Pausen):
 |---|---|---|---|---|---|
 | Spielzeit | unter 1 min | 1–3 min | 3–10 min | 10–30 min | ab 30 min |
 
-Getrennt für gelöste und für abgebrochene Läufe (Neustarts haben keine Zeitklasse). Nur Klassen, keine
+Getrennt für gelöste und für abgebrochene Läufe (Neustarts haben keine Zeitklasse).
+
+Außerdem zählt `wegGezeigt`, wie oft in einem gezählten Lauf der **Weg aus den Tipps** gezeigt wurde
+(`docs/SPEC-tipps.md`, „Weg zeigen“/„Weiter zeigen“; seit 15.11.2026, Migration 016). Der Zähler beendet
+keinen Lauf; Bündel älterer Seiten ohne das Feld zählen 0. Nur Klassen, keine
 genauen Zeiten: Wer die Bestenliste will, meldet sich dort an.
 
 ## Spiel (`src/auswertung.ts`)
@@ -95,14 +99,18 @@ Deshalb **nur im Arbeitsspeicher**: Wird die Seite offline geschlossen, gehen di
 
 ```json
 { "levels": [ { "pack": "enigma_i", "level": "enigma:m_tutor/m_tut1",
-  "gestartet": 3, "geloest": 1, "neustart": 2, "abbruch": 0, "abstuerze": 4,
+  "gestartet": 3, "geloest": 1, "neustart": 2, "abbruch": 0, "abstuerze": 4, "wegGezeigt": 1,
   "zeitGeloest": [0, 1, 0, 0, 0], "zeitAbbruch": [0, 0, 0, 0, 0] } ] }
 ```
 
 - Schema streng: 1–50 Einträge, `pack` und `level` nach `LEVEL_ID`, Zähler ganzzahlig 0–500,
-  `abstuerze` 0–10 000, Zeitklassen genau 5 Werte 0–500. Fremde Felder (etwa eine Zeit oder Kennung)
+  `abstuerze` 0–10 000, `wegGezeigt` optional 0–500 (fehlt er, gilt 0), Zeitklassen genau 5 Werte 0–500. Fremde Felder (etwa eine Zeit oder Kennung)
   verwirft Fastify vor der Verarbeitung (`removeAdditional`); sie werden nie gespeichert.
-- Antwort immer `204` (auch bei Datenbankfehler, der nur ins Protokoll geht). Kein Cookie, keine
+- Anfragelimit je IP-Adresse nur im Arbeitsspeicher (`server/src/limit.ts`): 120 Bündel je 15 Minuten,
+  darüber `429` ohne Protokollzeile; die Adresse wird weder gespeichert noch protokolliert. Eine Seite
+  sendet höchstens ein Bündel je 20 beendete Läufe sowie beim Verbergen/Verlassen, das Limit reicht also
+  auch für viele Spieler hinter einer Adresse (Schule, Familie).
+- Sonst Antwort immer `204` (auch bei Datenbankfehler, der nur ins Protokoll geht). Kein Cookie, keine
   Konto-Auswertung; das Server-Protokoll enthält wie überall nur Methode und Pfad.
 - Der Tag ist der Berliner Tag beim **Eingang** (offline gesammelte Zähler landen am Sendetag).
 
@@ -180,7 +188,8 @@ um den neuen Schalter ergänzt werden (im Entwurf oben enthalten).
 1. **Offline-Puffer im Browser-Speicher** (überlebt Schließen der Seite) nur mit Einwilligung – von der
    Koordination verworfen (14.11.2026), Variante ohne Speicher bestätigt; liegt dem Nutzer vor.
 2. **Missbrauch:** Wie `/api/event` ist der Schreibweg offen; Obergrenzen je Sendung begrenzen Ausreißer,
-   gezielte Verfälschung verhindert das nicht. Bei Bedarf ein Anfragelimit je IP nur im Arbeitsspeicher
-   (wie `limit.ts`).
-3. **Tipps** (`docs/SPEC-tipps.md`): ob ein Lauf mit gezeigtem Weg endete, wäre ein weiterer starker
-   Schwierigkeitshinweis – nicht gebaut.
+   gezielte Verfälschung verhindert das nicht. Seit 15.11.2026 gibt es ein Anfragelimit je IP nur im
+   Arbeitsspeicher (120 Bündel / 15 min, `limit.ts`).
+3. **Tipps** (`docs/SPEC-tipps.md`): seit 15.11.2026 als Tageszähler `wegGezeigt` je Level gebaut
+   (Spalte „Tipp-Weg“ auf `statistik.html`); ob ein Lauf mit gezeigtem Weg *gelöst* wurde, wird nicht
+   getrennt gezählt.

@@ -586,7 +586,9 @@ function loadProgressFile(): void {
 function showStart(): void {
   mode = 'menu';
   const where = packId === PLAYER_PACK ? escapeHtml(packName) : `${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}`;
-  const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}</span><br>`;
+  // a player level converted from Enigma names its model (docs/SPEC-enigma-upload.md)
+  const basedOn = packId === PLAYER_PACK ? packList[levelIndex]?.basedOn : undefined;
+  const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}${basedOn ? `<br>nach einem Enigma-Level von ${escapeHtml(basedOn)}` : ''}</span><br>`;
   const ghostNote = (aufgabe ? `<span class="credit">${escapeHtml(titelZeile(aufgabe))}</span><br>` : '') + (geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '');
   const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? 'Geist ändern' : 'Mit Geist', () => void showGeister()]];
   const play = () => (isTouch ? void startTouch() : startPlaying());
@@ -1199,6 +1201,11 @@ const tipps = tippsUI(
     menue: () => ((mode = 'menu'), input.releaseLock()),
     spielen: () => (isTouch ? void startTouch() : startPlaying()),
     aus: () => zz.laeuft() || mode === 'won',
+    // only runs the Auswertung counted as started (not zu zweit, no links)
+    wegGezeigt: (s) => {
+      const pack = laufPaket.get(s);
+      if (pack !== undefined) auswertung.wegGezeigt(pack, s.level.id);
+    },
   },
   $<HTMLButtonElement>('btn-tipp'),
 );

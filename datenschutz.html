@@ -177,11 +177,11 @@
       <p>
         Damit wir sehen, welche Levels zu schwer sind oder an der falschen Stelle im Paket stehen, zählt das Spiel
         außerdem, wie oft ein Level begonnen, gelöst, neu gestartet oder abgebrochen wurde, wie viele Abstürze es
-        dabei gab und in welcher groben Zeitspanne (unter 1 Minute bis über 30 Minuten) ein Lauf endete. Diese
+        dabei gab, wie oft der Weg aus den Tipps gezeigt wurde und in welcher groben Zeitspanne (unter 1 Minute bis über 30 Minuten) ein Lauf endete. Diese
         Zahlen sammelt das Spiel nur im Arbeitsspeicher der geöffneten Seite – nicht im Browser-Speicher – und
         schickt sie gebündelt ohne Uhrzeit und ohne Kennung an unseren Server, auch wenn Sie offline gespielt
         haben, sobald wieder eine Verbindung besteht. Der Server addiert sie zu Tageszahlen je Level; IP-Adressen,
-        Prüfwerte oder einzelne Spielverläufe werden dafür nicht gespeichert, ein Konto wird nicht zugeordnet. Die
+        Prüfwerte oder einzelne Spielverläufe werden dafür nicht gespeichert, ein Konto wird nicht zugeordnet. Um Missbrauch zu begrenzen, nimmt der Server je IP-Adresse nur eine bestimmte Zahl solcher Sendungen an; dafür wird die Adresse kurzzeitig im Arbeitsspeicher gehalten. Die
         Tageszahlen löschen wir nach 365 Tagen. Unter „Fortschritt“ können Sie die gesamte Spielstatistik mit dem
         Schalter „Anonyme Statistik senden“ abschalten; diese Entscheidung speichert das Spiel im Browser-Speicher
         (<code>localStorage</code>), weil es sie sonst nicht beachten könnte – gespeichert wird nur, dass der
@@ -410,7 +410,7 @@
       <h2>Spieler-Levels</h2>
       <p>
         Mit einem Konto können Sie ein im Leveleditor gebautes Level veröffentlichen. Dabei schickt Ihr Browser
-        an unseren Server: das Level (Karte und Objekte aus dem Editor), Titel, die freiwillige Beschreibung, die
+        an unseren Server: das Level (Karte und Objekte aus dem Editor), Titel, die freiwillige Beschreibung, bei umgewandelten Enigma-Levels die freiwillige Herkunftsangabe („nach einem Enigma-Level von …“), die
         Spielversion und die Aufzeichnung Ihres gelösten Probelaufs (Steuerbewegungen und Aktionen je
         Physikschritt, dazu der Startwert des Zufalls). Der Server spielt den Lauf nach und nimmt das Level nur
         an, wenn es dabei gelöst wird. Ein Admin sieht es sich an, bevor es veröffentlicht wird; bei neuen
@@ -419,10 +419,10 @@
       <p>
         Enigma-Leveldateien, die Sie im Editor öffnen, wandelt Murmel ausschließlich in Ihrem Browser um; die
         Datei selbst wird nicht an unseren Server übertragen. Erst wenn Sie das umgewandelte Level
-        veröffentlichen, gilt für das Level das oben Beschriebene.
+        veröffentlichen, gilt für das Level das oben Beschriebene. Die Herkunftsangabe belegt Murmel mit Autor und Lizenz aus der Datei vor; Sie können sie ändern oder leeren.
       </p>
       <p>
-        Veröffentlichte Levels sind öffentlich: Jede Person kann sie spielen und sieht Titel, Beschreibung,
+        Veröffentlichte Levels sind öffentlich: Jede Person kann sie spielen und sieht Titel, Beschreibung, eine etwaige Herkunftsangabe,
         Datum, Bewertungen und Ihren selbst gewählten Anzeigenamen als Autor. Ihre E-Mail-Adresse wird nie
         angezeigt. Sie veröffentlichen das Level unter der Lizenz CC BY-SA 4.0: Andere dürfen es unter
         Nennung Ihres Anzeigenamens verändern und weitergeben – auch außerhalb von Murmel. Kopien, die

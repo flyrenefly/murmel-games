@@ -1,6 +1,6 @@
 /**
  * Auswertung (docs/SPEC-auswertung.md): where players fail or give up. Counts runs per pack and level –
- * started, solved, restarted, abandoned, falls and a rough time class – only in the memory of the open
+ * started, solved, restarted, abandoned, falls, shown tip ways and a rough time class – only in the memory of the open
  * page, and sends them as one bundle without time or id to POST /api/auswertung. No storage on the
  * device; whatever was collected offline goes out once the browser is online again.
  */
@@ -17,6 +17,8 @@ export interface Zaehler {
   neustart: number;
   abbruch: number;
   abstuerze: number;
+  /** How often the way from the tips was shown (docs/SPEC-tipps.md). */
+  wegGezeigt: number;
   zeitGeloest: number[];
   zeitAbbruch: number[];
 }
@@ -45,7 +47,7 @@ export function zeitklasse(sekunden: number): number {
   return i < 0 ? GRENZEN.length : i;
 }
 
-const leer = (pack: string, level: string): Zaehler => ({ pack, level, gestartet: 0, geloest: 0, neustart: 0, abbruch: 0, abstuerze: 0, zeitGeloest: [0, 0, 0, 0, 0], zeitAbbruch: [0, 0, 0, 0, 0] });
+const leer = (pack: string, level: string): Zaehler => ({ pack, level, gestartet: 0, geloest: 0, neustart: 0, abbruch: 0, abstuerze: 0, wegGezeigt: 0, zeitGeloest: [0, 0, 0, 0, 0], zeitAbbruch: [0, 0, 0, 0, 0] });
 
 function gekappt(z: Zaehler): Zaehler {
   const k = (n: number) => Math.min(n, MAX_ZAHL);
@@ -56,6 +58,7 @@ function gekappt(z: Zaehler): Zaehler {
     neustart: k(z.neustart),
     abbruch: k(z.abbruch),
     abstuerze: Math.min(z.abstuerze, MAX_ABSTUERZE),
+    wegGezeigt: k(z.wegGezeigt),
     zeitGeloest: z.zeitGeloest.map(k),
     zeitAbbruch: z.zeitAbbruch.map(k),
   };
@@ -82,6 +85,12 @@ export class Auswertung {
   start(pack: string, level: string): void {
     const z = this.zaehler(pack, level);
     if (z) z.gestartet++;
+  }
+
+  /** The tips showed the way (one more stretch of it) in a counted run. */
+  wegGezeigt(pack: string, level: string): void {
+    const z = this.zaehler(pack, level);
+    if (z) z.wegGezeigt++;
   }
 
   /** A run ended; `sekunden`: play time without pauses. */

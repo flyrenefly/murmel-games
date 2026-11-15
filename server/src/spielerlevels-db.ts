@@ -8,6 +8,7 @@ interface Row {
   author_blocked: boolean;
   title: string;
   description: string;
+  based_on: string | null;
   file?: Record<string, unknown>;
   width: number;
   height: number;
@@ -30,6 +31,7 @@ const level = (r: Row): PlayerLevel => ({
   authorBlocked: r.author_blocked,
   title: r.title,
   description: r.description,
+  basedOn: r.based_on,
   ...(r.file ? { file: r.file } : {}),
   width: r.width,
   height: r.height,
@@ -47,11 +49,11 @@ const level = (r: Row): PlayerLevel => ({
 /** LIKE pattern for a search text (its own % and _ are literal). */
 const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
-/** Spieler-Levels in PostgreSQL (migrations/009_spielerlevels.sql). */
+/** Spieler-Levels in PostgreSQL (migrations/009_spielerlevels.sql, 017_spielerlevel_vorlage.sql). */
 export function playerLevelStore(sql: Sql): PlayerLevelStore {
   // every column of a level except the file and the recording, with author, rating and open reports
   const cols = sql`
-    p.id, p.account_id, a.display_name as author, a.blocked_at is not null as author_blocked, p.title, p.description,
+    p.id, p.account_id, a.display_name as author, a.blocked_at is not null as author_blocked, p.title, p.description, p.based_on,
     jsonb_array_length(p.file->'map') as height,
     (select max(char_length(m.v)) from jsonb_array_elements_text(p.file->'map') m(v))::int as width,
     p.steps, p.status, p.reason, p.replaces, p.created_at, p.published_at,
@@ -77,8 +79,8 @@ export function playerLevelStore(sql: Sql): PlayerLevelStore {
 
     async create(l) {
       const [{ id }] = await sql<{ id: string }[]>`
-        insert into player_levels (account_id, title, description, file, level_hash, recording, steps, replaces, created_at)
-        values (${l.accountId}, ${l.title}, ${l.description}, ${sql.json(l.file as never)}, ${l.levelHash}, ${sql.json(l.recording as never)}, ${l.steps},
+        insert into player_levels (account_id, title, description, based_on, file, level_hash, recording, steps, replaces, created_at)
+        values (${l.accountId}, ${l.title}, ${l.description}, ${l.basedOn ?? null}, ${sql.json(l.file as never)}, ${l.levelHash}, ${sql.json(l.recording as never)}, ${l.steps},
                 (select id from player_levels where id = ${l.replaces} and account_id = ${l.accountId}), ${l.now})
         returning id`;
       return Number(id);
