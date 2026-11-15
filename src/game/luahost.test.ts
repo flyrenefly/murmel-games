@@ -3,13 +3,14 @@ import shim from '../lua/enigma.lua?raw';
 import packText from '../../public/levels/enigma/tutorial_basic.json?raw';
 import { LuaLevel } from '../lua/runtime';
 import { cellAt, type LevelFile, parseLevel } from './level';
+import type { ActorDef } from './actors';
 import { makeLuaHost } from './luahost';
 import { ObjectWorld } from './objects';
 import { PhysicsWorld } from './physics';
 
 /** A plain imported level with the game's own Lua host and a level script of our own. */
-async function withScript(code: string, kinds: Record<string, string> = {}) {
-  const file = { ...(JSON.parse(packText) as { levels: LevelFile[] }).levels[0], lua: { code, kinds, named: [] } };
+async function withScript(code: string, kinds: Record<string, string> = {}, extra: Partial<LevelFile> = {}) {
+  const file = { ...(JSON.parse(packText) as { levels: LevelFile[] }).levels[0], lua: { code, kinds, named: [] }, ...extra };
   const level = parseLevel(file, () => 0.3);
   const objects = new ObjectWorld(level.objects, level.width, level.texts, {
     stoneAt: (c, r) => (cellAt(level, c, r)?.stone ?? 'x') !== null,
@@ -148,5 +149,109 @@ describe('wo:add(YIN, {"it_document", text = …}) during play', () => {
     expect(lua.lastError).toBe('');
     expect(objects.inventories[0].length).toBe(before);
     expect(objects.events).toContainEqual({ type: 'text', text: 'failed' });
+  });
+});
+
+describe('slope floors during play (Tilt Board)', () => {
+  it('pull like map slopes: direction of the shape × SlopeStrength, own strength, force_x/force_y', async () => {
+    const { lua, level } = await withScript(`function f()
+  wo[po(2, 2)] = {"fl_slope_ps"}
+  wo[po(3, 2)] = {"fl_slope_ine", strength = 10}
+  wo[po(4, 2)] = {"fl_slope_pw", force_x = 3, force_y = 4}
+  wo[po(5, 2)] = {"fl_gray"}
+end`, { fl_slope_ps: 'fl_slope', fl_slope_ine: 'fl_slope', fl_slope_pw: 'fl_slope', fl_gray: 'fl_gray' });
+    level.cells[2 * level.width + 5].force = [0, 25];
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    const at = (x: number) => level.cells[2 * level.width + x];
+    expect(at(2).force).toEqual([0, 25]);
+    expect(at(3).force).toEqual([7.071, -7.071]);
+    expect(at(4).force).toEqual([3, 4]);
+    expect(at(5).force).toBeUndefined();
+  });
+
+  it('use the world SlopeStrength of the level', async () => {
+    const { lua, level } = await withScript('function f() wo["SlopeStrength"] = 40 wo[po(2, 2)] = {"fl_slope_pe"} end', { fl_slope_pe: 'fl_slope' });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(level.cells[2 * level.width + 2].force).toEqual([40, 0]);
+  });
+});
+
+describe('actors made during play (Out of Hand, Road to Eden)', () => {
+  it('adds rotors, tops, killers at the exact position, "#" at the cell centre, plus offsets', async () => {
+    const { lua, level, physics } = await withScript(`function f()
+  wo[{10, 6}] = {"ac_rotor", 0, 0.5, range = 30}
+  wo[po(8.7, 11.2)] = {"#ac_top", strength = 20, name = "top"}
+  wo[po(3, 3)] = {"ac_killer", "scorpion#", adhesion = 0.5}
+end`, { ac_rotor: 'actor', ac_top: 'actor', ac_killer: 'actor' });
+    const before = physics.enemies.length;
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    const added = physics.enemies.slice(before);
+    expect(added.map((e) => [e.kind, e.pos.x, e.pos.y])).toEqual([['rotor', 10, 6.5], ['top', 8.5, 11.5], ['killer', 3, 3]]);
+    expect([added[0].range, added[1].strength, added[2].mouseFactor]).toEqual([30, 20, 0.5]);
+    // a:<n> addresses the new actor
+    expect(level.actors.at(-2)?.a?.name).toBe('top');
+    expect(level.actors.at(-1)?.a?.name).toMatch(/^scorpion#\d+$/);
+  });
+
+  it('refuses kinds the import did not allow and leaves actors outside the level out', async () => {
+    const { lua, physics } = await withScript('function f() wo[po(2, 2)] = {"#ac_marble_black"} end function g() wo[po(-5, 2)] = {"ac_rotor"} end', { ac_rotor: 'actor' });
+    const before = physics.enemies.length;
+    lua.callback('f', true, '');
+    expect(lua.lastError).toContain('Murmel kann ac_marble_black nicht setzen');
+    lua.lastError = '';
+    lua.callback('g', true, '');
+    expect(lua.lastError).toBe('');
+    expect(physics.enemies.length).toBe(before);
+  });
+});
+
+describe('marbles addressed from Lua (The Pilgrim\'s Progress)', () => {
+  it('a rubber band reaches the second white marble and a pearl, in the order the physics keeps them', async () => {
+    const actors: ActorDef[] = [
+      { k: 'ac_marble_white', x: 3.5, y: 3.5, a: { passive: 'true', name: 'Faithful' } },
+      { k: 'ac_rotor', x: 6.5, y: 6.5 },
+      { k: 'ac_marble_white', x: 4.5, y: 3.5, a: { passive: 'true', name: 'Hopeful' } },
+      { k: 'ac_pearl_white', x: 5.5, y: 3.5, a: { name: 'kid' } },
+    ];
+    const { lua, physics } = await withScript(`function f()
+  wo:add({"ot_rubberband", anchor1 = no["Hopeful"], anchor2 = no["kid"], length = 1, strength = 20})
+end`, {}, { actors });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    const band = physics.rubbers.at(-1)!;
+    expect([band.a1, band.a2]).toEqual([physics.marbles[2], physics.marbles[3]]);
+    expect([physics.marbles[2].pos.x, physics.marbles[3].pearl]).toEqual([4.5, true]);
+  });
+});
+
+describe('actor adhesion from Lua (Tutoxyd\'s Pyramid)', () => {
+  it('reads 1.0 for a marble, and a negative value turns the mouse force round', async () => {
+    const code = 'function f() no["black"]["adhesion"] = -no["black"]["adhesion"] end';
+    const { lua, physics } = await withScript(code, {}, { lua: { code, kinds: {}, named: [], marble: { name: 'black' } } });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(physics.marbles[0].adhesion).toBe(-1);
+  });
+});
+
+describe('rubber bands between other actors during play (4 - 8 - 4)', () => {
+  it('ties two bugs together, and a marble to a rotor', async () => {
+    const actors: ActorDef[] = [
+      { k: 'ac_bug', x: 3.5, y: 3.5, a: { name: 'bugI' } },
+      { k: 'ac_bug', x: 6.5, y: 3.5, a: { name: 'bugK' } },
+      { k: 'ac_rotor', x: 8.5, y: 3.5, a: { name: 'rot' } },
+    ];
+    const { lua, physics } = await withScript(`function f()
+  wo:add({"ot_rubberband", anchor1 = "bugI", anchor2 = "bugK", strength = 100, length = 1.5})
+  wo:add({"ot_rubberband", anchor1 = no["black"], anchor2 = "rot"})
+end`, {}, { actors, lua: { code: '', kinds: {}, named: [], marble: { name: 'black' } } });
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    const [b1, b2] = physics.rubbers.slice(-2);
+    expect([b1.a1, b1.a2]).toEqual([physics.enemies[0], physics.enemies[1]]);
+    expect([b2.a1, b2.a2]).toEqual([physics.marbles[0], physics.enemies[2]]);
   });
 });

@@ -19,6 +19,8 @@ export interface LuaHost {
   kill(ref: string): void;
   /** wo[pos] = tile: one declaration ({kind, attributes}) at a cell. */
   setTile(x: number, y: number, kind: string, attrs: Record<string, string>): void;
+  /** wo[pos] = {"ac_…"} during play: a new actor at an exact position (lua.cc AddActor). */
+  addActor?(x: number, y: number, kind: string, attrs: Record<string, string>): void;
   /** World attribute (wo["GlobalForce"] …) as string, null = unknown. */
   world(key: string): string | null;
   setWorld(key: string, value: string | null): void;
@@ -219,6 +221,20 @@ export class LuaLevel {
           if (v !== null) attrs[arg(i) ?? ''] = v;
         }
         host.setTile(num(1), num(2), arg(3) ?? '', attrs);
+        return 0;
+      },
+      canaddactor: () => {
+        push(!!host.addActor);
+        return 1;
+      },
+      addactor: () => {
+        const attrs: Record<string, string> = {};
+        for (let i = 4; i + 1 <= lua.lua_gettop(L); i += 2) {
+          const v = arg(i + 1);
+          if (v !== null) attrs[arg(i) ?? ''] = v;
+        }
+        if (!host.addActor) throw new Error(`Murmel kann ${arg(3)} nicht setzen`);
+        host.addActor(num(1), num(2), arg(3) ?? '', attrs);
         return 0;
       },
       world: () => {

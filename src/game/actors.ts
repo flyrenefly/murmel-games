@@ -59,6 +59,8 @@ export class Enemy {
   readonly gohome: boolean;
   /** Killer colour: 1 = white (ac_killer_white), 0 = black. */
   readonly color: number;
+  /** Killer: factor on the mouse force (attribute adhesion, default 2.0). */
+  mouseFactor: number;
   /** RotorBase: chase only the nearest ball; probability to chase only the steered marble. */
   readonly attacknearest: boolean;
   readonly prefercurrent: number;
@@ -93,6 +95,7 @@ export class Enemy {
     this.strength = num(a.strength, 10);
     this.gohome = bool(a.gohome, true);
     this.color = kind === 'killer' ? num(a.color, def.k === 'ac_killer_black' ? 0 : 1) : 0;
+    this.mouseFactor = num(a.adhesion, KILLER_MOUSE_FACTOR);
     this.attacknearest = bool(a.attacknearest, false);
     this.prefercurrent = num(a.prefercurrent, 0);
     // Horse: destinations "x,y;x,y…", strength, steady, loop, destidx

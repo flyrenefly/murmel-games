@@ -709,6 +709,15 @@ local function translate(o, kind, key, val)
     -- an object made during play (set_item("it-wormhole", x, y, {targetx=…, targety=…})):
     -- place() joins both into its destination "x,y"
     if getmetatable(o) == NEW and (key == "targetx" or key == "targety") then return "_" .. key, tonumber(val) or 0 end
+    -- a placed wormhole (Designed with love: set_attribs(wh, {targetx = x, targety = y})): one
+    -- coordinate of its destination "x,y" changes (WormHole targetx/targety)
+    local ref = rawget(o, "_ref")
+    if ref and (key == "targetx" or key == "targety") and kind == "it-wormhole" then
+      local x, y = string.match(M.get(ref, "dest") or "", "^(-?[%d.]+),(-?[%d.]+)$")
+      x, y = tonumber(x) or 0, tonumber(y) or 0
+      if key == "targetx" then x = tonumber(val) or 0 else y = tonumber(val) or 0 end
+      return "dest", encode(x) .. "," .. encode(y)
+    end
     unsupported("das Attribut " .. key)
   end
   return RENAMED[key] or key, val
@@ -810,8 +819,21 @@ E.SetItem = function(x, y, o) return place("it", x, y, o) end
 E.SetStone = function(x, y, o) return place("st", x, y, o) end
 E.KillStone = function(x, y) st(x, y):kill() end
 E.KillItem = function(x, y) it(x, y):kill() end
-E.SetActor = function()
-  if not isinit() then unsupported("enigma.SetActor während des Spiels") end
+-- during play (Armageddon): a rotor, top, killer or bug at the exact position (world AddActor);
+-- Lua cannot address it afterwards (NULLOBJ)
+E.SetActor = function(x, y, o)
+  if not isinit() then
+    if type(o) ~= "table" or getmetatable(o) ~= NEW then error("Murmel: kein neues Objekt zum Setzen", 2) end
+    local args = {}
+    if o._attrs.name ~= nil then args[1], args[2] = "name", tostring(o._attrs.name) end
+    for k, v in pairs(o._attrs) do
+      if k ~= "name" then
+        args[#args + 1] = k
+        args[#args + 1] = encode(v)
+      end
+    end
+    M.addactor(tonumber(x) or 0, tonumber(y) or 0, o._kind, table.unpack(args))
+  end
   return NULLOBJ
 end
 E.AddRubberBand = function(a, b, strength, length, minlen)

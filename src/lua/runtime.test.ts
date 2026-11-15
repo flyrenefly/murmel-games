@@ -327,3 +327,26 @@ describe('pos:exists()', () => {
     expect([w.host.world('_a'), w.host.world('_b'), w.host.world('_c')]).toEqual(['true', 'false', 'false']);
   });
 });
+
+describe('pos:xy() and enigma.random in API 2', () => {
+  it('pos:xy() returns both coordinates (libmap lib.map.set, Styles Change); enigma.random like random (Panic Room)', async () => {
+    const w = fakeHost([]);
+    const lua = await startLua('function f() local x, y = po(3.5, 4):grid():xy() wo["_x"] = x wo["_y"] = y local r = enigma.random(3, 12) wo["_r"] = r >= 3 and r <= 12 end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect([w.host.world('_x'), w.host.world('_y'), w.host.world('_r')]).toEqual(['3', '4', 'true']);
+  });
+});
+
+describe('actors during play', () => {
+  it('hand the exact position to the host, "#" the cell centre, entries 2 and 3 move it (lua.cc setObjectByTable)', async () => {
+    const w = fakeHost([]);
+    const actors: string[] = [];
+    w.host.addActor = (x, y, k, a) => void actors.push(`${x},${y} ${k} ${JSON.stringify(a)}`);
+    const lua = await startLua('function f() wo[{10, 6}] = {"ac_rotor", 0, 0.5, range = 30} wo[po(8.7, 11.2)] = {"#ac_top", "top"} end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(actors).toEqual(['10,6.5 ac_rotor {"range":"30"}', '8.5,11.5 ac_top {"name":"top"}']);
+    expect(w.tiles).toEqual([]);
+  });
+});

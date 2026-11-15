@@ -64,6 +64,8 @@ POS.__index = function(p, k)
   if k == 1 then return rawget(p, "x") end
   if k == 2 then return rawget(p, "y") end
   if k == "grid" then return newpos(math.floor(p.x), math.floor(p.y)) end
+  -- lua.cc xyPosition: pos:xy() – both coordinates (libmap lib.map.set, Styles Change)
+  if k == "xy" then return function(q) return q.x, q.y end end
   -- lua.cc existsPosition: pos:exists() – the (rounded down) cell lies inside the level
   if k == "exists" then
     return function(q)
@@ -580,7 +582,19 @@ end
 local function settile(p, tile)
   local x, y = math.floor(p.x), math.floor(p.y)
   for _, d in ipairs(astile(tile)) do
-    M.settile(x, y, d[1], table.unpack(declargs(d)))
+    local kind = d[1]
+    -- (only where the host makes actors during play; the Enigma upload builds its world through settile)
+    if type(kind) == "string" and string.match(kind, "^#?ac_") and M.canaddactor() then
+      -- lua.cc setObjectByTable: an actor at the exact position ("#": the cell centre), moved by
+      -- the numbers in entries 2 and 3
+      local ax, ay = p.x, p.y
+      if string.sub(kind, 1, 1) == "#" then ax, ay, kind = x + 0.5, y + 0.5, string.sub(kind, 2) end
+      if type(d[2]) == "number" then ax = ax + d[2] end
+      if type(d[3]) == "number" then ay = ay + d[3] end
+      M.addactor(ax, ay, kind, table.unpack(declargs(d)))
+    else
+      M.settile(x, y, kind, table.unpack(declargs(d)))
+    end
   end
 end
 
@@ -860,6 +874,9 @@ end
 
 -- api2init.lua: random = math.random
 random = math.random
+-- lua.cc RegisterFuncs: the table enigma holds random also in API 2 (Panic Room: enigma.random(3, 12));
+-- api1.lua replaces the table for old levels
+enigma = {random = function(...) return random(...) end}
 
 wo = setmetatable({}, {
   __index = function(_, k)
