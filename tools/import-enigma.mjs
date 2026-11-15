@@ -12,6 +12,7 @@
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { levelTexts } from './lib/enigma-texte.mjs';
 import { allTileKinds, api1Kind, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
@@ -207,18 +208,13 @@ const API1_ACTIONS = [
 const tokens = (v) => (v ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
 
 
-const unxml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
-
-/** Level strings by key: German translation if present, else English. */
-function levelTexts(xml) {
-  const texts = {};
-  for (const m of xml.matchAll(/<el:string el:key="([^"]*)">([\s\S]*?)<\/el:string>/g)) {
-    const de = /<el:translation el:lang="de"[^>]*>([\s\S]*?)<\/el:translation>/.exec(m[2]);
-    const en = /<el:english[^>]*>([\s\S]*?)<\/el:english>/.exec(m[2]);
-    const t = de?.[1] ?? en?.[1];
-    if (t && unxml(t)) texts[m[1]] = unxml(t);
-  }
-  return texts;
+/**
+ * Level strings by key (tools/lib/enigma-texte.mjs): texts = German translation if present, else
+ * English; textsEn = the English original where it differs, only if not empty.
+ */
+function docTexts(xml) {
+  const { texts, textsEn } = levelTexts(xml);
+  return Object.keys(textsEn).length ? { texts, textsEn } : { texts };
 }
 
 /** Objects named by a target token among the level's objects (as objects.ts resolves it). */
@@ -1005,7 +1001,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     ...(fallenFloor ? { world: { ...world, FallenPuzzle: fallenFloor } } : Object.keys(world).length ? { world } : {}),
     ...(luaPart ? { lua: luaPart } : {}),
     // (also for documents Lua lays during play: Khun Phan's hints document(x, y, "text1"))
-    ...(objs.some((o) => o.k === 'it_document') || luaPart?.kinds?.it_document !== undefined ? { texts: levelTexts(xml) } : {}),
+    ...(objs.some((o) => o.k === 'it_document') || luaPart?.kinds?.it_document !== undefined ? docTexts(xml) : {}),
   };
 }
 

@@ -36,7 +36,7 @@ export default {
   Levels: 'Levels',
   'Neben eigenen Einsteiger-Levels übernimmt Murmel Levelpakete aus Enigma, etwa das Tutorial, „Enigma I“ bis „Enigma VII“. Ein Level wird freigeschaltet, sobald Murmel alle Objekte darin beherrscht; mit jedem neuen Objekt kommen weitere dazu. Nachbauten der Original-Oxyd-Levels werden bewusst nicht übernommen.':
     'Besides its own beginner levels, Murmel brings over level packs from Enigma, such as the Tutorial and “Enigma I” to “Enigma VII”. A level becomes available as soon as Murmel supports every object in it; each new object unlocks more. Remakes of the original Oxyd levels are deliberately left out.',
-  'Alle Levels ansehen – mit Vorschau, Autor, Lizenz und Bestzeiten.': '<a href="level/">Browse all levels</a> – with preview, author, license and best times.',
+  'Alle Levels ansehen – mit Vorschau, Autor, Lizenz und Bestzeiten.': '<a href="en/level/">Browse all levels</a> – with preview, author, license and best times.',
   'Häufige Fragen': 'Frequently asked questions',
   'Kann man Oxyd online im Browser spielen?': 'Is there a browser game like Oxyd?',
   'Murmel spielt sich wie Oxyd und läuft kostenlos im Browser. Die Original-Levels und -Grafiken von Oxyd sind nicht enthalten; stattdessen nutzt Murmel die freie Grafik und die Levels von Enigma.':
