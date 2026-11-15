@@ -4,7 +4,7 @@
 import type { LevelFile } from '../game/level';
 import type { Recording } from '../game/session';
 import { hochladen, LICENSE_LABEL, pruefungAbwarten, solutionFor } from '../spielerlevels';
-import { encodeLevel } from './link';
+import { basedOnText, encodeLevel, MAX_BASED_ON } from './link';
 
 type Buttons = [string, () => void, string?][];
 
@@ -19,10 +19,12 @@ export interface PublishHost {
   note(text: string): HTMLElement;
 }
 
-interface Mine {
+export interface Mine {
   id: number;
   titel: string;
   status: string;
+  /** The version's Vorlage/Herkunft (null: none). */
+  vorlage?: string | null;
 }
 
 async function getJson(url: string): Promise<Record<string, unknown> | null> {
@@ -84,6 +86,11 @@ export async function publish(h: PublishHost): Promise<void> {
   form(h, file, solution, name, mine, busy);
 }
 
+/** Vorlage/Herkunft to offer: the level's own, else the one of the version it replaces ('' for none). */
+export function basedOnFor(file: Pick<LevelFile, 'basedOn'>, mine: Pick<Mine, 'id' | 'vorlage'>[], replaces: string): string {
+  return basedOnText(file.basedOn) || basedOnText(mine.find((m) => String(m.id) === replaces)?.vorlage);
+}
+
 function form(h: PublishHost, file: LevelFile, solution: Recording, name: string | null, mine: Mine[], busy: (t: string) => HTMLElement): void {
   const f = document.createElement('form');
   f.className = 'ed-form';
@@ -98,6 +105,11 @@ function form(h: PublishHost, file: LevelFile, solution: Recording, name: string
   const desc = Object.assign(document.createElement('textarea'), { maxLength: 500, placeholder: 'Worum geht es? Ein Tipp für den Anfang? (freiwillig)' });
   const count = Object.assign(document.createElement('span'), { className: 'ed-count', textContent: '0 / 500' });
   desc.addEventListener('input', () => (count.textContent = `${desc.value.length} / 500`));
+  const basedOn = Object.assign(document.createElement('input'), { type: 'text', value: file.basedOn ?? '', maxLength: MAX_BASED_ON, autocomplete: 'off', className: 'ed-based-on', placeholder: 'leer lassen, wenn es keine Vorlage gibt' });
+  basedOn.setAttribute('aria-describedby', 'ed-publish-based-on');
+  const basedOnHint = h.note('Erscheint beim Level als „nach einem Enigma-Level von …“.');
+  basedOnHint.id = 'ed-publish-based-on';
+  basedOnHint.classList.add('ed-hint');
   f.append(label('Titel', title), label('Beschreibung', desc, count));
   let nameIn: HTMLInputElement | null = null;
   if (!name) {
@@ -108,13 +120,20 @@ function form(h: PublishHost, file: LevelFile, solution: Recording, name: string
   replace.append(new Option('Neues Level', ''));
   for (const m of mine) replace.append(new Option(`Neue Version von „${m.titel}“`, String(m.id)));
   if (mine.length) f.append(label('Art', replace));
+  f.append(label('Vorlage/Herkunft (optional)', basedOn), basedOnHint);
+  // a new version takes over the Herkunft of the version it replaces, unless the author typed one
+  let basedOnTouched = false;
+  basedOn.addEventListener('input', () => (basedOnTouched = true));
+  replace.addEventListener('change', () => {
+    if (!basedOnTouched) basedOn.value = basedOnFor(file, mine, replace.value);
+  });
   const lic = Object.assign(document.createElement('input'), { type: 'checkbox' });
   const licLabel = document.createElement('label');
   licLabel.className = 'ed-check';
   licLabel.append(lic, `Ich veröffentliche das Level unter ${LICENSE_LABEL}: Andere dürfen es spielen, verändern und weitergeben, mit Nennung meines Anzeigenamens${name ? ` „${name}“` : ''}.`);
   const err = Object.assign(document.createElement('p'), { className: 'ed-error' });
   err.setAttribute('role', 'alert');
-  f.append(licLabel, h.note('Sichtbar wird es erst nach der Freigabe durch einen Admin. Gespeichert werden Level, Titel, Beschreibung und dein gelöster Lauf (nicht öffentlich).'), err);
+  f.append(licLabel, h.note('Sichtbar wird es erst nach der Freigabe durch einen Admin. Gespeichert werden Level, Titel, Beschreibung, eine etwaige Herkunftsangabe und dein gelöster Lauf (nicht öffentlich).'), err);
 
   const fail = (text: string, focus?: HTMLElement) => {
     err.textContent = text;
@@ -137,8 +156,10 @@ function form(h: PublishHost, file: LevelFile, solution: Recording, name: string
         return fail('Spieler-Levels sind gerade nicht erreichbar.');
       }
     }
+    const { basedOn: _old, ...rest } = file;
+    const credit = basedOnText(basedOn.value);
     const sent = await hochladen({
-      level: { ...file, title: t },
+      level: { ...rest, title: t, ...(credit ? { basedOn: credit } : {}) },
       loesung: solution,
       titel: t,
       beschreibung: desc.value,

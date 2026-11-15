@@ -18,6 +18,15 @@ const MAX_ACTORS = 40;
 const MAX_TEXT = 80;
 /** Length of „nach einem Enigma-Level von …“ (basedOn); the server checks the same (server/src/spielerlevels.ts). */
 export const MAX_BASED_ON = 80;
+
+/** The credit as one line: control characters out, spaces collapsed, trimmed, at most MAX_BASED_ON characters ('' removes it). */
+export function basedOnText(v: unknown): string {
+  if (typeof v !== 'string') return '';
+  // eslint-disable-next-line no-control-regex
+  const clean = v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+  return [...clean].slice(0, MAX_BASED_ON).join('').trim();
+}
+
 /** Connection attributes every object may carry; others only as a property of its palette entry. */
 const ATTRS = new Set(['name', 'target', 'action', 'interval']);
 const CELL_KEYS = new Set(['floor', 'stone', 'symbol', 'flavor', 'start', 'force']);

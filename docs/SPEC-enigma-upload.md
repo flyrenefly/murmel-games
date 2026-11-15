@@ -93,6 +93,16 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
   nicht in der Leveldatei, und liefert sie als `vorlage` in den Karten und als `basedOn` in der Datei aus.
   Angezeigt auf `spielerlevels.html` unter der Autorzeile und im Startdialog des Levels. Bestehende Levels
   bleiben ohne Angabe.
+- **Herkunft im Editor und beim Veröffentlichen** (seit 15.11.2026): Das Feld „Vorlage/Herkunft (optional)“
+  steht auch im Editor-Dialog „Level“ (mit Rückgängig, für jedes Level, auch selbst gebaute) und im
+  Veröffentlichen-Dialog. Beide normalisieren mit `basedOnText` (`src/editor/link.ts`) auf eine Zeile mit
+  höchstens 80 Zeichen; leeren entfernt die Angabe. Der Hinweis unter dem Feld sagt, dass sie als
+  „nach einem Enigma-Level von …“ erscheint. Wählt man „Neue Version von …“, übernimmt der Dialog die
+  Angabe der ersetzten Version, solange das Level selbst keine hat und man das Feld nicht angefasst hat;
+  die neue Version trägt genau die Angabe ihres Uploads (der Server speichert leer als `null`). Eine im
+  Veröffentlichen-Dialog geänderte Angabe geht wie der dort geänderte Titel nur in den Upload, nicht
+  zurück ins Editor-Level. Eine Änderung im Editor ändert dagegen den Probespiel-Link und verlangt – wie
+  jede andere Änderung – einen neuen gelösten Lauf.
 
 ## Was umgewandelt wird (Stufe 1)
 

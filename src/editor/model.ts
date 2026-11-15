@@ -4,7 +4,7 @@
 import type { ActorDef } from '../game/actors';
 import { type CellDef, DEFAULT_LEGEND, type LevelFile } from '../game/level';
 import type { ObjectDef } from '../game/objects';
-import { docText } from './link';
+import { basedOnText, docText } from './link';
 import { BY_KIND, OXYD_COLORS, type PaletteEntry } from './palette';
 
 export interface EdCell {
@@ -22,7 +22,7 @@ export interface EdCell {
 export interface EditorLevel {
   title: string;
   author: string;
-  /** From an Enigma file: „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md); optional. */
+  /** Vorlage/Herkunft, shown as „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md); optional, set by the Enigma import or in the editor. */
   basedOn?: string;
   width: number;
   height: number;
@@ -258,7 +258,8 @@ export function toLevelFile(l: EditorLevel, id = 'eigen'): LevelFile {
     map.push(row);
   }
   const file: LevelFile = { id, title: l.title.trim() || 'Ohne Titel', author: l.author.trim(), license: LICENSE, map, legend };
-  if (l.basedOn?.trim()) file.basedOn = l.basedOn.trim();
+  const basedOn = basedOnText(l.basedOn);
+  if (basedOn) file.basedOn = basedOn;
   if (l.start) file.start = { x: l.start.x + 0.5, y: l.start.y + 0.5 };
   if (l.start && l.mainPearl) file.mainPearl = { k: l.mainPearl };
   if (objects.length) file.objects = objects;
