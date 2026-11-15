@@ -70,6 +70,11 @@
         gap: 12px;
         flex-wrap: wrap;
       }
+      .back-rechts {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
       h1 {
         font-size: 28px;
         line-height: 1.2;
@@ -338,7 +343,7 @@
   </head>
   <body>
     <main>
-      <nav class="back"><a href="./">← Zurück zum Spiel</a><a href="editor.html">Eigenes Level bauen</a></nav>
+      <nav class="back"><a href="./">← Zurück zum Spiel</a><span class="back-rechts"><a href="editor.html">Eigenes Level bauen</a><a href="editor.html#enigma">Enigma-Level umwandeln</a></span></nav>
       <h1>Spieler-Levels</h1>
       <p class="muted">Von Spielern gebaut, selbst gelöst und von einem Admin freigegeben. Alle Spieler-Levels stehen unter <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.de" rel="license noopener" target="_blank">CC BY-SA 4.0</a>.</p>
       <nav class="seg" id="views" aria-label="Ansicht">

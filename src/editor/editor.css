@@ -764,3 +764,29 @@ dialog ul {
     justify-content: flex-end;
   }
 }
+
+/* Enigma-Level umwandeln (docs/SPEC-enigma-upload.md) */
+.ed-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.ed-facts dt {
+  color: var(--muted);
+}
+
+.ed-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ed-hints {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}

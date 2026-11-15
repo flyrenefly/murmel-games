@@ -301,7 +301,7 @@ Auftrag) und eine Umschaltung wie beim WH-Notbetrieb (Zeuge/Prüfung, die bei Au
 | `wettkampf` | Mehrspieler mit Server als Schiedsrichter: mehr als zwei Spieler, Zuschauer, Wettrennen im selben Level | `mehrspieler`, Physik im Server |
 | `tageslevel` | Tageslevel und Wochenaufgabe mit eigener Rangliste, Erinnerung per Push | `bestenliste`, Web Push |
 | `levelseiten` | Eine Seite je Level mit Vorschaubild, Beschreibung, Bestzeit – Einstiege über Suchmaschinen | Server-Rendering |
-| `enigma-upload` | Spieler laden eine Enigma-Leveldatei hoch, der Server wandelt sie mit dem Importer um | `tools/import-enigma.mjs` |
+| `enigma-upload` | Spieler laden eine Enigma-Leveldatei hoch, im Browser umgewandelt (docs/SPEC-enigma-upload.md) | Web Worker mit fengari |
 | `auswertung` | Datensparsam, ohne Fremdanbieter: wo Spieler scheitern oder abbrechen → bessere Reihenfolge und Schwierigkeit der Pakete (Datenschutzerklärung anpassen) | eigene Protokolle |
 | `cloudstand` | Spielstand mitten im Level in der Cloud, auf einem anderen Gerät weiterspielen | `sync`, Spielstand-Format |
 
