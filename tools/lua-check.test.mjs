@@ -105,3 +105,11 @@ test('Laufzeit-Arten: eine Art im Zeichenaufruf ist kein Kartenschlüssel', asyn
 test('pos:grid() im Rückruf ist erlaubt (Lissajous: Todesstein auf der Lissajous-Kurve)', () => {
   assert.deepEqual(problems('function cb()\n  local c = po(8.0 * math.cos(1) + 10.0, 6.5):grid()\n  wo[c] = {"st_death"}\nend'), []);
 });
+
+test('wo:add(YIN, {sender["_type"]}): erlaubt, wenn _type überall ein Gegenstand ist (Puzzle Shift)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["H"] = {"st_switch", target = "f", _type = "it_puller_n"}\nti["I"] = {"st_switch", target = "f", _type = "it_puller_e"}\nfunction f(v, sender)\n  wo:add(YIN, {sender["_type"]})\nend';
+  assert.deepEqual(problems(code), []);
+  assert.deepEqual([...runtimeKinds(code)].filter((k) => k.startsWith('it_puller')).sort(), ['it_puller_e', 'it_puller_n']);
+  assert.deepEqual(problems(code.replace('"it_puller_e"', '"st_box"')), [':add']);
+});

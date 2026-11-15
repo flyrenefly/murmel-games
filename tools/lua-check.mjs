@@ -124,6 +124,15 @@ const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ip
   'error', 'assert', 'print', 'rawget', 'rawset', 'setmetatable', 'getmetatable', 'random']);
 const KEYWORDS = new Set(['if', 'while', 'for', 'function', 'return', 'and', 'or', 'not', 'elseif', 'until', 'local', 'then', 'do', 'end', 'in', 'else', 'repeat']);
 /** World attributes the game applies (also when set during play). */
+/** wo:add(YIN, {obj["_attr"]}): an item kind the level keeps in an own attribute (Puzzle Shift: switches' _type). */
+const DYNAMIC_ADD = /wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*[A-Za-z_]\w*\s*\[\s*"(_\w+)"\s*\]\s*\}\s*\)/g;
+/** The kinds every assignment of that attribute names, if all are item literals (else null). */
+function dynamicItems(code, attr) {
+  const values = [...code.matchAll(new RegExp(String.raw`\b${attr}\s*=\s*([^,}\n]*)`, 'g'))].map((m) => m[1].trim());
+  if (values.length === 0 || !values.every((v) => /^"it_\w+"$/.test(v))) return null;
+  return values.map((v) => v.slice(1, -1));
+}
+
 export const RUNTIME_WORLD = new Set(['GlobalForce', 'FrictionStrength', 'ElectricStrength', 'SlopeStrength']);
 const API1 = /\b(set_stone|set_floor|set_item|set_actor|set_attrib|get_attrib|fill_floor|fill_stones|draw_\w+|create_world|SendMessage|enigma\.\w+)\s*\(/;
 
@@ -149,7 +158,8 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   // wo:add during play: only items into an inventory (YIN/YANG), rubber bands, wires, timers and counters
   const raw = reached.replace(/--[^\n]*/g, '');
   const adds = [...body.matchAll(/:\s*add\s*\(/g)].length;
-  const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*(connections|text)\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter|wire)"/g)].length;
+  const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*(connections|text)\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter|wire)"/g)].length
+    + [...raw.matchAll(DYNAMIC_ADD)].filter((m) => dynamicItems(code, m[2]) !== null).length;
   if (adds > ok) problems.add(':add');
   // function parameters may hold functions (local f in "function scan(f)")
   for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());
@@ -254,6 +264,8 @@ export function newMapKeys(code) {
 export function runtimeKinds(code, api1 = false, entries = undefined, libmap = false) {
   const body = bodies(code, api1 ? entries : undefined);
   const kinds = new Set([...body.matchAll(/"((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
+  // wo:add(YIN, {sender["_type"]}): the items the level keeps in that attribute
+  for (const m of body.matchAll(DYNAMIC_ADD)) for (const k of dynamicItems(code, m[2]) ?? []) kinds.add(k);
   if (api1) {
     // old names ("st-wood"), also kept in globals the reached functions use (mainstone = "st-rock1")
     const old = new Set([...body.matchAll(/"((?:st|fl|it|ac)-[\w-]+)"/g)].map((m) => m[1]));

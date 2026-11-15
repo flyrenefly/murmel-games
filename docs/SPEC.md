@@ -863,7 +863,10 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   `ti`, `res.autotile`, `res.random` (nachgebaut), `res.pento` oder Karten; bei reinem `ti` muss
   jeder gezeichnete Schlüssel einen Eintrag haben. Andere Auflöser im Init stören nicht mehr.
 - **`wo:add` in Rückrufen:** außer Inventar-Gegenständen und Gummibändern auch `ot_timer` und
-  `ot_counter` (Objekte ohne Zelle, wie aus dem Init).
+  `ot_counter` (Objekte ohne Zelle, wie aus dem Init). Die Art eines Inventar-Gegenstands darf
+  aus einem eigenen Attribut kommen (`wo:add(YIN, {sender["_type"]})`, ab 15.11.2026), wenn jede
+  Zuweisung dieses Attributs im Level ein Gegenstand ist; der Import nimmt diese Arten mit.
+  Freigeschaltet: Puzzle Shift (zephyr01_1).
 - **`ot_wire` zur Laufzeit** (ab 15.11.2026; `wo:add({"ot_wire", name?, anchor1, anchor2})`): beide
   Steine werden gegenseitig `fellows` wie bei Drähten aus dem Export – Stöße wandern mit
   (`Stone::propagateImpulse`), der klassische Renderer zeichnet die Linie. Anker sind Namen oder
