@@ -12,7 +12,7 @@
 
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { allTileKinds, api1Kind, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -391,6 +391,9 @@ const oxydImages = (f) => [...['', '_open', '_opening'].map((i) => `st_oxyd${f =
 const oxydFlavors = (k) => (OXYD.exec(k)?.[2] ? [OXYD.exec(k)[2]] : ['a', 'b']);
 
 /** Cell value of a kind Lua callbacks may set (floor/stone image name), 'object', or null. */
+/** Meditation hollows and what leaves one (src/game/level.ts HOLLOW_MAKERS). */
+const HOLLOW_MAKERS = /^(it_meditation|it_dynamite$|it_landmine$|st_spitter$|st_dispenser_dynamite$)/;
+const RUNTIME_ACTORS =/^ac_(rotor|top|bug|killer(_white|_black)?)$/;
 function runtimeKind(kind) {
   if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
   if (kind.startsWith('fl_')) {
@@ -403,6 +406,8 @@ function runtimeKind(kind) {
     return DEADLY.has(kind) ? kind : imageFor(kind);
   }
   if (objectImages(kind)) return 'object';
+  // rotors, tops, killers and bugs made during play (Lua host addActor; not marbles, pearls or horses)
+  if (RUNTIME_ACTORS.test(kind)) return 'actor';
   if (kind.startsWith('st_')) {
     // OxydStone made during play (wo[…] = {"st_oxyd"}, Pentomino): a new closed stone, flavor a
     if (OXYD.test(kind)) return 'oxyd'; // st_oxyd_d: a stone of that flavor
@@ -878,6 +883,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
       }
       kinds[k] = v;
       if (v === 'object') objectImages(k).forEach((i) => imgs.add(i));
+      else if (v === 'actor') actorImages(k).forEach((i) => imgs.add(i));
       else if (v === 'oxyd') for (const f of new Set([...oxydFlavors(k), ...oxydFlavorAttrs])) oxydImages(f).forEach((i) => imgs.add(i));
       else if (v !== 'nil' && v !== 'st_invisible') imgs.add(v === 'fl_fake_abyss' ? 'fl_abyss' : v);
     }
@@ -885,7 +891,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     // API 1: functions handed on as values (rails of lib/ant: construct → set_floor("fl-metal"))
     // escape the call analysis; floors named in the code are harmless, the supported ones may be set
     const api1Floors = lua.api1 ? [...new Set([...lua.code.matchAll(/"(fl-[\w-]+)"/g)].map((m) => api1Kind(m[1]) ?? m[1].replace(/-/g, '_')))] : [];
-    for (const k of [...allTileKinds(lua.code), ...api1Floors]) {
+    for (const k of [...allTileKinds(lua.code), ...api1Floors, ...(lua.api1 ? api1VariableKinds(lua.code, callbacks) : [])]) {
       const v = kinds[k] === undefined ? runtimeKind(k) : null;
       if (!v || !runtimeOk(v)) continue;
       kinds[k] = v;
@@ -895,9 +901,13 @@ function convertLevel(pack, meta, xml, exp, lua) {
     }
   }
   // Meditation levels: pearls into hollows finish the level (ChangeMeditation)
-  const meditation = w.actors.some((a) => /^ac_pearl/.test(a.o.k)) && objs.some((o) => o.k.startsWith('it_meditation'));
+  const pearls = w.actors.some((a) => /^ac_pearl/.test(a.o.k));
+  const meditation = pearls && objs.some((o) => o.k.startsWith('it_meditation'));
+  // Without Oxyd stones also hollows still to come (Dynamite/Landmine → it_explosion_hollow →
+  // it_meditation_hollow, a breaking spitter): Riverside, Turbulencia, Meditation IV blast their own
+  const blastMeditation = pearls && objs.some((o) => HOLLOW_MAKERS.test(o.k));
   // Oxyd stones may come during play (Pentomino: once the puzzle is done)
-  if (oxyds === 0 && !meditation && !Object.values(kinds).includes('oxyd')) reject('keine Oxyd-Steine');
+  if (oxyds === 0 && !blastMeditation && !Object.values(kinds).includes('oxyd')) reject('keine Oxyd-Steine');
   else {
     // OxydStone::initColors: random ('?') stones complete odd fixed colours; an odd one left becomes a fake
     const fixed = new Map();
@@ -994,7 +1004,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     ...(compat < 1.1 ? { compat } : {}),
     ...(fallenFloor ? { world: { ...world, FallenPuzzle: fallenFloor } } : Object.keys(world).length ? { world } : {}),
     ...(luaPart ? { lua: luaPart } : {}),
-    ...(objs.some((o) => o.k === 'it_document') ? { texts: levelTexts(xml) } : {}),
+    // (also for documents Lua lays during play: Khun Phan's hints document(x, y, "text1"))
+    ...(objs.some((o) => o.k === 'it_document') || luaPart?.kinds?.it_document !== undefined ? { texts: levelTexts(xml) } : {}),
   };
 }
 

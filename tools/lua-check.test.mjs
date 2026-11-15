@@ -129,3 +129,34 @@ test('API 1: Spiegel mit Richtung im Namen ("st-mirror-3>") sind Laufzeit-Arten 
 test('Gummibänder/Drähte eines Objekts als Lua-Objekte (sender["rubbers"]) werden abgelehnt', () => {
   assert.deepEqual(problems('function cb(v, sender)\n  sender["rubbers"]:kill()\nend'), ['obj.rubbers']);
 });
+
+test('Laufzeit-Arten: Akteure als "#ac_…" und in ti-Einträgen (Road to Eden, Tutoxyd\'s Pyramid)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["k"] = {"#ac_killer", "killer"}\nfunction addRotor()\n  wo[po(8.5, 11.5)] = {"#ac_rotor", range = 40}\n  wo[po(1, 1)] = ti["k"]\nend';
+  assert.deepEqual([...runtimeKinds(code)].sort(), ['ac_killer', 'ac_rotor']);
+});
+
+test('Laufzeit-Arten: eingerückte Funktionen zählen (4 - 8 - 4)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = ' ti["E#"] = {"st_yellow"}\n function blockE()\n  if true then\n   wo[no["t#*"]] = ti["E#"]\n  end\n end\n';
+  assert.deepEqual(runtimeKinds(code), ['st_yellow']);
+});
+
+test('API 1: fl-gradient mit type im Rückruf kann jede Gefällform setzen (Tilt Board)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const kinds = runtimeKinds('function tilt(on, sender)\n  draw_floor("fl-gradient", {5, 1}, {1, 0}, 11, {type = gdir})\nend', true, ['tilt']);
+  assert.ok(['fl_slope_ps', 'fl_slope_ise', 'fl_slope_tw', 'fl_slope_tnr'].every((k) => kinds.includes(k)));
+});
+
+test('API 1 erkannt nur an echten API-1-Aufrufen: eigene draw_…-Funktion und enigma.random zählen nicht', () => {
+  assert.deepEqual(problems('function draw_line()\n  wo:drawRect(po(1, 1), po(2, 2), ti["#"])\nend\nfunction cb()\n  draw_line()\nend\nti["#"] = {"st_granite"}'), []);
+  assert.deepEqual(problems('function cb()\n  no["timer"]["interval"] = enigma.random(3, 12)\nend'), []);
+  assert.deepEqual(problems('function cb()\n  set_stone("st-rock1", 1, 1)\nend').includes('API 1'), true);
+});
+
+test('Laufzeit-Arten: Vorschau-Zweig von cond(wo["CreatingPreview"], …) und der Ignorierschlüssel von drawMap zählen nicht (Sunrise Sunset)', async () => {
+  const { runtimeKinds, playBranch } = await import('./lua-check.mjs');
+  assert.equal(playBranch('ti["A"] = cond(wo["CreatingPreview"], {"#ac_marble_black"}, ti[" "])'), 'ti["A"] = ti[" "]');
+  const code = 'ti[" "] = {"fl_sand"}\nti["A"] = cond(wo["CreatingPreview"], {"#ac_marble_black"}, ti[" "])\nti["@"] = ti[" "] .. {"#ac_marble_black"}\nfunction draw_line()\n  wo:drawMap(ti, po(1, 0), "@", {"A@A"})\nend';
+  assert.deepEqual(runtimeKinds(code), ['fl_sand']);
+});

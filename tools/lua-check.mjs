@@ -24,6 +24,10 @@ const API1_HELPER_KINDS = new Map(
     .map((chunk) => [/^function\s+(\w+)/.exec(chunk)?.[1], [...chunk.matchAll(/"((?:st|fl|it|ac)-[\w<>^-]+)"/g)].map((m) => m[1])])
     .filter(([n, kinds]) => n && kinds.length),
 );
+// and their aliases (document = Document: Khun Phan's hints)
+for (const [, alias, f] of API1_SHIM.matchAll(/^([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*)\s*$/gm)) if (API1_HELPER_KINDS.has(f) && !API1_HELPER_KINDS.has(alias)) API1_HELPER_KINDS.set(alias, API1_HELPER_KINDS.get(f));
+/** Slope shapes of API 1 fl-gradient types (api1.lua SLOPES). */
+const API1_SLOPES = [...(/^local SLOPES = \{([^}]*)\}/m.exec(API1_SHIM)?.[1] ?? '').matchAll(/"(\w+)"/g)].map((m) => m[1]);
 /** The new kind of an API 1 kind name ("st-rock1" → "st_granite"), or null. */
 export const api1Kind = (name) => API1_KINDS.get(name) ?? null;
 
@@ -84,12 +88,13 @@ export function luaFunctions(code) {
 }
 
 /**
- * Bodies of the top-level functions (header line up to an "end" in column 0). With entries
+ * Bodies of the top-level functions (header line up to an "end" as far indented as the header:
+ * 4 - 8 - 4 indents all its functions by one space). With entries
  * (API 1: the callbacks the level's objects name) only the functions they reach: old levels
  * build their world with functions that run in the init only.
  */
 function bodies(code, entries) {
-  const all = [...code.matchAll(/^function\b[\s\S]*?^end\b/gm)].map((m) => m[0]);
+  const all = [...code.matchAll(/^([ \t]*)function\b[\s\S]*?^\1end\b/gm)].map((m) => m[0]);
   if (!entries) return all.join('\n');
   // old levels do not indent: a function ends at its matching "end" (blocks counted)
   const bare = code.replace(/--\[\[[\s\S]*?\]\]|--[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, (s) => s.replace(/[^\n]/g, ' '));
@@ -117,7 +122,8 @@ function bodies(code, entries) {
   return [...seen].map((n) => byName.get(n)).join('\n');
 }
 
-const METHODS = new Set(['shuffleOxyd', 'open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind', 'grid',
+// (newMap: the shim's wo:newMap, or libmap's when loaded, also works during play – Enigris)
+const METHODS = new Set(['newMap', 'shuffleOxyd','open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind', 'grid',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',
@@ -142,7 +148,10 @@ const API1 = /\b(set_stone|set_floor|set_item|set_actor|set_attrib|get_attrib|fi
  */
 export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const problems = new Set();
-  if (!api1 && API1.test(code)) problems.add('API 1');
+  // (not the level's own functions – Sunrise Sunset: function draw_line() – nor enigma.random, which
+  // API 2 also has: Panic Room)
+  const api1Calls = [...code.matchAll(new RegExp(API1.source, 'g'))].filter((m) => !fns.has(m[1]) && m[1] !== 'enigma.random' && !/\bfunction\s+$/.test(code.slice(Math.max(0, m.index - 12), m.index)));
+  if (!api1 && api1Calls.length) problems.add('API 1');
   const reached = bodies(code, api1 ? entries : undefined);
   // API 1: globals the level assigns may hold one of its functions (ferry_movement = ferry_move_left)
   const assigned = new Set(api1 ? [...code.matchAll(/^\s*([A-Za-z_]\w*)\s*=(?!=)/gm)].map((m) => m[1]) : []);
@@ -262,10 +271,63 @@ export function newMapKeys(code) {
   return seen === (code.match(/wo:newMap\s*\(/g) ?? []).length ? keys : null;
 }
 
+/**
+ * API 1 callbacks that set a stone or item of a kind held in a variable (The Turtle:
+ * set_stone(tab.face, x, y) with the faces in a table built at the top): every stone or item kind
+ * the code names may come. The importer allows the supported ones (like API 1 floors) and skips
+ * the others, so this never rejects a level.
+ */
+export function api1VariableKinds(code, entries) {
+  const body = bodies(code, entries);
+  const out = new Set();
+  for (const [fn, layer] of [['set_stone', 'st'], ['set_item', 'it']]) {
+    if (!new RegExp(String.raw`\b${fn}\s*\(\s*[A-Za-z_]`).test(body)) continue;
+    for (const m of code.matchAll(new RegExp(String.raw`"(${layer}-[\w<>^-]+)"`, 'g'))) out.add(api1Kind(m[1]) ?? m[1].replace(/-/g, '_'));
+  }
+  return [...out];
+}
+
+/**
+ * cond(wo["CreatingPreview"], preview, play) → play: Murmel never makes previews, so during play
+ * the world attribute is unset (Sunrise Sunset: ti["A"] is the marble only in the preview).
+ */
+export function playBranch(code) {
+  const head = /\bcond\(\s*wo\[\s*"CreatingPreview"\s*\]\s*,/g;
+  let out = '';
+  let from = 0;
+  for (let m = head.exec(code); m; m = head.exec(code)) {
+    // the two arguments up to the matching parenthesis (strings skipped)
+    const args = [];
+    let depth = 0;
+    let start = m.index + m[0].length;
+    let i = start;
+    for (; i < code.length; i++) {
+      const c = code[i];
+      if (c === '"') i = code.indexOf('"', i + 1);
+      else if (c === '(' || c === '{' || c === '[') depth++;
+      else if (c === ')' && depth === 0) break;
+      else if (c === ')' || c === '}' || c === ']') depth--;
+      else if (c === ',' && depth === 0) {
+        args.push(code.slice(start, i));
+        start = i + 1;
+      }
+      if (i < 0) return code;
+    }
+    args.push(code.slice(start, i));
+    if (args.length !== 2) continue;
+    out += code.slice(from, m.index) + args[1].trim();
+    from = i + 1;
+    head.lastIndex = from;
+  }
+  return out + code.slice(from);
+}
+
 /** Kinds (st_/fl_/it_/ac_) that callbacks may create: literals in the bodies and in ti entries they use. */
 export function runtimeKinds(code, api1 = false, entries = undefined, libmap = false) {
+  code = playBranch(code);
   const body = bodies(code, api1 ? entries : undefined);
-  const kinds = new Set([...body.matchAll(/"((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
+  // (actors also as "#ac_…": placed at the cell centre)
+  const kinds = new Set([...body.matchAll(/"#?((?:st|fl|it|ac)_\w+)"/g)].map((m) => m[1]));
   // wo:add(YIN, {sender["_type"]}): the items the level keeps in that attribute
   for (const m of body.matchAll(DYNAMIC_ADD)) for (const k of dynamicItems(code, m[2]) ?? []) kinds.add(k);
   if (api1) {
@@ -277,11 +339,14 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
     // helpers of api1.lua with their own kinds (abyss(x, y), oxyd(x, y) …)
     for (const id of ids) for (const k of API1_HELPER_KINDS.get(id) ?? []) old.add(k);
     for (const o of old) kinds.add(api1Kind(o) ?? o);
+    // fl-gradient with a type (Tilt Board: {type = gdir}): any shape (api1.lua SLOPES)
+    if (old.has('fl-gradient') && /\btype\s*=/.test(body)) for (const s of API1_SLOPES) kinds.add(`fl_slope_${s}`);
   }
   // fire messages to floors: burning items
   if (/:\s*(setfire|forcefire|ignite|heat)\s*\(/.test(body)) kinds.add('it_burnable_ignited');
   // drawMap/drawRect/drawBorder during play: the tiles of the keys in their string arguments (map lines, keys)
   const keys = new Set();
+  const ignored = new Set();
   for (const m of body.matchAll(/:\s*draw(?:Map|Rect|Border)\s*\(/g)) {
     // the arguments up to the matching parenthesis
     let depth = 1;
@@ -295,8 +360,12 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
       i++;
     }
     const args = body.slice(start, i - 1);
+    // drawMap never sets its ignore key (Sunrise Sunset: "@", the marble's key in the init map)
+    let flat = args;
+    while (/[[(][^[\]()]*[\])]/.test(flat)) flat = flat.replace(/[[(][^[\]()]*[\])]/g, '');
+    const ignore = /draw\s*Map|drawMap/.test(m[0]) ? (/"([^"]*)"/.exec(flat.replace(/\{[^{}]*\}/g, ''))?.[1] ?? null) : null;
     // (a kind such as {"it_cross"} is a tile, not keys "i", "t" … – it counts above as a literal)
-    for (const str of args.matchAll(/"([^"]*)"/g)) if (!/^(st|fl|it|ac)_\w+$/.test(str[1])) for (const ch of str[1]) keys.add(ch);
+    for (const str of args.matchAll(/"([^"]*)"/g)) if (!/^(st|fl|it|ac)_\w+$/.test(str[1])) for (const ch of str[1]) (ch === ignore ? ignored : keys).add(ch);
     // tiles kept in variables (SynapseOn = {"fl_redslab"})
     for (const id of args.replace(/"[^"]*"/g, '').matchAll(/\b([A-Za-z_]\w*)\b/g)) {
       for (const d of code.matchAll(new RegExp(`\\b${id[1]}\\s*=\\s*([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
@@ -340,15 +409,20 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
     seen.add(ch);
     const key = ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     for (const d of live.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) {
-      for (const k of d[1].matchAll(/"((?:st|fl|it)_\w+)"/g)) kinds.add(k[1]);
+      for (const k of d[1].matchAll(/"#?((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
       for (const r of d[1].matchAll(/ti\[\s*"([^"]*)"\s*\]/g)) addKey(r[1]);
     }
   };
   for (const ch of keys) addKey(ch);
+  // drawMap's ignore key is never set; its floors, stones and items have always counted (harmless,
+  // and leaving them out would change many level files), its actors not (Sunrise Sunset: the marble)
+  const before = new Set(kinds);
+  for (const ch of ignored) if (!keys.has(ch)) addKey(ch);
+  for (const k of kinds) if (!before.has(k) && k.startsWith('ac_')) kinds.delete(k);
   for (const m of body.matchAll(/ti\[\s*"([^"]+)"\s*\]/g)) {
     const key = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) {
-      for (const k of d[1].matchAll(/"((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
+      for (const k of d[1].matchAll(/"#?((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
       // and the entries it builds on (Bizarro World: ti[";"] = {"st_invisible"} .. ti["l"] → fl_lawn)
       for (const r of d[1].matchAll(/ti\[\s*"([^"]*)"\s*\]/g)) addKey(r[1]);
     }
