@@ -307,3 +307,23 @@ end`, w.host);
     expect(w.tiles).toEqual(['16,9 st_death {}', '3,3 st_death {}']);
   });
 });
+
+describe('fire messages to a single object', () => {
+  it('fl(pos):setfire() sends the message like a group does (Double play, Sanssouci)', async () => {
+    const w = fakeHost([{ ref: 'c:fl:3:4', l: 'fl', x: 3, y: 4, a: { name: 'hotspot' } }]);
+    const lua = await startLua('function f() no["hotspot"]:setfire() fl(3, 4):heat() end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.sent).toEqual(['c:fl:3:4 setfire null', 'c:fl:3:4 heat null']);
+  });
+});
+
+describe('pos:exists()', () => {
+  it('tells whether the cell lies inside the level (lua.cc existsPosition)', async () => {
+    const w = fakeHost([]);
+    const lua = await startLua('function f() wo["_a"] = po(19.9, 12.2):exists() wo["_b"] = po(20, 3):exists() wo["_c"] = po(-0.5, 1):exists() end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect([w.host.world('_a'), w.host.world('_b'), w.host.world('_c')]).toEqual(['true', 'false', 'false']);
+  });
+});

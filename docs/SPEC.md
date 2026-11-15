@@ -387,7 +387,8 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   `wo["SlopeStrength"] = …` während des Spiels (ab 15.11.2026) skaliert die Kraft aller Gefälle
   vom alten auf den neuen Wert. Abweichung: Gefälle mit eigener `strength` behielte Enigma bei;
   solche Levels lehnt der Import ab, wenn ein Rückruf die Stärke ändert. Ein Gefälle bei Stärke 0
-  kann Murmel nicht hochskalieren. Freigeschaltet: Pipes and Plumbing (andreas27_2).
+  kann Murmel nicht hochskalieren. (Pipes and Plumbing, andreas27_2, das es nutzt, bleibt gesperrt:
+  seine Rohrpost-Banane fehlt im Export, siehe „Bekannt kaputte Levels“.)
 - **st_actorimpulse / _invisible** (`ActorImpulseStone.cc`): fester Stein; berührt ihn eine
   Murmel (auf ihn zu), bekommt sie einen Stoß weg von seiner Mitte: `distortedVelocity`
   (Richtung × `hit_strength` bzw. `strength`, Standard BumperForce 200, Verzerrung
@@ -571,7 +572,9 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
   (`res.autotile`, `res.pento`), Leserichtungen und Karten aus `wo:newMap`.
 - **Lua: closeall/peepall/shuffle zur Laufzeit, lib.math.permutation, wo["ConserveLevel"] während des Spiels.**
 - **Lua obj:set{…}, wo:fl/st/it(pos), Bodenkraft (force_x/force_y) zur Laufzeit; Puzzlesteine "push_rotate"/"pull_rotate"** (`PuzzleStone.cc`): drehen die Reihe gleicher Farbe in der Richtung vor bzw. zurück.
-- **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
+- **Feuer- und Flutnachrichten an unbenannte Böden** (Lua `fl(pos):setfire()` usw.; bis 15.11.2026
+  kannte der Shim `setfire/forcefire/stopfire/heat/ignite` nur an Gruppen, an einem einzelnen Objekt
+  brach der Aufruf ab – betraf Double play und Sanssouci) und **wo["ElectricStrength"]** (Standard 15, auch beim Levelstart und während des Spiels).
 - **Lua-Tabellen als Attributwerte** (`target = {"a#*", "b#*"}`, `action_3 = {"open", "close"}`): werden zu Tokenlisten „a#*,b#*“ (ot_counter/ot_timer aus wo:add).
 - **it_surprise mit "=Taste"**: Der Import löst die Kachel ti[Taste] des Levelskripts auf (Tasten mit Leerzeichen am Ende inklusive); eine Überraschung in der eigenen Auswahl bleibt Überraschung mit derselben Auswahl. Levels, die hohle Puzzlesteine erst zur Laufzeit setzen, werden nicht mehr als „alter Export“ abgelehnt.
 - **Nur eine weiße Kugel**: Hat ein Level keine schwarze Kugel und keine Perlen, aber genau eine weiße, ist sie die
@@ -914,7 +917,19 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   Level unlösbar, wie in Enigma mit der Erlaubnis). Das Levelende prüft Murmel wie Enigma nur beim
   Öffnen eines Paares, nicht beim Entfernen. Umfärben vorhandener Steine (`obj.oxydcolor = …`)
   ist nicht gebaut. Freigeschaltet: be quick or be dead (illmind12_2, Oxyd-Steine wandern im
-  Takt), Tinker, Tailor (andreas46_4, Geschmack b per Attribut), Multi-lane (devnull03_1).
+  Takt), Multi-lane (devnull03_1). Tinker, Tailor (andreas46_4) bleibt gesperrt: es liest
+  `sender["rubbers"]`/`["fellows"]` als Objektlisten (siehe unten).
+- **`pos:exists()`** (ab 15.11.2026, lua.cc existsPosition): wahr, wenn die abgerundete Zelle im
+  Level liegt.
+- **Laufzeit-Arten, Korrekturen vom 15.11.2026:** `ti`-Verweise aus Rückrufen folgen auch den
+  Einträgen, auf denen sie aufbauen (`ti[";"] = {…} .. ti["l"]`; vorher fehlte `fl_lawn` in Bizarro
+  World), und API-1-Namen mit Richtungszeichen (`"st-mirror-3>"`, `"st-mirror-3<t"`) zählen mit
+  (vorher fehlten die Spiegel in Print 23).
+- **Abgelehnt: Gummibänder und Drähte eines Objekts als Lua-Objekte** (`sender["rubbers"]:kill()`,
+  `sender["fellows"][1]`): Murmel hat dafür keine Objekte (Tinker, Tailor).
+- **Bekannt kaputte Levels** (`KNOWN_BROKEN` im Importer, ab 15.11.2026): Levels, die alle Prüfungen
+  bestehen, aber nachweislich nicht richtig spielen, mit Grund. Bisher nur Pipes and Plumbing
+  (andreas27_2): die Banane „pipe_exit“ fehlt im Export, die Flut beginnt in Murmel nie.
 - **`pos:grid()` in Rückrufen** (ab 15.11.2026): der Shim konnte es schon (abrunden auf die
   Zelle), die Importprüfung kennt es jetzt als Methode. Freigeschaltet: Lissajous (andreas01_2,
   Todessteine laufen auf einer Lissajous-Kurve um die Oxyd-Steine).

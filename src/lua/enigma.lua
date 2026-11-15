@@ -64,6 +64,14 @@ POS.__index = function(p, k)
   if k == 1 then return rawget(p, "x") end
   if k == 2 then return rawget(p, "y") end
   if k == "grid" then return newpos(math.floor(p.x), math.floor(p.y)) end
+  -- lua.cc existsPosition: pos:exists() – the (rounded down) cell lies inside the level
+  if k == "exists" then
+    return function(q)
+      local w, h = M.size()
+      local x, y = math.floor(q.x), math.floor(q.y)
+      return x >= 0 and y >= 0 and x < w and y < h
+    end
+  end
   return nil
 end
 -- pos:grid() (libmap): p.grid is the grid position, calling it returns that position
@@ -245,7 +253,9 @@ local function send(o, msg, value)
 end
 
 local methods = {}
-for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle"}) do
+for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle",
+    -- fire messages (Floor::message, items): fl(sender):setfire() in Double play, Sanssouci
+    "setfire", "forcefire", "stopfire", "heat", "ignite"}) do
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end

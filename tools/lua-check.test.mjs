@@ -113,3 +113,19 @@ test('wo:add(YIN, {sender["_type"]}): erlaubt, wenn _type überall ein Gegenstan
   assert.deepEqual([...runtimeKinds(code)].filter((k) => k.startsWith('it_puller')).sort(), ['it_puller_e', 'it_puller_n']);
   assert.deepEqual(problems(code.replace('"it_puller_e"', '"st_box"')), [':add']);
 });
+
+test('Laufzeit-Arten: ti-Verweise in Rückrufen folgen verschachtelten Einträgen (Bizarro World)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = 'ti["l"] = {"fl_lawn"}\nti[";"] = {"st_invisible", "gate"} .. ti["l"]\nfunction cb()\n  wo[no["gate"]] = ti[";"]\nend';
+  assert.deepEqual([...runtimeKinds(code)].sort(), ['fl_lawn', 'st_invisible']);
+});
+
+test('API 1: Spiegel mit Richtung im Namen ("st-mirror-3>") sind Laufzeit-Arten (Print 23)', async () => {
+  const { runtimeKinds, api1Kind } = await import('./lua-check.mjs');
+  assert.equal(api1Kind('st-mirror-3<t'), 'st_mirror_triangle_wt');
+  assert.deepEqual(runtimeKinds('function add3()\n  set_stone("st-mirror-3>", 5, 1)\nend', true).filter((k) => k.includes('mirror')), ['st_mirror_triangle_e']);
+});
+
+test('Gummibänder/Drähte eines Objekts als Lua-Objekte (sender["rubbers"]) werden abgelehnt', () => {
+  assert.deepEqual(problems('function cb(v, sender)\n  sender["rubbers"]:kill()\nend'), ['obj.rubbers']);
+});

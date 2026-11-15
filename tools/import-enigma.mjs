@@ -290,7 +290,7 @@ function actorImages(k, color) {
   }
   return [];
 }
-const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential|dests|steady|loop|destidx|target|action)$/;
+const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential|dests|steady|loop|destidx)$/;
 
 const reasons = new Map(); // blocker -> levels it blocks (among others)
 const only = new Map(); // blocker -> levels it alone blocks
@@ -416,8 +416,20 @@ function runtimeKind(kind) {
   return null;
 }
 
+/**
+ * Levels that pass every check but would not play right, with the reason (found by playing them
+ * through with tools; each one names what is missing).
+ */
+const KNOWN_BROKEN = new Map([
+  // the banana "pipe_exit" (under the white marble at the start) is not in the export; the flood
+  // never starts in Murmel (Enigma: it travels through the pipes)
+  ['enigma_v/andreas27_2', 'Rohrpost-Banane fehlt im Export'],
+]);
+
 function convert(pack, meta, xml, exp, lua) {
   blockers = new Set();
+  const broken = KNOWN_BROKEN.get(`${pack}/${meta.xpath.replace(/^\.\//, '')}`);
+  if (broken) reject(broken);
   return finish(convertLevel(pack, meta, xml, exp, lua));
 }
 
@@ -906,7 +918,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== '')) };
   if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
-    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k))) && v !== ''));
+    // a horse keeps its action (Lua callback at a reached target)
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action)$/.test(k))) && v !== ''));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
     if (/^ac_marble_(white|black)$/.test(x.o.k) && x.o.owner === undefined) {
       attrs.passive = 'true';

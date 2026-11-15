@@ -15,13 +15,13 @@ const API1_GLOBALS = new Set([
 ]);
 /** API 1 kind names (api1.lua NEW2OLD and SPECIAL): old name → new kind. */
 const API1_KINDS = new Map([
-  ...[...API1_SHIM.matchAll(/^\s+(\w+) = "([\w-]+)",?\r?$/gm)].map((m) => [m[2], m[1]]),
-  ...[...API1_SHIM.matchAll(/^\s+\["([\w-]+)"\] = \{"(\w+)"/gm)].map((m) => [m[1], m[2]]),
+  ...[...API1_SHIM.matchAll(/^\s+(\w+) = "([\w<>^-]+)",?\r?$/gm)].map((m) => [m[2], m[1]]),
+  ...[...API1_SHIM.matchAll(/^\s+\["([\w<>^-]+)"\] = \{"(\w+)"/gm)].map((m) => [m[1], m[2]]),
 ]);
 /** Old kind names the helper functions of api1.lua set (abyss → "fl-abyss"). */
 const API1_HELPER_KINDS = new Map(
   API1_SHIM.split(/^(?=function\s)/m)
-    .map((chunk) => [/^function\s+(\w+)/.exec(chunk)?.[1], [...chunk.matchAll(/"((?:st|fl|it|ac)-[\w-]+)"/g)].map((m) => m[1])])
+    .map((chunk) => [/^function\s+(\w+)/.exec(chunk)?.[1], [...chunk.matchAll(/"((?:st|fl|it|ac)-[\w<>^-]+)"/g)].map((m) => m[1])])
     .filter(([n, kinds]) => n && kinds.length),
 );
 /** The new kind of an API 1 kind name ("st-rock1" → "st_granite"), or null. */
@@ -161,6 +161,8 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*(connections|text)\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter|wire)"/g)].length
     + [...raw.matchAll(DYNAMIC_ADD)].filter((m) => dynamicItems(code, m[2]) !== null).length;
   if (adds > ok) problems.add(':add');
+  // the rubber bands and wires of an object as Lua objects (sender["rubbers"]:kill(), Tinker, Tailor): not built
+  for (const m of raw.matchAll(/\[\s*"(rubbers|fellows)"\s*\]|\.(rubbers|fellows)\b/g)) problems.add(`obj.${m[1] ?? m[2]}`);
   // function parameters may hold functions (local f in "function scan(f)")
   for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());
   for (const m of body.matchAll(/(^|[^.:\w])([A-Za-z_]\w*)\s*\(/g)) {
@@ -268,9 +270,10 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
   for (const m of body.matchAll(DYNAMIC_ADD)) for (const k of dynamicItems(code, m[2]) ?? []) kinds.add(k);
   if (api1) {
     // old names ("st-wood"), also kept in globals the reached functions use (mainstone = "st-rock1")
-    const old = new Set([...body.matchAll(/"((?:st|fl|it|ac)-[\w-]+)"/g)].map((m) => m[1]));
+    // (mirrors keep their direction in the name: "st-mirror-3>", "st-mirror-3<t")
+    const old = new Set([...body.matchAll(/"((?:st|fl|it|ac)-[\w<>^-]+)"/g)].map((m) => m[1]));
     const ids = new Set([...body.matchAll(/\b[A-Za-z_]\w*\b/g)].map((m) => m[0]));
-    for (const m of code.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*"((?:st|fl|it|ac)-[\w-]+)"/gm)) if (ids.has(m[1])) old.add(m[2]);
+    for (const m of code.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*"((?:st|fl|it|ac)-[\w<>^-]+)"/gm)) if (ids.has(m[1])) old.add(m[2]);
     // helpers of api1.lua with their own kinds (abyss(x, y), oxyd(x, y) …)
     for (const id of ids) for (const k of API1_HELPER_KINDS.get(id) ?? []) old.add(k);
     for (const o of old) kinds.add(api1Kind(o) ?? o);
@@ -344,7 +347,11 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
   for (const ch of keys) addKey(ch);
   for (const m of body.matchAll(/ti\[\s*"([^"]+)"\s*\]/g)) {
     const key = m[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) for (const k of d[1].matchAll(/"((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
+    for (const d of code.matchAll(new RegExp(`ti\\[\\s*"${key}"\\s*\\]\\s*=([^\\n]*)`, 'g'))) {
+      for (const k of d[1].matchAll(/"((?:st|fl|it|ac)_\w+)"/g)) kinds.add(k[1]);
+      // and the entries it builds on (Bizarro World: ti[";"] = {"st_invisible"} .. ti["l"] → fl_lawn)
+      for (const r of d[1].matchAll(/ti\[\s*"([^"]*)"\s*\]/g)) addKey(r[1]);
+    }
   }
   return [...kinds];
 }
