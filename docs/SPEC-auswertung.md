@@ -102,7 +102,11 @@ Deshalb **nur im Arbeitsspeicher**: Wird die Seite offline geschlossen, gehen di
 - Schema streng: 1–50 Einträge, `pack` und `level` nach `LEVEL_ID`, Zähler ganzzahlig 0–500,
   `abstuerze` 0–10 000, Zeitklassen genau 5 Werte 0–500. Fremde Felder (etwa eine Zeit oder Kennung)
   verwirft Fastify vor der Verarbeitung (`removeAdditional`); sie werden nie gespeichert.
-- Antwort immer `204` (auch bei Datenbankfehler, der nur ins Protokoll geht). Kein Cookie, keine
+- Anfragelimit je IP-Adresse nur im Arbeitsspeicher (`server/src/limit.ts`): 120 Bündel je 15 Minuten,
+  darüber `429` ohne Protokollzeile; die Adresse wird weder gespeichert noch protokolliert. Eine Seite
+  sendet höchstens ein Bündel je 20 beendete Läufe sowie beim Verbergen/Verlassen, das Limit reicht also
+  auch für viele Spieler hinter einer Adresse (Schule, Familie).
+- Sonst Antwort immer `204` (auch bei Datenbankfehler, der nur ins Protokoll geht). Kein Cookie, keine
   Konto-Auswertung; das Server-Protokoll enthält wie überall nur Methode und Pfad.
 - Der Tag ist der Berliner Tag beim **Eingang** (offline gesammelte Zähler landen am Sendetag).
 
@@ -180,7 +184,7 @@ um den neuen Schalter ergänzt werden (im Entwurf oben enthalten).
 1. **Offline-Puffer im Browser-Speicher** (überlebt Schließen der Seite) nur mit Einwilligung – von der
    Koordination verworfen (14.11.2026), Variante ohne Speicher bestätigt; liegt dem Nutzer vor.
 2. **Missbrauch:** Wie `/api/event` ist der Schreibweg offen; Obergrenzen je Sendung begrenzen Ausreißer,
-   gezielte Verfälschung verhindert das nicht. Bei Bedarf ein Anfragelimit je IP nur im Arbeitsspeicher
-   (wie `limit.ts`).
+   gezielte Verfälschung verhindert das nicht. Seit 15.11.2026 gibt es ein Anfragelimit je IP nur im
+   Arbeitsspeicher (120 Bündel / 15 min, `limit.ts`).
 3. **Tipps** (`docs/SPEC-tipps.md`): ob ein Lauf mit gezeigtem Weg endete, wäre ein weiterer starker
    Schwierigkeitshinweis – nicht gebaut.
