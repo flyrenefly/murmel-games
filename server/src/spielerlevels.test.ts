@@ -52,7 +52,7 @@ test('parseUpload: Form, Lizenz, kein Lua, Textlängen, Lösung aus dem Editor',
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, objects: Array.from({ length: 11 }, (_, i) => doc('x', i)) } }))), /höchstens 10 Dokumente/);
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, objects: [doc('x'.repeat(301))] } }))), /höchstens 300 Zeichen/);
   assert.match(String(parseUpload({ titel: 'x' })), /Level fehlt/);
-  // optional „nach einem Enigma-Level von …“: a line of at most 80 characters
+  // optional Vorlage/Herkunft („Vorlage: …“): a line of at most 80 characters
   assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'Ronald Lamprecht (GPL)' } })), 'object');
   assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'ä'.repeat(80) } })), 'object');
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, basedOn: 'x'.repeat(81) } }))), /höchstens 80 Zeichen/);
@@ -165,7 +165,7 @@ describe('Spieler-Levels-API', () => {
     assert.doesNotMatch(JSON.stringify(own), /@/);
   });
 
-  test('Herkunft „nach einem Enigma-Level von …“: eigene Spalte, in Karte und Datei; ohne Angabe nichts', async () => {
+  test('Herkunft („Vorlage: …“): eigene Spalte, in Karte und Datei; ohne Angabe nichts', async () => {
     const s = setup();
     const anna = await author(s, 'anna@example.de', 'Anna');
     assert.deepEqual(await publish(s.app, anna, upload({ level: { ...SAMPLE.level, basedOn: 'Ronald Lamprecht (GPL)' } })), { status: 'angenommen', level: 1 });

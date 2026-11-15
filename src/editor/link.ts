@@ -16,7 +16,7 @@ export const MAX_UNPACKED = 512 * 1024;
 const MAX_OBJECTS = 2400;
 const MAX_ACTORS = 40;
 const MAX_TEXT = 80;
-/** Length of „nach einem Enigma-Level von …“ (basedOn); the server checks the same (server/src/spielerlevels.ts). */
+/** Length of the Vorlage/Herkunft (basedOn, shown as „Vorlage: …“); the server checks the same (server/src/spielerlevels.ts). */
 export const MAX_BASED_ON = 80;
 
 /** The credit as one line: control characters out, spaces collapsed, trimmed, at most MAX_BASED_ON characters ('' removes it). */

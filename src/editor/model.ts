@@ -22,7 +22,7 @@ export interface EdCell {
 export interface EditorLevel {
   title: string;
   author: string;
-  /** Vorlage/Herkunft, shown as „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md); optional, set by the Enigma import or in the editor. */
+  /** Vorlage/Herkunft, shown as „Vorlage: …“ (docs/SPEC-enigma-upload.md); optional, set by the Enigma import or in the editor. */
   basedOn?: string;
   width: number;
   height: number;

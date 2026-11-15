@@ -21,7 +21,7 @@ export interface EnigmaHost {
 export const ENIGMA_ACCEPT = '.xml,.lua,text/xml,application/xml';
 export const RIGHTS_TEXT = 'Ich habe dieses Level selbst gebaut oder die Erlaubnis des Urhebers, es unter CC BY-SA 4.0 zu veröffentlichen.';
 
-/** Prefill of „nach einem Enigma-Level von …“: author and licence as the file names them, or empty. */
+/** Prefill of the Vorlage: „Enigma-Level von <author> (<licence>)“ as the file names them, or empty without an author. */
 export function vorlageAus(h: { autor: string; lizenz: string }): string {
   if (!h.autor) return '';
   return `Enigma-Level von ${h.lizenz ? `${h.autor} (${h.lizenz})` : h.autor}`.slice(0, MAX_BASED_ON);
