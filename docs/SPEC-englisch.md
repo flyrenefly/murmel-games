@@ -3,6 +3,15 @@
 Auftrag vom 15.11.2026 (Konzept „Murmel bekannt machen“, `murmel-wiki/konzept-veroeffentlichung.md`,
 Abschnitt 4, Punkt 9). Stand 15.11.2026.
 
+**Stand 15.11.2026:** gebaut in drei PRs (Branches `englisch`, `englisch-b`, `englisch-c`). Geprüft:
+`tsc`, vitest (Wörterbücher vollständig, ohne verwaiste Schlüssel, HTML-Seiten markiert), Werkzeug- und
+Servertests, `npm run build` mit und ohne Levelseiten, `check:levelseiten` (2438 Seiten de/en).
+Im Browser bei 375 px: Spiel (Startkarte, Levelpakete, Fortschritt, Umschalten in beide Richtungen),
+`/en/` aus `dist` mit `#start=`, englische Levelseite; Editor, Forum, Spieler-Levels, Rangliste,
+Statistik, Lösbarkeit von den Bereichsbearbeitern. Nicht geprüft: Konto-Dialoge und Zu zweit mit
+echtem Server, Anmelde-Mail und Web Push auf echten Geräten.
+Zusätzlich: eigene Levels haben `titleEn`; Node (Tests, Server, Werkzeuge) läuft immer deutsch.
+
 ## Ziel
 
 Murmel ist vollständig auf Englisch spielbar und umschaltbar. Englischsprachige Besucher (Reddit,

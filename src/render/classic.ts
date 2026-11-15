@@ -2,6 +2,10 @@ import type { Level } from '../game/level';
 import { chargeOf, doorFlavor, magicFlavor, mailDir, pipeBits, windowFaces, stripConnections, EAST, type GameObject, isHollow, meditationImage, passageLook, MOVABLE_STONE, movableLook, type ObjectWorld, SEED_GROW_FRAMES, WEST } from '../game/objects';
 import type { StoneState } from '../game/pairs';
 import type { EnemyKind } from '../game/actors';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/spielwelt';
+
+const t = woerterbuch(EN);
 
 /** Another actor to draw (interpolated position in tile units). */
 export interface ActorSprite {
@@ -322,7 +326,7 @@ export class ClassicView {
   }
 
   get label(): string {
-    return this.set === 'gfx32' ? 'Klassisch' : 'Klassisch (Retro)';
+    return this.set === 'gfx32' ? t('Klassisch') : t('Klassisch (Retro)');
   }
 
   async build(level: Level, set: ClassicSet, states: readonly StoneState[], objects: ObjectWorld | null = null): Promise<void> {

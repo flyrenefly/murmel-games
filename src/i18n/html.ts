@@ -50,7 +50,7 @@ export function uebersetzeHtml(html: string, en: Woerterbuch): string {
     if (v === undefined) return all;
     return `<${tag}${attrs}>${isHtml ? v : escText(v)}</${tag}>`;
   });
-  out = out.replace(ATTR_EL, (all, _tag: string, attrs: string, list: string) => {
+  out = out.replace(ATTR_EL, (all, _tag: string, _attrs: string, list: string) => {
     let neu = all;
     for (const a of list.split(',').map((x) => x.trim()).filter(Boolean)) {
       neu = neu.replace(new RegExp(`(\\s${a}=")([^"]*)(")`), (m, pre: string, val: string, post: string) => {

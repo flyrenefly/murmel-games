@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setzeSpracheFuerTest } from './i18n';
 import { auswahl, freigabeLaden, freigabeSetzen, geistLaden, geisterListe } from './geister';
 
 const antwort = (status: number, body?: unknown) => async () =>
@@ -46,5 +47,17 @@ describe('Geister im Spiel', () => {
     // the server's own run is better: it is offered instead of the local one
     expect(auswahl({ steps: 700 }, server, z)[0]).toEqual({ titel: 'Deine Bestzeit 600', quelle: 3 });
     expect(auswahl(null, [], z)).toEqual([]);
+  });
+});
+
+describe('Geister auf Englisch', () => {
+  it('Auswahl', () => {
+    setzeSpracheFuerTest('en');
+    try {
+      const z = (s: number) => String(s);
+      expect(auswahl({ steps: 700 }, [{ id: 5, name: null, zeit: 650, platz: 2, ich: false }], z).map((o) => o.titel)).toEqual(['Your best time 700', 'Place 2 · Unnamed player · 650']);
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
   });
 });

@@ -13,6 +13,10 @@ import { type Action, encodeInput, Recorder, type RecordingInput } from './recor
 import { createRng } from './rng';
 import type { LuaHost, LuaLevel } from '../lua/runtime';
 import { CLASSIC_FALL_SECONDS } from '../render/classic';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/spielwelt';
+
+const t = woerterbuch(EN);
 
 /** Seconds of the fall animation; a fallen marble comes back 0.25 s after it. */
 export const FALL_SECONDS = CLASSIC_FALL_SECONDS;
@@ -696,7 +700,7 @@ export class GameSession {
     this.objects.player = this.ownerOf(this.physics.current);
     this.ui.items();
     this.ui.sound('menu');
-    this.ui.toast(this.physics.marbles[this.physics.current].color === 1 ? 'Weiße Murmel' : 'Schwarze Murmel', 900);
+    this.ui.toast(this.physics.marbles[this.physics.current].color === 1 ? t('Weiße Murmel') : t('Schwarze Murmel'), 900);
     return true;
   }
 

@@ -1,5 +1,9 @@
 import type { LevelFile } from './game/level';
 import { LEVELS } from './levels';
+import { woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
 
 // Level packs: Murmel's own levels are bundled; imported Enigma packs are
 // fetched only when opened (public/levels/enigma/, made by tools/import-enigma.mjs).
@@ -45,8 +49,8 @@ export function packLevels(id: string): Promise<LevelFile[]> {
 }
 
 export async function packTitle(id: string): Promise<string> {
-  if (id === 'link') return 'Geteiltes Level';
-  if (id === 'spieler') return 'Spieler-Levels';
+  if (id === 'link') return t('Geteiltes Level');
+  if (id === 'spieler') return t('Spieler-Levels');
   return (await listPacks()).find((p) => p.id === id)?.title ?? id;
 }
 

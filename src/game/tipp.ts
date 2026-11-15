@@ -5,11 +5,15 @@
  */
 import { Geist } from './geist';
 import type { LevelFile } from './level';
-import { ITEM_NAMES } from './objects';
+import { itemName } from './objects';
 import { PHYSICS_DT } from './physics';
 import type { DecodedInput } from './recording';
 import { startReplay } from './replay';
 import type { GameSession, StartLua } from './session';
+import { sprache, woerterbuch } from '../i18n';
+import EN from '../i18n/en/spielwelt';
+
+const t = woerterbuch(EN);
 
 export type Station =
   | { art: 'paar'; schritt: number; steine: [number, number]; nr: number }
@@ -169,12 +173,19 @@ export function fenster(f: Fahrplan, a: Abschnitt, bisher: number | null): { sta
   return { start, ende: Math.min(a.bis + NACHLAUF_SCHRITTE, start + ZEIGEN_SCHRITTE, f.schritte) };
 }
 
+/** Where a stone lies, by thirds of the level (row, column). */
+const ORTE = [
+  ['oben links', 'oben', 'oben rechts'],
+  ['links', 'in der Mitte', 'rechts'],
+  ['unten links', 'unten', 'unten rechts'],
+] as const;
+
 function ort(f: Fahrplan, i: number): string {
   const s = f.steine[i];
   if (!s || s.col < 0) return '';
-  const h = ['links', '', 'rechts'][Math.min(2, Math.floor((s.col * 3) / f.breite))];
-  const v = ['oben', '', 'unten'][Math.min(2, Math.floor((s.row * 3) / f.hoehe))];
-  return [v, h].filter(Boolean).join(' ') || 'in der Mitte';
+  const h = Math.max(0, Math.min(2, Math.floor((s.col * 3) / f.breite)));
+  const v = Math.max(0, Math.min(2, Math.floor((s.row * 3) / f.hoehe)));
+  return t(ORTE[v][h]);
 }
 
 /** The sentence of the first tip stage. */
@@ -182,17 +193,22 @@ export function satz(f: Fahrplan, a: Abschnitt, l: Lage): string {
   const st = a.station;
   switch (st.art) {
     case 'paar': {
-      if (!paarFuerSpieler(f, st, l)) return 'Als Nächstes: ein weiteres Oxyd-Paar.';
+      if (!paarFuerSpieler(f, st, l)) return t('Als Nächstes: ein weiteres Oxyd-Paar.');
       const [x, y] = st.steine.map((i) => ort(f, i));
-      if (!x || !y) return 'Als Nächstes: ein Oxyd-Paar.';
-      return x === y ? `Als Nächstes: ein Oxyd-Paar – beide Steine ${x}.` : `Als Nächstes: ein Oxyd-Paar – ${x} und ${y}.`;
+      if (!x || !y) return t('Als Nächstes: ein Oxyd-Paar.');
+      return x === y ? t('Als Nächstes: ein Oxyd-Paar – beide Steine {x}.', { x }) : t('Als Nächstes: ein Oxyd-Paar – {x} und {y}.', { x, y });
     }
-    case 'gegenstand':
-      return `Als Nächstes: ${ITEM_NAMES[st.name] ?? 'einen Gegenstand'} einsammeln.`;
+    case 'gegenstand': {
+      const name = itemName(st.name);
+      if (!name) return t('Als Nächstes: einen Gegenstand einsammeln.');
+      // English: "pick up the magic wand" (German nouns keep their capital letter)
+      const ding = sprache() === 'en' ? name.charAt(0).toLowerCase() + name.slice(1) : name;
+      return t('Als Nächstes: {ding} einsammeln.', { ding });
+    }
     case 'perle':
-      return 'Als Nächstes: eine Perle in eine Mulde.';
+      return t('Als Nächstes: eine Perle in eine Mulde.');
     case 'ziel':
-      return 'Als Nächstes: der Weg ins Ziel.';
+      return t('Als Nächstes: der Weg ins Ziel.');
   }
 }
 

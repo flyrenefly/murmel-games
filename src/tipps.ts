@@ -5,6 +5,7 @@ import { type Fahrplan, fahrplan } from './game/tipp';
 import type { LevelFile } from './game/level';
 import { PHYSICS_DT } from './game/physics';
 import type { StartLua } from './game/session';
+import { sprachKopf } from './i18n';
 
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 const netz: Fetch = (...a) => fetch(...a);
@@ -35,7 +36,7 @@ const buildIndex = buildNachLevel(BUILD);
 /** Admin solutions of a level from the server (GET /api/tipps/loesungen); [] offline or without API. */
 export async function serverLoesungen(level: string, fetchFn: Fetch = netz): Promise<unknown[]> {
   try {
-    const res = await fetchFn(`/api/tipps/loesungen?${new URLSearchParams({ level })}`);
+    const res = await fetchFn(`/api/tipps/loesungen?${new URLSearchParams({ level })}`, { headers: sprachKopf() });
     if (!res.ok) return [];
     const data = (await res.json()) as { loesungen?: unknown };
     return Array.isArray(data.loesungen) ? data.loesungen : [];

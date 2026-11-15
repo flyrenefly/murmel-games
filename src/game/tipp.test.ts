@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { setzeSpracheFuerTest } from '../i18n';
+import { itemName } from './objects';
 import basic from '../../public/levels/enigma/tutorial_basic.json';
 import solution01 from '../../solutions/murmel/01.json';
 import tut1 from '../../solutions/enigma/m_tutor/m_tut1.json';
@@ -241,5 +243,41 @@ describe('Tipp-Geist', () => {
     expect(g.schritte).toBe(300);
     expect(g.fertig).toBe(true);
     expect(g.sprite(1)).toBeNull();
+  });
+});
+
+describe('Tipps auf Englisch', () => {
+  it('Sätze mit Orten und Gegenständen', () => {
+    const f: Fahrplan = {
+      loesung: null,
+      schritte: 900,
+      breite: 21,
+      hoehe: 12,
+      steine: [{ col: 1, row: 1, symbol: 'A' }, { col: 10, row: 6, symbol: 'A' }, { col: 10, row: 5, symbol: 'B' }, { col: 11, row: 6, symbol: 'B' }],
+      stationen: [
+        { art: 'gegenstand', schritt: 100, name: 'it_magicwand' },
+        { art: 'paar', schritt: 500, steine: [0, 1], nr: 1 },
+        { art: 'paar', schritt: 600, steine: [2, 3], nr: 2 },
+        { art: 'gegenstand', schritt: 700, name: 'it_unbekannt' },
+        { art: 'ziel', schritt: 900 },
+      ],
+    };
+    const l = leer(['A', 'A', 'B', 'B']);
+    setzeSpracheFuerTest('en');
+    try {
+      expect(satz(f, abschnitt(f, l), l)).toBe('Next: pick up the magic wand.');
+      const a = { ...l, inventar: ['it_magicwand'] };
+      expect(satz(f, abschnitt(f, a), a)).toBe('Next: a pair of Oxyd stones – at the top left and in the middle.');
+      const b = { ...a, geloest: new Set([0, 1]), paare: 1 };
+      expect(satz(f, abschnitt(f, b), b)).toBe('Next: a pair of Oxyd stones – both in the middle.');
+      const c = { ...b, geloest: new Set([0, 1, 2, 3]), paare: 2 };
+      expect(satz(f, abschnitt(f, c), c)).toBe('Next: pick up an item.');
+      expect(itemName('it_key_7')).toBe('Key 7');
+      expect(itemName('it_pipe_ns')).toBe('Pipe');
+      expect(itemName('it_nichts')).toBeUndefined();
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
+    expect(itemName('it_key_7')).toBe('Schlüssel 7');
   });
 });

@@ -6,6 +6,10 @@ import type { LevelFile } from './game/level';
 import type { GameSession, StartLua } from './game/session';
 import { abschnitt, type Fahrplan, fenster, lageSchluessel, lageVon, satz, TippGeist } from './game/tipp';
 import { fahrplanFuer, Haengen } from './tipps';
+import { woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
 
 export interface TippHost {
   showOverlay(title: string, text: string, buttons: [string, () => void][]): void;
@@ -22,8 +26,8 @@ export interface TippHost {
 
 /** Frames between two looks at the progress (the situation is cheap, but not free). */
 const PRUEF_TAKT = 30;
-const TITEL = 'Tipp';
-const KEIN_TIPP = 'Für dieses Level gibt es noch keinen Tipp.';
+const TITEL = t('Tipp');
+const KEIN_TIPP = t('Für dieses Level gibt es noch keinen Tipp.');
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const pause = () => new Promise<void>((ok) => setTimeout(ok, 0));
 
@@ -77,10 +81,10 @@ export function tippsUI(host: TippHost, knopf: HTMLButtonElement) {
     }
     if (!knopf.hidden || host.aus() || s.won || ++frames % PRUEF_TAKT !== 0) return;
     if (!haengen.pruefen(lageSchluessel(lageVon(s)), s.steps, s.falls)) return;
-    const t = token;
+    const tk = token;
     // only with a solution: the search replays it in small portions while the game goes on
     void fahrplanFuer(file!, { startLua, pause }).then((f) => {
-      if (f && t === token && !host.aus()) zeigen();
+      if (f && tk === token && !host.aus()) zeigen();
     });
   }
 
@@ -93,34 +97,34 @@ export function tippsUI(host: TippHost, knopf: HTMLButtonElement) {
     const s = session;
     if (!s || !file || host.aus() || s.won) return;
     host.menue();
-    const t = token;
-    host.showOverlay(TITEL, 'Einen Moment …', [['Weiterspielen', host.spielen]]);
+    const tk = token;
+    host.showOverlay(TITEL, t('Einen Moment …'), [[t('Weiterspielen'), host.spielen]]);
     const f = await fahrplanFuer(file, { startLua, pause });
-    if (t !== token || s !== session) return;
-    if (!f) return host.showOverlay(TITEL, KEIN_TIPP, [['Weiterspielen', host.spielen]]);
+    if (tk !== token || s !== session) return;
+    if (!f) return host.showOverlay(TITEL, KEIN_TIPP, [[t('Weiterspielen'), host.spielen]]);
     zeigen();
     const lage = lageVon(s);
     const a = abschnitt(f, lage);
     saetze++;
     const weiter = zuletzt !== null && zuletzt.von === a.von && zuletzt.ende < a.bis;
     host.showOverlay(TITEL, escapeHtml(satz(f, a, lage)), [
-      [weiter ? 'Weiter zeigen' : 'Weg zeigen', () => void wegZeigen(f, s)],
-      ['Weiterspielen', host.spielen],
+      [weiter ? t('Weiter zeigen') : t('Weg zeigen'), () => void wegZeigen(f, s)],
+      [t('Weiterspielen'), host.spielen],
     ]);
   }
 
   async function wegZeigen(f: Fahrplan, s: GameSession): Promise<void> {
     const a = abschnitt(f, lageVon(s));
     const w = fenster(f, a, zuletzt && zuletzt.von === a.von ? zuletzt.ende : null);
-    const t = token;
+    const tk = token;
     const g = await TippGeist.create(file!, f, w, s.steps, startLua);
-    if (t !== token || s !== session) return;
+    if (tk !== token || s !== session) return;
     geist = g;
     zuletzt = { von: a.von, ende: w.ende };
     wege++;
     host.wegGezeigt?.(s);
     host.spielen();
-    host.showToast('Der Geist zeigt den Weg.', 1800);
+    host.showToast(t('Der Geist zeigt den Weg.'), 1800);
   }
 
   return {
@@ -135,8 +139,8 @@ export function tippsUI(host: TippHost, knopf: HTMLButtonElement) {
     wegGezeigt: () => wege > 0,
     /** The line of the win message, '' without tips. */
     siegZeile: (): string => {
-      if (wege > 0) return `<br><span class="note">Mit ${wege === 1 ? 'einem gezeigten Weg' : `${wege} gezeigten Wegen`} gelöst – dieser Lauf zählt nicht für die Bestenliste.</span>`;
-      if (saetze > 0) return `<br><span class="note">Mit ${saetze === 1 ? 'einem Tipp' : `${saetze} Tipps`} gelöst.</span>`;
+      if (wege > 0) return `<br><span class="note">${wege === 1 ? t('Mit einem gezeigten Weg gelöst – dieser Lauf zählt nicht für die Bestenliste.') : t('Mit {n} gezeigten Wegen gelöst – dieser Lauf zählt nicht für die Bestenliste.', { n: wege })}</span>`;
+      if (saetze > 0) return `<br><span class="note">${saetze === 1 ? t('Mit einem Tipp gelöst.') : t('Mit {n} Tipps gelöst.', { n: saetze })}</span>`;
       return '';
     },
   };

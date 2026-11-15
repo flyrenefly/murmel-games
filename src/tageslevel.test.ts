@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setzeSpracheFuerTest } from './i18n';
 import { aufgabenLaden, einreichenAufgabe, ergebnisZeile, listenZeile, titelZeile } from './tageslevel';
 
 const json = (status: number, body?: unknown) => async () =>
@@ -35,5 +36,26 @@ describe('Tageslevel im Spiel', () => {
     expect(ergebnisZeile({ status: 'angenommen', lauf: 1, zeit: 800, neu: true, platz: 2, von: 9 }, 'tag', z)).toBe('Tageslevel: Platz 2 von 9');
     expect(ergebnisZeile({ status: 'angenommen', lauf: 900, zeit: 800, neu: false, platz: 2, von: 9 }, 'woche', z)).toBe('Wochenaufgabe: Platz 2 von 9 (deine Bestzeit 800s)');
     expect(ergebnisZeile({ status: 'abgelehnt', grund: 'Diese Aufgabe ist vorbei.' }, 'tag', z)).toBe('Tageslevel: Diese Aufgabe ist vorbei.');
+  });
+});
+
+describe('Tageslevel auf Englisch', () => {
+  it('Zeilen, Datum und Sprachkopf', async () => {
+    setzeSpracheFuerTest('en');
+    try {
+      const z = (s: number) => `${s}s`;
+      expect(listenZeile(TAG as never, 'Enigma II', z)).toEqual({ titel: 'Today · Brücken', info: 'Enigma II · Place 3 of 12 · 900s' });
+      expect(listenZeile({ ...WOCHE, anzahl: 1 } as never, 'Enigma II', z).info).toBe('Enigma II · 1 time');
+      expect(titelZeile(TAG as never)).toBe('Daily level 13/11');
+      expect(titelZeile(WOCHE as never)).toBe('Weekly challenge, week 46');
+      expect(ergebnisZeile({ status: 'wartet' }, 'tag', z)).toBe('Daily level: checking …');
+      expect(ergebnisZeile({ status: 'angenommen', lauf: 900, zeit: 800, neu: false, platz: 2, von: 9 }, 'woche', z)).toBe('Weekly challenge: Place 2 of 9 (your best time 800s)');
+      const calls: (RequestInit | undefined)[] = [];
+      const r = await einreichenAufgabe({ v: 1 } as never, TAG as never, 'v', async (_u, i) => (calls.push(i), new Response('x', { status: 500 })));
+      expect(r).toEqual({ fehler: 'The daily ranking cannot be reached right now.' });
+      expect(new Headers(calls[0]?.headers).get('Accept-Language')).toBe('en');
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
   });
 });

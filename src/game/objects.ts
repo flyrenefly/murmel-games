@@ -8,6 +8,12 @@
 // (stones/StoneImpulse.cc).
 // Times in milliseconds, cells in tile units.
 
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/spielwelt';
+
+const t = woerterbuch(EN);
+type Name = keyof typeof EN;
+
 /** One object of a level file: cell, Enigma kind and attributes as text. */
 export interface ObjectDef {
   x: number;
@@ -22,11 +28,21 @@ export type ObjectClass = 'door' | 'switch' | 'trigger' | 'document' | 'grate' |
 const ITEM_CLASSES = new Set<ObjectClass>(['trigger', 'document', 'wormhole', 'meditation', 'landmine', 'seed', 'wand', 'spring', 'extralife', 'yinyang', 'vortex', 'tool', 'flag', 'springboard', 'magnet', 'sensor', 'key', 'crack', 'explosion', 'debris', 'dynamite', 'bomb', 'coin', 'bag', 'shogundot', 'deathitem', 'puller', 'strip', 'burnable', 'cross', 'squashed', 'bottle', 'pipe', 'surprise', 'trap']);
 /** Item::actor_hit: pick-up radius (ItemTraits radius, default 0.3). */
 const PICKUP_RADIUS: Partial<Record<ObjectClass, number>> = { seed: 0.2, wand: 0.3, spring: 0.3, extralife: 0.3, yinyang: 0.3, tool: 0.3, flag: 0.3, key: 0.3, dynamite: 0.3, coin: 0.3, bag: 0.3, puller: 0.3, bottle: 0.3, pipe: 0.3, surprise: 0.3 };
-/** German names of inventory items for the display. */
-export const ITEM_NAMES: Record<string, string> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht', it_surprise: 'Überraschung', it_pencil: 'Stift', it_rubberband: 'Gummiband', it_drop: 'Tropfen' };
-for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) ITEM_NAMES[`it_pipe${c}`] = 'Rohr';
-// Keys with a code (KeySwitch "code"): it_key_<code> in the inventory
-for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = `Schlüssel ${i}`;
+/** German names of inventory items (keys of the English dictionary src/i18n/en/spielwelt.ts). */
+const NAMEN: Record<string, Name> = { it_seed: 'Samen', it_seed_wood: 'Samen', it_seed_hay: 'Samen', it_seed_greenbrown: 'Samen', it_magicwand: 'Zauberstab', it_spring: 'Feder', it_spring_keep: 'Feder', it_spring_drop: 'Feder (fällt ab)', it_extralife: 'Extraleben', it_yinyang: 'Yin-Yang', it_ring: 'Ring', it_spoon: 'Löffel', it_flag: 'Fahne', it_flag_black: 'Fahne', it_flag_white: 'weiße Fahne', it_key: 'Schlüssel', it_wrench: 'Schraubenschlüssel', it_hammer: 'Hammer', it_dynamite: 'Dynamit', it_coin: 'Münze', it_coin_s: 'kleine Münze', it_coin_m: 'Münze', it_coin_l: 'große Münze', it_floppy: 'Diskette', it_sword: 'Schwert', it_umbrella: 'Schirm', it_puller: 'Zieher', it_puller_n: 'Zieher ↑', it_puller_e: 'Zieher →', it_puller_s: 'Zieher ↓', it_puller_w: 'Zieher ←', it_extinguisher: 'Feuerlöscher (voll)', it_extinguisher_full: 'Feuerlöscher (voll)', it_extinguisher_medium: 'Feuerlöscher (halb)', it_extinguisher_empty: 'Feuerlöscher (leer)', it_coffee: 'Kaffee', it_coffee_drop: 'Kaffee', it_spade: 'Spaten', it_brush: 'Pinsel', it_cherry: 'Kirsche', it_banana: 'Banane', it_bottle: 'Flasche', it_bottle_idle: 'Flasche', it_pin: 'Nadel', it_glasses: 'Brille', it_glasses_broken: 'kaputte Brille', it_brake: 'Bremse', it_bag: 'Sack', it_weight: 'Gewicht', it_surprise: 'Überraschung', it_pencil: 'Stift', it_rubberband: 'Gummiband', it_drop: 'Tropfen' };
+for (const c of ['', '_w', '_s', '_sw', '_e', '_ew', '_es', '_n', '_nw', '_ns', '_ne']) NAMEN[`it_pipe${c}`] = 'Rohr';
+
+/** Name of an inventory item in the page's language; keys with a code (KeySwitch "code") are it_key_<code>. */
+export function itemName(kind: string): string | undefined {
+  const n = NAMEN[kind];
+  if (n) return t(n);
+  const key = /^it_key_(\d{1,2})$/.exec(kind);
+  return key && Number(key[1]) >= 1 ? t('Schlüssel {n}', { n: Number(key[1]) }) : undefined;
+}
+
+/** Names of inventory items for the display (in the page's language, fixed at load). */
+export const ITEM_NAMES: Record<string, string> = Object.fromEntries(Object.keys(NAMEN).map((k) => [k, itemName(k)!]));
+for (let i = 1; i <= 99; i++) ITEM_NAMES[`it_key_${i}`] = itemName(`it_key_${i}`)!;
 
 function yinyangInstant(o: GameObject): boolean {
   return o.attrs.instant !== undefined && o.attrs.instant !== '' ? truthy(o.attrs.instant) : o.kind === 'st_yinyang_instant';

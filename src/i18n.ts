@@ -39,13 +39,16 @@ let aktuell: Sprache | null = null;
 /** Die Sprache dieser Seite (einmal ermittelt). */
 export function sprache(): Sprache {
   if (aktuell) return aktuell;
-  const nav = typeof navigator === 'undefined' ? undefined : navigator.languages?.length ? navigator.languages : [navigator.language];
+  // außerhalb des Browsers (Node: Tests, Server, Werkzeuge, die Spielcode laden) immer Deutsch –
+  // Node hat ein navigator.language nach der Systemsprache, die CI ist englisch
+  if (typeof document === 'undefined') return (aktuell = 'de');
+  const nav = navigator.languages?.length ? navigator.languages : [navigator.language];
   const pfad = typeof location === 'undefined' ? '' : location.pathname;
   aktuell = ermittleSprache(gespeicherteSprache(), pfad, nav);
   return aktuell;
 }
 
-/** Nur für Tests: Sprache festlegen (null = neu ermitteln). */
+/** Sprache festlegen, ohne zu speichern (Tests; Web Worker ohne localStorage, src/enigma-upload). null = neu ermitteln. */
 export function setzeSpracheFuerTest(s: Sprache | null): void {
   aktuell = s;
 }

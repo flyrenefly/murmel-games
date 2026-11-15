@@ -1,8 +1,11 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
+import EN_INDEX from './src/i18n/en/seite-index';
+import EN_UEBER from './src/i18n/en/seite-ueber';
+import { englischeSeite } from './src/i18n/seiten-en';
 
 /** All files below dir, as paths with forward slashes. */
 function files(dir: string, rel = ''): string[] {
@@ -52,12 +55,13 @@ function offline(): Plugin {
     closeBundle() {
       // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached;
       // the level pages (level/, docs/SPEC-levelseiten.md) are for search engines and links, not for offline play
-      const skip = /^(level\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      const skip = /^((en\/)?level\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
       for (const f of list) hash.update(f).update(readFileSync(join(outDir, f)));
-      const precache = ['./', ...list.filter((f) => f !== 'index.html')];
+      // the English start page (en/index.html) is precached as en/, like index.html as ./
+      const precache = ['./', ...list.filter((f) => f !== 'index.html').map((f) => (f === 'en/index.html' ? 'en/' : f))];
       const sw = template
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('__PRECACHE__', JSON.stringify(precache));
@@ -88,6 +92,28 @@ function levelPages(): Plugin {
   };
 }
 
+/**
+ * Englische Seiten (docs/SPEC-englisch.md): dist/en/index.html und dist/en/ueber.html aus den deutschen
+ * Seiten, übersetzt mit den Wörterbüchern unter src/i18n/en/. Läuft vor dem offline-Plugin, damit
+ * en/index.html in sw.js steht; auch im Notbetrieb (MURMEL_LEVELSEITEN=0).
+ */
+function englishPages(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'murmel-englisch',
+    apply: 'build',
+    configResolved(c) {
+      outDir = resolve(c.root, c.build.outDir);
+    },
+    closeBundle() {
+      mkdirSync(join(outDir, 'en'), { recursive: true });
+      for (const [pfad, datei, en] of [['', 'index.html', EN_INDEX], ['ueber.html', 'ueber.html', EN_UEBER]] as const) {
+        writeFileSync(join(outDir, 'en', datei), englischeSeite(readFileSync(join(outDir, datei), 'utf8'), en, pfad));
+      }
+    },
+  };
+}
+
 /** Short commit of this build: shown in bug reports from the game ("Fehler melden"). */
 function gameVersion(): string {
   const env = process.env.MURMEL_VERSION || process.env.GITHUB_SHA;
@@ -103,7 +129,7 @@ export default defineConfig({
   define: { __MURMEL_VERSION__: JSON.stringify(gameVersion()) },
   // Relative paths so the build works in any webspace folder.
   base: './',
-  plugins: [cspSafeFengari(), offline(), levelPages()],
+  plugins: [cspSafeFengari(), englishPages(), offline(), levelPages()],
   // npm run dev: the API (server/, port 3000) under the same address as on the server
   server: { proxy: { '/api': { target: process.env.MURMEL_API ?? 'http://localhost:3000', ws: true } } },
   build: {

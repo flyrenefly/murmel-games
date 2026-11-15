@@ -3,6 +3,10 @@
 // src/game/progress.ts – solved stays solved, the better time wins. Without account or network the game
 // plays on locally; the next sync brings everything along. No dialogs: only a status line.
 import { mergeProgress, parseProgress, type Progress } from './game/progress';
+import { gebietsschema, sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
 
 export interface ServerStand {
   version: number;
@@ -29,7 +33,7 @@ export function syncApi(base = '/api/fortschritt', fetchFn: Fetch = (...a) => fe
       res = await fetchFn(base, {
         method,
         credentials: 'same-origin',
-        headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+        headers: body === undefined ? sprachKopf() : { ...sprachKopf(), 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch {
@@ -210,18 +214,18 @@ export function statusText(s: SyncStatus, heute: Date = new Date()): string {
       const d = new Date(s.zeit);
       const gleicherTag = d.toDateString() === heute.toDateString();
       return gleicherTag
-        ? `Auf allen Geräten abgeglichen um ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}.`
-        : `Auf allen Geräten abgeglichen am ${d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}.`;
+        ? t('Auf allen Geräten abgeglichen um {zeit}.', { zeit: d.toLocaleTimeString(gebietsschema(), { hour: '2-digit', minute: '2-digit' }) })
+        : t('Auf allen Geräten abgeglichen am {datum}.', { datum: d.toLocaleDateString(gebietsschema(), { day: 'numeric', month: 'short' }) });
     }
     case 'laeuft':
-      return 'Wird abgeglichen …';
+      return t('Wird abgeglichen …');
     case 'offline':
-      return 'Wartet auf Netz – wird später nachgereicht.';
+      return t('Wartet auf Netz – wird später nachgereicht.');
     case 'gesperrt':
-      return 'Konto gesperrt – Abgleich pausiert.';
+      return t('Konto gesperrt – Abgleich pausiert.');
     case 'fehler':
-      return 'Abgleich gerade nicht möglich – wird später nachgereicht.';
+      return t('Abgleich gerade nicht möglich – wird später nachgereicht.');
     case 'abgemeldet':
-      return 'Nur auf diesem Gerät. Mit einem Konto auf allen Geräten.';
+      return t('Nur auf diesem Gerät. Mit einem Konto auf allen Geräten.');
   }
 }

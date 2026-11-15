@@ -6,18 +6,23 @@
     <meta name="theme-color" content="#05050c" />
     <title>Über Murmel – Oxyd und Enigma online spielen, kostenlos im Browser</title>
     <meta
+      data-i18n-attr="content"
       name="description"
       content="Oxyd und Enigma im Browser: Murmel ist ein kostenloses Murmelspiel in ihrer Tradition. Spielprinzip, Steuerung, Enigma-Levels und häufige Fragen."
     />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href="https://murmel.games/ueber.html" />
+    <link rel="alternate" hreflang="de" href="https://murmel.games/ueber.html" />
+    <link rel="alternate" hreflang="en" href="https://murmel.games/en/ueber.html" />
+    <link rel="alternate" hreflang="x-default" href="https://murmel.games/ueber.html" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Murmel" />
     <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale:alternate" content="en_US" />
     <meta property="og:url" content="https://murmel.games/ueber.html" />
-    <meta property="og:title" content="Über Murmel – Oxyd und Enigma online spielen" />
-    <meta property="og:description" content="Kostenloses Murmelspiel im Browser in der Tradition von Oxyd und Enigma." />
+    <meta data-i18n-attr="content" property="og:title" content="Über Murmel – Oxyd und Enigma online spielen" />
+    <meta data-i18n-attr="content" property="og:description" content="Kostenloses Murmelspiel im Browser in der Tradition von Oxyd und Enigma." />
     <meta property="og:image" content="https://murmel.games/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <script type="application/ld+json">
@@ -112,6 +117,18 @@
       a {
         color: var(--accent);
       }
+      header.top .nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header.top a.lang {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0 10px;
+        text-decoration: none;
+      }
       .play {
         display: inline-block;
         background: var(--accent);
@@ -168,21 +185,21 @@
     <main>
       <header class="top">
         <a class="brand" href="./"><img src="favicon.svg" width="28" height="28" alt="" />Murmel</a>
-        <a class="play" href="./">Jetzt spielen</a>
+        <span class="nav"><a class="lang" data-i18n data-i18n-attr="href,hreflang,lang" href="en/ueber.html" hreflang="en" lang="en">English</a><a class="play" data-i18n data-i18n-attr="href" href="./">Jetzt spielen</a></span>
       </header>
 
-      <h1>Murmel – das Murmelspiel wie Oxyd und Enigma, kostenlos im Browser</h1>
-      <p class="lead">
+      <h1 data-i18n-html>Murmel – das Murmelspiel wie Oxyd und Enigma, kostenlos im Browser</h1>
+      <p class="lead" data-i18n-html>
         Rolle eine Murmel mit der Maus durch verwinkelte Labyrinthe, öffne die Oxyd-Steine paarweise und
         löse Rätsel mit Türen, Schaltern, Kisten und Zeitschaltern – direkt im Browser, ohne Installation.
       </p>
       <figure>
-        <img src="og-image.png" width="1200" height="630" alt="Murmel im Stil Klassisch: Labyrinth mit Holzkisten, Wasser und Oxyd-Steinen" />
-        <figcaption>Murmel im Grafikstil „Klassisch“ mit der freien Grafik von Enigma.</figcaption>
+        <img data-i18n-attr="alt" src="og-image.png" width="1200" height="630" alt="Murmel im Stil Klassisch: Labyrinth mit Holzkisten, Wasser und Oxyd-Steinen" />
+        <figcaption data-i18n-html>Murmel im Grafikstil „Klassisch“ mit der freien Grafik von Enigma.</figcaption>
       </figure>
 
-      <h2>Spielprinzip</h2>
-      <p>
+      <h2 data-i18n-html>Spielprinzip</h2>
+      <p data-i18n-html>
         Jedes Level ist ein Raster aus Böden und Steinen. Unter ihnen verstecken sich die
         <strong>Oxyd-Steine</strong>: Stößt die Murmel einen an, zeigt er seine Farbe. Wer zwei Steine
         gleicher Farbe nacheinander öffnet, hat ein Paar gefunden – sind alle Paare offen, ist das Level
@@ -190,23 +207,23 @@
         aus denen Brücken werden, und Zeitschalter, die Türen im Takt öffnen und schließen.
       </p>
 
-      <h2>Steuerung</h2>
+      <h2 data-i18n-html>Steuerung</h2>
       <ul>
-        <li><strong>Maus:</strong> Jede Mausbewegung gibt der Murmel Schwung – wie im Original.</li>
-        <li><strong>Tastatur:</strong> Pfeiltasten, <kbd>R</kbd> Neustart, <kbd>T</kbd> Grafikstil, <kbd>+</kbd>/<kbd>−</kbd> Mausempfindlichkeit, <kbd>Esc</kbd> Pause.</li>
-        <li><strong>Smartphone und Tablet:</strong> Neigen des Geräts rollt die Murmel.</li>
+        <li data-i18n-html><strong>Maus:</strong> Jede Mausbewegung gibt der Murmel Schwung – wie im Original.</li>
+        <li data-i18n-html><strong>Tastatur:</strong> Pfeiltasten, <kbd>R</kbd> Neustart, <kbd>T</kbd> Grafikstil, <kbd>+</kbd>/<kbd>−</kbd> Mausempfindlichkeit, <kbd>Esc</kbd> Pause.</li>
+        <li data-i18n-html><strong>Smartphone und Tablet:</strong> Neigen des Geräts rollt die Murmel.</li>
       </ul>
 
-      <h2>Oxyd: das Original vom Atari ST</h2>
-      <p>
+      <h2 data-i18n-html>Oxyd: das Original vom Atari ST</h2>
+      <p data-i18n-html>
         <strong>Oxyd</strong> erschien 1990 bei Dongleware für den Atari ST und wurde später auf weitere
         Rechner gebracht. Das Spiel war für seine trägen, physikalisch rollenden Murmeln und die
         knifflige Suche nach Steinpaaren bekannt. Die Original-Levels und -Grafiken von Oxyd sind
         urheberrechtlich geschützt und deshalb nicht in Murmel enthalten.
       </p>
 
-      <h2>Enigma: der freie Nachfolger</h2>
-      <p>
+      <h2 data-i18n-html>Enigma: der freie Nachfolger</h2>
+      <p data-i18n-html>
         <strong>Enigma</strong> ist ein freies Spiel für Windows, macOS und Linux, das das Spielprinzip
         von Oxyd aufgreift und um viele eigene Ideen erweitert. Es steht unter der GNU General Public
         License und bringt weit über tausend Levels mit. Murmel verwendet Enigmas Grafik, Klänge,
@@ -214,36 +231,36 @@
         Enigma selbst gibt es unter <a href="https://www.nongnu.org/enigma/" rel="noopener">nongnu.org/enigma</a>.
       </p>
 
-      <h2>Levels</h2>
-      <p>
+      <h2 data-i18n-html>Levels</h2>
+      <p data-i18n-html>
         Neben eigenen Einsteiger-Levels übernimmt Murmel Levelpakete aus Enigma, etwa das Tutorial,
         „Enigma I“ bis „Enigma VII“. Ein Level wird freigeschaltet, sobald Murmel alle Objekte darin
         beherrscht; mit jedem neuen Objekt kommen weitere dazu. Nachbauten der Original-Oxyd-Levels
         werden bewusst nicht übernommen.
       </p>
-      <p><a href="level/">Alle Levels ansehen</a> – mit Vorschau, Autor, Lizenz und Bestzeiten.</p>
+      <p data-i18n-html><a href="level/">Alle Levels ansehen</a> – mit Vorschau, Autor, Lizenz und Bestzeiten.</p>
 
-      <h2>Häufige Fragen</h2>
+      <h2 data-i18n-html>Häufige Fragen</h2>
       <dl>
-        <dt>Kann man Oxyd online im Browser spielen?</dt>
-        <dd>
+        <dt data-i18n-html>Kann man Oxyd online im Browser spielen?</dt>
+        <dd data-i18n-html>
           Murmel spielt sich wie Oxyd und läuft kostenlos im Browser. Die Original-Levels und -Grafiken von
           Oxyd sind nicht enthalten; stattdessen nutzt Murmel die freie Grafik und die Levels von Enigma.
         </dd>
-        <dt>Was ist der Unterschied zwischen Murmel, Enigma und Oxyd?</dt>
-        <dd>
+        <dt data-i18n-html>Was ist der Unterschied zwischen Murmel, Enigma und Oxyd?</dt>
+        <dd data-i18n-html>
           Oxyd ist das Original von Dongleware. Enigma ist ein freier Nachfolger für den PC. Murmel bringt
           das Spielprinzip mit Enigmas Grafik, Physik und Levels in den Browser – auch auf Tablet und Smartphone.
         </dd>
-        <dt>Ist Murmel kostenlos?</dt>
-        <dd>Ja – freie Software, ohne Werbung, ohne Anmeldung und ohne Installation.</dd>
-        <dt>Kann ich Enigma-Levels im Browser spielen?</dt>
-        <dd>Ja. Unter „Levels“ stehen die bereits übernommenen Enigma-Pakete zur Auswahl.</dd>
+        <dt data-i18n-html>Ist Murmel kostenlos?</dt>
+        <dd data-i18n-html>Ja – freie Software, ohne Werbung, ohne Anmeldung und ohne Installation.</dd>
+        <dt data-i18n-html>Kann ich Enigma-Levels im Browser spielen?</dt>
+        <dd data-i18n-html>Ja. Unter „Levels“ stehen die bereits übernommenen Enigma-Pakete zur Auswahl.</dd>
       </dl>
 
-      <p><a class="play" href="./">Murmel jetzt spielen</a></p>
+      <p data-i18n-html><a class="play" href="./">Murmel jetzt spielen</a></p>
 
-      <footer>
+      <footer data-i18n-html>
         Murmel ist freie Software (GPL-3.0-or-later),
         <a href="https://github.com/flyrenefly/murmel-games" rel="noopener">Quellcode auf GitHub</a>.
         Grafik „Klassisch“, Klänge, Rollphysik und Levels stammen aus

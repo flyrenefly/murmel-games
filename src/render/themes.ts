@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { marbleSwirl, neonTile, stoneFace, stoneGrain, type FaceStyle, type StoneFace } from './textures';
 import { PIXEL_VOID, pixelFloor, pixelMarble, pixelShadow, pixelStone, pixelWall, TILE_PX } from './pixel';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/spielwelt';
+
+const t = woerterbuch(EN);
 
 // A theme is only looks: materials, lights, background and post effects.
 // Game rules and physics never depend on it.
@@ -49,7 +53,7 @@ function glas(): ThemeKit {
   let envTarget: THREE.WebGLRenderTarget | null = null;
   const kit: ThemeKit = {
     id: 'glas',
-    label: 'Glas',
+    label: t('Glas'),
     background: new THREE.Color('#cfd6de'),
     floor: new THREE.MeshStandardMaterial({ map: grain, roughness: 0.55, metalness: 0 }),
     floorTint: (r) => new THREE.Color().setHSL(0.09, 0.08, 0.86 + r * 0.1),
@@ -99,7 +103,7 @@ function neon(): ThemeKit {
   const swirl = marbleSwirl('#3a0030', '#ff3bd4');
   const kit: ThemeKit = {
     id: 'neon',
-    label: 'Neon',
+    label: t('Neon'),
     background: new THREE.Color('#05050c'),
     floor: new THREE.MeshStandardMaterial({
       color: '#0b0d18',
@@ -158,7 +162,7 @@ function retro16(): ThemeKit {
   };
   const kit: ThemeKit = {
     id: 'retro16',
-    label: '16-Bit',
+    label: t('16-Bit'),
     background: new THREE.Color(PIXEL_VOID),
     floor: flat(floorTex),
     floorTint: () => null,

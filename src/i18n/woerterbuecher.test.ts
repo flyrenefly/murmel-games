@@ -1,31 +1,22 @@
 // Vollständigkeit der Wörterbücher (docs/SPEC-englisch.md, Abschnitt Tests): Jeder Schlüssel hat eine
 // nicht leere englische Übersetzung mit denselben Platzhaltern, jeder Schlüssel wird verwendet, und
 // jede übersetzbare Stelle in den HTML-Seiten steht im Wörterbuch der Seite (seite-<name>.ts).
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { platzhalter, textSchluessel } from '../i18n';
 import { htmlSchluessel } from './html';
 
-const ROOT = resolve(__dirname, '../..');
 const dicts = import.meta.glob<{ default: Record<string, string> }>('./en/*.ts', { eager: true });
-
-function files(dir: string): string[] {
-  return readdirSync(dir).flatMap((n) => {
-    const p = join(dir, n);
-    return statSync(p).isDirectory() ? files(p) : [p];
-  });
-}
+const code = import.meta.glob<string>(['/src/**/*.ts', '/src/**/*.js', '!/src/**/*.test.ts', '!/src/i18n/en/**'], { query: '?raw', import: 'default', eager: true });
+const html = import.meta.glob<string>('/*.html', { query: '?raw', import: 'default', eager: true });
 
 /** Quelltext ohne Wörterbücher und Tests, Escapes aufgelöst, damit Schlüssel als Text gefunden werden. */
-const quellen = files(join(ROOT, 'src'))
-  .filter((f) => /\.(ts|js)$/.test(f) && !/\.test\.ts$/.test(f) && !/[\\/]i18n[\\/]en[\\/]/.test(f))
-  .map((f) => readFileSync(f, 'utf8').replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\n/g, '\n'))
+const quellen = [...Object.values(code), ...Object.values(html)]
+  .map((t) => t.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\n/g, '\n'))
   .join('\n');
-const seiten = readdirSync(ROOT).filter((f) => f.endsWith('.html'));
-const htmlKeys = new Set(seiten.flatMap((f) => htmlSchluessel(readFileSync(join(ROOT, f), 'utf8')).map((k) => k.schluessel)));
+const seiten = Object.keys(html).map((p) => p.slice(1));
+const htmlKeys = new Set(Object.values(html).flatMap((t) => htmlSchluessel(t).map((k) => k.schluessel)));
 /** Seitentitel (<title>) zählen als verwendet. */
-const titel = new Set(seiten.map((f) => textSchluessel(/<title>([\s\S]*?)<\/title>/.exec(readFileSync(join(ROOT, f), 'utf8'))?.[1] ?? '')));
+const titel = new Set(Object.values(html).map((t) => textSchluessel(/<title>([\s\S]*?)<\/title>/.exec(t)?.[1] ?? '')));
 
 describe('Wörterbücher', () => {
   it('gibt es', () => {
@@ -54,8 +45,7 @@ describe('Wörterbücher', () => {
 
 describe('HTML-Seiten', () => {
   for (const f of seiten) {
-    const html = readFileSync(join(ROOT, f), 'utf8');
-    const funde = htmlSchluessel(html);
+    const funde = htmlSchluessel(html[`/${f}`]);
     if (!funde.length) continue;
     it(`${f}: jede Stelle ist übersetzt`, () => {
       const mod = dicts[`./en/seite-${f.replace(/\.html$/, '')}.ts`];

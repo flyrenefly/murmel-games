@@ -1,7 +1,7 @@
 import './style.css';
 import { Sfx } from './audio';
 import { Input } from './input';
-import { cellAt, type Level } from './game/level';
+import { cellAt, type Level, levelTitel } from './game/level';
 import { bagContents, isBag, ITEM_NAMES, ObjectWorld } from './game/objects';
 import type { PairBoard } from './game/pairs';
 import { DEFAULT_MOUSE_SPEED, JUMP_SECONDS, PHYSICS_DT, type PhysicsWorld, SINK_DEPTH } from './game/physics';
@@ -36,6 +36,14 @@ import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
 import { lockRotation, rotationHint, unlockRotation } from './drehsperre';
 import { AUS, IOS_HINWEIS, type Moeglich, moeglich, schluesselLaden, standText, umgebung, VERWEIGERT_HINWEIS, type Wahl, wahlAnwenden } from './webpush';
+import { gebietsschema, seiteUebersetzen, sprachKnopf, spracheFuerServiceWorker, woerterbuch } from './i18n';
+import EN from './i18n/en/spiel';
+import EN_SEITE from './i18n/en/seite-index';
+
+// Sprache (docs/SPEC-englisch.md): statische Texte von index.html, dann alles über t()
+const t = woerterbuch(EN);
+seiteUebersetzen(EN_SEITE);
+void spracheFuerServiceWorker();
 
 const AXIS_FORCE = 10; // force at full key press / tilt (times floor adhesion)
 
@@ -79,6 +87,9 @@ const ovButtons = $('ov-buttons');
 const levelList = $('level-list');
 const toast = $('toast');
 const ovForm = $('ov-form');
+/** Sprachwahl auf der Startkarte (docs/SPEC-englisch.md): zeigt die andere Sprache in ihrer eigenen. */
+const ovSprache = $('ov-sprache');
+ovSprache.append(sprachZeile());
 
 const sfx = new Sfx();
 const view = new View(canvas3d);
@@ -188,8 +199,8 @@ function updateHud(): void {
   hudTitle.textContent = `${levelIndex + 1}. ${level.title}`;
   hudPairs.textContent = pairsText();
   const falls = session?.falls ?? 0;
-  hudFalls.textContent = falls ? `Abstürze ${falls}` : '';
-  btnTheme.textContent = `Stil: ${styleLabel()}`;
+  hudFalls.textContent = falls ? t('Abstürze {n}', { n: falls }) : '';
+  btnTheme.textContent = t('Stil: {stil}', { stil: styleLabel() });
 }
 
 function cycleStyle(): void {
@@ -210,7 +221,7 @@ function showToast(text: string, ms = 1400): void {
 function changeMouseSpeed(delta: number): void {
   mouseSpeed = Math.min(15, Math.max(1, mouseSpeed + delta));
   store.set('mouseSpeed', mouseSpeed);
-  showToast(`Mausgeschwindigkeit ${mouseSpeed}`);
+  showToast(t('Mausgeschwindigkeit {n}', { n: mouseSpeed }));
 }
 
 // ---------- overlay ----------
@@ -232,6 +243,7 @@ function showOverlay(title: string, text: string, buttons: [string, () => void][
     }),
   );
   levelList.hidden = true;
+  ovSprache.hidden = true;
   ovForm.hidden = true;
   ovForm.replaceChildren();
   overlay.hidden = false;
@@ -248,7 +260,7 @@ function chooseSteering(s: Steering): void {
 /** The current attitude becomes the rest pose; with feedback when the player asked for it. */
 function setRest(feedback: boolean): void {
   input.setRest();
-  if (feedback) showToast('Ruhelage gesetzt');
+  if (feedback) showToast(t('Ruhelage gesetzt'));
 }
 input.onDoubleTap = () => {
   if (mode === 'play' && input.tiltEnabled) setRest(true);
@@ -284,9 +296,9 @@ function startPlaying(): void {
 async function startTouch(): Promise<void> {
   sfx.unlock();
   if (steering === 'tilt' && !input.tiltEnabled && !(await input.enableTilt())) {
-    showOverlay('Neigen nicht möglich', 'Dieses Gerät oder dieser Browser liefert keine Lagedaten. Mit Wischen geht es trotzdem.', [
-      ['Mit Wischen spielen', () => (chooseSteering('swipe'), void startTouch())],
-      ['Zurück', showStart],
+    showOverlay(t('Neigen nicht möglich'), t('Dieses Gerät oder dieser Browser liefert keine Lagedaten. Mit Wischen geht es trotzdem.'), [
+      [t('Mit Wischen spielen'), () => (chooseSteering('swipe'), void startTouch())],
+      [t('Zurück'), showStart],
     ]);
     return;
   }
@@ -299,9 +311,25 @@ async function startTouch(): Promise<void> {
 const twoMarbles = () => (physics?.steerable ?? 1) > 1;
 
 function controlsHelp(): string {
-  return isTouch
-    ? `${steering === 'swipe' ? 'Wische über das Spielfeld, um die Murmel anzuschieben.' : 'Neige dein Gerät, um die Murmel zu rollen. Doppelt tippen macht die jetzige Haltung zur Ruhelage.'}<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: „Murmel wechseln“ steuert die andere.' : ''}${hasSeeds() ? '<br>Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.' : ''}`
-    : `Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).<br>Öffne die Oxyd-Steine paarweise.${twoMarbles() ? '<br>Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.' : ''}${hasSeeds() ? '<br>Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.' : ''}${hasWand() ? '<br>Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.' : ''}${hasSpring() ? '<br>Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.' : ''}<br><span class="keys">Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit</span>`;
+  const zeilen = isTouch
+    ? [
+        steering === 'swipe' ? t('Wische über das Spielfeld, um die Murmel anzuschieben.') : t('Neige dein Gerät, um die Murmel zu rollen. Doppelt tippen macht die jetzige Haltung zur Ruhelage.'),
+        t('Öffne die Oxyd-Steine paarweise.'),
+        ...(twoMarbles() ? [t('Zwei Murmeln: „Murmel wechseln“ steuert die andere.')] : []),
+        ...(hasSeeds() ? [t('Samen einsammeln, mit „Ablegen“ wächst daraus eine Holzkiste.')] : []),
+        ...(hasWand() ? [t('Zauberstab einsammeln: Ist er vorn im Inventar („Drehen“), dreht ein Stoß Felsbrocken und Einbahnsteine um.')] : []),
+        ...(hasSpring() ? [t('Feder einsammeln: „Ablegen“ lässt die Murmel springen – über Abgründe und Wasser.')] : []),
+      ]
+    : [
+        t('Bewege die Maus, um die Murmel zu beschleunigen (oder Pfeiltasten).'),
+        t('Öffne die Oxyd-Steine paarweise.'),
+        ...(twoMarbles() ? [t('Zwei Murmeln: Klick oder Leertaste wechselt zwischen schwarzer und weißer Murmel.')] : []),
+        ...(hasSeeds() ? [t('Samen einsammeln, Klick oder Leertaste legt ihn ab – daraus wächst eine Holzkiste.')] : []),
+        ...(hasWand() ? [t('Zauberstab einsammeln: Ist er vorn im Inventar (Rechtsklick oder Tab dreht es), dreht ein Stoß Felsbrocken und Einbahnsteine um.')] : []),
+        ...(hasSpring() ? [t('Feder einsammeln: Klick oder Leertaste lässt die Murmel springen – über Abgründe und Wasser.')] : []),
+        `<span class="keys">${t('Esc/P Pause · T Stil · R Neustart · +/− Mausgeschwindigkeit')}</span>`,
+      ];
+  return zeilen.join('<br>');
 }
 
 // ---------- progress: best times, statistics, save and load (docs/SPEC-lokal.md) ----------
@@ -385,8 +413,8 @@ async function weiterspielen(): Promise<void> {
   const id = level.id;
   mode = 'menu';
   showOverlay(
-    'Spielstand',
-    '<p class="sync-status" data-art="laeuft" role="status" aria-live="polite" id="cloud-laden">Spielstand wird geladen …</p><progress id="cloud-fortschritt" class="cloud-fortschritt" max="100" value="0" aria-label="Wiederherstellen"></progress>',
+    t('Spielstand'),
+    `<p class="sync-status" data-art="laeuft" role="status" aria-live="polite" id="cloud-laden">${t('Spielstand wird geladen …')}</p><progress id="cloud-fortschritt" class="cloud-fortschritt" max="100" value="0" aria-label="${t('Wiederherstellen')}"></progress>`,
     [],
   );
   const r = await cloud.laden(id);
@@ -402,7 +430,7 @@ async function weiterspielen(): Promise<void> {
       await nachspielen(s, r.eingabe, r.stand.pruef, (anteil) => {
         const p = Math.round(anteil * 100);
         if (balken) balken.value = p;
-        if (text) text.textContent = `Spielstand wird wiederhergestellt … ${p} %`;
+        if (text) text.textContent = t('Spielstand wird wiederhergestellt … {p} %', { p });
       });
       fortgesetzt.set(s, { steps: s.steps, falls: s.falls });
       // the attempt was counted where it began; so was its Auswertung start (and, when that device left the
@@ -413,12 +441,12 @@ async function weiterspielen(): Promise<void> {
   } catch {
     cloud.passtNicht(id);
     await loadLevel(pack, index);
-    showToast('Der gesicherte Stand passt nicht zu dieser Spielversion oder diesem Browser – das Level beginnt neu.', 5000);
+    showToast(t('Der gesicherte Stand passt nicht zu dieser Spielversion oder diesem Browser – das Level beginnt neu.'), 5000);
     showStart();
     return;
   }
   if (session && fortgesetzt.has(session)) {
-    showToast(`Spielstand wiederhergestellt (${formatTime(session.steps * PHYSICS_DT)})`, 2500);
+    showToast(t('Spielstand wiederhergestellt ({zeit})', { zeit: formatTime(session.steps * PHYSICS_DT) }), 2500);
     showPause();
   }
 }
@@ -488,13 +516,13 @@ function formatBest(steps: number): string {
 /** The statistics table of the progress page (rebuilt after a sync while the page is open). */
 function progressTable(): string {
   const sum = summarize(progress);
-  const last = sum.lastPlayed ? new Date(sum.lastPlayed).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '–';
+  const last = sum.lastPlayed ? new Date(sum.lastPlayed).toLocaleDateString(gebietsschema(), { day: 'numeric', month: 'long', year: 'numeric' }) : '–';
   const rows: [string, string][] = [
-    ['Gelöste Levels', String(sum.solved)],
-    ['Gespielte Levels', String(sum.played)],
-    ['Spielzeit', formatTime(sum.playSteps * PHYSICS_DT)],
-    ['Abstürze', String(sum.falls)],
-    ['Zuletzt gespielt', last],
+    [t('Gelöste Levels'), String(sum.solved)],
+    [t('Gespielte Levels'), String(sum.played)],
+    [t('Spielzeit'), formatTime(sum.playSteps * PHYSICS_DT)],
+    [t('Abstürze'), String(sum.falls)],
+    [t('Zuletzt gespielt'), last],
   ];
   return `<dl class="stats" id="fortschritt-zahlen">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>`;
 }
@@ -507,14 +535,14 @@ function showProgress(message = ''): void {
   const mitKonto = abgleich.status.art !== 'abgemeldet';
   const sync = `<p id="sync-status" class="sync-status" role="status" aria-live="polite" data-art="${abgleich.status.art}">${escapeHtml(statusText(abgleich.status))}</p>`;
   const hinweis = mitKonto
-    ? 'Dein Konto hält den Fortschritt auf allen Geräten gleich. Mit „Sichern“ zusätzlich als Datei mitnehmen.'
-    : 'Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.';
-  showOverlay('Fortschritt', `${progressTable()}${note}${sync}<span class="credit">${hinweis}</span>`, [
-    ['Zurück', () => void showLevels()],
-    ['Sichern', saveProgressFile],
-    ['Laden', loadProgressFile],
+    ? t('Dein Konto hält den Fortschritt auf allen Geräten gleich. Mit „Sichern“ zusätzlich als Datei mitnehmen.')
+    : t('Bleibt in diesem Browser. Mit „Sichern“ als Datei mitnehmen, mit „Laden“ auf einem anderen Gerät einlesen.');
+  showOverlay(t('Fortschritt'), `${progressTable()}${note}${sync}<span class="credit">${hinweis}</span>`, [
+    [t('Zurück'), () => void showLevels()],
+    [t('Sichern'), saveProgressFile],
+    [t('Laden'), loadProgressFile],
   ]);
-  ovForm.replaceChildren(statistikSchalter());
+  ovForm.replaceChildren(statistikSchalter(), sprachZeile());
   ovForm.hidden = false;
   if (mitKonto && abgleich.status.art !== 'laeuft') abgleich.bald(0);
 }
@@ -531,7 +559,7 @@ function statistikSchalter(): HTMLLabelElement {
     if (!box.checked) auswertung.senden(); // drops what was collected
   });
   const text = document.createElement('span');
-  text.append('Anonyme Statistik senden', document.createElement('br'), Object.assign(document.createElement('small'), { textContent: 'Zählt ohne Kennung, welche Levels gelöst oder abgebrochen werden.' }));
+  text.append(t('Anonyme Statistik senden'), document.createElement('br'), Object.assign(document.createElement('small'), { textContent: t('Zählt ohne Kennung, welche Levels gelöst oder abgebrochen werden.') }));
   const label = document.createElement('label');
   label.className = 'konto-schalter';
   label.htmlFor = box.id;
@@ -556,7 +584,7 @@ function saveProgressFile(): void {
   a.download = `murmel-fortschritt-${nowIso().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  showProgress('Datei gespeichert.');
+  showProgress(t('Datei gespeichert.'));
 }
 
 function loadProgressFile(): void {
@@ -575,38 +603,60 @@ function loadProgressFile(): void {
       store.set('solved', [...solved]);
       saveProgress();
       const added = summarize(progress).solved - before;
-      showProgress(`Geladen: ${added} Levels neu gelöst${skipped ? `, ${skipped} unlesbare Einträge übersprungen` : ''}.`);
+      showProgress(skipped ? t('Geladen: {n} Levels neu gelöst, {m} unlesbare Einträge übersprungen.', { n: added, m: skipped }) : t('Geladen: {n} Levels neu gelöst.', { n: added }));
     } catch {
-      showProgress('Das ist keine Murmel-Fortschrittsdatei.');
+      showProgress(t('Das ist keine Murmel-Fortschrittsdatei.'));
     }
   });
   pick.click();
 }
 
+/** Zeile mit Globus und Knopf zur anderen Sprache (Startkarte und Fortschritt). */
+function sprachZeile(): HTMLElement {
+  const zeile = document.createElement('div');
+  zeile.className = 'sprache';
+  const knopf = sprachKnopf('sprache-knopf');
+  knopf.prepend(globus());
+  // like the overlay buttons: the click belongs to the card, not to the game
+  knopf.addEventListener('click', (e) => e.stopPropagation());
+  zeile.append(knopf);
+  return zeile;
+}
+
+/** Globus-Symbol (Sprache), ohne Text für Vorleser. */
+function globus(): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>';
+  return svg;
+}
+
 function showStart(): void {
   mode = 'menu';
-  const where = packId === PLAYER_PACK ? escapeHtml(packName) : `${escapeHtml(packName)} · Level ${levelIndex + 1} von ${packList.length}`;
+  const where = packId === PLAYER_PACK ? escapeHtml(packName) : `${escapeHtml(packName)} · ${t('Level {nr} von {n}', { nr: levelIndex + 1, n: packList.length })}`;
   // a player level converted from Enigma names its model (docs/SPEC-enigma-upload.md)
   const basedOn = packId === PLAYER_PACK ? packList[levelIndex]?.basedOn : undefined;
-  const credit = `<span class="credit">${where}${level.author ? ` · von ${escapeHtml(level.author)}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}${basedOn ? `<br>Vorlage: ${escapeHtml(basedOn)}` : ''}</span><br>`;
-  const ghostNote = (aufgabe ? `<span class="credit">${escapeHtml(titelZeile(aufgabe))}</span><br>` : '') + (geist && geistWahl ? `<span class="credit">Geist: ${escapeHtml(geistWahl.titel)}</span><br>` : '');
-  const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? 'Geist ändern' : 'Mit Geist', () => void showGeister()]];
+  const credit = `<span class="credit">${where}${level.author ? ` · ${t('von {autor}', { autor: escapeHtml(level.author) })}` : ''}${packId === PLAYER_PACK ? ` · ${LICENSE_LABEL}` : ''}${basedOn ? `<br>${t('Vorlage: {name}', { name: escapeHtml(basedOn) })}` : ''}</span><br>`;
+  const ghostNote = (aufgabe ? `<span class="credit">${escapeHtml(titelZeile(aufgabe))}</span><br>` : '') + (geist && geistWahl ? `<span class="credit">${t('Geist: {name}', { name: escapeHtml(geistWahl.titel) })}</span><br>` : '');
+  const ghostButton: [string, () => void][] = packId === LINK_PACK || zz.laeuft() ? [] : [[geist ? t('Geist ändern') : t('Mit Geist'), () => void showGeister()]];
   const play = () => (isTouch ? void startTouch() : startPlaying());
   // a cloud save of this level (and the run here not begun yet): continuing comes first
   const stand = cloudPaket() && (session?.steps ?? 0) === 0 ? cloud.staende.get(level.id) : undefined;
   const spielen: [string, () => void][] =
-    stand && stand.pack === packId ? [[`Weiterspielen (${formatTime(stand.steps * PHYSICS_DT)})`, () => void weiterspielen()], ['Neu beginnen', play]] : [['Spielen', play]];
+    stand && stand.pack === packId ? [[t('Weiterspielen ({zeit})', { zeit: formatTime(stand.steps * PHYSICS_DT) }), () => void weiterspielen()], [t('Neu beginnen'), play]] : [[t('Spielen'), play]];
   if (cloudPaket()) void cloud.liste().then(startNeu());
   showOverlay(`${levelIndex + 1}. ${level.title}`, credit + ghostNote + controlsHelp(), [
     ...spielen,
     ...ghostButton,
-    ['Levels', showLevels],
-    ['Zu zweit', zz.menue],
+    [t('Levels'), showLevels],
+    [t('Zu zweit'), zz.menue],
     ...linkButtons(),
     ...adminButtons(),
     [kontoLabel(), openKonto],
   ]);
   addSteeringChoice(showStart);
+  ovSprache.hidden = false;
 }
 
 // ---------- Tageslevel und Wochenaufgabe (docs/SPEC-tageslevel.md, src/tageslevel.ts) ----------
@@ -625,7 +675,7 @@ async function aufgabeSpielen(a: Aufgabe): Promise<void> {
   await loadLevel(a.pack, a.index);
   if (level.id !== a.level) {
     aufgabe = null;
-    showToast('Dieses Level fehlt in deiner Spielversion – bitte die Seite neu laden.', 3000);
+    showToast(t('Dieses Level fehlt in deiner Spielversion – bitte die Seite neu laden.'), 3000);
   }
   showStart();
 }
@@ -633,7 +683,7 @@ async function aufgabeSpielen(a: Aufgabe): Promise<void> {
 /** Today's and this week's task above the packs; they appear when the answer is there (not offline). */
 function aufgabenZeigen(packs: { id: string; title: string }[]): void {
   void Promise.all([aufgabenLaden(), erinnerungMoeglich()]).then(([tasks, push]) => {
-    if (!tasks || levelList.hidden || ovTitle.textContent !== 'Levelpakete') return;
+    if (!tasks || levelList.hidden || ovTitle.textContent !== t('Levelpakete')) return;
     const rows = (['tag', 'woche'] as const).flatMap((art) => {
       const a = tasks[art];
       if (!a) return [];
@@ -642,8 +692,8 @@ function aufgabenZeigen(packs: { id: string; title: string }[]): void {
       return [listButton(`<span>${solved.has(a.level) ? '✓' : '›'}</span><b>${escapeHtml(z.titel)}</b><small>${escapeHtml(z.info)}</small>`, current, () => void aufgabeSpielen(a))];
     });
     if (rows.length && push.m !== 'nein') {
-      const info = push.m === 'ios-browser' ? 'auf dem Home-Bildschirm' : standText(erinnerungWahl);
-      rows.push(listButton(`<span>›</span><b>Erinnerung</b><small>${escapeHtml(info)}</small>`, false, () => showErinnerung(push)));
+      const info = push.m === 'ios-browser' ? t('auf dem Home-Bildschirm') : standText(erinnerungWahl);
+      rows.push(listButton(`<span>›</span><b>${t('Erinnerung')}</b><small>${escapeHtml(info)}</small>`, false, () => showErinnerung(push)));
     }
     levelList.prepend(...rows);
   });
@@ -668,9 +718,9 @@ const pushTeile = (erlaubnis: () => Promise<NotificationPermission>) => ({ erlau
 /** The card with two switches; the browser asks for the permission only after one is switched on. */
 function showErinnerung(push: { m: Moeglich; schluessel: string | null }): void {
   mode = 'menu';
-  if (push.m === 'ios-browser' || !push.schluessel) return showOverlay('Erinnerung', escapeHtml(IOS_HINWEIS), [['Zurück', () => void showLevels()]]);
+  if (push.m === 'ios-browser' || !push.schluessel) return showOverlay(t('Erinnerung'), escapeHtml(IOS_HINWEIS), [[t('Zurück'), () => void showLevels()]]);
   const schluessel = push.schluessel;
-  showOverlay('Erinnerung', 'Murmel schickt dir eine Mitteilung, sobald um Mitternacht ein neues Level bereitsteht. Ein Konto brauchst du dafür nicht.', [['Fertig', () => void showLevels()]]);
+  showOverlay(t('Erinnerung'), t('Murmel schickt dir eine Mitteilung, sobald um Mitternacht ein neues Level bereitsteht. Ein Konto brauchst du dafür nicht.'), [[t('Fertig'), () => void showLevels()]]);
   const meldung = document.createElement('p');
   meldung.className = 'note';
   meldung.setAttribute('role', 'status');
@@ -691,10 +741,10 @@ function showErinnerung(push: { m: Moeglich; schluessel: string | null }): void 
         if (r === 'ok') {
           erinnerungWahl = neu;
           store.set('erinnerung', neu);
-          meldung.textContent = neu.tag || neu.woche ? 'Erinnerung ist an.' : 'Erinnerung ist aus.';
+          meldung.textContent = neu.tag || neu.woche ? t('Erinnerung ist an.') : t('Erinnerung ist aus.');
         } else {
           box.checked = !box.checked;
-          meldung.textContent = r === 'verweigert' ? VERWEIGERT_HINWEIS : 'Das hat nicht geklappt. Bitte versuch es später noch einmal.';
+          meldung.textContent = r === 'verweigert' ? VERWEIGERT_HINWEIS : t('Das hat nicht geklappt. Bitte versuch es später noch einmal.');
         }
         for (const b of boxes) b.disabled = false;
       });
@@ -710,7 +760,7 @@ function showErinnerung(push: { m: Moeglich; schluessel: string | null }): void 
     label.append(box, text);
     return label;
   };
-  ovForm.replaceChildren(schalter('tag', 'Neues Tageslevel', 'jeden Tag um Mitternacht'), schalter('woche', 'Neue Wochenaufgabe', 'montags um Mitternacht'), meldung);
+  ovForm.replaceChildren(schalter('tag', t('Neues Tageslevel'), t('jeden Tag um Mitternacht')), schalter('woche', t('Neue Wochenaufgabe'), t('montags um Mitternacht')), meldung);
   ovForm.hidden = false;
 }
 
@@ -735,7 +785,7 @@ async function tageslevelOeffnen(): Promise<void> {
   if (tasks?.tag) await aufgabeSpielen(tasks.tag);
   else {
     showStart();
-    showToast('Das Tageslevel ist gerade nicht erreichbar.', 2400);
+    showToast(t('Das Tageslevel ist gerade nicht erreichbar.'), 2400);
   }
 }
 
@@ -770,7 +820,7 @@ async function geistFuer(file: LevelFile, startLua: Parameters<typeof Geist.crea
     return await Geist.create(file, geistWahl.daten, startLua);
   } catch {
     geistWahl = null;
-    showToast('Dieser Lauf passt nicht mehr zum Level – es geht ohne Geist weiter.', 2800);
+    showToast(t('Dieser Lauf passt nicht mehr zum Level – es geht ohne Geist weiter.'), 2800);
     return null;
   }
 }
@@ -780,21 +830,21 @@ async function showGeister(): Promise<void> {
   mode = 'menu';
   const lv = level.id;
   const token = loadToken;
-  showOverlay('Mit Geist spielen', 'Einen Moment …', [['Zurück', showStart]]);
+  showOverlay(t('Mit Geist spielen'), t('Einen Moment …'), [[t('Zurück'), showStart]]);
   const [lokal, server] = await Promise.all([eigenerLauf(lv), geisterListe(lv)]);
   // the player went elsewhere meanwhile
-  if (token !== loadToken || mode !== 'menu' || ovTitle.textContent !== 'Mit Geist spielen') return;
+  if (token !== loadToken || mode !== 'menu' || ovTitle.textContent !== t('Mit Geist spielen')) return;
   const opts = auswahl(lokal, server, formatBest);
   const text = opts.length
-    ? 'Ein gespeicherter Lauf fährt als durchscheinende Murmel mit. So siehst du, ob du vorn liegst.'
-    : 'Für dieses Level gibt es noch keinen Lauf. Gewinne es einmal, dann kannst du gegen dich selbst spielen.';
-  const none: [string, () => void][] = geistWahl ? [['Ohne Geist', () => ((geistWahl = null), (geist = null), showStart())]] : [];
-  showOverlay('Mit Geist spielen', text, [...opts.map((o): [string, () => void] => [o.titel, () => void geistWaehlen(o, lokal)]), ...none, ['Zurück', showStart]]);
+    ? t('Ein gespeicherter Lauf fährt als durchscheinende Murmel mit. So siehst du, ob du vorn liegst.')
+    : t('Für dieses Level gibt es noch keinen Lauf. Gewinne es einmal, dann kannst du gegen dich selbst spielen.');
+  const none: [string, () => void][] = geistWahl ? [[t('Ohne Geist'), () => ((geistWahl = null), (geist = null), showStart())]] : [];
+  showOverlay(t('Mit Geist spielen'), text, [...opts.map((o): [string, () => void] => [o.titel, () => void geistWaehlen(o, lokal)]), ...none, [t('Zurück'), showStart]]);
 }
 
 async function geistWaehlen(o: Option, lokal: { steps: number } | null): Promise<void> {
   const daten = o.quelle === 'lokal' ? lokal : await geistLaden(o.quelle);
-  if (!daten || typeof (daten as { steps?: unknown }).steps !== 'number') return void showToast('Dieser Lauf ist gerade nicht erreichbar.', 2400);
+  if (!daten || typeof (daten as { steps?: unknown }).steps !== 'number') return void showToast(t('Dieser Lauf ist gerade nicht erreichbar.'), 2400);
   geistWahl = { level: level.id, titel: o.titel, daten: daten as { steps: number } };
   await loadLevel(packId, levelIndex); // the ghost starts with the level
   if (!geist) return showStart();
@@ -814,8 +864,8 @@ function linkButtons(): [string, () => void][] {
 function playerButtons(): [string, () => void][] {
   const file = packList[levelIndex];
   return [
-    ['Spieler-Levels', () => location.assign(listUrl(level.id))],
-    ['Im Editor öffnen', () => void encodeLevel(file).then((data) => location.assign(`./editor.html${LINK_PREFIX}${data}`))],
+    [t('Spieler-Levels'), () => location.assign(listUrl(level.id))],
+    [t('Im Editor öffnen'), () => void encodeLevel(file).then((data) => location.assign(`./editor.html${LINK_PREFIX}${data}`))],
   ];
 }
 
@@ -829,7 +879,7 @@ async function openPlayerFromHash(hash: string): Promise<boolean> {
   }
   setPlayerPack(r.file);
   await loadLevel(PLAYER_PACK, 0);
-  if (r.offline) showToast('Offline: gespeicherte Fassung des Levels.', 2600);
+  if (r.offline) showToast(t('Offline: gespeicherte Fassung des Levels.'), 2600);
   return true;
 }
 
@@ -850,7 +900,7 @@ async function openStartFromHash(hash: string): Promise<boolean> {
     }
   }
   if (i < 0) {
-    showToast('Dieses Level gibt es hier nicht (mehr).', 4000);
+    showToast(t('Dieses Level gibt es hier nicht (mehr).'), 4000);
     return false;
   }
   await loadLevel(link.pack, i);
@@ -860,16 +910,16 @@ async function openStartFromHash(hash: string): Promise<boolean> {
 function showPause(): void {
   mode = 'menu';
   const cloudZeile = cloudLauf() ? `<p id="cloud-status" class="sync-status" role="status" aria-live="polite" data-art="laeuft">${SICHERN_TEXT.laeuft}</p>` : '';
-  showOverlay('Pause', cloudZeile + controlsHelp(), [
-    ['Weiterspielen', () => (isTouch ? void startTouch() : startPlaying())],
-    ['Neustart', restart],
-    ['Levels', showLevels],
+  showOverlay(t('Pause'), cloudZeile + controlsHelp(), [
+    [t('Weiterspielen'), () => (isTouch ? void startTouch() : startPlaying())],
+    [t('Neustart'), restart],
+    [t('Levels'), showLevels],
     ...tipps.menuePunkt(),
-    ['Zu zweit', zz.menue],
+    [t('Zu zweit'), zz.menue],
     ...linkButtons(),
     ...adminButtons(),
     [kontoLabel(), openKonto],
-    ['Fehler melden', reportBug],
+    [t('Fehler melden'), reportBug],
   ]);
   addSteeringChoice(showPause);
   if (cloudZeile) void cloudSichern();
@@ -877,7 +927,7 @@ function showPause(): void {
 
 /** Admins only: the statistics page (statistik.html; the server checks the role again). */
 function adminButtons(): [string, () => void][] {
-  return istAdmin() ? [['Statistik', () => location.assign('./statistik.html')]] : [];
+  return istAdmin() ? [[t('Statistik'), () => location.assign('./statistik.html')]] : [];
 }
 
 /** Opens the forum in a new tab with a bug topic for this level and game version (src/forum-text.ts). */
@@ -894,8 +944,8 @@ function openKonto(): void {
   void kontoOeffnen(kontoHost);
 }
 
-function escapeHtml(t: string): string {
-  return t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 function listButton(html: string, current: boolean, onClick: () => void): HTMLButtonElement {
@@ -915,19 +965,20 @@ async function showLevels(): Promise<void> {
   mode = 'menu';
   input.releaseLock();
   unlockRotation();
-  showOverlay('Levelpakete', '', [['Zurück', showStart], ['Fortschritt', () => showProgress()]]);
+  showOverlay(t('Levelpakete'), '', [[t('Zurück'), showStart], [t('Fortschritt'), () => showProgress()]]);
   const packs = await listPacks();
   levelList.replaceChildren(
     ...packs.map((p) => {
       const done = solvedCount(p.id);
-      const info = p.source === 'enigma' ? `aus Enigma · ${p.count}${p.of && p.of > p.count ? ` von ${p.of}` : ''} Levels` : `${p.count} Levels`;
+      const anzahl = p.count === 1 ? t('1 Level') : t('{n} Levels', { n: p.count });
+      const info = p.source === 'enigma' ? (p.of && p.of > p.count ? t('aus Enigma · {n} von {m} Levels', { n: p.count, m: p.of }) : t('aus Enigma · {anzahl}', { anzahl })) : anzahl;
       return listButton(
-        `<span>${done ? '✓' : '›'}</span><b>${escapeHtml(p.title)}</b><small>${info}${done ? ` · ${done} gelöst` : ''}</small>`,
+        `<span>${done ? '✓' : '›'}</span><b>${escapeHtml(p.title)}</b><small>${info}${done ? ` · ${t('{n} gelöst', { n: done })}` : ''}</small>`,
         p.id === packId,
         () => void showPack(p.id),
       );
     }),
-    listButton('<span>›</span><b>Spieler-Levels</b><small>von Spielern gebaut · CC BY-SA 4.0</small>', packId === PLAYER_PACK, () => location.assign(listUrl())),
+    listButton(`<span>›</span><b>${t('Spieler-Levels')}</b><small>${t('von Spielern gebaut · CC BY-SA 4.0')}</small>`, packId === PLAYER_PACK, () => location.assign(listUrl())),
   );
   levelList.hidden = false;
   (levelList.querySelector('.current') as HTMLElement | null)?.scrollIntoView({ block: 'center' });
@@ -948,8 +999,8 @@ function filterBar(onChange: () => void): HTMLElement {
   const bar = document.createElement('div');
   bar.className = 'filter';
   bar.setAttribute('role', 'group');
-  bar.setAttribute('aria-label', 'Levels anzeigen');
-  for (const [f, label] of [['alle', 'Alle'], ['offen', 'Offen'], ['geloest', 'Gelöst']] as const) {
+  bar.setAttribute('aria-label', t('Levels anzeigen'));
+  for (const [f, label] of [['alle', t('Alle')], ['offen', t('Offen')], ['geloest', t('Gelöst')]] as const) {
     const b = document.createElement('button');
     b.textContent = label;
     b.setAttribute('aria-pressed', String(f === levelFilter));
@@ -969,7 +1020,7 @@ function filterBar(onChange: () => void): HTMLElement {
 async function showPack(id: string): Promise<void> {
   const levels = await packLevels(id).catch(() => null);
   if (!levels) return;
-  showOverlay(await packTitle(id), '', [['Zurück', () => void showLevels()]]);
+  showOverlay(await packTitle(id), '', [[t('Zurück'), () => void showLevels()]]);
   const render = () => {
     const rows = levels.flatMap((l, i) => {
       const done = solved.has(l.id);
@@ -978,9 +1029,9 @@ async function showPack(id: string): Promise<void> {
       const server = meine.get(l.id);
       // the better of the local and the checked time, and the own place in the leaderboard
       const steps = Math.min(best?.steps ?? Infinity, server?.zeit ?? Infinity);
-      const right = Number.isFinite(steps) ? `<small>${formatBest(steps)}${server ? ` · Platz ${server.platz}` : ''}</small>` : '';
+      const right = Number.isFinite(steps) ? `<small>${formatBest(steps)}${server ? ` · ${t('Platz {n}', { n: server.platz })}` : ''}</small>` : '';
       return [
-        listButton(`<span>${i + 1}</span>${escapeHtml(l.title)}${right}${done ? ' <em aria-label="gelöst">✓</em>' : ''}`, id === packId && i === levelIndex, async () => {
+        listButton(`<span>${i + 1}</span>${escapeHtml(levelTitel(l))}${right}${done ? ` <em aria-label="${t('gelöst')}">✓</em>` : ''}`, id === packId && i === levelIndex, async () => {
           await loadLevel(id, i);
           showStart();
         }),
@@ -988,7 +1039,7 @@ async function showPack(id: string): Promise<void> {
     });
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = levelFilter === 'offen' ? 'Alle Levels dieses Pakets sind gelöst.' : 'Noch kein Level dieses Pakets gelöst.';
+    empty.textContent = levelFilter === 'offen' ? t('Alle Levels dieses Pakets sind gelöst.') : t('Noch kein Level dieses Pakets gelöst.');
     levelList.replaceChildren(filterBar(render), ...(rows.length ? rows : [empty]));
   };
   render();
@@ -1008,10 +1059,10 @@ function formatTime(secs: number): string {
 
 /** Status: Oxyd pairs, or for meditation levels without Oxyd stones the engaged hollows. */
 function pairsText(): string {
-  if (board.totalPairs > 0) return `Paare ${board.solvedPairs}/${board.totalPairs}`;
+  if (board.totalPairs > 0) return t('Paare {a}/{b}', { a: board.solvedPairs, b: board.totalPairs });
   const pearls = physics?.marbles.filter((m) => m.pearl).length ?? 0;
   if (pearls === 0) return ''; // Oxyd stones still to come (made by Lua)
-  return `Perlen ${objects.meditationCount().engaged}/${pearls}`;
+  return t('Perlen {a}/{b}', { a: objects.meditationCount().engaged, b: pearls });
 }
 
 // ---------- leaderboard (optional, src/bestenliste.ts) ----------
@@ -1024,11 +1075,11 @@ let leaderboardSeq = 0;
  * line shows the place when the answer comes; otherwise a hint to sign in.
  */
 function leaderboardLine(rec: ReturnType<GameSession['recording']>, steps: number, levelId: string): () => string {
-  if (!darfEinreichen()) return () => '<br><span class="note">Anmelden, um in die Bestenliste zu kommen.</span>';
+  if (!darfEinreichen()) return () => `<br><span class="note">${t('Anmelden, um in die Bestenliste zu kommen.')}</span>`;
   const server = meine.get(levelId);
-  if (server && !lohntSich(steps, server)) return () => `<br><span class="note">Bestenliste: Platz ${server.platz} (deine Bestzeit ${formatBest(server.zeit)})</span>`;
+  if (server && !lohntSich(steps, server)) return () => `<br><span class="note">${t('Bestenliste: Platz {n} (deine Bestzeit {zeit})', { n: server.platz, zeit: formatBest(server.zeit) })}</span>`;
   const id = `bestenliste-${++leaderboardSeq}`;
-  let text = 'Bestenliste: wird geprüft …';
+  let text = t('Bestenliste: wird geprüft …');
   // the overlay appears a moment after the win (sound first); it shows whatever is known by then
   const show = (t: string) => {
     text = t;
@@ -1037,7 +1088,7 @@ function leaderboardLine(rec: ReturnType<GameSession['recording']>, steps: numbe
   };
   void (async () => {
     const sent = await einreichen(rec, __MURMEL_VERSION__);
-    if ('fehler' in sent) return show(`Bestenliste: ${sent.fehler}`);
+    if ('fehler' in sent) return show(t('Bestenliste: {fehler}', { fehler: sent.fehler }));
     const result = await abwarten(sent.id);
     if (result.status === 'angenommen' && result.platz) meine.set(levelId, { zeit: result.zeit, platz: result.platz });
     show(ergebnisText(result, formatBest));
@@ -1063,8 +1114,8 @@ function onWin(): void {
   const bestLine = !prevBest
     ? ''
     : newBest && newBest !== prevBest
-      ? `<br><strong class="best">Neue Bestzeit!</strong> Vorher ${formatBest(prevBest.steps)}`
-      : `<br>Bestzeit ${formatBest(prevBest.steps)}`;
+      ? `<br><strong class="best">${t('Neue Bestzeit!')}</strong> ${t('Vorher {zeit}', { zeit: formatBest(prevBest.steps) })}`
+      : `<br>${t('Bestzeit {zeit}', { zeit: formatBest(prevBest.steps) })}`;
   noteSolved(packId, level.id);
   sfx.win();
   input.releaseLock();
@@ -1073,8 +1124,8 @@ function onWin(): void {
   const recording = s.recording();
   void eigenenLaufSpeichern(recording); // kept only if it is the best of this level
   const ghostLine = geistWahl ? `<br>${escapeHtml(vergleich(s.steps, geistWahl.daten.steps, formatBest))}` : '';
-  const raceIt: [string, () => void][] = [['Gegen diesen Lauf', () => {
-    geistWahl = { level: level.id, titel: `Dein Lauf ${formatBest(s.steps)}`, daten: recording };
+  const raceIt: [string, () => void][] = [[t('Gegen diesen Lauf'), () => {
+    geistWahl = { level: level.id, titel: t('Dein Lauf {zeit}', { zeit: formatBest(s.steps) }), daten: recording };
     void restart();
   }]];
   // a run with a shown way goes to no ranking (docs/SPEC-tipps.md)
@@ -1083,18 +1134,18 @@ function onWin(): void {
   const ohneRangliste = tipps.wegGezeigt() || weiter;
   const board = ohneRangliste ? () => '' : leaderboardLine(recording, s.steps, level.id);
   const task = !ohneRangliste && aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
-  const ranking: [string, () => void][] = [['Rangliste', () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
-  const rate: [string, () => void][] = packId === PLAYER_PACK ? [['Bewerten', () => location.assign(listUrl(level.id))]] : [];
-  const asSolution: [string, () => void][] = istAdmin() ? [['Als Lösung speichern', () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
+  const ranking: [string, () => void][] = [[t('Rangliste'), () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
+  const rate: [string, () => void][] = packId === PLAYER_PACK ? [[t('Bewerten'), () => location.assign(listUrl(level.id))]] : [];
+  const asSolution: [string, () => void][] = istAdmin() ? [[t('Als Lösung speichern'), () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
-      'Geschafft!',
-      `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}${bestLine}${ghostLine}${tipps.siegZeile()}${weiter ? '<br><span class="note">Fortgesetzter Lauf – zählt nicht für die Bestenliste.</span>' : ''}${board()}${task()}${last ? `<br>Das war das letzte Level in „${escapeHtml(packName)}“.` : ''}`,
+      t('Geschafft!'),
+      `${t('Zeit {zeit} · Abstürze {n}', { zeit: formatBest(s.steps), n: s.falls })}${bestLine}${ghostLine}${tipps.siegZeile()}${weiter ? `<br><span class="note">${t('Fortgesetzter Lauf – zählt nicht für die Bestenliste.')}</span>` : ''}${board()}${task()}${last ? `<br>${t('Das war das letzte Level in „{paket}“.', { paket: escapeHtml(packName) })}` : ''}`,
       last
-        ? [['Levels', showLevels], ['Nochmal', restart], ...raceIt, ...ranking, ...rate, ...asSolution]
+        ? [[t('Levels'), showLevels], [t('Nochmal'), restart], ...raceIt, ...ranking, ...rate, ...asSolution]
         : [
-            ['Nächstes Level', async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
-            ['Nochmal', restart],
+            [t('Nächstes Level'), async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
+            [t('Nochmal'), restart],
             ...raceIt,
             ...ranking,
             ...asSolution,
@@ -1109,7 +1160,7 @@ function linkWin(s: GameSession): void {
   noteLinkWin(s.recording());
   sfx.win();
   input.releaseLock();
-  setTimeout(() => showOverlay('Geschafft!', `Zeit ${formatBest(s.steps)} · Abstürze ${s.falls}`, [...linkButtons(), ['Nochmal', restart], ['Levels', showLevels]]), 900);
+  setTimeout(() => showOverlay(t('Geschafft!'), t('Zeit {zeit} · Abstürze {n}', { zeit: formatBest(s.steps), n: s.falls }), [...linkButtons(), [t('Nochmal'), restart], [t('Levels'), showLevels]]), 900);
 }
 
 // ---------- game events (the simulation is in src/game/session.ts) ----------
@@ -1240,7 +1291,7 @@ function frame(now: number): void {
       geist.folgen(s.steps);
       if (geist.imZiel && !geistImZiel) {
         geistImZiel = true;
-        if (!s.won) showToast(`Geist im Ziel: ${formatBest(geist.zeit ?? 0)}`, 2000);
+        if (!s.won) showToast(t('Geist im Ziel: {zeit}', { zeit: formatBest(geist.zeit ?? 0) }), 2000);
       }
     }
     tipps.rechnen(s);
@@ -1254,7 +1305,7 @@ function frame(now: number): void {
     const how = restartNow;
     restartNow = null;
     if (how === 'keep') carryLives = s.livesLeft();
-    else showToast('Keine Extraleben mehr – das Level beginnt neu.', 2500);
+    else showToast(t('Keine Extraleben mehr – das Level beginnt neu.'), 2500);
     void (async () => {
       await loadLevel(packId, levelIndex);
       startPlaying();
@@ -1308,7 +1359,7 @@ function frame(now: number): void {
   for (const r of physics?.rubbers ?? []) bands.push(...lerp(r.a1), ...(r.a2 ? lerp(r.a2) : [r.end.x, r.end.y]));
   if (isClassic()) {
     classic.status.left = formatTime(s?.playSeconds ?? 0);
-    classic.status.right = `${pairsText()}${s?.falls ? ` · Abstürze ${s.falls}` : ''}`;
+    classic.status.right = `${pairsText()}${s?.falls ? ` · ${t('Abstürze {n}', { n: s.falls })}` : ''}`;
     classic.updateMarble(x, y, fall, me.color, me.sink, me.jump, 'pearl' in me && me.pearl);
     classic.updateActors(actors);
     classic.hideMarble = (invis[ci] ?? 0) > 0 || (rotorTime[ci] ?? 0) > 0; // invisible (it_cherry) or a rotor (it_drop)
@@ -1382,10 +1433,10 @@ function updateItems(): void {
   hudItems.hidden = n === 0;
   btnDrop.hidden = n === 0;
   btnRotate.hidden = n < 2;
-  const names = inv.map((k) => (isBag(k) ? `Sack (${bagContents(k).length})` : (ITEM_NAMES[k.replace(/#\d+$/, '')] ?? k)));
+  const names = inv.map((k) => (isBag(k) ? t('Sack ({n})', { n: bagContents(k).length }) : (ITEM_NAMES[k.replace(/#\d+$/, '')] ?? k)));
   const rest = new Map<string, number>();
   for (const s of names.slice(1)) rest.set(s, (rest.get(s) ?? 0) + 1);
-  hudItems.textContent = n ? [`Hand: ${names[0]}`, ...[...rest].map(([s, c]) => (c > 1 ? `${s} ${c}` : s))].join(' · ') : '';
+  hudItems.textContent = n ? [t('Hand: {name}', { name: names[0] }), ...[...rest].map(([s, c]) => (c > 1 ? `${s} ${c}` : s))].join(' · ') : '';
 }
 /** Right click / Tab: rotate the inventory (player::RotateInventory). */
 function rotateItems(): void {
@@ -1438,7 +1489,7 @@ window.addEventListener('keydown', (e) => {
     if (mode === 'play') {
       input.releaseLock();
       if (!input.locked) showPause();
-    } else if (mode === 'menu' && overlay.hidden === false && ovTitle.textContent === 'Pause' && e.code === 'KeyP') startPlaying();
+    } else if (mode === 'menu' && overlay.hidden === false && ovTitle.textContent === t('Pause') && e.code === 'KeyP') startPlaying();
     return;
   }
   if (e.code === 'Tab' && mode === 'play') {
@@ -1484,12 +1535,12 @@ else if (!(await openPlayerFromHash(location.hash)) && !(await openStartFromHash
 void kontoLaden().then(async () => {
   if (darfEinreichen()) meine = await meineLaden();
   const buttons = [...ovButtons.querySelectorAll('button')];
-  for (const b of buttons) if (b.textContent === 'Anmelden') b.textContent = kontoLabel();
+  for (const b of buttons) if (b.textContent === t('Anmelden')) b.textContent = kontoLabel();
   // the menu was drawn before the account was known: add the admin button next to „Konto“
   const konto = buttons.find((b) => b.textContent === kontoLabel());
-  if (istAdmin() && konto && !buttons.some((b) => b.textContent === 'Statistik')) {
+  if (istAdmin() && konto && !buttons.some((b) => b.textContent === t('Statistik'))) {
     const stat = konto.cloneNode() as HTMLButtonElement;
-    stat.textContent = 'Statistik';
+    stat.textContent = t('Statistik');
     stat.addEventListener('click', () => location.assign('./statistik.html'));
     konto.before(stat);
   }
