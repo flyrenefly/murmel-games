@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, passageLook, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
+import { ALL_FACES, BOX_GROW_MS, NORTH, ObjectWorld, passageLook, puzzleKind, SEED_GROW_MS, SOUTH, type ObjectDef, type ObjectEnv } from './objects';
 import { parseLevel } from './level';
 import { glassBreaks, PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
 
@@ -1896,5 +1896,22 @@ describe('several white marbles (network levels)', () => {
     expect(b2.vel.x).toBe(0);
     expect(w.swap()).toBe(true);
     expect(w.position).toBe(w.marbles[0].pos); // back to black: w2, w3 and b2 are skipped
+  });
+});
+
+describe('puzzle stones Lua sets during play', () => {
+  it('reads colour, connections and hollowness from the kind name or the connections attribute', () => {
+    expect(puzzleKind('st_puzzle_yellow_es', {})).toEqual(['st_puzzle_yellow', { color: '3', $connections: '6' }]);
+    expect(puzzleKind('st_puzzle_blue_nesw_hollow', { name: 'p' })).toEqual(['st_puzzle', { name: 'p', color: '4', $connections: '15', $hollow: 'true' }]);
+    expect(puzzleKind('st_puzzle_blue', { connections: 'nw' })).toEqual(['st_puzzle', { color: '4', $connections: '9' }]);
+    expect(puzzleKind('st_puzzle', { cluster: '1' })).toBeNull(); // Pentomino: as before
+  });
+
+  it('a new stone joins a neighbour whose connections match (Print 23, Sanssouci)', () => {
+    const w = world([]);
+    const a = w.create('st_puzzle_yellow_e', 2, 2, {})!;
+    const b = w.create('st_puzzle_yellow_w', 3, 2, {})!;
+    expect([a.kind, b.kind]).toEqual(['st_puzzle_yellow', 'st_puzzle_yellow']);
+    expect(w.puzzleFragment(a)).toEqual({ cluster: [a, b], complete: true });
   });
 });

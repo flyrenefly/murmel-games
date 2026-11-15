@@ -867,6 +867,11 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   Stein mit `cluster` verbindet sich mit Nachbarn gleichen Clusters (und gleicher Farbe) und
   trennt sich von anderen; ohne `cluster` passt er geclusterte Nachbarn an. `obj:get_cluster()`
   liefert das Fragment. Eigene Attribute (`_transform`) bleiben am Stein.
+  Ab 15.11.2026 auch Arten mit Farbe, Verbindungen und Hohlheit im Namen (`st_puzzle_yellow_es`,
+  `st_puzzle_blue_nesw_hollow`, API 1 `st-puzzle-e`) oder dem Attribut `connections = "nw"`: Murmel
+  legt sie als `st_puzzle` (blau, Farbe 4) bzw. `st_puzzle_yellow` (Farbe 3) mit `$connections`
+  (W 1, S 2, E 4, N 8) an, wie der Export. Schlichtes `st_puzzle` ohne beides bleibt wie bisher
+  ohne Farbangabe (Pentomino). Freigeschaltet: Print 23 (richi07_1), Sanssouci (mecke05_1).
 - **Oxyd-Steine zur Laufzeit** (`wo[…] = {"st_oxyd"}`): ein neuer geschlossener Stein (Geschmack a,
   Physik, Paarbrett, Renderer); Farben bekommen sie wie bei `OxydStone::initColors` paarweise,
   sobald `wo:shuffleOxyd()` läuft oder der erste getroffen wird. Levels ohne Oxyd-Steine, deren

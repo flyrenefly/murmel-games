@@ -86,7 +86,7 @@ const OBJECTS = [
   [/^(it_seed_volcano|st_volcano(_idle|_active|_new|_growing)?)$/, ['it_seed', 'st_volcano_growing', 'st_quake', 'st_quake_break', 'st_flat', 'sh_round', 'sh_solid']],
   [/^(it_meditation(_(caldera|hollow|dent|bump|hill|volcano))?|it_landmine)$/, [...['caldera', 'hollow', 'dent', 'bump', 'hill', 'volcano'].map((s) => `it_meditation_${s}`), 'it_landmine', 'it_explosion']],
   [/^st_stoneimpulse(_hollow|_movable|_steady)?$/, ['st_stoneimpulse', 'st_stoneimpulse_hollow', 'sh_stoneimpulse_hollow', 'sh_round']],
-  [/^st_puzzle(_blue|_yellow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
+  [/^st_puzzle(_blue|_yellow)?(_[nesw]+)?(_hollow)?$/, ['st_puzzle_blue', 'st_puzzle_yellow', 'st_puzzle_blue_hollow', 'st_puzzle_yellow_hollow', 'sh_solid', 'sh_puzzle_hollow', 'it_explosion']],
   [/^st_oneway(_black|_white)?(_[nesw])?$/, ['st_oneway']],
   // plain stones pushed like a box (src/game/objects.ts MOVABLE_STONE, movableLook)
   [/^it_magicwand$/, ['it_magicwand']],
