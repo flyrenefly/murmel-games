@@ -44,7 +44,7 @@
  {
   "pack": "enigma_v",
   "title": "Enigma V",
-  "count": 96,
+  "count": 97,
   "of": 100
  },
  {
@@ -56,31 +56,31 @@
  {
   "pack": "enigma_vii",
   "title": "Enigma VII",
-  "count": 93,
+  "count": 95,
   "of": 100
  },
  {
   "pack": "enigma_viii",
   "title": "Enigma VIII",
-  "count": 97,
+  "count": 99,
   "of": 100
  },
  {
   "pack": "enigma_ix",
   "title": "Enigma IX",
-  "count": 93,
+  "count": 94,
   "of": 100
  },
  {
   "pack": "enigma_x",
   "title": "Enigma X",
-  "count": 81,
+  "count": 82,
   "of": 100
  },
  {
   "pack": "enigma_xi",
   "title": "Enigma XI",
-  "count": 65,
+  "count": 66,
   "of": 100
  },
  {
@@ -92,7 +92,7 @@
  {
   "pack": "enigma_advent_10",
   "title": "Advent 2010",
-  "count": 21,
+  "count": 22,
   "of": 24
  },
  {
