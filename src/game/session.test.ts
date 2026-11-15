@@ -166,3 +166,30 @@ end`), { seed: 1, startLua });
     expect(s.board.hit(2)).toContainEqual({ type: 'complete' });
   });
 });
+
+describe('horse with a Lua callback (Ariadne, Pairs II)', () => {
+  it('calls its target at a reached destination; Lua sets the next one', async () => {
+    const file = {
+      id: 'test:pferd',
+      title: 'Pferd',
+      author: 'test',
+      license: 'GPL',
+      map: ['##########', '#a......@#', '#........#', '#a.......#', '##########'],
+      legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+      actors: [{ k: 'ac_horse', x: 3.5, y: 2.5, a: { name: 'horse', dests: '3.5,2.5', loop: 'true', target: 'reached' } }],
+      lua: { code: `calls = 0
+function reached(value, sender)
+  calls = calls + 1
+  sender.destination = po(6.2, 2.9)
+  wo["_calls"] = calls
+end`, kinds: {}, named: [] },
+    } as unknown as LevelFile;
+    const s = await GameSession.create(file, { seed: 1, startLua });
+    s.step(NO_CONTROL);
+    s.step(NO_CONTROL);
+    expect(s.lua!.lastError).toBe('');
+    const horse = s.physics.enemies[0];
+    expect(horse.dests).toEqual([[6.5, 2.5]]); // centeredPos
+    expect(s.luaHost!.world('_calls')).toBe('1');
+  });
+});

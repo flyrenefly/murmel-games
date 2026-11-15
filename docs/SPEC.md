@@ -668,7 +668,17 @@ Stufe 1 deckt die häufigsten Mechanik-Bausteine ab, Vorlage ist der Enigma-Quel
 - **ac_horse** (`HorseActor.cc`): Radius 24/64, Masse 1,2, schadet nicht, kann an Gummibändern hängen. Mit Zielen
   (`destination`, seit Export ef0a1ce6 als $destination) reitet es mit Kraft `strength` (10) eines nach dem anderen
   an; näher als 0,2 (`steady` false: 0,1, bremst rechtzeitig) gilt das Ziel als erreicht, mit `loop` von vorn.
-  Pferde mit Aktion (target) oder Besitzer (steuerbar) werden noch abgelehnt.
+  Ab 15.11.2026 (`Horse::updateTarget`): am erreichten Ziel ruft das Pferd seine Aktion – nur eine
+  Lua-Funktion als `target` (Aktion leer oder `callback`), Absender ist das Pferd –, erst danach zählt
+  es zum nächsten Ziel weiter, genau wie Enigma (setzt der Rückruf neue Ziele, beginnt der Zähler bei 0
+  und wird noch erhöht; ohne `loop` hält das Pferd danach an, bis Lua wieder Ziele setzt). Lua darf
+  `destination` (Position, Namen, Liste oder nil), `destidx`, `strength`, `steady` und `loop` ändern.
+  Jedes Ziel liegt wie bei `getDestinationByIndex` in der Zellmitte (`centeredPos`), auch im Export;
+  Namen, die nichts benennen, fallen weg. Exportierte Ziellisten trennt der Export mit „;“ (eine
+  Position selbst ist „x,y“; bis 15.11. zerlegte der Import sie am Komma und lehnte Ariadne ab).
+  Abweichung: das Weiterzählen bei Steinberührung am Ziel (`afterStoneBounce`) fehlt. Pferde mit
+  anderer Aktion oder Besitzer (steuerbar) werden weiter abgelehnt. Freigeschaltet: Ariadne
+  (andreas40_2), Pairs II (ssch02_1), Rainbow~Meditation II (mecke72_1, Ziel „ho2“ gibt es nicht).
 - **st_portal_horse / _pearl** (`PortalStone.cc`): schwebender Stein, nur das Pferd (bzw. die weiße Perle)
   fährt hindurch, alle anderen prallen ab.
 - **Gummibänder an beweglichen Steinen** (Kisten, Felsbrocken, Puzzle …): das Bandende folgt dem

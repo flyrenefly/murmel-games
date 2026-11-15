@@ -5,7 +5,7 @@
  * The code moved here from main.ts unchanged in behaviour.
  */
 import { addSignal, cellAt, colorNewSignals, isDeadly, liveSignalAt, parseLevel, removeSignal, type Level, type LevelFile } from './level';
-import { applyWorld, makeLuaHost } from './luahost';
+import { applyWorld, enemyOf, makeLuaHost } from './luahost';
 import { ObjectWorld, type ObjectEvent } from './objects';
 import { PairBoard, type PairEvent } from './pairs';
 import { PHYSICS_DT, PhysicsWorld, type Contact } from './physics';
@@ -247,6 +247,12 @@ export class GameSession {
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     this.lua = l;
     this.luaHost = host;
+    // Horse::updateTarget → performAction: at each reached target its Lua callback (target = function)
+    lv.actors.forEach((a, i) => {
+      const e = enemyOf(lv, ph, i + 1);
+      const target = a.a?.target;
+      if (e?.kind === 'horse' && target) e.onReached = () => l.callback(target, true, `a:${i + 1}`);
+    });
     ow.onCallback = (fn, value, sender) => l.callback(fn, value, `o:${sender.id}`);
   }
 

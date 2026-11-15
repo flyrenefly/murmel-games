@@ -4,6 +4,7 @@
  * plain floors and stones, "a:<n>" actors (0 = black marble, n = level.actors[n − 1]).
  */
 import type { LuaHost } from '../lua/runtime';
+import { type Enemy, enemyKind } from './actors';
 import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
 import type { PhysicsWorld } from './physics';
@@ -21,6 +22,13 @@ export interface LuaWorld {
   removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
+}
+
+/** The physics body of actor ref a:<n> (n ≥ 1) if it is an enemy, counted like PhysicsWorld (enemy kinds only). */
+export function enemyOf(level: Level, physics: PhysicsWorld, n: number): Enemy | null {
+  const a = level.actors[n - 1];
+  if (!a || !enemyKind(a.k)) return null;
+  return physics.enemies[level.actors.slice(0, n - 1).filter((x) => enemyKind(x.k)).length] ?? null;
 }
 
 const glob = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
@@ -103,6 +111,30 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     }
   };
 
+  /**
+   * Horse::setAttr / Object::getDestinationByIndex: every destination at its cell centre
+   * (centeredPos) – a position "x,y", or the objects a name finds; a name that finds nothing adds none.
+   */
+  const setHorse = (e: Enemy, key: string, value: string | null) => {
+    if (key === 'destination') {
+      const pts: [number, number][] = [];
+      const centre = (x: number, y: number): [number, number] => [Math.floor(x) + 0.5, Math.floor(y) + 0.5];
+      const pos = /^(-?[\d.]+),(-?[\d.]+)$/.exec(value ?? '');
+      if (pos) pts.push(centre(Number(pos[1]), Number(pos[2])));
+      else for (const t of (value ?? '').split(',').map((s) => s.trim()).filter(Boolean)) {
+        for (const r of host.find(t)) pts.push(centre(...host.pos(r)));
+      }
+      e.dests = pts; // nil: no destination, the horse stops (AUTOMOVE off)
+      e.destIdx = 0;
+      e.newDest = true;
+    } else if (key === 'destidx') {
+      e.destIdx = Math.trunc(Number(value) || 0);
+      e.newDest = e.destIdx >= 0;
+    } else if (key === 'strength') e.horseStrength = Number(value ?? 10);
+    else if (key === 'steady') e.steady = truthy(value) && value !== '0';
+    else e.loop = truthy(value) && value !== '0';
+  };
+
   const host: LuaHost = {
     find(pattern) {
       const re = glob(pattern);
@@ -161,6 +193,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       return attrs.get(ref)?.[key] ?? null;
     },
     set(ref, key, value) {
+      // Horse::setAttr: destinations and movement of a horse change during play (Ariadne, Pairs II)
+      if (ref.startsWith('a:') && /^(destination|destidx|strength|steady|loop)$/.test(key)) {
+        const e = enemyOf(level, physics, Number(ref.slice(2)));
+        if (e?.kind === 'horse') setHorse(e, key, value);
+      }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (!o) return;

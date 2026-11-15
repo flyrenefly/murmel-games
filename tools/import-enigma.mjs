@@ -290,7 +290,7 @@ function actorImages(k, color) {
   }
   return [];
 }
-const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential|dests|steady|loop|destidx)$/;
+const ACTOR_ATTR = /^(range|strength|gohome|color|velocity_x|velocity_y|attacknearest|prefercurrent|essential|dests|steady|loop|destidx|target|action)$/;
 
 const reasons = new Map(); // blocker -> levels it blocks (among others)
 const only = new Map(); // blocker -> levels it alone blocks
@@ -440,23 +440,30 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // wo["SlopeStrength"] (WorldProxy → server::SlopeForce, default 25) from the level's init.
   // (API 1 enigma.SlopeForce = … changes nothing in Enigma 1.x: no code reads it back.)
   const slopeForce = lua?.world?.SlopeStrength !== undefined ? Number(lua.world.SlopeStrength) : 25;
-  if (lua?.error && lua.code.includes('SlopeStrength')) reject('Lua-Init (Weltwert)');
+  // (an init that fails after setting it still tells the value)
+  if (lua?.error && lua.code.includes('SlopeStrength') && lua.world.SlopeStrength === undefined) reject('Lua-Init (Weltwert)');
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
   // Horse: only the passive one is built – destinations (not in the export), actions and owners are not
+  // Horse::updateTarget → performAction: a Lua function as target (callback) is built
+  const horseCallbacks = [];
   for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) {
-    if (h.o.target || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
+    const fn = h.o.target && (h.o.action ?? '') in { '': 1, callback: 1 } && tokens(h.o.target).length === 1 && lua?.fns.has(h.o.target);
+    if (fn) horseCallbacks.push(h.o.target);
+    if ((h.o.target && !fn) || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
     // the export (enigma-web ef0a1ce6) carries the horse's $destination, $strength, $steady, $loop, $destidx
     for (const k of ['strength', 'steady', 'loop', 'destidx']) if (h.o['$' + k] !== undefined && h.o['$' + k] !== '') h.o[k] = h.o['$' + k];
     if (h.o.$destination) {
       const pts = [];
-      for (const t of tokens(h.o.$destination)) {
+      // the export separates destinations with ";" (a position itself is "x,y"). Object::getDestinationByIndex:
+      // every position at its cell centre (centeredPos), a name that names nothing adds no destination
+      for (const t of h.o.$destination.split(';').map((s) => s.trim()).filter(Boolean)) {
         const pos = /^(-?[\d.]+)\s+(-?[\d.]+)$|^(-?[\d.]+),(-?[\d.]+)$/.exec(t);
         const c = pos ? null : [...allCells(w)].find((x) => x.o.name === t || '#' + x.o.$id === t);
-        if (pos) pts.push([Number(pos[1] ?? pos[3]), Number(pos[2] ?? pos[4])]);
+        if (pos) pts.push([Math.floor(Number(pos[1] ?? pos[3])) + 0.5, Math.floor(Number(pos[2] ?? pos[4])) + 0.5]);
         else if (c) pts.push([c.x + 0.5, c.y + 0.5]);
-        else reject('Pferd mit Zielen');
+        else if (/[*?]/.test(t) || w.actors.some((x) => x.o.name === t)) reject('Pferd mit Zielen');
       }
       h.o.dests = pts.map((p) => p.join(',')).join(';');
     }
@@ -776,7 +783,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
   // level (Object::performAction: no target object and action "callback" or empty).
   let needsLua = false;
   /** Level functions the objects call (API 1: only what they reach must run during play). */
-  const callbacks = new Set();
+  const callbacks = new Set(horseCallbacks);
+  if (horseCallbacks.length) needsLua = true;
   for (const o of objs) {
     for (const key of Object.keys(o.a).filter((k) => /^target(_\d+)?$/.test(k))) {
       const acts = tokens(o.a[key.replace('target', 'action')] ?? o.a.action);
@@ -827,7 +835,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const world = {};
   if (lua) {
     for (const k of [...RUNTIME_WORLD, ...LIFE_WORLD, '_PeepAll']) if (lua.world[k] !== undefined) world[k] = lua.world[k];
-    if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k))) reject('Lua-Init (Weltwert)');
+    if (lua.error && [...RUNTIME_WORLD].some((k) => lua.code.includes(k) && (k !== 'SlopeStrength' || lua.world[k] === undefined))) reject('Lua-Init (Weltwert)');
     // Life rules of levels whose init the shim cannot run (API 1: enigma.ConserveLevel = FALSE)
     if (lua.error) {
       for (const k of LIFE_WORLD) {
