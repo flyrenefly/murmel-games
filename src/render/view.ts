@@ -135,6 +135,8 @@ export class View {
       const top = new THREE.Mesh(topGeo, mat);
       top.position.y = STONE_H + 0.003;
       group.add(body, top);
+      // killed by Lua during play: the slot stays (indices), the stone is not shown
+      group.visible = !s.gone;
       scene.add(group);
       this.stoneTops.push(mat);
       this.stoneMeshes.push(group);

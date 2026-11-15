@@ -293,3 +293,37 @@ function f() wo:drawMap(ti, po(0, 0), big) end`,
     expect(set).toEqual(['0,0,st_granite', '1,0,st_granite', '0,1,st_granite', '1,1,st_granite', '0,2,st_brick', '1,2,st_brick']);
   });
 });
+
+describe('pos:grid()', () => {
+  it('rounds down to the grid cell (Lissajous moves its death stones along a curve)', async () => {
+    const w = fakeHost([]);
+    const lua = await startLua(`function cb()
+  local c = po(8.0 * math.cos(math.rad(30)) + 10.0, 5.0 * math.sin(math.rad(30)) + 6.5):grid()
+  wo[c] = {"st_death"}
+  wo[{19.0, 12.0} - c] = {"st_death"}
+end`, w.host);
+    lua.callback('cb', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.tiles).toEqual(['16,9 st_death {}', '3,3 st_death {}']);
+  });
+});
+
+describe('fire messages to a single object', () => {
+  it('fl(pos):setfire() sends the message like a group does (Double play, Sanssouci)', async () => {
+    const w = fakeHost([{ ref: 'c:fl:3:4', l: 'fl', x: 3, y: 4, a: { name: 'hotspot' } }]);
+    const lua = await startLua('function f() no["hotspot"]:setfire() fl(3, 4):heat() end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.sent).toEqual(['c:fl:3:4 setfire null', 'c:fl:3:4 heat null']);
+  });
+});
+
+describe('pos:exists()', () => {
+  it('tells whether the cell lies inside the level (lua.cc existsPosition)', async () => {
+    const w = fakeHost([]);
+    const lua = await startLua('function f() wo["_a"] = po(19.9, 12.2):exists() wo["_b"] = po(20, 3):exists() wo["_c"] = po(-0.5, 1):exists() end', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect([w.host.world('_a'), w.host.world('_b'), w.host.world('_c')]).toEqual(['true', 'false', 'false']);
+  });
+});

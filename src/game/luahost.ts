@@ -4,7 +4,8 @@
  * plain floors and stones, "a:<n>" actors (0 = black marble, n = level.actors[n − 1]).
  */
 import type { LuaHost } from '../lua/runtime';
-import type { Level } from './level';
+import { type Enemy, enemyKind } from './actors';
+import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
 import type { PhysicsWorld } from './physics';
 
@@ -15,10 +16,19 @@ export interface LuaWorld {
   /** Floors or plain stones changed: redraw. */
   redraw(): void;
   random(): number;
-  /** wo[pos] = {"st_oxyd", …} during play: a new closed Oxyd stone at a cell (its flavor). */
-  addOxyd?(x: number, y: number, flavor: string): void;
+  /** wo[pos] = {"st_oxyd", …} during play: a new closed Oxyd stone at a cell (its flavor, oxydcolor as symbol or '?'). */
+  addOxyd?(x: number, y: number, flavor: string, symbol?: string): void;
+  /** An Oxyd stone killed or replaced during play (kill(), wo[pos] = other stone): it leaves the game. */
+  removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
+}
+
+/** The physics body of actor ref a:<n> (n ≥ 1) if it is an enemy, counted like PhysicsWorld (enemy kinds only). */
+export function enemyOf(level: Level, physics: PhysicsWorld, n: number): Enemy | null {
+  const a = level.actors[n - 1];
+  if (!a || !enemyKind(a.k)) return null;
+  return physics.enemies[level.actors.slice(0, n - 1).filter((x) => enemyKind(x.k)).length] ?? null;
 }
 
 const glob = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
@@ -69,15 +79,60 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (host.find(n).length === 0) return n;
     }
   };
+  /** Wires made during play (ot_wire), by name: "w:<name>" refs; the stones carry them as fellows. */
+  const wires = new Map<string, [GameObject, GameObject]>();
+  const wireAlive = (n: string) => {
+    const w2 = wires.get(n);
+    return !!w2 && !w2[0].gone && !w2[1].gone;
+  };
+  const tokens = (o: GameObject) => (o.attrs.fellows ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
+  const unwire = (a: GameObject, b: GameObject) => {
+    a.attrs.fellows = tokens(a).filter((t) => t !== `#${b.id}`).join(',');
+    b.attrs.fellows = tokens(b).filter((t) => t !== `#${a.id}`).join(',');
+  };
   const removeStone = (x: number, y: number) => {
     const o = objects.stoneObjectAt(x, y);
     if (o) objects.remove(o);
+    if (cell(x, y).stone === 'st_oxyd' && w.removeOxyd) w.removeOxyd(x, y);
     if (cell(x, y).stone !== null && cell(x, y).stone !== 'st_oxyd') {
       cell(x, y).stone = null;
       delete cell(x, y).hollow;
       physics.setSolid(x, y, false);
     }
     attrs.delete(`c:st:${x}:${y}`);
+  };
+
+  /** Slope floors scale their force (direction × SlopeForce) from the old to the new strength. */
+  const scaleSlopes = (from: number, to: number) => {
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from === 0 || from === to) return;
+    for (const c of level.cells) {
+      if (!c.floor.startsWith('fl_slope') || !c.force) continue;
+      c.force = [c.force[0] * (to / from), c.force[1] * (to / from)];
+    }
+  };
+
+  /**
+   * Horse::setAttr / Object::getDestinationByIndex: every destination at its cell centre
+   * (centeredPos) – a position "x,y", or the objects a name finds; a name that finds nothing adds none.
+   */
+  const setHorse = (e: Enemy, key: string, value: string | null) => {
+    if (key === 'destination') {
+      const pts: [number, number][] = [];
+      const centre = (x: number, y: number): [number, number] => [Math.floor(x) + 0.5, Math.floor(y) + 0.5];
+      const pos = /^(-?[\d.]+),(-?[\d.]+)$/.exec(value ?? '');
+      if (pos) pts.push(centre(Number(pos[1]), Number(pos[2])));
+      else for (const t of (value ?? '').split(',').map((s) => s.trim()).filter(Boolean)) {
+        for (const r of host.find(t)) pts.push(centre(...host.pos(r)));
+      }
+      e.dests = pts; // nil: no destination, the horse stops (AUTOMOVE off)
+      e.destIdx = 0;
+      e.newDest = true;
+    } else if (key === 'destidx') {
+      e.destIdx = Math.trunc(Number(value) || 0);
+      e.newDest = e.destIdx >= 0;
+    } else if (key === 'strength') e.horseStrength = Number(value ?? 10);
+    else if (key === 'steady') e.steady = truthy(value) && value !== '0';
+    else e.loop = truthy(value) && value !== '0';
   };
 
   const host: LuaHost = {
@@ -87,6 +142,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       // fl_ref objects stand for named floors, which Lua addresses as cells (c:fl:x:y)
       for (const o of objects.objects) if ((!o.gone || o.picked) && o.name && re.test(o.name)) refs.push(o.cls === 'floorref' ? `c:fl:${o.col}:${o.row}` : `o:${o.id}`);
       for (const [ref, a] of attrs) if (a.name && re.test(a.name) && host.exists(ref) && !refs.includes(ref)) refs.push(ref);
+      for (const n of wires.keys()) if (re.test(n) && wireAlive(n)) refs.push(`w:${n}`);
       return refs;
     },
     at(l, x, y) {
@@ -102,6 +158,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     },
     exists(ref) {
       if (ref.startsWith('o:')) return byId(ref) !== null;
+      if (ref.startsWith('w:')) return wireAlive(ref.slice(2));
       if (ref.startsWith('a:')) return true;
       const { l, x, y } = parse(ref);
       return inside(x, y) && (l === 'fl' || cell(x, y).stone !== null);
@@ -112,10 +169,15 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         return o ? [o.col, o.row] : [0, 0];
       }
       if (ref.startsWith('a:')) return actorPos(Number(ref.slice(2)));
+      if (ref.startsWith('w:')) {
+        const a = wires.get(ref.slice(2))?.[0];
+        return a ? [a.col, a.row] : [0, 0];
+      }
       const { x, y } = parse(ref);
       return [x, y];
     },
     get(ref, key) {
+      if (ref.startsWith('w:')) return key === 'name' ? ref.slice(2) : key === 'kind' ? 'ot_wire' : null;
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (!o) return null;
@@ -131,6 +193,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       return attrs.get(ref)?.[key] ?? null;
     },
     set(ref, key, value) {
+      // Horse::setAttr: destinations and movement of a horse change during play (Ariadne, Pairs II)
+      if (ref.startsWith('a:') && /^(destination|destidx|strength|steady|loop)$/.test(key)) {
+        const e = enemyOf(level, physics, Number(ref.slice(2)));
+        if (e?.kind === 'horse') setHorse(e, key, value);
+      }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (!o) return;
@@ -171,6 +238,13 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (o) objects.sendMessage(o, msg, truthy(value) && n !== 0, Number.isFinite(n) ? n : undefined);
     },
     kill(ref) {
+      if (ref.startsWith('w:')) {
+        const pair = wires.get(ref.slice(2));
+        if (pair) unwire(...pair);
+        wires.delete(ref.slice(2));
+        w.redraw();
+        return;
+      }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (o) objects.remove(o);
@@ -190,8 +264,22 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (decl.name) decl.name = uniqueName(decl.name);
       if (kind.startsWith('fl_')) {
         if (look === 'nil') return;
-        cell(x, y).floor = look;
+        // the floor's state object (BridgeFloor) goes with the old floor
+        for (const o of objects.objects) if (!o.gone && o.cls === 'bridge' && o.col === x && o.row === y) objects.remove(o);
+        attrs.delete(`c:fl:${x}:${y}`);
         delete cell(x, y).force;
+        const bridge = /^fl_bridge(?:_(gc|bw|bs|be|bn))?$/.exec(kind);
+        if (bridge && look === 'object') {
+          // BridgeFloor: floor image fl_bridge_<gc|bw>_<open|closed> plus the object fl_bridge, as the import makes them
+          const flavor = decl.flavor || bridge[1] || 'gc';
+          const open = decl.state === undefined || decl.state === '' || Number(decl.state) !== 0;
+          cell(x, y).floor = `${flavor === 'gc' ? 'fl_bridge_gc' : 'fl_bridge_bw'}_${open ? 'open' : 'closed'}`;
+          objects.create('fl_bridge', x, y, { ...decl, flavor, $state: open ? '1' : '0' });
+          objects.floorChanged(x, y);
+          w.redraw();
+          return;
+        }
+        cell(x, y).floor = look;
         attrs.set(`c:fl:${x}:${y}`, decl);
         // BoxStone::on_floor_change: a box on new abyss, water or swamp sinks
         objects.floorChanged(x, y);
@@ -199,7 +287,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         removeStone(x, y);
         if (look === 'oxyd') {
           // OxydStone: a closed stone of the flavor (st_oxyd_d: d, default "a"); named ones receive messages
-          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a');
+          // oxydcolor: a fixed colour (OXYD_BLUE = 0 → symbol A, as the importer maps it), else '?'
+          w.addOxyd?.(x, y, decl.flavor ?? /^st_oxyd_([a-e])$/.exec(kind)?.[1] ?? 'a', oxydSymbol(decl.oxydcolor) ?? '?');
           if (decl.name) objects.create('st_oxyd_ref', x, y, { name: decl.name });
         } else if (look === 'object') objects.create(kind, x, y, decl);
         else if (look !== 'nil') {
@@ -223,6 +312,8 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       return world[key] ?? null;
     },
     setWorld(key, value) {
+      // wo["SlopeStrength"] (server::SlopeForce): slopes without their own strength pull with the new force
+      if (key === 'SlopeStrength') scaleSlopes(Number(world.SlopeStrength ?? 25), Number(value ?? 25));
       if (value === null) delete world[key];
       else world[key] = value;
       if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
@@ -238,7 +329,12 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       w.shuffleOxyd?.();
     },
     /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
-    addInventory(player, kind) {
+    addInventory(player, kind, text) {
+      // DocumentItem: Murmel reads documents when they are picked up instead of carrying them
+      if (kind === 'it_document') {
+        objects.showText(text ?? '');
+        return;
+      }
       const inv = objects.inventories[Number(player)] ?? objects.inventory;
       if (inv.length < 13) inv.unshift(String(kind));
       w.redraw();
@@ -253,6 +349,20 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (decl.name) decl.name = uniqueName(decl.name);
       decl.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
       objects.create(kind, -1, -1, decl);
+    },
+    /**
+     * wo:add({"ot_wire", name?, anchor1, anchor2}) during play: both stones become fellows
+     * (Stone::propagateImpulse moves them together; the classic renderer draws the line).
+     */
+    addWire(a1, a2, name) {
+      const a = a1?.startsWith('o:') ? byId(a1) : null;
+      const b = a2?.startsWith('o:') ? byId(a2) : null;
+      if (!a || !b) throw new Error('Murmel kann diesen Draht nicht spannen');
+      if (a === b) return;
+      if (!tokens(a).includes(`#${b.id}`)) a.attrs.fellows = [...tokens(a), `#${b.id}`].join(',');
+      if (!tokens(b).includes(`#${a.id}`)) b.attrs.fellows = [...tokens(b), `#${a.id}`].join(',');
+      if (name) wires.set(uniqueName(name), [a, b]);
+      w.redraw();
     },
     /** wo:add({"ot_rubberband", anchor1 = a marble, anchor2 = a stone or marble}) during play. */
     addRubber(a1, a2, strength, length, threshold, min, max) {

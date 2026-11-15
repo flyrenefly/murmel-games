@@ -26,11 +26,13 @@ export interface LuaHost {
   /** wo:add({kind, …}) in init mode (the importer records ot_timer); the game ignores it. */
   add?(kind: string, attrs: Record<string, string>): void;
   /** wo:add(YIN/YANG, {"it_…"}) during play. */
-  addInventory?(player: number, kind: string): void;
+  addInventory?(player: number, kind: string, text?: string | null): void;
   /** wo:add({"ot_timer"/"ot_counter", …}) during play: a new object without a cell. */
   addObject?(kind: string, attrs: Record<string, string>): void;
   /** wo:add({"ot_rubberband", …}) during play: anchor refs and the band's attributes. */
   addRubber?(a1: string | null, a2: string | null, strength: string | null, length: string | null, threshold: string | null, min: string | null, max: string | null): void;
+  /** wo:add({"ot_wire", name?, anchor1, anchor2}) during play: two stones become fellows. */
+  addWire?(a1: string | null, a2: string | null, name: string | null): void;
   /** PuzzleStone "get_cluster": refs of the stones of the fragment. */
   cluster?(ref: string): string[];
   /** wo:shuffleOxyd() during play. */
@@ -246,7 +248,11 @@ export class LuaLevel {
         return 0;
       },
       addinventory: () => {
-        host.addInventory?.(num(1), arg(2) ?? '');
+        host.addInventory?.(num(1), arg(2) ?? '', arg(3));
+        return 0;
+      },
+      addwire: () => {
+        host.addWire?.(arg(1), arg(2), arg(3));
         return 0;
       },
       addrubber: () => {

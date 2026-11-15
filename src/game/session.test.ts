@@ -119,3 +119,77 @@ describe('GameSession', () => {
     expect(s.physics.marbles[0].pos.y).toBeCloseTo(start.y, 5);
   });
 });
+
+describe('Oxyd stones Lua kills or replaces during play', () => {
+  /** Four Oxyd stones (A A B B) in a closed room; Lua functions move them around. */
+  const file = (code: string): LevelFile => ({
+    id: 'test:oxydwechsel',
+    title: 'Oxyd-Wechsel',
+    author: 'test',
+    license: 'GPL',
+    map: ['##########', '#a.b....@#', '#........#', '#a.b.....#', '##########'],
+    legend: { a: { stone: 'st_oxyd', symbol: 'A' }, b: { stone: 'st_oxyd', symbol: 'B' } },
+    lua: { code, kinds: { st_granite: 'st_granite', st_oxyd: 'oxyd', st_nil: 'nil' }, named: [] },
+  }) as unknown as LevelFile;
+
+  it('a replaced stone leaves the game; the new one is a closed stone of its own', async () => {
+    const s = await GameSession.create(file(`function move()
+  wo[po(3, 1)] = {"st_granite"}
+  wo[po(5, 1)] = {"st_oxyd", flavor = "d", oxydcolor = 1}
+end`), { seed: 1, startLua });
+    s.lua!.callback('move', true, '');
+    await Promise.resolve();
+    expect(s.lua!.lastError).toBe('');
+    const lv = s.level;
+    expect(lv.signals.map((g) => [g.col, g.row, g.symbol, g.flavor, !!g.gone])).toEqual([
+      [1, 1, 'A', 'a', false],
+      [3, 1, 'B', 'a', true],
+      [1, 3, 'A', 'a', false],
+      [3, 3, 'B', 'a', false],
+      [5, 1, 'B', 'd', false],
+    ]);
+    expect(lv.cells[1 * lv.width + 3].stone).toBe('st_granite');
+    expect(s.board.totalPairs).toBe(2);
+    expect(s.board.isRemoved(1)).toBe(true);
+  });
+
+  it('killing the unpaired stones lets the remaining pairs finish the level', async () => {
+    const s = await GameSession.create(file(`function clear()
+  wo[po(3, 1)] = {"st_nil"}
+  wo[po(3, 3)] = {"st_nil"}
+end`), { seed: 1, startLua });
+    s.lua!.callback('clear', true, '');
+    expect(s.lua!.lastError).toBe('');
+    expect(s.level.cells[1 * s.level.width + 3].stone).toBeNull();
+    expect(s.board.totalPairs).toBe(1);
+    s.board.hit(0);
+    expect(s.board.hit(2)).toContainEqual({ type: 'complete' });
+  });
+});
+
+describe('horse with a Lua callback (Ariadne, Pairs II)', () => {
+  it('calls its target at a reached destination; Lua sets the next one', async () => {
+    const file = {
+      id: 'test:pferd',
+      title: 'Pferd',
+      author: 'test',
+      license: 'GPL',
+      map: ['##########', '#a......@#', '#........#', '#a.......#', '##########'],
+      legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+      actors: [{ k: 'ac_horse', x: 3.5, y: 2.5, a: { name: 'horse', dests: '3.5,2.5', loop: 'true', target: 'reached' } }],
+      lua: { code: `calls = 0
+function reached(value, sender)
+  calls = calls + 1
+  sender.destination = po(6.2, 2.9)
+  wo["_calls"] = calls
+end`, kinds: {}, named: [] },
+    } as unknown as LevelFile;
+    const s = await GameSession.create(file, { seed: 1, startLua });
+    s.step(NO_CONTROL);
+    s.step(NO_CONTROL);
+    expect(s.lua!.lastError).toBe('');
+    const horse = s.physics.enemies[0];
+    expect(horse.dests).toEqual([[6.5, 2.5]]); // centeredPos
+    expect(s.luaHost!.world('_calls')).toBe('1');
+  });
+});

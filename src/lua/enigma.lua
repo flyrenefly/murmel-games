@@ -64,6 +64,14 @@ POS.__index = function(p, k)
   if k == 1 then return rawget(p, "x") end
   if k == 2 then return rawget(p, "y") end
   if k == "grid" then return newpos(math.floor(p.x), math.floor(p.y)) end
+  -- lua.cc existsPosition: pos:exists() – the (rounded down) cell lies inside the level
+  if k == "exists" then
+    return function(q)
+      local w, h = M.size()
+      local x, y = math.floor(q.x), math.floor(q.y)
+      return x >= 0 and y >= 0 and x < w and y < h
+    end
+  end
   return nil
 end
 -- pos:grid() (libmap): p.grid is the grid position, calling it returns that position
@@ -245,7 +253,9 @@ local function send(o, msg, value)
 end
 
 local methods = {}
-for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle"}) do
+for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle",
+    -- fire messages (Floor::message, items): fl(sender):setfire() in Double play, Sanssouci
+    "setfire", "forcefire", "stopfire", "heat", "ignite"}) do
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end
@@ -590,13 +600,19 @@ function wmethods.add(_, a, b)
       local k = b[1]
       -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
       if k == "it_pipe" and type(b.connections) == "string" and b.connections ~= "" then k = "it_pipe_" .. b.connections end
-      M.addinventory(a, k)
+      -- a document carries its text: Murmel shows it at once, as when one is picked up
+      M.addinventory(a, k, k == "it_document" and b.text or nil)
       return
     end
     local d = b or a
     -- a timer or counter gadget (TimerGadget, CounterGadget): an object without a cell
     if type(d) == "table" and (d[1] == "ot_timer" or d[1] == "ot_counter") then
       M.addobject(d[1], table.unpack(declargs(d)))
+      return
+    end
+    -- a wire between two stones (WireStone fellows): impulses travel along; named ones Lua can find
+    if type(d) == "table" and d[1] == "ot_wire" then
+      M.addwire(refof(d.anchor1), refof(d.anchor2), d.name or d[2])
       return
     end
     if type(d) == "table" and d[1] == "ot_rubberband" then
