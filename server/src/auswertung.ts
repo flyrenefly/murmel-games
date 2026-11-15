@@ -18,6 +18,8 @@ export interface LevelCounts {
   neustart: number;
   abbruch: number;
   abstuerze: number;
+  /** How often the way from the tips (docs/SPEC-tipps.md) was shown. */
+  wegGezeigt: number;
   /** Play time classes of solved runs: < 1, 1–3, 3–10, 10–30, ≥ 30 minutes. */
   zeitGeloest: number[];
   /** The same for abandoned runs. */
@@ -40,14 +42,15 @@ export const BUNDLES_PER_IP = 120;
 export const BUNDLE_WINDOW_MS = 15 * 60_000;
 /** Rows are kept this many days. */
 export const KEEP_DAYS = 365;
-export const COUNTERS = ['gestartet', 'geloest', 'neustart', 'abbruch', 'abstuerze'] as const;
+export const COUNTERS = ['gestartet', 'geloest', 'neustart', 'abbruch', 'abstuerze', 'wegGezeigt'] as const;
 
 const count = { type: 'integer', minimum: 0, maximum: MAX_COUNT };
 const classes = { type: 'array', minItems: 5, maxItems: 5, items: count };
 const levelSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['pack', 'level', ...COUNTERS, 'zeitGeloest', 'zeitAbbruch'],
+  // wegGezeigt is optional (pages from before it was added do not send it) and then counts 0
+  required: ['pack', 'level', ...COUNTERS.filter((k) => k !== 'wegGezeigt'), 'zeitGeloest', 'zeitAbbruch'],
   properties: {
     pack: { type: 'string', pattern: LEVEL_ID },
     level: { type: 'string', pattern: LEVEL_ID },
@@ -56,6 +59,7 @@ const levelSchema = {
     neustart: count,
     abbruch: count,
     abstuerze: { type: 'integer', minimum: 0, maximum: MAX_FALLS },
+    wegGezeigt: { ...count, default: 0 },
     zeitGeloest: classes,
     zeitAbbruch: classes,
   },

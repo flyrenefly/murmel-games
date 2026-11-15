@@ -40,8 +40,8 @@ describe('Auswertung (docs/SPEC-auswertung.md)', () => {
     expect(e.sent).toEqual([
       {
         levels: [
-          { pack: 'murmel', level: '01', gestartet: 2, geloest: 1, neustart: 1, abbruch: 0, abstuerze: 3, zeitGeloest: [0, 0, 1, 0, 0], zeitAbbruch: [0, 0, 0, 0, 0] },
-          { pack: 'enigma_i', level: 'enigma:a', gestartet: 1, geloest: 0, neustart: 0, abbruch: 1, abstuerze: 0, zeitGeloest: [0, 0, 0, 0, 0], zeitAbbruch: [0, 0, 0, 1, 0] },
+          { pack: 'murmel', level: '01', gestartet: 2, geloest: 1, neustart: 1, abbruch: 0, abstuerze: 3, wegGezeigt: 0, zeitGeloest: [0, 0, 1, 0, 0], zeitAbbruch: [0, 0, 0, 0, 0] },
+          { pack: 'enigma_i', level: 'enigma:a', gestartet: 1, geloest: 0, neustart: 0, abbruch: 1, abstuerze: 0, wegGezeigt: 0, zeitGeloest: [0, 0, 0, 0, 0], zeitAbbruch: [0, 0, 0, 1, 0] },
         ],
       },
     ]);
@@ -131,6 +131,19 @@ describe('Auswertung (docs/SPEC-auswertung.md)', () => {
     an = true;
     expect(a.senden()).toBe(false);
     expect(e.sent).toEqual([]);
+  });
+
+  it('zählt gezeigte Tipp-Wege je Level, ohne den Lauf zu beenden', () => {
+    const e = env();
+    const a = new Auswertung(e);
+    a.start('murmel', '01');
+    a.wegGezeigt('murmel', '01');
+    a.wegGezeigt('murmel', '01');
+    a.wegGezeigt('link', 'link:0a1b');
+    for (let i = 0; i < 600; i++) a.wegGezeigt('murmel', '02');
+    a.senden();
+    const levels = (e.sent[0] as { levels: { level: string; wegGezeigt: number; geloest: number; abbruch: number }[] }).levels;
+    expect(levels.map((l) => [l.level, l.wegGezeigt, l.geloest + l.abbruch])).toEqual([['01', 2, 0], ['02', 500, 0]]);
   });
 
   it('kappt Zähler auf die Obergrenzen des Servers', () => {

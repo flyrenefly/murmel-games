@@ -18,6 +18,7 @@ const counts = (pack: string, level: string, over: Partial<LevelCounts> = {}): L
   neustart: 1,
   abbruch: 0,
   abstuerze: 3,
+  wegGezeigt: 0,
   zeitGeloest: [0, 1, 0, 0, 0],
   zeitAbbruch: [0, 0, 0, 0, 0],
   ...over,
@@ -66,6 +67,8 @@ test('ungültige oder übergroße Bündel werden abgewiesen', async () => {
     { levels: [counts('murmel', '01', { gestartet: 501 })] },
     { levels: [counts('murmel', '01', { gestartet: -1 })] },
     { levels: [counts('murmel', '01', { abstuerze: 10_001 })] },
+    { levels: [counts('murmel', '01', { wegGezeigt: 501 })] },
+    { levels: [counts('murmel', '01', { wegGezeigt: -1 })] },
     { levels: [counts('murmel', '01', { zeitGeloest: [0, 0, 0, 0] })] },
     { levels: [counts('murmel', '01', { gestartet: 1.5 })] },
     { levels: Array.from({ length: 51 }, (_, i) => counts('p', `l${i}`)) },
@@ -79,6 +82,15 @@ test('fremde Felder (Zeit, Kennung) werden verworfen, nie gespeichert', async ()
   const { app, store } = setup();
   assert.equal((await post(app, { zeit: '2026-11-14T10:00:00Z', levels: [{ ...counts('murmel', '01'), id: 'abc', ip: '1.2.3.4' }] })).statusCode, 204);
   assert.deepEqual(await store.summary('2000-01-01'), [counts('murmel', '01')]);
+});
+
+test('Zähler „Weg gezeigt“: addiert; Bündel älterer Seiten ohne den Wert zählen 0', async () => {
+  const { app, store } = setup();
+  const { wegGezeigt: _, ...alt } = counts('murmel', '01');
+  assert.equal((await post(app, { levels: [alt] })).statusCode, 204);
+  assert.equal((await post(app, { levels: [counts('murmel', '01', { wegGezeigt: 2 })] })).statusCode, 204);
+  assert.equal((await post(app, { levels: [counts('murmel', '01', { wegGezeigt: 1 })] })).statusCode, 204);
+  assert.equal((await store.summary('2000-01-01'))[0].wegGezeigt, 3);
 });
 
 test('ein Datenbankfehler stört das Spiel nicht (204)', async () => {
@@ -129,12 +141,12 @@ test('Auswertung in PostgreSQL: addiert, summiert Zeitklassen, löscht nach eine
   const store = auswertungStore(sql!);
   await store.record('2025-11-13', [counts('murmel', '01')]);
   await store.record('2026-11-13', [counts('murmel', '01'), counts('enigma_i', 'enigma:a', { abbruch: 1, zeitAbbruch: [0, 0, 0, 1, 0] })]);
-  await store.record('2026-11-13', [counts('murmel', '01', { zeitGeloest: [1, 0, 0, 0, 2] })]);
+  await store.record('2026-11-13', [counts('murmel', '01', { zeitGeloest: [1, 0, 0, 0, 2], wegGezeigt: 2 })]);
   await store.record('2026-11-14', [counts('murmel', '01')]);
 
   assert.deepEqual(await store.summary('2026-11-01'), [
     counts('enigma_i', 'enigma:a', { abbruch: 1, zeitAbbruch: [0, 0, 0, 1, 0] }),
-    counts('murmel', '01', { gestartet: 6, geloest: 3, neustart: 3, abstuerze: 9, zeitGeloest: [1, 2, 0, 0, 2] }),
+    counts('murmel', '01', { gestartet: 6, geloest: 3, neustart: 3, abstuerze: 9, wegGezeigt: 2, zeitGeloest: [1, 2, 0, 0, 2] }),
   ]);
   // the 14th removed the 13th of last year (older than 365 days); the 13th of this year stays
   const days = await sql!<{ day: string }[]>`select distinct to_char(day, 'YYYY-MM-DD') as day from auswertung_level order by day`;

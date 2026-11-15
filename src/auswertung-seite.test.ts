@@ -9,6 +9,7 @@ const l = (pack: string, level: string, geloest: number, neustart: number, abbru
   neustart,
   abbruch,
   abstuerze: 0,
+  wegGezeigt: 0,
   zeitGeloest: [0, 0, 0, 0, 0],
   zeitAbbruch: [0, 0, 0, 0, 0],
   ...over,
@@ -18,12 +19,12 @@ describe('Auswertung auf der Statistikseite', () => {
   it('sortiert die schwersten Levels nach Lösungsquote und lässt seltene weg', () => {
     const out = schwersteLevels([
       l('murmel', 'leicht', 9, 1, 0),
-      l('murmel', 'schwer', 1, 6, 3, { abstuerze: 20, zeitGeloest: [0, 0, 0, 1, 0] }),
+      l('murmel', 'schwer', 1, 6, 3, { abstuerze: 20, wegGezeigt: 4, zeitGeloest: [0, 0, 0, 1, 0] }),
       l('enigma_i', 'selten', 0, 2, 2),
       l('enigma_i', 'mittel', 5, 3, 2),
     ]);
     expect(out.map((x) => x.level)).toEqual(['schwer', 'mittel', 'leicht']);
-    expect(out[0]).toEqual({ pack: 'murmel', level: 'schwer', laeufe: 10, geloest: 0.1, neustartsJeLauf: 0.6, abbrueche: 3, abstuerzeJeLauf: 2, typischeZeit: '10–30 min' });
+    expect(out[0]).toEqual({ pack: 'murmel', level: 'schwer', laeufe: 10, geloest: 0.1, neustartsJeLauf: 0.6, abbrueche: 3, abstuerzeJeLauf: 2, wegGezeigt: 4, typischeZeit: '10–30 min' });
     expect(out[1].typischeZeit).toBeNull();
   });
 

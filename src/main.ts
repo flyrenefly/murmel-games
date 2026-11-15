@@ -1199,6 +1199,11 @@ const tipps = tippsUI(
     menue: () => ((mode = 'menu'), input.releaseLock()),
     spielen: () => (isTouch ? void startTouch() : startPlaying()),
     aus: () => zz.laeuft() || mode === 'won',
+    // only runs the Auswertung counted as started (not zu zweit, no links)
+    wegGezeigt: (s) => {
+      const pack = laufPaket.get(s);
+      if (pack !== undefined) auswertung.wegGezeigt(pack, s.level.id);
+    },
   },
   $<HTMLButtonElement>('btn-tipp'),
 );
