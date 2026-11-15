@@ -853,6 +853,14 @@ ein Schalter spiegelt (`pento.mirror`). Liegen alle 60 Zielfelder voll, macht ei
   jeder gezeichnete Schlüssel einen Eintrag haben. Andere Auflöser im Init stören nicht mehr.
 - **`wo:add` in Rückrufen:** außer Inventar-Gegenständen und Gummibändern auch `ot_timer` und
   `ot_counter` (Objekte ohne Zelle, wie aus dem Init).
+- **`ot_wire` zur Laufzeit** (ab 15.11.2026; `wo:add({"ot_wire", name?, anchor1, anchor2})`): beide
+  Steine werden gegenseitig `fellows` wie bei Drähten aus dem Export – Stöße wandern mit
+  (`Stone::propagateImpulse`), der klassische Renderer zeichnet die Linie. Anker sind Namen oder
+  Objekte; Objekte, die erst während des Spiels entstehen, verweist Murmel über ihre Laufzeitkennung
+  (`#new<n>`). Ein benannter Draht ist für Lua auffindbar (`no["wire…"]`, `-no[…]`) und mit `kill()`
+  wieder lösbar. Abweichung: Murmel kann nur Objekte verbinden (schlichte Steine ohne Objekt lehnt
+  es zur Laufzeit ab), und ein Draht hat außer Name und Art keine Attribute. Freigeschaltet:
+  Scarlett's Necklace (ral30_1), Wired Strips (ral38_1), Do it (devnull17_1).
 - **Rückrufe mit Punkt:** Ziele wie `pento.next` werden wie `lua::CallFunc` über Tabellen
   aufgelöst; der Importer fragt nach dem Init, ob das Ziel eine Funktion ist.
 - **Puzzlesteine zur Laufzeit** (`PuzzleStone::on_creation` → `Stone::autoJoinCluster`): ein neuer

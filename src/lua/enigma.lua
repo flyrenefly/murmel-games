@@ -599,6 +599,11 @@ function wmethods.add(_, a, b)
       M.addobject(d[1], table.unpack(declargs(d)))
       return
     end
+    -- a wire between two stones (WireStone fellows): impulses travel along; named ones Lua can find
+    if type(d) == "table" and d[1] == "ot_wire" then
+      M.addwire(refof(d.anchor1), refof(d.anchor2), d.name or d[2])
+      return
+    end
     if type(d) == "table" and d[1] == "ot_rubberband" then
       M.addrubber(refof(d.anchor1), refof(d.anchor2), d.strength, d.length, d.threshold, d.min, d.max)
       return

@@ -4671,7 +4671,8 @@ export class ObjectWorld {
 
   /** Objects named by a target token: "#id", a name or a name pattern with * and ?. */
   resolve(token: string): GameObject[] {
-    if (/^#\d+$/.test(token)) return this.objects.filter((o) => `#${o.id}` === token);
+    // "#id": exported ids are numbers, objects made during play "new<n>" (wires made by Lua)
+    if (/^#(\d+|new\d+)$/.test(token)) return this.objects.filter((o) => `#${o.id}` === token);
     if (token.startsWith('%')) return [];
     if (/[*?]/.test(token)) {
       const re = new RegExp(`^${token.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);

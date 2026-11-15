@@ -71,6 +71,17 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (host.find(n).length === 0) return n;
     }
   };
+  /** Wires made during play (ot_wire), by name: "w:<name>" refs; the stones carry them as fellows. */
+  const wires = new Map<string, [GameObject, GameObject]>();
+  const wireAlive = (n: string) => {
+    const w2 = wires.get(n);
+    return !!w2 && !w2[0].gone && !w2[1].gone;
+  };
+  const tokens = (o: GameObject) => (o.attrs.fellows ?? '').split(/[;,]/).map((t) => t.trim()).filter((t) => t !== '');
+  const unwire = (a: GameObject, b: GameObject) => {
+    a.attrs.fellows = tokens(a).filter((t) => t !== `#${b.id}`).join(',');
+    b.attrs.fellows = tokens(b).filter((t) => t !== `#${a.id}`).join(',');
+  };
   const removeStone = (x: number, y: number) => {
     const o = objects.stoneObjectAt(x, y);
     if (o) objects.remove(o);
@@ -90,6 +101,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       // fl_ref objects stand for named floors, which Lua addresses as cells (c:fl:x:y)
       for (const o of objects.objects) if ((!o.gone || o.picked) && o.name && re.test(o.name)) refs.push(o.cls === 'floorref' ? `c:fl:${o.col}:${o.row}` : `o:${o.id}`);
       for (const [ref, a] of attrs) if (a.name && re.test(a.name) && host.exists(ref) && !refs.includes(ref)) refs.push(ref);
+      for (const n of wires.keys()) if (re.test(n) && wireAlive(n)) refs.push(`w:${n}`);
       return refs;
     },
     at(l, x, y) {
@@ -105,6 +117,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     },
     exists(ref) {
       if (ref.startsWith('o:')) return byId(ref) !== null;
+      if (ref.startsWith('w:')) return wireAlive(ref.slice(2));
       if (ref.startsWith('a:')) return true;
       const { l, x, y } = parse(ref);
       return inside(x, y) && (l === 'fl' || cell(x, y).stone !== null);
@@ -115,10 +128,15 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         return o ? [o.col, o.row] : [0, 0];
       }
       if (ref.startsWith('a:')) return actorPos(Number(ref.slice(2)));
+      if (ref.startsWith('w:')) {
+        const a = wires.get(ref.slice(2))?.[0];
+        return a ? [a.col, a.row] : [0, 0];
+      }
       const { x, y } = parse(ref);
       return [x, y];
     },
     get(ref, key) {
+      if (ref.startsWith('w:')) return key === 'name' ? ref.slice(2) : key === 'kind' ? 'ot_wire' : null;
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (!o) return null;
@@ -174,6 +192,13 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (o) objects.sendMessage(o, msg, truthy(value) && n !== 0, Number.isFinite(n) ? n : undefined);
     },
     kill(ref) {
+      if (ref.startsWith('w:')) {
+        const pair = wires.get(ref.slice(2));
+        if (pair) unwire(...pair);
+        wires.delete(ref.slice(2));
+        w.redraw();
+        return;
+      }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (o) objects.remove(o);
@@ -257,6 +282,20 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (decl.name) decl.name = uniqueName(decl.name);
       decl.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
       objects.create(kind, -1, -1, decl);
+    },
+    /**
+     * wo:add({"ot_wire", name?, anchor1, anchor2}) during play: both stones become fellows
+     * (Stone::propagateImpulse moves them together; the classic renderer draws the line).
+     */
+    addWire(a1, a2, name) {
+      const a = a1?.startsWith('o:') ? byId(a1) : null;
+      const b = a2?.startsWith('o:') ? byId(a2) : null;
+      if (!a || !b) throw new Error('Murmel kann diesen Draht nicht spannen');
+      if (a === b) return;
+      if (!tokens(a).includes(`#${b.id}`)) a.attrs.fellows = [...tokens(a), `#${b.id}`].join(',');
+      if (!tokens(b).includes(`#${a.id}`)) b.attrs.fellows = [...tokens(b), `#${a.id}`].join(',');
+      if (name) wires.set(uniqueName(name), [a, b]);
+      w.redraw();
     },
     /** wo:add({"ot_rubberband", anchor1 = a marble, anchor2 = a stone or marble}) during play. */
     addRubber(a1, a2, strength, length, threshold, min, max) {
