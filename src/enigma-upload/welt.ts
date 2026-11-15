@@ -8,8 +8,8 @@ import { MAX_H, MAX_W } from '../editor/model';
 import { type Fengari, type LuaHost, LuaLevel } from '../lua/runtime';
 import { UploadError } from './datei';
 
-/** Tile declarations a script may set (a 60×40 world with three layers needs 7 200). */
-export const MAX_TILES = 20_000;
+/** Tile declarations a script may set (a 100×64 world: default floor plus three layers is 25 600). */
+export const MAX_TILES = 40_000;
 /** Lua instructions of the whole build. */
 export const BUILD_STEPS = 20_000_000;
 
@@ -108,6 +108,31 @@ do
     end
     finalize(resolver)
     return w, h
+  end
+  -- res.composer as in Enigma's api2init.lua (GPL): an unknown key is put together from the tiles of
+  -- its characters, grouped by the sequence ("123456789": every character on its own)
+  local function composer_implementation(context, evaluator, key, x, y)
+    local t = evaluator(context[3], key, x, y)
+    if t ~= nil then return t end
+    local sequence = context[4] or "123456789"
+    for i = 1, #key do
+      local subkey, ic = "", tostring(i)
+      for j = 1, #key do
+        subkey = subkey .. (sequence:sub(j, j) == ic and key:sub(j, j) or " ")
+      end
+      if subkey ~= string.rep(" ", #key) then
+        local sub = evaluator(context[3], subkey, x, y)
+        if sub == nil then return nil end
+        t = t == nil and sub or t .. sub
+      end
+    end
+    return t
+  end
+  function res.composer(subresolver, sequence, ...)
+    assert_bool(is_resolver(subresolver), "res.composer first argument (subresolver)", 2)
+    assert_bool(select("#", ...) == 0, "res.composer: Too many arguments (must be 1 or 2).", 2)
+    if sequence ~= nil then assert_type(sequence, "res.composer second argument (sequence)", 2, "non-empty string") end
+    return setmetatable({composer_implementation, nil, subresolver, sequence}, res.metatable)
   end
   local res_mt = getmetatable(res)
   res_mt.__index = function(_, name) error("Murmel kennt res." .. tostring(name) .. " noch nicht", 2) end

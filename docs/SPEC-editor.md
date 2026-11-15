@@ -23,12 +23,20 @@ Bewerten und Moderieren macht der Baustein `spielerlevels`.
 ### 1. Editorseite `editor.html` (`src/editor/…`)
 
 - Neues Level: 20×13, Rand aus Granit, Boden `fl_gray`, Murmel in der Mitte.
-- Größe ändern: Breite 5–60, Höhe 5–40; Inhalt bleibt oben links verankert.
+- Größe ändern: Breite 5–100, Höhe 5–64 (bis 15.11.2026: 60×40); Inhalt bleibt oben links verankert.
+  Begründung der Grenze: 100×64 fasst Enigmas Levels bis 5×5 Bildschirme (96×61; ein Bildschirm ist
+  20×13, Ränder geteilt). Der Probelauf über alle Enigma-Dateien: 60×40 nimmt keine der 97 größeren
+  Dateien, 80×50 nähme 16, 100×64 nimmt 25, 120×80 nähme 32 der ohne andere harte Hindernisse
+  umwandelbaren. Die Fläche wächst auf das 2,7-Fache (6 400 Felder); Objekt- und Gegnergrenze (2 400 / 40),
+  Linklänge (16 000 Zeichen) und Uploadgröße (256 KB) bleiben. Das Nachspielen auf dem Server hängt
+  von Schrittzahl und Objekten ab, kaum von der Kartengröße; das Spiel lädt importierte Enigma-Levels
+  dieser Größe schon heute.
 - Werkzeuge: **Malen** (Klick und Ziehen), **Rechteck** (Ziehen füllt; auch Umschalt+Ziehen),
   **Radierer** (entfernt Akteur, Gegenstand und Stein der Zelle; Boden bleibt),
   **Auswahl** (Objekt anklicken → Eigenschaften), **Pipette** per Rechtsklick/Alt+Klick.
 - Ebenen je Zelle: Boden (immer), Stein (Wand, Objektstein oder Oxyd), Gegenstand; dazu
-  Akteure (Zellmitte) und genau eine Murmel (Start).
+  Akteure (Zellmitte) und genau eine Hauptkugel am Start: die schwarze Murmel oder, für
+  Meditationslevels, eine weiße oder schwarze Perle (`mainPearl` im `LevelFile`).
 - **Oxyd-Steine paarweise:** Farbwahl A–H oder „Zufall“ (`?`). Im Modus „Automatisch“ bekommt
   der nächste Stein die Farbe, der noch ein Partner fehlt, sonst eine neue Farbe. Jede Farbe ist
   in der Karte sichtbar (Farbpunkt mit Buchstabe). Sorte (Aussehen) a–d wählbar.
@@ -44,8 +52,23 @@ Bewerten und Moderieren macht der Baustein `spielerlevels`.
 - Nur Arten, die Murmel kann: kuratierte Liste (`src/editor/palette.ts`). Ein Test sichert,
   dass jeder Boden in `floors.generated.json` steht, jeder Objektstein/Gegenstand eine
   `objectClass` hat, jede Wand **keine** hat, und jedes Vorschaubild existiert.
-- Gruppen: Spezial (Murmel, Oxyd), Böden, Wände, Bewegliche Steine, Schalter und Türen,
-  Gefahren, Gegenstände, Gegner. Suche über deutschen Namen und Enigma-Art.
+- Gruppen: Spezial (Murmel, Start-Perlen, Oxyd), Böden, Gefälle, Wände, Bewegliche Steine,
+  Schalter und Türen, Laser und Spiegel, Mechanik, Gefahren, Gegenstände, Meditation, Murmeln und
+  Perlen, Gegner. Eine Gruppenleiste (Chips wie eine Scope-Bar) zeigt eine Gruppe oder „Alle“; auf
+  schmalen Bildschirmen beginnt sie bei „Spezial“ und scrollt waagerecht, damit die Kachelleiste kurz
+  bleibt. Die Suche über deutschen Namen und Enigma-Art sucht immer in allen Gruppen.
+- **Eigenschaften mit festen Werten** (`props` eines Paletteneintrags, nie Freitext): Laser „Zu Beginn
+  an/aus“ (`state`), Spiegel Ausrichtung/schiebbar/halbdurchlässig (`orientation`, `movable`,
+  `transparent`), Farbdurchlass Form (`flavor`). Der erste Wert ist die Vorgabe des Spiels und wird
+  nicht gespeichert. Richtungen, die Enigma im Artnamen trägt (`st_laser_n`, `st_boulder_e`,
+  `st_turnstilearm_s`), sind eigene Einträge.
+- **Gefälle** (`fl_slope_p*`, Innen- und Außenecken): die Bodenkraft ergibt sich aus der Art
+  (SlopeForce 25 in Richtung des Gefälles) und wird nie aus einer Datei übernommen.
+- Erweiterung 15.11.2026 (Rangliste und Probelauf: Notiz `palette-uebergabe.md`): nur Arten, die die
+  Engine schon spielt; jede lädt in einem Test im Spiel und läuft fünf Sekunden ohne Fehler
+  (`src/editor/palette-erweitert.test.ts`). Nicht in der Palette: `it_document` (Text, Nutzerentscheidung
+  offen), Wurmlöcher und Strudel (Koordinaten), Gummibänder, Zähler/Zeitgeber ohne Feld (`ot_*`), Puzzle-
+  und Brückensteine (Verbindungsbits, Zustände), Rohrpost, `ac_horse`.
 - Vorschau im gewählten Stil: „Klassisch“ und „Klassisch Retro“ mit den Enigma-Bildern;
   für die eigenen 3D-Stile (Glas, Neon, Retro16) eine flache Schema-Ansicht mit den
   Symbolfarben und -formen der Oxyd-Steine. Der Stil wird aus dem Spiel übernommen und ist
@@ -70,7 +93,9 @@ Bewerten und Moderieren macht der Baustein `spielerlevels`.
 
 Fehler (blockieren das Teilen):
 - keine Murmel; Murmel auf Stein oder auf Abgrund/Wasser;
-- weniger als zwei Oxyd-Steine; eine feste Farbe ungerade oft; ungerade Zahl von `?`-Steinen;
+- weniger als zwei Oxyd-Steine, außer bei einer Meditation (mindestens eine Perle und für jede Perle
+  eine Mulde, Delle oder einen Krater); mehr Perlen als Mulden; eine feste Farbe ungerade oft;
+  ungerade Zahl von `?`-Steinen;
 - ein Oxyd-Stein ist von der Murmel aus nicht erreichbar – Prüfung als Flutfüllung über
   4-Nachbarn, die **nur feste Wände** als Hindernis zählt (Türen, Kisten, Abgrund gelten als
   passierbar; die Prüfung meldet also nur sicher Unerreichbares);
@@ -90,7 +115,7 @@ offener Rand (die Murmel kann hinausrollen).
   Zeichen kein Link, stattdessen Datei-Export empfohlen.
 - Dekodieren ist streng (Links sind fremde Eingaben): Länge ≤ 16 000, entpackt ≤ 512 KB, nur
   bekannte Felder (`title`, `author`, `map`, `legend`, `start`, `objects`, `actors`), nur Arten
-  aus der Palette, nur bekannte Attribute, Größe ≤ 60×40, Textlängen begrenzt; **nie Lua**,
+  aus der Palette, nur bekannte Attribute (Eigenschaften nur mit ihren erlaubten Werten), Größe ≤ 100×64, Textlängen begrenzt; **nie Lua**,
   keine Dokumenttexte. Danach `parseLevel`. Jeder Fehler ergibt eine verständliche Meldung,
   nie eine Ausnahme im Spiel.
 - ID eines Link-Levels: `link:<FNV-1a-Hash der Daten>` – so kollidiert es nie mit Paketlevels.

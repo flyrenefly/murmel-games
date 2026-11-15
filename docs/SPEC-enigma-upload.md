@@ -54,8 +54,9 @@ Editor „Importieren“ (oder spielerlevels.html → „Enigma-Level umwandeln�
 Web Worker (Zeitgrenze 10 s, danach terminate)
    1. Datei lesen: DOCTYPE/ENTITY → Abbruch (kein XML-Parser, nur feste Muster: kein XXE möglich)
    2. Kopfdaten: Titel, Autor, Lizenz, Enigma-Kompatibilität, Bibliotheken, Lua-Teil (el:luamain)
-   3. Lua im Aufbau-Modus: wo(ti, " ", karte), wo[pos] = …, wo:drawMap/drawRect/drawBorder, res.autotile;
-      Grenzen: Weltgröße ≤ 60×40, ≤ 20 000 gesetzte Kacheln, Lua-Schrittgrenze
+   3. Lua im Aufbau-Modus: wo(ti, " ", karte), wo[pos] = …, wo:drawMap/drawRect/drawBorder, res.autotile,
+      res.composer (seit 15.11.2026, wie api2init.lua);
+      Grenzen: Weltgröße ≤ 100×64, ≤ 40 000 gesetzte Kacheln, Lua-Schrittgrenze
    4. Welt → Editor-Level: Arten der Palette, Oxyd-Farben, Start der schwarzen Murmel, Gegner
         ▼
 Dialog: Vorschau (Titel, Größe, Autor und Lizenz laut Datei, Hinweise),
@@ -68,7 +69,7 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
 
 | Punkt | Umsetzung |
 |---|---|
-| Größenlimit | Datei ≤ 256 KB (größte Enigma-Levels liegen unter 100 KB); Lua-Teil ≤ 200 KB; Welt ≤ 60×40; ≤ 20 000 Kachelaufrufe |
+| Größenlimit | Datei ≤ 256 KB (größte Enigma-Levels liegen unter 100 KB); Lua-Teil ≤ 200 KB; Welt ≤ 100×64; ≤ 40 000 Kachelaufrufe |
 | XML ohne externe Entitäten (XXE) | Kein XML-Parser. Kopf und Lua werden mit festen Mustern gelesen; `<!DOCTYPE` oder `<!ENTITY` führt zum Abbruch. Nur die fünf Standard-Entitäten werden ersetzt. |
 | Lua nur in der fengari-Sandbox | `LuaLevel.create` öffnet nur `base`, `table`, `string`, `math`. Der Aufbau-Modus löscht zusätzlich `dofile`, `loadfile`, `require`, `collectgarbage`. Keine Brücke zu Netz, DOM oder Speicher; die CSP (`connect-src 'self'`) gilt auch im Worker. |
 | Zeit- und Speichergrenze | Web Worker (Muster Wettkampf-Worker): Lua-Schrittgrenze (20 Mio. Anweisungen, geprüft in 1000er-Schritten; im Browser rund 1 s), Abbruch des Workers nach 10 s. Ein Speicherüberlauf trifft nur den Worker; das Spiel meldet „Die Umwandlung wurde abgebrochen“. |
@@ -114,7 +115,7 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
 | Unbekannter Resolver | „Murmel kennt res.random noch nicht“ |
 | Lua-Rückruf | „Das Level steuert st_switch über die Lua-Funktion ‚oeffne‘. Lua ist in Spieler-Levels nicht erlaubt.“ |
 | Laufzeitfehler | „Fehler im Lua-Teil: <Meldung mit Zeile>“ |
-| Weltgröße | „Das Level ist 80×50 groß; erlaubt sind höchstens 60×40.“ |
+| Weltgröße | „Das Level ist 120×70 groß; erlaubt sind höchstens 100×64.“ |
 | Murmel | „Das Level braucht genau eine schwarze Murmel (gefunden: 0).“ |
 | Endlosschleife / Zeit | „Der Lua-Teil läuft zu lange.“ / „Die Umwandlung wurde abgebrochen (Zeitgrenze).“ |
 
@@ -136,7 +137,9 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
 
 **Stand 14.11.2026:** U1–U4 gebaut (Branch `enigma-upload`). Geprüft: vitest (19 neue Tests: Dateilesen mit XXE/Größe/API 1/Bibliotheken, Aufbau-Modus mit echtem fengari, Übersetzung und `sanitizeLevel` des Ergebnisses, Worker-Zeitgrenze), Browser auf Port 5191 (Startdialog über `editor.html#enigma`, Umwandeln im echten Worker mit fengari-web in rund 0,9 s, Endlosschleife abgefangen, Rechte-Häkchen Pflicht, Level im Editor mit Verbindung Schalter → Tür, Probespielen startet, 375 px), Produktionsbuild (Worker als eigenes Bündel ohne `Function()`, also CSP-tauglich). Lokaler Probelauf über alle 1 566 Level-Dateien von Enigma (nicht eingecheckt): **49 lassen sich vollständig umwandeln**. Häufigste Gründe sonst: `res.composer` (160), keine schwarze Murmel (Meditation, 138), `ac_marble_white` (131), `it_document` (116), API 1 (115), libpento-Rückrufe (99), `lib/libpuzzle` (93), Größe über 60×40 (79), Gefälleböden `fl_slope_*`, `st_laser`, `st_stoneimpulse`. Nicht geprüft: ein echtes Veröffentlichen gegen den Server (der Weg ist der bestehende und unverändert) und ein von Hand gespielter Sieg.
 
-**Nächste Schritte (wenn gewünscht):** `res.composer` im Aufbau-Modus nachbauen; die Editor-Palette um vorhandene Spielobjekte erweitern (betrifft auch Editor und `sanitizeLevel`, Server-Rollout nötig); API 1.
+**Stand 15.11.2026 (Branch `editor-palette`):** `res.composer` im Aufbau-Modus; größere Palette (Gefälle, Laser und Spiegel, Impuls- und Rollsteine, Drehkreuze, Farbdurchlässe, Meditation mit Perle als Hauptkugel, weiße Murmel, Perlen, Killer u. a.; siehe `docs/SPEC-editor.md` §2) samt Abbildung im Umwandler (`editorKind`, Eigenschaften aus Attributen und Artnamen, `fl_slope` mit `slope`, `fl_inverse` → `fl_inverse_white`); Karten bis 100×64. Probelauf über 1 553 Level-Dateien: **48 → 308 vollständig umwandelbar**. Häufigste Gründe danach: Lua-Rückrufe, `it_document` (Nutzerentscheidung offen), API 1, `lib/libpuzzle`, Gummibänder, Wurmlöcher.
+
+**Nächste Schritte (wenn gewünscht):** Dokumenttexte und Lua nach Nutzerentscheidung; Wurmlöcher (Koordinaten-Eigenschaft), Puzzle- und Brückensteine; API 1.
 
 ## Datenschutz
 

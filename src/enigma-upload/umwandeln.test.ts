@@ -4,6 +4,7 @@ import { toLevelFile } from '../editor/model';
 import shim from '../lua/enigma.lua?raw';
 import type { Fengari } from '../lua/runtime';
 import { leseDatei, MAX_FILE, UploadError } from './datei';
+import { BY_KIND } from '../editor/palette';
 import { editorKind } from './editorlevel';
 import { wandleUm } from './umwandeln';
 
@@ -87,13 +88,13 @@ describe('Umwandeln ins Editor-Level', () => {
   });
 
   it('nennt fehlende Objekte mit Anzahl', async () => {
-    const lua = LEVEL.replace('{"it_hammer"}', '{"it_document", text = "x"}').replace('"#######",\n  "#a', '"###m###",\n  "#a').replace('ti["@"]', 'ti["m"] = {"st_mirror_slab"}\nti["x"] = {"it_document"}\nti["@"]');
-    await expect(um('t.xml', xml(lua.replace('"#? hr?#"', '"#?xhr?#"')))).rejects.toThrow(/it_document \(2×\), st_mirror_slab\./);
+    const lua = LEVEL.replace('{"it_hammer"}', '{"it_document", text = "x"}').replace('"#######",\n  "#a', '"###m###",\n  "#a').replace('ti["@"]', 'ti["m"] = {"st_mirror_sheets"}\nti["x"] = {"it_document"}\nti["@"]');
+    await expect(um('t.xml', xml(lua.replace('"#? hr?#"', '"#?xhr?#"')))).rejects.toThrow(/it_document \(2×\), st_mirror_sheets\./);
   });
 
   it('lehnt Lua-Rückrufe und falsche Murmelzahl ab', async () => {
     await expect(um('t.xml', xml(`function auf() end\n${LEVEL.replace('target = "tuer"', 'target = "auf"')}`))).rejects.toThrow(/st_switch über die Lua-Funktion „auf“/);
-    await expect(um('t.xml', xml(LEVEL.replace('"#a @ a#"', '"#a @@a#"')))).rejects.toThrow(/genau eine schwarze Murmel \(gefunden: 2\)/);
+    await expect(um('t.xml', xml(LEVEL.replace('"#a @ a#"', '"#a @@a#"')))).rejects.toThrow(/genau eine schwarze Murmel oder, als Meditation, eine Perle \(gefunden: 2 Murmeln\)/);
     await expect(um('t.xml', xml('ti[" "] = {"fl_gray"}\nwo(ti, " ", 3, 3)'))).rejects.toThrow(/3×3/);
   });
 });
@@ -111,7 +112,86 @@ describe('Arten aus Attributen', () => {
 
   it('macht aus schiebbaren oder zerbrechlichen Steinen keine Wand', async () => {
     const lua = LEVEL.replace('{"it_hammer"}', '{"st_flat_breakable"}').replace('{"st_brick_n"}', '{"st_granite_movable"}');
-    const r = await um('t.xml', xml(lua)).catch((e: Error) => e.message);
-    expect(r).toMatch(/enthalten: st_flat_breakable\./);
+    const { level } = await um('t.xml', xml(lua));
+    const kinds = new Set(level.cells.map((c) => c.s));
+    expect(kinds.has('st_flat_breakable') && kinds.has('st_granite_movable')).toBe(true);
+    expect(kinds.has('st_granite') || kinds.has('st_flat')).toBe(false);
+    expect(BY_KIND.get('st_flat_breakable')?.wall).toBeUndefined();
+  });
+});
+
+describe('Neue Arten der Palette (15.11.2026)', () => {
+  it('übersetzt Laser, Spiegel, Durchlässe, Felsbrocken und Gefälle mit ihren Eigenschaften', async () => {
+    const lua = `
+ti[" "] = {"fl_gray"}
+ti["#"] = {"st_granite"}
+ti["a"] = {"st_oxyd", oxydcolor = OXYD_BLUE}
+ti["L"] = {"st_laser", orientation = SOUTH, state = ON}
+ti["M"] = {"st_mirror_slab_wtm"}
+ti["T"] = {"st_mirror", flavor = "triangle", orientation = EAST, movable = true}
+ti["P"] = {"st_passage_white_cross"}
+ti["B"] = {"st_boulder", orientation = WEST}
+ti["v"] = {"fl_slope", slope = 2, strength = 40}
+ti["s"] = {"fl_slope_ps"}
+ti["i"] = {"fl_inverse"}
+ti["@"] = {"#ac_marble_black"}
+wo(ti, " ", {
+  "#########",
+  "#a  @  a#",
+  "#LMTPB  #",
+  "#vsi    #",
+  "#########"})`;
+    const r = await um('neu.xml', xml(lua));
+    const at = (x: number, y: number) => r.level.cells[y * r.level.width + x];
+    expect(at(1, 2)).toEqual({ f: 'fl_gray', s: 'st_laser_s', sa: { state: '1' } });
+    expect(at(2, 2)).toEqual({ f: 'fl_gray', s: 'st_mirror_slab', sa: { orientation: '0', transparent: 'true', movable: 'true' } });
+    expect(at(3, 2)).toEqual({ f: 'fl_gray', s: 'st_mirror_triangle', sa: { orientation: '2', movable: 'true' } });
+    expect(at(4, 2)).toEqual({ f: 'fl_gray', s: 'st_passage_white', sa: { flavor: 'cross' } });
+    expect(at(5, 2).s).toBe('st_boulder_w');
+    expect([at(1, 3).f, at(2, 3).f, at(3, 3).f]).toEqual(['fl_slope_pe', 'fl_slope_ps', 'fl_inverse_white']);
+    expect(r.hinweise.join(' ')).toMatch(/strength von fl_slope/);
+    expect(() => sanitizeLevel(toLevelFile({ ...r.level, title: 'Neu' }), 'link:neu')).not.toThrow();
+  });
+
+  it('macht ohne schwarze Murmel die erste Perle zur Hauptkugel (Meditation)', async () => {
+    const lua = `
+ti[" "] = {"fl_gray"}
+ti["#"] = {"st_granite"}
+ti["o"] = {"it_meditation"}
+ti["p"] = {"ac_pearl", color = WHITE}
+ti["q"] = {"ac_pearl", color = BLACK}
+wo(ti, " ", {
+  "#######",
+  "#p o  #",
+  "#     #",
+  "#q o  #",
+  "#######"})`;
+    const r = await um('ruhe.xml', xml(lua));
+    expect(r.level.mainPearl).toBe('ac_pearl_white');
+    expect(r.level.start).toEqual({ x: 1, y: 1 });
+    expect(r.level.actors).toEqual([{ k: 'ac_pearl_black', x: 1.5, y: 3.5 }]);
+    expect(r.level.cells.filter((c) => c.i === 'it_meditation_hollow')).toHaveLength(2);
+    const file = sanitizeLevel(toLevelFile({ ...r.level, title: 'Ruhe' }), 'link:ruhe');
+    expect(file.mainPearl).toEqual({ k: 'ac_pearl_white' });
+  });
+
+  it('baut Kacheln mit res.composer zusammen (wie api2init.lua)', async () => {
+    const lua = `
+ti["  "] = {"fl_gray"}
+ti[" #"] = {"st_granite"}
+ti[" a"] = {"st_oxyd", oxydcolor = OXYD_BLUE}
+ti["~ "] = {"fl_ice"}
+ti[" h"] = {"it_hammer"}
+ti[" @"] = {"#ac_marble_black"}
+wo(res.composer(ti), "  ", {
+  " # # # # #",
+  " #   a @ #",
+  " #~h  ~  #",
+  " #     a #",
+  " # # # # #"})`;
+    const r = await um('comp.xml', xml(lua));
+    expect(r.level.width).toBe(5);
+    expect(r.level.cells[2 * 5 + 1]).toEqual({ f: 'fl_ice', i: 'it_hammer' });
+    expect(r.level.cells[2 * 5 + 3]).toEqual({ f: 'fl_ice' });
   });
 });

@@ -122,7 +122,10 @@ const MAIL_POLL_MS = 10 * MINUTE;
 const PAGE = 30;
 const NO_NAME = 'Spieler ohne Namen';
 /** Fields of a LevelFile the editor makes; anything else (lua, docs …) is refused. */
-const LEVEL_KEYS = new Set(['id', 'title', 'author', 'license', 'basedOn', 'map', 'legend', 'start', 'objects', 'actors']);
+const LEVEL_KEYS = new Set(['id', 'title', 'author', 'license', 'basedOn', 'map', 'legend', 'start', 'objects', 'actors', 'mainPearl']);
+/** Largest map (MAX_W × MAX_H in src/editor/model.ts; the checker's sanitizeLevel enforces it again). */
+export const MAX_W = 100;
+export const MAX_H = 64;
 const RECORDED_ID = /^(link|spieler):[A-Za-z0-9]{1,40}$/;
 
 const chars = (s: string) => [...s].length;
@@ -148,7 +151,8 @@ export function parseUpload(body: unknown): Upload | string {
   if (Buffer.byteLength(JSON.stringify(level)) > MAX_LEVEL_BYTES) return 'Das Level ist zu groß (höchstens 256 KB).';
   for (const k of Object.keys(level)) if (!LEVEL_KEYS.has(k)) return `Unbekannte Angabe „${line(k).slice(0, 20)}“: Spieler-Levels enthalten nur, was der Editor baut (kein Lua).`;
   const map = level.map;
-  if (!Array.isArray(map) || map.length < 1 || map.length > 40 || !map.every((r) => typeof r === 'string' && r.length >= 1 && r.length <= 60)) return 'Die Karte fehlt oder ist größer als 60×40.';
+  if (!Array.isArray(map) || map.length < 1 || map.length > MAX_H || !map.every((r) => typeof r === 'string' && r.length >= 1 && r.length <= MAX_W))
+    return `Die Karte fehlt oder ist größer als ${MAX_W}×${MAX_H}.`;
   if (level.basedOn !== undefined && (typeof level.basedOn !== 'string' || chars(line(level.basedOn)) > MAX_BASED_ON))
     return `Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`;
   if (level.license !== LICENSE || body.lizenz !== LICENSE) return 'Spieler-Levels stehen unter CC BY-SA 4.0 – bitte die Lizenz bestätigen.';

@@ -63,7 +63,7 @@ wo(ti, m)`,
   it('meldet unbekannte Resolver, Lua-Fehler, Größe und Endlosschleifen mit Grund', async () => {
     await expect(bau(`ti[" "] = {"fl_gray"}\nwo(res.maze(ti), " ", 3, 3)`)).rejects.toThrow(/res.maze/);
     await expect(bau(`ti[" "] = {"fl_gray"}\nwo(ti, " ", 3, 3)\nlocal a = nil\na.b = 1`)).rejects.toThrow(/Zeile 4/);
-    await expect(bau(`ti[" "] = {"fl_gray"}\nwo(ti, " ", 80, 50)`)).rejects.toThrow(/80×50.*60×40/);
+    await expect(bau(`ti[" "] = {"fl_gray"}\nwo(ti, " ", 120, 70)`)).rejects.toThrow(/120×70.*100×64/);
     await expect(bau(`while true do end`)).rejects.toThrow(/zu lange/);
     await expect(bau(`ti[" "] = {"fl_gray"}`)).rejects.toThrow(/wo\(\.\.\.\) fehlt/);
     await expect(bau(`wo(ti, " ", {"ab"})`)).rejects.toThrow(UploadError);

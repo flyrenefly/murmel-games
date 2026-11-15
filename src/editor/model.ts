@@ -30,12 +30,18 @@ export interface EditorLevel {
   actors: ActorDef[];
   /** Start cell of the marble, or null. */
   start: { x: number; y: number } | null;
+  /** Meditation levels: the main ball at the start is this pearl instead of the black marble. */
+  mainPearl?: string;
 }
 
 export const MIN_W = 5;
-export const MAX_W = 60;
+/**
+ * Largest map: 100 × 64 holds Enigma's levels of up to 5 × 5 screens (96 × 61; a screen is 20 × 13
+ * with shared edges). Was 60 × 40 (3 × 3 screens) until 15.11.2026; see docs/SPEC-editor.md.
+ */
+export const MAX_W = 100;
 export const MIN_H = 5;
-export const MAX_H = 40;
+export const MAX_H = 64;
 export const DEFAULT_FLOOR = 'fl_gray';
 export const DEFAULT_WALL = 'st_granite';
 /** Licence of player levels (user decision 13.11.2026), SPDX id; `spielerlevels` takes it over. */
@@ -123,7 +129,7 @@ export interface PaintOptions {
 export function paint(l: EditorLevel, x: number, y: number, e: PaletteEntry, opt: PaintOptions = {}): boolean {
   const c = cellOf(l, x, y);
   if (!c) return false;
-  const before = JSON.stringify([c, l.start, l.actors]);
+  const before = JSON.stringify([c, l.start, l.actors, l.mainPearl]);
   switch (e.layer) {
     case 'floor':
       c.f = e.kind;
@@ -133,7 +139,7 @@ export function paint(l: EditorLevel, x: number, y: number, e: PaletteEntry, opt
       c.s = e.kind;
       delete c.sa;
       if (e.attrs) c.sa = { ...e.attrs };
-      if (e.role === 'target') c.sa = { ...(c.sa ?? {}), name: freeName(l, 'tuer') };
+      if (e.role === 'target') c.sa = { ...(c.sa ?? {}), name: freeName(l, e.kind.startsWith('st_door') ? 'tuer' : e.kind.startsWith('st_laser') ? 'laser' : 'ziel') };
       if (l.start?.x === x && l.start.y === y) l.start = null;
       break;
     case 'oxyd': {
@@ -155,11 +161,13 @@ export function paint(l: EditorLevel, x: number, y: number, e: PaletteEntry, opt
       break;
     case 'start':
       l.start = { x, y };
+      if (e.mainPearl) l.mainPearl = e.mainPearl;
+      else delete l.mainPearl;
       delete c.s;
       delete c.sa;
       break;
   }
-  return JSON.stringify([c, l.start, l.actors]) !== before;
+  return JSON.stringify([c, l.start, l.actors, l.mainPearl]) !== before;
 }
 
 /** Eraser: removes actor, item and stone of the cell (the floor stays). */
@@ -173,7 +181,10 @@ export function erase(l: EditorLevel, x: number, y: number): boolean {
   delete c.sa;
   delete c.i;
   delete c.ia;
-  if (l.start?.x === x && l.start.y === y) l.start = null;
+  if (l.start?.x === x && l.start.y === y) {
+    l.start = null;
+    delete l.mainPearl;
+  }
   return changed;
 }
 
@@ -224,6 +235,8 @@ export function toLevelFile(l: EditorLevel, id = 'eigen'): LevelFile {
     for (let x = 0; x < l.width; x++) {
       const c = l.cells[y * l.width + x];
       const def: CellDef = { floor: c.f };
+      const force = BY_KIND.get(c.f)?.force;
+      if (force) def.force = [force[0], force[1]];
       const entry = c.s ? BY_KIND.get(c.s) : undefined;
       if (c.s === 'st_oxyd') {
         def.stone = 'st_oxyd';
@@ -246,6 +259,7 @@ export function toLevelFile(l: EditorLevel, id = 'eigen'): LevelFile {
   const file: LevelFile = { id, title: l.title.trim() || 'Ohne Titel', author: l.author.trim(), license: LICENSE, map, legend };
   if (l.basedOn?.trim()) file.basedOn = l.basedOn.trim();
   if (l.start) file.start = { x: l.start.x + 0.5, y: l.start.y + 0.5 };
+  if (l.start && l.mainPearl) file.mainPearl = { k: l.mainPearl };
   if (objects.length) file.objects = objects;
   if (l.actors.length) file.actors = l.actors.map((a) => ({ k: a.k, x: a.x, y: a.y, ...(a.a && Object.keys(a.a).length ? { a: { ...a.a } } : {}) }));
   return file;
@@ -299,7 +313,7 @@ export function fromLevelFile(file: LevelFile): Imported {
       dropped.add(o.k);
       continue;
     }
-    const attrs = keepAttrs(o.a);
+    const attrs = keepAttrs(o.a, e);
     if (e.layer === 'stone') {
       c.s = o.k;
       if (attrs) c.sa = attrs;
@@ -314,15 +328,20 @@ export function fromLevelFile(file: LevelFile): Imported {
   }
   if (start && !cellOf(level, start.x, start.y)) start = null;
   level.start = start;
+  if (start && file.mainPearl) {
+    if (BY_KIND.get(`start_${file.mainPearl.k.slice(3)}`)?.mainPearl === file.mainPearl.k) level.mainPearl = file.mainPearl.k;
+    else dropped.add(file.mainPearl.k);
+  }
   return { level, dropped: [...dropped] };
 }
 
 /** Attributes the editor keeps (the rest is engine state of imported levels). */
 export const KEPT_ATTRS = ['name', 'target', 'action', 'interval', 'flavor'];
 
-function keepAttrs(a: Record<string, string> | undefined): Record<string, string> | undefined {
+function keepAttrs(a: Record<string, string> | undefined, e: PaletteEntry): Record<string, string> | undefined {
   if (!a) return undefined;
   const out: Record<string, string> = {};
   for (const k of KEPT_ATTRS) if (typeof a[k] === 'string') out[k] = a[k];
+  for (const p of e.props ?? []) if (p.options.some(([v]) => v === a[p.key])) out[p.key] = a[p.key];
   return Object.keys(out).length ? out : undefined;
 }

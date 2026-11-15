@@ -70,13 +70,14 @@ export async function loadImages(style: EdStyle): Promise<void> {
 
 const PALETTE_IMAGES = ['st_oxyda', 'st_oxydb', 'st_oxydc', 'st_oxydd', 'ac_marble_black', ...new Set([...BY_KIND.values()].map((e) => e.image))];
 
-function sprite(style: EdStyle, ctx: CanvasRenderingContext2D, name: string, frame: number, x: number, y: number, t: number): boolean {
+/** frame: index in a strip (down if the image is taller than wide, else across) or [column, row] in a sheet. */
+function sprite(style: EdStyle, ctx: CanvasRenderingContext2D, name: string, frame: number | [number, number], x: number, y: number, t: number): boolean {
   const img = ready.get(`${setOf(style)}/${name}`) ?? ready.get(`gfx32/${name}`);
   if (!img) return false;
   const tile = name.startsWith('ac_') ? img.width : 32;
   const vertical = img.height >= img.width;
-  const sx = vertical ? 0 : frame * tile;
-  const sy = vertical ? frame * tile : 0;
+  const sx = Array.isArray(frame) ? frame[0] * tile : vertical ? 0 : frame * tile;
+  const sy = Array.isArray(frame) ? frame[1] * tile : vertical ? frame * tile : 0;
   // actors are 40 px sprites centred on the 32 px cell
   const size = (tile / 32) * t;
   const off = (t - size) / 2;
@@ -168,7 +169,25 @@ export function drawOxyd(style: EdStyle, ctx: CanvasRenderingContext2D, symbol: 
   oxydBadge(ctx, symbol, x, y, t);
 }
 
-export function drawMarble(style: EdStyle, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+/** Corner mark of an entry (direction, "invisible" …), readable in every style. */
+function badge(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, t: number): void {
+  const r = Math.max(5, t * 0.2);
+  const cx = x + r + 1;
+  const cy = y + r + 1;
+  ctx.fillStyle = 'rgba(10,12,24,0.82)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = `700 ${Math.round(r * 1.3)}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, cy + 0.5);
+}
+
+/** The main ball at the start: the black marble, or a pearl (meditation levels). */
+export function drawMarble(style: EdStyle, ctx: CanvasRenderingContext2D, x: number, y: number, t: number, pearl?: string): void {
+  if (pearl && sprite(style, ctx, pearl, 0, x, y, t)) return badge(ctx, '★', x, y, t);
   if (isClassic(style) && sprite(style, ctx, 'ac_marble_black', 0, x, y, t)) return;
   const g = ctx.createRadialGradient(x + t * 0.4, y + t * 0.38, t * 0.04, x + t / 2, y + t / 2, t * 0.36);
   g.addColorStop(0, style === 'glas' ? '#e9f3ff' : '#c8d0e0');
@@ -181,21 +200,47 @@ export function drawMarble(style: EdStyle, ctx: CanvasRenderingContext2D, x: num
 
 /** One palette entry as a preview tile. */
 export function drawEntry(style: EdStyle, ctx: CanvasRenderingContext2D, e: PaletteEntry, x: number, y: number, t: number, symbol = 'A', flavor = 'b'): void {
-  if (e.layer === 'floor') return void (isClassic(style) ? sprite(style, ctx, e.image, 0, x, y, t) : sketchFloor(style, ctx, e.kind, x, y, t));
-  if (e.layer === 'oxyd') return drawOxyd(style, ctx, symbol, flavor, x, y, t);
-  if (e.layer === 'start') return drawMarble(style, ctx, x, y, t);
-  if (e.wall && !isClassic(style)) return sketchWall(style, ctx, x, y, t);
-  sprite(style, ctx, e.image, e.frame ?? 0, x, y, t);
+  if (e.layer === 'floor') {
+    if (isClassic(style)) sprite(style, ctx, e.image, e.frame ?? 0, x, y, t);
+    else sketchFloor(style, ctx, e.kind, x, y, t);
+    if (e.force && !isClassic(style)) slopeArrow(ctx, e.force, x, y, t);
+  } else if (e.layer === 'oxyd') return drawOxyd(style, ctx, symbol, flavor, x, y, t);
+  else if (e.layer === 'start') return drawMarble(style, ctx, x, y, t, e.mainPearl);
+  else if (e.wall && !isClassic(style)) return sketchWall(style, ctx, x, y, t);
+  else sprite(style, ctx, e.image, e.frame ?? 0, x, y, t);
+  if (e.badge) badge(ctx, e.badge, x, y, t);
+}
+
+/** The 3D styles have no slope images: an arrow along the force. */
+function slopeArrow(ctx: CanvasRenderingContext2D, [fx, fy]: [number, number], x: number, y: number, t: number): void {
+  const n = Math.hypot(fx, fy) || 1;
+  const dx = (fx / n) * t * 0.3;
+  const dy = (fy / n) * t * 0.3;
+  const cx = x + t / 2;
+  const cy = y + t / 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = Math.max(1.5, t / 14);
+  ctx.beginPath();
+  ctx.moveTo(cx - dx, cy - dy);
+  ctx.lineTo(cx + dx, cy + dy);
+  ctx.lineTo(cx + dx * 0.4 - dy * 0.5, cy + dy * 0.4 + dx * 0.5);
+  ctx.moveTo(cx + dx, cy + dy);
+  ctx.lineTo(cx + dx * 0.4 + dy * 0.5, cy + dy * 0.4 - dx * 0.5);
+  ctx.stroke();
 }
 
 export function drawCell(style: EdStyle, ctx: CanvasRenderingContext2D, c: EdCell, x: number, y: number, t: number, cx: number, cy: number): void {
   const floor = BY_KIND.get(c.f);
   if (isClassic(style)) {
-    if (!floor || !sprite(style, ctx, floor.image, 0, x, y, t)) {
+    if (!floor || !sprite(style, ctx, floor.image, floor.frame ?? 0, x, y, t)) {
       ctx.fillStyle = '#444';
       ctx.fillRect(x, y, t, t);
     }
-  } else sketchFloor(style, ctx, c.f, x, y, t, cx, cy);
+  } else {
+    sketchFloor(style, ctx, c.f, x, y, t, cx, cy);
+    if (floor?.force) slopeArrow(ctx, floor.force, x, y, t);
+  }
+  if (floor?.badge && !c.s && !c.i) badge(ctx, floor.badge, x, y, t);
   if (c.i) {
     const e = BY_KIND.get(c.i);
     if (e) drawEntry(style, ctx, e, x, y, t);
@@ -225,7 +270,7 @@ export function drawLevel(style: EdStyle, ctx: CanvasRenderingContext2D, l: Edit
     const e = BY_KIND.get(a.k);
     if (e) drawEntry(style, ctx, e, Math.floor(a.x) * t, Math.floor(a.y) * t, t);
   }
-  if (l.start) drawMarble(style, ctx, l.start.x * t, l.start.y * t, t);
+  if (l.start) drawMarble(style, ctx, l.start.x * t, l.start.y * t, t, l.mainPearl);
 
   if (o.grid) {
     ctx.strokeStyle = 'rgba(255,255,255,0.07)';

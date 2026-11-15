@@ -64,7 +64,7 @@ Admin: probespielen ── „Freigeben“ ──► „frei“: in der Liste f�
 
 1. `sanitizeLevel` aus `src/editor/link.ts` – dieselbe strenge Prüfung wie bei Links und Datei-Import:
    nur bekannte Felder, nur Arten aus der Editor-Palette (erlaubte Objekte), nur bekannte Attribute,
-   Größe ≤ 60×40, höchstens 2 400 Objekte und 40 Gegner, Textlängen begrenzt, **nie Lua**, danach
+   Größe ≤ 100×64 (bis 15.11.2026: 60×40), höchstens 2 400 Objekte und 40 Gegner, Textlängen begrenzt, **nie Lua**, danach
    `parseLevel`. Gespeichert wird **das Ergebnis dieser Prüfung**, nie das hochgeladene JSON.
 2. `checkSolution` mit diesem Level und der Lösung. Die Level-Kennung der Aufzeichnung (`link:…` aus dem
    Probespiel) wird dafür als Kennung des Levels gesetzt; für Spieler-Levels gilt keine Enigma-Regel.

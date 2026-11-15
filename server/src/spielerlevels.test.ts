@@ -33,7 +33,11 @@ test('parseUpload: Form, Lizenz, kein Lua, Textlängen, Lösung aus dem Editor',
   assert.match(String(parseUpload(upload({ lizenz: 'MIT' }))), /CC BY-SA/);
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, license: 'GPL' } }))), /CC BY-SA/);
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, lua: 'os.exit()' } }))), /kein Lua/);
-  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, map: Array(41).fill('#') } }))), /60×40/);
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, map: Array(65).fill('#') } }))), /100×64/);
+  assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, map: ['#'.repeat(101)] } }))), /100×64/);
+  // larger palette (15.11.2026): 100 × 64 and a pearl as main ball pass the form check
+  assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, map: Array(64).fill('#'.repeat(100)) } })), 'object');
+  assert.equal(typeof parseUpload(upload({ level: { ...SAMPLE.level, mainPearl: { k: 'ac_pearl_white' } } })), 'object');
   assert.match(String(parseUpload(upload({ level: { ...SAMPLE.level, big: 'x'.repeat(300_000) } }))), /zu groß/);
   assert.match(String(parseUpload(upload({ titel: 'ab' }))), /Titel/);
   assert.match(String(parseUpload(upload({ titel: 'x'.repeat(61) }))), /Titel/);
@@ -411,6 +415,14 @@ describe('Spieler-Levels-API', () => {
     const foreign = await publish(s.app, anna, upload({ level: { ...SAMPLE.level, objects: [{ x: 2, y: 3, k: 'st_lua' }] } }));
     assert.equal(foreign.status, 'abgelehnt');
     assert.match(String(foreign.grund), /nicht erlaubt/);
+    // a kind of the larger palette with a value outside its list: the value is dropped, the level checked
+    const laser = { ...SAMPLE.level, objects: [...((SAMPLE.level.objects as unknown[]) ?? []), { x: 1, y: 1, k: 'st_laser_s', a: { state: 'an', name: 'l1' } }] };
+    const withLaser = await publish(s.app, anna, upload({ level: laser, loesung: still }));
+    assert.equal(withLaser.status, 'abgelehnt', JSON.stringify(withLaser)); // loaded and replayed: only the solution fails
+    assert.doesNotMatch(String(withLaser.grund), /nicht erlaubt|nicht laden/);
+    const badPearl = await publish(s.app, anna, upload({ level: { ...SAMPLE.level, mainPearl: { k: 'ac_rotor' } } }));
+    assert.equal(badPearl.status, 'abgelehnt');
+    assert.match(String(badPearl.grund), /Start-Perle/);
     // a changed level: the solution no longer fits (one Oxyd stone walled in elsewhere)
     const map = (SAMPLE.level.map as string[]).slice();
     map[2] = '.##########'.slice(0, map[2].length);
