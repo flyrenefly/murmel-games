@@ -85,6 +85,14 @@ Editor: Probespielen (bestehend) → Veröffentlichen (bestehend, Konto, CC BY-S
   „Im Editor öffnen“.
 - Der Titel kommt aus der Datei, der Autor des Editor-Levels bleibt leer. Beim Veröffentlichen nennt der
   Server wie bisher den Anzeigenamen; die Lizenzbestätigung im Veröffentlichen-Dialog bleibt.
+- **Herkunftsangabe** (seit 15.11.2026): Der Dialog bietet das Feld „Herkunft: nach einem Enigma-Level von …“,
+  vorbelegt mit Autor und Lizenz laut Datei („Ronald Lamprecht (GPL v2.0 or above)“, ohne Autor leer) und
+  änderbar. Sie geht als optionales `basedOn` im Level mit (Editor-Level, Leveldatei, Probespiel-Link),
+  höchstens 80 Zeichen, eine Zeile; `sanitizeLevel` (Editor und Prüfprozess) und `parseUpload` lehnen
+  Längeres ab. Der Server speichert sie in der eigenen Spalte `player_levels.based_on` (Migration 017),
+  nicht in der Leveldatei, und liefert sie als `vorlage` in den Karten und als `basedOn` in der Datei aus.
+  Angezeigt auf `spielerlevels.html` unter der Autorzeile und im Startdialog des Levels. Bestehende Levels
+  bleiben ohne Angabe.
 
 ## Was umgewandelt wird (Stufe 1)
 

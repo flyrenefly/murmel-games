@@ -1,10 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { RateLimit } from './limit.ts';
 import { berlinDay, LEVEL_ID } from './stats.ts';
 
 /**
  * Auswertung (docs/SPEC-auswertung.md): where players fail or give up. The game sends counters of ended
  * runs per pack and level in one bundle; the API adds them to the Berlin day's rows and forgets the
- * request. No IP address, check value, account or single run is stored.
+ * request. No IP address, check value, account or single run is stored; the IP address is only held in
+ * memory for the request limit (limit.ts) and never logged.
  */
 
 /** Counters of one level, as sent and as read (summed over the days). */
@@ -16,6 +18,8 @@ export interface LevelCounts {
   neustart: number;
   abbruch: number;
   abstuerze: number;
+  /** How often the way from the tips (docs/SPEC-tipps.md) was shown. */
+  wegGezeigt: number;
   /** Play time classes of solved runs: < 1, 1–3, 3–10, 10–30, ≥ 30 minutes. */
   zeitGeloest: number[];
   /** The same for abandoned runs. */
@@ -32,16 +36,21 @@ export interface AuswertungStore {
 export const MAX_LEVELS = 50;
 export const MAX_COUNT = 500;
 export const MAX_FALLS = 10_000;
+/** Bundles per IP address and window: a page sends one per 20 ended runs and when hidden or left, so this
+ * leaves room for a whole class or family behind one address. */
+export const BUNDLES_PER_IP = 120;
+export const BUNDLE_WINDOW_MS = 15 * 60_000;
 /** Rows are kept this many days. */
 export const KEEP_DAYS = 365;
-export const COUNTERS = ['gestartet', 'geloest', 'neustart', 'abbruch', 'abstuerze'] as const;
+export const COUNTERS = ['gestartet', 'geloest', 'neustart', 'abbruch', 'abstuerze', 'wegGezeigt'] as const;
 
 const count = { type: 'integer', minimum: 0, maximum: MAX_COUNT };
 const classes = { type: 'array', minItems: 5, maxItems: 5, items: count };
 const levelSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['pack', 'level', ...COUNTERS, 'zeitGeloest', 'zeitAbbruch'],
+  // wegGezeigt is optional (pages from before it was added do not send it) and then counts 0
+  required: ['pack', 'level', ...COUNTERS.filter((k) => k !== 'wegGezeigt'), 'zeitGeloest', 'zeitAbbruch'],
   properties: {
     pack: { type: 'string', pattern: LEVEL_ID },
     level: { type: 'string', pattern: LEVEL_ID },
@@ -50,6 +59,7 @@ const levelSchema = {
     neustart: count,
     abbruch: count,
     abstuerze: { type: 'integer', minimum: 0, maximum: MAX_FALLS },
+    wegGezeigt: { ...count, default: 0 },
     zeitGeloest: classes,
     zeitAbbruch: classes,
   },
@@ -72,6 +82,7 @@ export function auswertungRoutes(
   opts: { store: AuswertungStore; mayRead: (req: FastifyRequest) => boolean; now: () => Date },
 ): void {
   const { store, mayRead, now } = opts;
+  const ipLimit = new RateLimit(BUNDLES_PER_IP, BUNDLE_WINDOW_MS);
 
   app.post<{ Body: { levels: LevelCounts[] } }>(
     '/api/auswertung',
@@ -86,6 +97,8 @@ export function auswertungRoutes(
       },
     },
     async (req, reply) => {
+      // too many bundles from one address: dropped without a log line (the game ignores the answer)
+      if (!ipLimit.take(req.ip, now().getTime())) return reply.code(429).send({ error: 'Zu viele Anfragen. Bitte warte ein paar Minuten.' });
       try {
         await store.record(berlinDay(now()), req.body.levels);
       } catch (err) {

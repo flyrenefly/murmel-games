@@ -1,6 +1,7 @@
 // The editor's dialogs for Enigma files (docs/SPEC-enigma-upload.md, Oberfläche): convert in the worker,
 // show what came over, ask for the rights, open the result in the editor (preview, playtest, publish).
 
+import { MAX_BASED_ON } from '../editor/link';
 import type { EditorLevel } from '../editor/model';
 import { wandleImWorker } from './client';
 import { UploadError } from './datei';
@@ -19,6 +20,12 @@ export interface EnigmaHost {
 
 export const ENIGMA_ACCEPT = '.xml,.lua,text/xml,application/xml';
 export const RIGHTS_TEXT = 'Ich habe dieses Level selbst gebaut oder die Erlaubnis des Urhebers, es unter CC BY-SA 4.0 zu veröffentlichen.';
+
+/** Prefill of „nach einem Enigma-Level von …“: author and licence as the file names them, or empty. */
+export function vorlageAus(h: { autor: string; lizenz: string }): string {
+  if (!h.autor) return '';
+  return (h.lizenz ? `${h.autor} (${h.lizenz})` : h.autor).slice(0, MAX_BASED_ON);
+}
 
 /** Whether a picked file is an Enigma level (by its name). */
 export const isEnigmaFile = (name: string): boolean => /\.(xml|lua)$/i.test(name);
@@ -85,6 +92,11 @@ export function showResult(h: EnigmaHost, r: Ergebnis): void {
     for (const t of r.hinweise) ul.append(Object.assign(document.createElement('li'), { textContent: t }));
     f.append(h.note('Hinweise – prüfe beim Probespielen, ob das Level so lösbar bleibt:'), ul);
   }
+  // optional credit, prefilled from the file and editable; shown with the published level
+  const vorlage = Object.assign(document.createElement('input'), { type: 'text', value: vorlageAus(r.herkunft), maxLength: MAX_BASED_ON, autocomplete: 'off', placeholder: 'freiwillig, etwa der Name des Urhebers' });
+  const vorlageLabel = document.createElement('label');
+  vorlageLabel.append('Herkunft: „nach einem Enigma-Level von …“', vorlage);
+  f.append(vorlageLabel);
   const rights = Object.assign(document.createElement('input'), { type: 'checkbox' });
   const label = document.createElement('label');
   label.className = 'ed-check';
@@ -99,7 +111,8 @@ export function showResult(h: EnigmaHost, r: Ergebnis): void {
       return;
     }
     h.close();
-    h.open(r.level);
+    const nach = vorlage.value.replace(/\s+/g, ' ').trim();
+    h.open(nach ? { ...r.level, basedOn: nach } : r.level);
     h.toast(`„${r.level.title}“ umgewandelt. Spiel es probe; nach dem Lösen kannst du es veröffentlichen.`, 5000);
   };
   f.addEventListener('submit', (e) => {

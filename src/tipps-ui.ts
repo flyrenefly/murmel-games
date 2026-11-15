@@ -16,6 +16,8 @@ export interface TippHost {
   spielen(): void;
   /** No tips now (zu zweit, a level from a link that is being edited …). */
   aus(): boolean;
+  /** The way was shown in this run (for the Auswertung, docs/SPEC-auswertung.md). */
+  wegGezeigt?(s: GameSession): void;
 }
 
 /** Frames between two looks at the progress (the situation is cheap, but not free). */
@@ -116,6 +118,7 @@ export function tippsUI(host: TippHost, knopf: HTMLButtonElement) {
     geist = g;
     zuletzt = { von: a.von, ende: w.ende };
     wege++;
+    host.wegGezeigt?.(s);
     host.spielen();
     host.showToast('Der Geist zeigt den Weg.', 1800);
   }

@@ -16,6 +16,8 @@ export const MAX_UNPACKED = 512 * 1024;
 const MAX_OBJECTS = 2400;
 const MAX_ACTORS = 40;
 const MAX_TEXT = 80;
+/** Length of „nach einem Enigma-Level von …“ (basedOn); the server checks the same (server/src/spielerlevels.ts). */
+export const MAX_BASED_ON = 80;
 /** Connection attributes every object may carry; others only as a property of its palette entry. */
 const ATTRS = new Set(['name', 'target', 'action', 'interval']);
 const CELL_KEYS = new Set(['floor', 'stone', 'symbol', 'flavor', 'start', 'force']);
@@ -72,8 +74,9 @@ async function pipe(bytes: Uint8Array, stream: CompressionStream | Decompression
 
 /** The compact form in the link: a LevelFile without id and licence. */
 function linkJson(file: LevelFile): string {
-  const { title, author, map, legend, start, objects, actors, mainPearl } = file;
-  return JSON.stringify({ title, author, map, legend, start, objects, actors, mainPearl });
+  const { title, author, basedOn, map, legend, start, objects, actors, mainPearl } = file;
+  // basedOn (the credit of a converted Enigma level) and mainPearl travel along; without them the link stays as before
+  return JSON.stringify({ title, author, basedOn, map, legend, start, objects, actors, mainPearl });
 }
 
 /** Data part of the link (without '#level='). */
@@ -206,6 +209,11 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
       return { k, x: coord(o.x, width), y: coord(o.y, height) };
     }),
   };
+  if (raw.basedOn !== undefined) {
+    const b = typeof raw.basedOn === 'string' ? raw.basedOn.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s{2,}/g, ' ').trim() : null;
+    if (b === null || [...b].length > MAX_BASED_ON) throw new LinkError(`Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`);
+    if (b) file.basedOn = b;
+  }
   if (raw.start !== undefined) {
     if (!isObj(raw.start)) throw new LinkError('Der Startpunkt ist ungültig.');
     file.start = { x: coord(raw.start.x, width), y: coord(raw.start.y, height) };

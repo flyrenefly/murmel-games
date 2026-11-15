@@ -13,6 +13,8 @@ interface Card {
   stimmen: number;
   breite: number;
   hoehe: number;
+  /** „nach einem Enigma-Level von …“, null without (docs/SPEC-enigma-upload.md). */
+  vorlage?: string | null;
 }
 interface FullCard extends Card {
   status: LevelStatus;
@@ -71,12 +73,13 @@ async function api<T>(method: string, url: string, body?: unknown): Promise<{ ok
 
 const playUrl = (id: number) => `./#spieler=${id}`;
 
-/** Title, author, size, date, rating, description, licence. */
+/** Title, author, size, date, rating, origin of a converted Enigma level, description. */
 function cardBody(c: Card, h: 'h2' | 'h3' = 'h2'): Node[] {
   const stars = el('span', { className: c.stimmen ? 'stars' : '' }, ratingText(c.sterne, c.stimmen));
   return [
     el(h, { textContent: c.titel }),
     el('p', { className: 'meta' }, `von ${c.autor} · ${c.breite}×${c.hoehe} · ${datum(c.datum)} · `, stars),
+    ...(c.vorlage ? [el('p', { className: 'meta vorlage', textContent: `nach einem Enigma-Level von ${c.vorlage}` })] : []),
     ...(c.beschreibung ? [el('p', { className: 'desc', textContent: c.beschreibung })] : []),
   ];
 }

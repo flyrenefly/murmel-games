@@ -193,8 +193,8 @@ async function loadAuswertung(count: number, headers: Record<string, string>): P
     const { levels } = (await res.json()) as { levels: LevelCounts[] };
     rows(
       $('a-levels'),
-      8,
-      schwersteLevels(levels).map((l) => [l.level, l.pack, fmt.format(l.laeufe), pct.format(l.geloest), dec.format(l.neustartsJeLauf), fmt.format(l.abbrueche), dec.format(l.abstuerzeJeLauf), l.typischeZeit ?? '–']),
+      9,
+      schwersteLevels(levels).map((l) => [l.level, l.pack, fmt.format(l.laeufe), pct.format(l.geloest), dec.format(l.neustartsJeLauf), fmt.format(l.abbrueche), dec.format(l.abstuerzeJeLauf), fmt.format(l.wegGezeigt), l.typischeZeit ?? '–']),
       'Noch kein Level mit mindestens 5 beendeten Läufen in diesem Zeitraum.',
     );
     rows(

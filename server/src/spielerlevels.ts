@@ -25,6 +25,8 @@ export interface PlayerLevel {
   authorBlocked: boolean;
   title: string;
   description: string;
+  /** „nach einem Enigma-Level von …“ (docs/SPEC-enigma-upload.md), null: none. */
+  basedOn: string | null;
   /** The checked level (without id and author); only from level(). */
   file?: LevelJson;
   width: number;
@@ -61,7 +63,7 @@ export interface PlayerLevelStore {
   countUploads(accountId: number, since: Date): Promise<number>;
   countWaiting(accountId: number): Promise<number>;
   /** Stores a checked level as 'wartet'. `replaces` only if it is one of the account's own levels. */
-  create(l: { accountId: number; title: string; description: string; file: LevelJson; levelHash: string; recording: Recording; steps: number; replaces: number | null; now: Date }): Promise<number>;
+  create(l: { accountId: number; title: string; description: string; basedOn?: string | null; file: LevelJson; levelHash: string; recording: Recording; steps: number; replaces: number | null; now: Date }): Promise<number>;
   level(id: number): Promise<PlayerLevel | null>;
   /** Public list: released, not reported, author not blocked. */
   list(f: ListFilter): Promise<PlayerLevel[]>;
@@ -108,6 +110,8 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const BODY_LIMIT = 2 * 1024 * 1024;
 export const MAX_LEVEL_BYTES = 256 * 1024;
+/** Length of „nach einem Enigma-Level von …“, like MAX_BASED_ON in src/editor/link.ts. */
+export const MAX_BASED_ON = 80;
 export const UPLOADS_PER_DAY = 5;
 /** Checks per account and day, rejected ones included (they leave no row behind). */
 export const CHECKS_PER_DAY = 20;
@@ -118,7 +122,7 @@ const MAIL_POLL_MS = 10 * MINUTE;
 const PAGE = 30;
 const NO_NAME = 'Spieler ohne Namen';
 /** Fields of a LevelFile the editor makes; anything else (lua, docs …) is refused. */
-const LEVEL_KEYS = new Set(['id', 'title', 'author', 'license', 'map', 'legend', 'start', 'objects', 'actors', 'mainPearl']);
+const LEVEL_KEYS = new Set(['id', 'title', 'author', 'license', 'basedOn', 'map', 'legend', 'start', 'objects', 'actors', 'mainPearl']);
 /** Largest map (MAX_W × MAX_H in src/editor/model.ts; the checker's sanitizeLevel enforces it again). */
 export const MAX_W = 100;
 export const MAX_H = 64;
@@ -149,6 +153,8 @@ export function parseUpload(body: unknown): Upload | string {
   const map = level.map;
   if (!Array.isArray(map) || map.length < 1 || map.length > MAX_H || !map.every((r) => typeof r === 'string' && r.length >= 1 && r.length <= MAX_W))
     return `Die Karte fehlt oder ist größer als ${MAX_W}×${MAX_H}.`;
+  if (level.basedOn !== undefined && (typeof level.basedOn !== 'string' || chars(line(level.basedOn)) > MAX_BASED_ON))
+    return `Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`;
   if (level.license !== LICENSE || body.lizenz !== LICENSE) return 'Spieler-Levels stehen unter CC BY-SA 4.0 – bitte die Lizenz bestätigen.';
   const title = typeof body.titel === 'string' ? line(body.titel) : '';
   if (chars(title) < 3 || chars(title) > 60) return 'Der Titel braucht 3 bis 60 Zeichen.';
@@ -171,7 +177,7 @@ export function visibleTo(l: PlayerLevel, a: Pick<Account, 'id' | 'role'> | null
 
 /** The level as the game loads it: id 'spieler:<n>', title, author (display name) and licence. */
 export function playableFile(l: PlayerLevel): LevelJson {
-  return { ...l.file, id: `spieler:${l.id}`, title: l.title, author: l.author ?? NO_NAME, license: LICENSE };
+  return { ...l.file, id: `spieler:${l.id}`, title: l.title, author: l.author ?? NO_NAME, license: LICENSE, ...(l.basedOn ? { basedOn: l.basedOn } : {}) };
 }
 
 /** For the leaderboard: the checked level of 'spieler:<n>' if the account may play it. */
@@ -196,6 +202,7 @@ function card(l: PlayerLevel) {
     breite: l.width,
     hoehe: l.height,
     lizenz: LICENSE,
+    vorlage: l.basedOn,
   };
 }
 
@@ -273,10 +280,10 @@ export function playerLevelRoutes(app: FastifyInstance, opts: PlayerLevelOptions
       if (r.status === 'fehler') return { status: 'abgelehnt', grund: 'Die Lösung ließ sich nicht nachspielen.' };
       return { status: 'abgelehnt', grund: 'Beim Nachspielen löst deine Aufzeichnung dieses Level nicht. Spiel es im Editor noch einmal probe und veröffentliche es danach.' };
     }
-    // the stored level: checked content, the upload's title; id and author are set on delivery
-    const { id: _id, author: _author, ...rest } = r.file;
+    // the stored level: checked content, the upload's title; id, author and basedOn (own column) are set on delivery
+    const { id: _id, author: _author, basedOn, ...rest } = r.file;
     const file: LevelJson = { ...rest, title: u.title, license: LICENSE };
-    const id = await store.create({ accountId, title: u.title, description: u.description, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
+    const id = await store.create({ accountId, title: u.title, description: u.description, basedOn: typeof basedOn === 'string' && basedOn ? basedOn : null, file, levelHash: levelHashOf(file), recording: u.recording, steps: r.steps, replaces: u.replaces, now: now() });
     void notify();
     return { status: 'angenommen', level: id };
   }
