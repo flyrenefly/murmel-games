@@ -108,7 +108,7 @@ export function memoryPlayerLevelStore(
       const out: ReportedLevel[] = [];
       for (const r of rows) {
         const reasons = open(r.id).map((x) => x.reason);
-        if (r.status === 'wartet' || reasons.length) out.push({ ...(await view(r)), reasons });
+        if (r.status === 'wartet' || reasons.length) out.push({ ...(await view(r, true)), reasons });
       }
       return out.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id - b.id);
     },

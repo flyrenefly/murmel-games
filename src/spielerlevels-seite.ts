@@ -24,6 +24,8 @@ interface FullCard extends Card {
   gesperrt: boolean;
   erstellt?: string;
   gruende?: string[];
+  /** Admin review: every document text of the level (plain text). */
+  texte?: { x: number; y: number; text: string }[];
 }
 interface Detail extends Card {
   eigen: boolean;
@@ -254,6 +256,11 @@ function reviewCard(c: FullCard, reported: boolean): HTMLLIElement {
     li.append(el('p', { className: 'reason' }, el('strong', { textContent: `${c.gruende.length === 1 ? 'Meldung' : `${c.gruende.length} Meldungen`}: ` }), c.gruende.join(' · ')));
   }
   li.append(el('p', { className: 'lic', textContent: `Lösung des Autors: ${zeit(c.zeit)} · eingereicht ${datum(c.erstellt ?? c.datum)}` }));
+  // everything the level will show as text, so it can be judged before release (always as text, never HTML)
+  if (c.texte?.length) {
+    const list = el('ol', { className: 'texte' }, ...c.texte.map((t) => el('li', {}, el('span', { className: 'pos', textContent: `Feld ${t.x + 1}, ${t.y + 1}: ` }), t.text ? el('span', { textContent: t.text }) : el('em', { textContent: 'ohne Text' }))));
+    li.append(el('details', { className: 'texte', open: true }, el('summary', { textContent: `Texte im Level (${c.texte.length})` }), list));
+  }
   const panel = el('div', { className: 'panel', hidden: true });
   const actions = el('div', { className: 'actions' }, el('a', { className: 'button', href: playUrl(c.id), target: '_blank', rel: 'noopener', textContent: 'Probespielen' }));
   const run = async (b: HTMLButtonElement, fn: () => Promise<{ ok: boolean; fehler?: string }>, done: string) => {

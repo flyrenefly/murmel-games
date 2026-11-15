@@ -126,6 +126,15 @@ const LEVEL_KEYS = new Set(['id', 'title', 'author', 'license', 'basedOn', 'map'
 /** Largest map (MAX_W × MAX_H in src/editor/model.ts; the checker's sanitizeLevel enforces it again). */
 export const MAX_W = 100;
 export const MAX_H = 64;
+/** Document texts (src/editor/link.ts MAX_DOCS, MAX_DOC_TEXT; the checker's sanitizeLevel enforces them again). */
+export const MAX_DOCS = 10;
+export const MAX_DOC_TEXT = 300;
+
+/** The documents of a level with their texts, for the review (shown as plain text). */
+export function documentTexts(file: LevelJson | undefined): { x: number; y: number; text: string }[] {
+  const objects = Array.isArray(file?.objects) ? (file.objects as unknown[]) : [];
+  return objects.filter((o): o is { x: number; y: number; k: string; a?: { text?: unknown } } => isObj(o) && o.k === 'it_document').map((o) => ({ x: Number(o.x), y: Number(o.y), text: typeof o.a?.text === 'string' ? o.a.text : '' }));
+}
 const RECORDED_ID = /^(link|spieler):[A-Za-z0-9]{1,40}$/;
 
 const chars = (s: string) => [...s].length;
@@ -153,6 +162,9 @@ export function parseUpload(body: unknown): Upload | string {
   const map = level.map;
   if (!Array.isArray(map) || map.length < 1 || map.length > MAX_H || !map.every((r) => typeof r === 'string' && r.length >= 1 && r.length <= MAX_W))
     return `Die Karte fehlt oder ist größer als ${MAX_W}×${MAX_H}.`;
+  const docs = documentTexts(level);
+  if (docs.length > MAX_DOCS) return `Ein Level darf höchstens ${MAX_DOCS} Dokumente enthalten.`;
+  if (docs.some((d) => chars(d.text) > MAX_DOC_TEXT)) return `Ein Dokumenttext darf höchstens ${MAX_DOC_TEXT} Zeichen haben.`;
   if (level.basedOn !== undefined && (typeof level.basedOn !== 'string' || chars(line(level.basedOn)) > MAX_BASED_ON))
     return `Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`;
   if (level.license !== LICENSE || body.lizenz !== LICENSE) return 'Spieler-Levels stehen unter CC BY-SA 4.0 – bitte die Lizenz bestätigen.';
@@ -421,7 +433,8 @@ export function playerLevelRoutes(app: FastifyInstance, opts: PlayerLevelOptions
   app.get('/api/admin/spielerlevels', { preHandler: requireAdmin }, async (_req, reply) => {
     reply.header('Cache-Control', 'no-store');
     const all = await store.pending();
-    const row = (l: ReportedLevel) => ({ ...fullCard(l), gruende: l.reasons });
+    // the texts of the documents, so the admins read everything the level will show
+    const row = (l: ReportedLevel) => ({ ...fullCard(l), gruende: l.reasons, texte: documentTexts(l.file) });
     return { wartend: all.filter((l) => l.status === 'wartet').map(row), gemeldet: all.filter((l) => l.reports > 0).map(row) };
   });
 

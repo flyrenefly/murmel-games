@@ -112,7 +112,7 @@ export function playerLevelStore(sql: Sql): PlayerLevelStore {
 
     async pending() {
       const rows = await sql<Row[]>`
-        select ${cols},
+        select ${cols}, p.file,
           coalesce((select array_agg(x.reason order by x.created_at) from player_level_reports x where x.level_id = p.id and x.dismissed_at is null), '{}') as reasons
         from player_levels p join accounts a on a.id = p.account_id
         where p.status = 'wartet' or exists (select 1 from player_level_reports x where x.level_id = p.id and x.dismissed_at is null)
