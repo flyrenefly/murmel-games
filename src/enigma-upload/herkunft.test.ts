@@ -13,8 +13,8 @@ const level = () => {
 
 describe('Herkunft eines umgewandelten Enigma-Levels', () => {
   it('belegt die Angabe aus Autor und Lizenz der Datei vor', () => {
-    expect(vorlageAus({ autor: 'Ronald Lamprecht', lizenz: 'GPL v2.0 or above' })).toBe('Ronald Lamprecht (GPL v2.0 or above)');
-    expect(vorlageAus({ autor: 'Ronald Lamprecht', lizenz: '' })).toBe('Ronald Lamprecht');
+    expect(vorlageAus({ autor: 'Ronald Lamprecht', lizenz: 'GPL v2.0 or above' })).toBe('Enigma-Level von Ronald Lamprecht (GPL v2.0 or above)');
+    expect(vorlageAus({ autor: 'Ronald Lamprecht', lizenz: '' })).toBe('Enigma-Level von Ronald Lamprecht');
     // without an author there is nothing to credit
     expect(vorlageAus({ autor: '', lizenz: 'GPL' })).toBe('');
     expect([...vorlageAus({ autor: 'x'.repeat(200), lizenz: 'GPL' })].length).toBe(MAX_BASED_ON);

@@ -243,7 +243,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   };
   if (raw.basedOn !== undefined) {
     const b = typeof raw.basedOn === 'string' ? raw.basedOn.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s{2,}/g, ' ').trim() : null;
-    if (b === null || [...b].length > MAX_BASED_ON) throw new LinkError(`Die Angabe „nach einem Enigma-Level von …“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`);
+    if (b === null || [...b].length > MAX_BASED_ON) throw new LinkError(`Die Angabe „Vorlage“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`);
     if (b) file.basedOn = b;
   }
   if (raw.start !== undefined) {

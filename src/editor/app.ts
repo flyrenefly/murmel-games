@@ -694,7 +694,7 @@ function basedOnField(): HTMLElement {
   });
   const box = field('Vorlage/Herkunft (optional)', input);
   box.classList.add('ed-field-stack');
-  const hint = note(`Erscheint beim Level als „nach einem Enigma-Level von …“. Höchstens ${MAX_BASED_ON} Zeichen; leer lassen, wenn es keine Vorlage gibt.`);
+  const hint = note(`Erscheint beim Level als „Vorlage: …“, z. B. „Enigma-Level von Autor (Lizenz)“. Höchstens ${MAX_BASED_ON} Zeichen; leer lassen, wenn es keine Vorlage gibt.`);
   hint.id = 'ed-based-on-hint';
   const wrap = document.createElement('div');
   wrap.append(box, hint);

@@ -24,7 +24,7 @@ export const RIGHTS_TEXT = 'Ich habe dieses Level selbst gebaut oder die Erlaubn
 /** Prefill of „nach einem Enigma-Level von …“: author and licence as the file names them, or empty. */
 export function vorlageAus(h: { autor: string; lizenz: string }): string {
   if (!h.autor) return '';
-  return (h.lizenz ? `${h.autor} (${h.lizenz})` : h.autor).slice(0, MAX_BASED_ON);
+  return `Enigma-Level von ${h.lizenz ? `${h.autor} (${h.lizenz})` : h.autor}`.slice(0, MAX_BASED_ON);
 }
 
 /** Whether a picked file is an Enigma level (by its name). */
@@ -95,7 +95,7 @@ export function showResult(h: EnigmaHost, r: Ergebnis): void {
   // optional credit, prefilled from the file and editable; shown with the published level
   const vorlage = Object.assign(document.createElement('input'), { type: 'text', value: vorlageAus(r.herkunft), maxLength: MAX_BASED_ON, autocomplete: 'off', placeholder: 'freiwillig, etwa der Name des Urhebers' });
   const vorlageLabel = document.createElement('label');
-  vorlageLabel.append('Herkunft: „nach einem Enigma-Level von …“', vorlage);
+  vorlageLabel.append('Vorlage (erscheint beim Level als „Vorlage: …“)', vorlage);
   f.append(vorlageLabel);
   const rights = Object.assign(document.createElement('input'), { type: 'checkbox' });
   const label = document.createElement('label');

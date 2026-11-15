@@ -107,7 +107,7 @@ function form(h: PublishHost, file: LevelFile, solution: Recording, name: string
   desc.addEventListener('input', () => (count.textContent = `${desc.value.length} / 500`));
   const basedOn = Object.assign(document.createElement('input'), { type: 'text', value: file.basedOn ?? '', maxLength: MAX_BASED_ON, autocomplete: 'off', className: 'ed-based-on', placeholder: 'leer lassen, wenn es keine Vorlage gibt' });
   basedOn.setAttribute('aria-describedby', 'ed-publish-based-on');
-  const basedOnHint = h.note('Erscheint beim Level als „nach einem Enigma-Level von …“.');
+  const basedOnHint = h.note('Erscheint beim Level als „Vorlage: …“.');
   basedOnHint.id = 'ed-publish-based-on';
   basedOnHint.classList.add('ed-hint');
   f.append(label('Titel', title), label('Beschreibung', desc, count));
