@@ -383,6 +383,15 @@ button.level small {
   border-color: #ffb547;
 }
 
+/* Spielstand in der Cloud: determinate progress while a saved run is replayed */
+.card .cloud-fortschritt {
+  display: block;
+  width: min(280px, 100%);
+  height: 6px;
+  margin: 4px auto 14px;
+  accent-color: var(--accent);
+}
+
 /* ---------- Konto (Anmelden, Kontoseite) ---------- */
 #ov-form {
   display: grid;

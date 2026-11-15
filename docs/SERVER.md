@@ -305,6 +305,11 @@ Auftrag) und eine Umschaltung wie beim WH-Notbetrieb (Zeuge/Prüfung, die bei Au
 | `auswertung` | Datensparsam, ohne Fremdanbieter: wo Spieler scheitern oder abbrechen → bessere Reihenfolge und Schwierigkeit der Pakete (Datenschutzerklärung anpassen) | eigene Protokolle |
 | `cloudstand` | Spielstand mitten im Level in der Cloud, auf einem anderen Gerät weiterspielen | `sync`, Spielstand-Format |
 
+**`cloudstand` gebaut (Branch `cloudstand`, 14.11.2026):** Spezifikation `docs/SPEC-cloudstand.md`, Migration
+`014_cloudstand.sql`, API `/api/spielstand` (`server/src/cloudstand*.ts`), im Spiel `src/cloudstand.ts`. Ein Stand ist
+Startwert plus Eingabeaufzeichnung (gzip) mit Prüfcode, kein Speicherabzug; höchstens 20 je Konto, 90 Tage.
+Datenschutzabsatz als Entwurf in der Spezifikation (Freigabe offen).
+
 Größter Nutzen zuerst: **`loesbarkeit`** (löst das größte offene Qualitätsproblem: heute wird nur
 geprüft, ob Levels laden) und **`geister`** – beide bauen auf der Eingabeaufzeichnung auf, die für
 die Bestenlisten ohnehin entsteht.
