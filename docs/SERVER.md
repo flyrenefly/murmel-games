@@ -264,7 +264,24 @@ der damit aktuell bleibt.
 **Rückweg auf den Webspace (Notbetrieb, von Hand):** IONOS → Domains & SSL → murmel.games →
 „Verwendungsart anpassen“ → Webspace `/murmel-games`. Das stellt die alten Einträge
 (A `217.160.0.80`, AAAA `2001:8d8:100f:f000::2ef`) wieder her; wirksam nach höchstens 5 min.
-Eine automatische Umschaltung (Zeuge) ist noch nicht gebaut.
+
+**Automatische Umschaltung (seit 15.11.2026, Nutzerentscheidung: Wächter in GitHub Actions, automatischer
+Rückweg):** `.github/workflows/notbetrieb.yml` ruft alle 5 Minuten `tools/notbetrieb.mjs` auf. Es prüft den VPS
+direkt über seine IP (SNI `murmel.games`), unabhängig vom DNS.
+- **Ausfall:** 3 Fehlschläge in rund 90 s, der Webspace liefert aber aus → A-Einträge `murmel.games` und `www`
+  per IONOS-DNS-API auf `217.160.0.80`. Scheitern VPS und Webspace beide, wird nicht umgeschaltet (vermutlich
+  Netz des Prüfers).
+- **Rückweg:** 5 Erfolge in Folge über rund 4 min → beide Einträge zurück auf `85.215.139.111`.
+- Der Wächter fasst nur A-Einträge an, die auf eine der beiden bekannten Adressen zeigen. Bei jeder anderen
+  Adresse (Handänderung) greift er nicht ein. AAAA-Einträge legt er nicht an (der Notbetrieb läuft über IPv4).
+- **Benachrichtigung:** Jede Umschaltung, eine Warnung und jede Störung des Wächters legt ein GitHub-Issue an,
+  das `@flyrenefly` erwähnt (Mail und Push über GitHub). Beim Rückweg wird das Notbetriebs-Issue kommentiert und
+  geschlossen.
+- **Schlüssel:** Geheimnis `IONOS_DNS_API_KEY` im Repo (Format `Präfix.Geheimnis`, IONOS-Entwicklerportal).
+  Ohne Schlüssel prüft der Wächter nur und warnt per Issue.
+- Handstart: Actions → „Notbetrieb-Wächter“ → Run workflow; „Nur prüfen“ ist dort voreingestellt.
+- Grenzen: GitHub startet Zeitpläne oft 5–20 min verspätet, die Umschaltung greift also nach etwa 10–30 min,
+  plus TTL 5 min. Zeitpläne in Repos ohne Aktivität deaktiviert GitHub nach 60 Tagen.
 
 Statt Spiel auf IONOS + API auf dem VPS liegt **alles auf dem eigenen Server**; der IONOS-Webspace
 bleibt als **statischer Notbetrieb** (wie beim WH-Website-Notbetrieb: fällt der Server aus, liefert
