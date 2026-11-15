@@ -435,9 +435,10 @@ function convertLevel(pack, meta, xml, exp, lua) {
     return reject('nur Netzwerkspiel');
   }
   const w = exp.world;
-  // wo["SlopeForce"] (server::SlopeForce, default 25) from the level's init
-  const slopeForce = lua?.world?.SlopeForce !== undefined ? Number(lua.world.SlopeForce) : 25;
-  if (lua?.error && lua.code.includes('SlopeForce')) reject('Lua-Init (Weltwert)');
+  // wo["SlopeStrength"] (WorldProxy → server::SlopeForce, default 25) from the level's init.
+  // (API 1 enigma.SlopeForce = … changes nothing in Enigma 1.x: no code reads it back.)
+  const slopeForce = lua?.world?.SlopeStrength !== undefined ? Number(lua.world.SlopeStrength) : 25;
+  if (lua?.error && lua.code.includes('SlopeStrength')) reject('Lua-Init (Weltwert)');
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
