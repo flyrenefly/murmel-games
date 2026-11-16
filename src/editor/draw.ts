@@ -3,6 +3,7 @@
 // floor, walls and Oxyd stones (src/render/view.ts); objects keep their Enigma image there.
 
 import { isDeadly } from '../game/level';
+import { satzFragen } from '../vorladen';
 import type { EdCell, EditorLevel } from './model';
 import { BY_KIND, type PaletteEntry } from './palette';
 
@@ -50,6 +51,8 @@ const setOf = (s: EdStyle) => (s === 'klassisch-retro' ? 'gfx32-retro' : 'gfx32'
 /** Loads the images of every palette entry for a style (the retro set falls back to the normal one). */
 export async function loadImages(style: EdStyle): Promise<void> {
   const set = setOf(style);
+  // the offline cache holds only the game's active set (src/vorladen.ts): keep the editor's set too
+  void satzFragen(set, true);
   const names = new Set(PALETTE_IMAGES);
   await Promise.all(
     [...names].map((name) => {

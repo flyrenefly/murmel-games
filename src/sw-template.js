@@ -1,23 +1,69 @@
 // Murmel service worker: plays offline (installable PWA). Generated into dist/sw.js by the
-// offline plugin in vite.config.ts, which fills in VERSION and PRECACHE.
-// - App shell, graphics, sounds: precached on install, served from the cache.
+// offline plugin in vite.config.ts, which fills in VERSION, PRECACHE and SAETZE.
+// - App shell, sounds: precached on install, served from the cache.
+// - Classic graphics: only the set of the active style is precached (the page names it, src/vorladen.ts);
+//   another set is fetched when the page asks for it (style switch), into the same versioned cache.
 // - Pages (navigation): network first, cache when offline – new releases show up at once.
 // - Level packs (levels/enigma/*.json): from the cache, refreshed in the background
 //   (stale-while-revalidate); a pack is offline once it has been opened.
 const VERSION = '__VERSION__';
 const PRECACHE = __PRECACHE__;
+const SAETZE = __SAETZE__;
 const SHELL = `murmel-shell-${VERSION}`;
 const LEVELS = 'murmel-levels';
 
 const url = (p) => new URL(p, self.registration.scope).href;
+// cache: 'reload' – past the HTTP cache, so a new release never stores an old file
+const frisch = (p) => new Request(url(p), { cache: 'reload' });
+
+/** The graphics set the page chose (src/vorladen.ts puts it into murmel-einstellungen); else "Klassisch". */
+async function gewaehlterSatz() {
+  try {
+    const hit = await (await caches.open('murmel-einstellungen')).match(url('./grafiksatz'));
+    const s = hit ? (await hit.text()).trim() : '';
+    if (Object.hasOwn(SAETZE, s)) return s;
+  } catch {
+    /* no cache: the default set */
+  }
+  return 'gfx32';
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL)
-      // cache: 'reload' – past the HTTP cache, so a new release never stores an old file
-      .then((c) => c.addAll(PRECACHE.map((p) => new Request(url(p), { cache: 'reload' }))))
+    Promise.all([caches.open(SHELL), gewaehlterSatz()])
+      .then(([c, satz]) => c.addAll([...PRECACHE, ...SAETZE[satz]].map(frisch)))
       .then(() => self.skipWaiting()),
+  );
+});
+
+/** Is the set complete in this version's cache? With `laden`, fetch what is missing first. */
+async function satzSichern(satz, laden) {
+  const c = await caches.open(SHELL);
+  const da = new Set((await c.keys()).map((r) => r.url));
+  const fehlt = SAETZE[satz].filter((p) => !da.has(url(p)));
+  if (!fehlt.length) return true;
+  if (!laden) return false;
+  // one by one: offline or cut off, what arrived stays and the next try fetches only the rest
+  const ok = await Promise.all(
+    fehlt.map((p) =>
+      fetch(frisch(p))
+        .then((res) => res.ok && c.put(url(p), res).then(() => true))
+        .catch(() => false),
+    ),
+  );
+  return ok.every(Boolean);
+}
+
+// The page asks for a graphics set (style switch, start): { murmel: 'grafiksatz', satz, laden } with a
+// MessagePort for the answer { fertig }.
+self.addEventListener('message', (event) => {
+  const d = event.data;
+  if (!d || d.murmel !== 'grafiksatz' || !Object.hasOwn(SAETZE, d.satz)) return;
+  const antwort = event.ports[0];
+  event.waitUntil(
+    satzSichern(d.satz, d.laden === true)
+      .catch(() => false)
+      .then((fertig) => antwort?.postMessage({ fertig })),
   );
 });
 
