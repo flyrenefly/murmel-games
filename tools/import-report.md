@@ -1,13 +1,13 @@
 # Enigma-Import
 
-1259 von 1322 Levels übernommen (19 Pakete), davon 48 Querverweise auf Levels anderer Pakete.
+1260 von 1322 Levels übernommen (19 Pakete), davon 48 Querverweise auf Levels anderer Pakete.
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
 | Lizenz: keine Angabe | 42 | 42 |
 | nicht exportiert | 9 | 9 |
-| Lua-Init | 3 | 2 |
 | XML fehlt | 2 | 2 |
+| Lua-Init | 2 | 2 |
 | nur Netzwerkspiel | 2 | 2 |
 | Pferd muss Auslöser drücken (Akteure auf Auslösern nicht gebaut) | 1 | 1 |
 | Rohrpost-Banane fehlt im Export | 1 | 1 |
@@ -20,6 +20,3 @@
 | Lua: ac_marble_black | 1 | 0 |
 | Lua: ac_pearl | 1 | 0 |
 | Lua: ac_pearl_white | 1 | 0 |
-| Objekt ot_timer (Lua-Init) | 1 | 0 |
-| Lua-Rückruf | 1 | 0 |
-| FallenPuzzle | 1 | 0 |
