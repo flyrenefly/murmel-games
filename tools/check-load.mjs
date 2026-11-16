@@ -16,7 +16,8 @@ const { values: o } = parseArgs({
     baseline: { type: 'string' },
   },
 });
-const levels = loadLevels().filter((l) => !o.pack || l.pack === o.pack);
+// (a cross reference is the same level as in its home pack: checked there)
+const levels = loadLevels().filter((l) => !l.ref && (!o.pack || l.pack === o.pack));
 const seconds = Number(o.seconds);
 const t0 = Date.now();
 const results = await runChecks(

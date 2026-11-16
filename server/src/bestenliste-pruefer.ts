@@ -54,14 +54,15 @@ export function gameChecker(gameDir: string, { timeoutMs = 60_000, nice = 10 }: 
     levelsTimer = setTimeout(() => (levels = null), LEVELS_IDLE_MS);
     levelsTimer.unref();
     if (!levels) {
-      const m = (await import(pathToFileURL(levelsModule).href)) as { loadLevels(root: string): { pack: string; file: LevelFile }[]; levelHash(f: LevelFile): string };
+      const m = (await import(pathToFileURL(levelsModule).href)) as { loadLevels(root: string): { pack: string; file: LevelFile; ref?: boolean }[]; levelHash(f: LevelFile): string };
       const all = m.loadLevels(dir);
-      // position in the pack as the game counts it (packLevels order)
+      // position in the pack as the game counts it (packLevels order, cross references included);
+      // each level once, in its home pack (a cross reference is the same level in a tutorial)
       const seen = new Map<string, number>();
-      const catalog = all.map(({ pack, file }) => {
+      const catalog = all.flatMap(({ pack, file, ref }) => {
         const index = seen.get(pack) ?? 0;
         seen.set(pack, index + 1);
-        return { id: file.id, pack, index, title: String((file as { title?: unknown }).title ?? file.id) };
+        return ref ? [] : [{ id: file.id, pack, index, title: String((file as { title?: unknown }).title ?? file.id) }];
       });
       levels = { byId: new Map(all.map((l) => [l.file.id, l.file])), hash: m.levelHash, catalog };
     }

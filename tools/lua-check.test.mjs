@@ -160,3 +160,34 @@ test('Laufzeit-Arten: Vorschau-Zweig von cond(wo["CreatingPreview"], …) und de
   const code = 'ti[" "] = {"fl_sand"}\nti["A"] = cond(wo["CreatingPreview"], {"#ac_marble_black"}, ti[" "])\nti["@"] = ti[" "] .. {"#ac_marble_black"}\nfunction draw_line()\n  wo:drawMap(ti, po(1, 0), "@", {"A@A"})\nend';
   assert.deepEqual(runtimeKinds(code), ['fl_sand']);
 });
+
+test('pruneCharBranches: Zweige einer Zeichen-Zeichenfunktion, deren Zeichen kein Rückruf zeichnet, fallen weg (Encased)', async () => {
+  const { pruneCharBranches, runtimeKinds } = await import('./lua-check.mjs');
+  const code = [
+    'function renderLine( line, pattern)',
+    '    for i=1, strlen(pattern) do',
+    '        local c = strsub( pattern, i, i)',
+    '        if c =="#" then',
+    '            set_stone( "st-blue-sand", i-1, line)',
+    '        elseif c == "z" then',
+    '            set_actor("ac-blackball", i-.5,line+.5)',
+    '        elseif c == "S" then',
+    '            set_floor("fl-sand", i-1, line)',
+    '        end',
+    '    end',
+    'end',
+    'renderLine(03,"###z###")',
+    'function funcTimer()',
+    'renderLine(00,"## S ##")',
+    'end',
+  ].join('\n');
+  const pruned = pruneCharBranches(code, ['funcTimer']);
+  assert.equal(pruned.includes('ac-blackball'), false);
+  assert.equal(pruned.includes('st-blue-sand'), true);
+  assert.equal(pruned.includes('fl-sand'), true);
+  assert.equal(runtimeKinds(pruned, true, ['funcTimer']).includes('ac_marble_black'), false);
+  // a pattern the analysis cannot read keeps every branch
+  assert.equal(pruneCharBranches(code.replace('renderLine(00,"## S ##")', 'renderLine(00, row)'), ['funcTimer']).includes('ac-blackball'), true);
+  // the init's own calls (outside the callbacks) do not count: "z" only there
+  assert.equal(pruneCharBranches(code.replace('"## S ##"', '"## z ##"'), ['funcTimer']).includes('ac-blackball'), true);
+});

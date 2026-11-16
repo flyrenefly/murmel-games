@@ -24,8 +24,68 @@ const SAMPLES = [
   'st-mirrorturn',
   'st-laser',
   'explosion1',
+  // obj:sound in level scripts (Acoustic Reminiscence)
+  'st-thud',
+  'st-coinslot',
+  'drown',
+  'st-magic',
+  'boing',
+  'switch',
 ] as const;
 type Sample = (typeof SAMPLES)[number];
+
+/**
+ * Enigma's sound events (data/sound-defaults.lua soundtable_enigma) whose sample Murmel has, for
+ * obj:sound(name) in level scripts: sample and volume. Events without a file are silent.
+ */
+const ENIGMA_EVENTS: Record<string, Sample | [Sample, number]> = {
+  bomb_black: 'explosion1',
+  bomb_white: 'explosion1',
+  cloth: 'st-thud',
+  coinsloton: 'st-coinslot',
+  drown: 'drown',
+  dynamite: 'explosion2',
+  electric: 'st-stone',
+  fakeoxyd: ['st-fakeoxyd', 0.3],
+  fourswitch: 'st-switch',
+  glass: 'st-metal',
+  itemtransform: 'st-magic',
+  jump: 'boink',
+  landmine: 'explosion2',
+  laseron: 'st-laser',
+  menumove: 'menumove',
+  menuok: 'menuok',
+  metal: 'st-metal',
+  mirrorturn: 'st-mirrorturn',
+  movebig: 'st-move',
+  moveslow: 'st-move',
+  movesmall: 'st-move',
+  oxydopen: 'st-oxydopen',
+  oxydopened: 'st-oxydopened',
+  pickup: 'pickup',
+  puzzlerotate: 'st-move',
+  quake: 'quake',
+  rubberband: 'boing',
+  shatter: 'shatter',
+  shattersmall: 'shatter',
+  shuffle: 'switch',
+  stone: 'st-stone',
+  stonedestroy: 'explosion0',
+  stonepaint: 'st-magic',
+  stonetransform: 'st-magic',
+  swamp: 'swamped',
+  switchon: 'st-switch',
+  switchplayer: 'switch',
+  triggerdown: 'it-triggerdown',
+  triggerup: 'it-triggerup',
+};
+
+/** The sample of an Enigma sound event, or null when it is silent (empty, missing file, unknown). */
+export function enigmaSample(name: string): { sample: Sample; volume: number } | null {
+  const e = Object.hasOwn(ENIGMA_EVENTS, name) ? ENIGMA_EVENTS[name] : undefined;
+  if (!e) return null;
+  return typeof e === 'string' ? { sample: e, volume: 1 } : { sample: e[0], volume: e[1] };
+}
 
 export class Sfx {
   private ctx: AudioContext | null = null;
@@ -138,6 +198,12 @@ export class Sfx {
   /** A fake stone (st_fake_quake) is hit. */
   fakeOxyd(): void {
     this.play('st-fakeoxyd');
+  }
+
+  /** obj:sound(name, volume) in a level script: an Enigma sound event (silent if Murmel lacks it). */
+  enigma(name: string, volume = 1): void {
+    const e = enigmaSample(name);
+    if (e) this.play(e.sample, Math.min(1, Math.max(0, e.volume * volume)));
   }
 
   /** The marble jumps (sound-defaults.lua: jump = enigma/boink). */

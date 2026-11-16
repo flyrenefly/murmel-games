@@ -210,6 +210,18 @@ describe('wo:add during play', () => {
   });
 });
 
+describe('obj:sound (lua.cc objectSound)', () => {
+  it('plays a sound event during play, with the volume (default 1); nothing in the init', async () => {
+    const w = fakeHost([{ ref: 'c:fl:9:6', l: 'fl', x: 9, y: 6, a: { name: 'soundfloor' } }]);
+    const calls: string[] = [];
+    w.host.sound = (name, vol) => calls.push(`${name} ${vol}`);
+    const lua = await startLua(`no["soundfloor"]:sound("init")\nfunction f() no["soundfloor"]:sound("cloth") no["soundfloor"]:sound("drown", 0.5) end`, w.host);
+    lua.callback('f', true, 'x');
+    expect(lua.lastError).toBe('');
+    expect(calls).toEqual(['cloth 1', 'drown 0.5']);
+  });
+});
+
 describe('wo:drawMap during play', () => {
   it('sets the tiles of a map from ti, skipping the ignore key', async () => {
     const w = fakeHost([]);

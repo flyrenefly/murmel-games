@@ -285,6 +285,11 @@ function methods.kill(self)
   if INIT or not self._ref then return end
   M.kill(self._ref)
 end
+-- lua.cc objectSound: obj:sound(name, volume) plays a sound event (data/sound-defaults.lua)
+function methods.sound(self, name, volume)
+  if INIT or not self._ref or type(name) ~= "string" then return end
+  M.sound(name, type(volume) == "number" and volume or 1)
+end
 -- PuzzleStone "get_cluster": the stones of its fragment (joined by matching connections)
 function methods.get_cluster(self)
   local l = {}

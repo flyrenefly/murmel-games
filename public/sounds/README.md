@@ -13,7 +13,8 @@ Herkunft laut Enigma (`ENIGMA-SOUNDS-README.txt`):
 | st-oxydopened.wav | xboing |
 | menuok.wav | xlogical |
 | st-move.wav | lbreakout2 (GPL) |
-| st-stone.wav, st-oxydopen.wav, menumove.wav, ballcollision.wav, st-switch.wav, st-metal.wav, it-triggerdown.wav, it-triggerup.wav, pickup.wav, quake.wav, explosion0.wav, explosion2.wav, swamped.wav, st-fakeoxyd.wav, boink.wav | nach bestem Wissen des Enigma-Teams gemeinfrei |
+| boing.wav | xboing (Enigma `data/soundsets/enigma`, Stand 2d62c69f) |
+| st-stone.wav, st-oxydopen.wav, menumove.wav, ballcollision.wav, st-switch.wav, st-metal.wav, it-triggerdown.wav, it-triggerup.wav, pickup.wav, quake.wav, explosion0.wav, explosion2.wav, swamped.wav, st-fakeoxyd.wav, boink.wav, st-thud.wav, st-coinslot.wav, drown.wav, st-magic.wav, switch.wav | nach bestem Wissen des Enigma-Teams gemeinfrei |
 
 Enigma verteilt diese Dateien als Teil seines GPL-Pakets; Murmel übernimmt sie
 mit dieser Quellenangabe.

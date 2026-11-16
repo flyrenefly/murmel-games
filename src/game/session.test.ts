@@ -193,3 +193,68 @@ end`, kinds: {}, named: [] },
     expect(s.luaHost!.world('_calls')).toBe('1');
   });
 });
+
+describe('obj:sound (Acoustic Reminiscence)', () => {
+  it('reaches the UI as an Enigma sound event', async () => {
+    const file = {
+      id: 'test:klang',
+      title: 'Klang',
+      author: 'test',
+      license: 'GPL',
+      map: ['##########', '#a......@#', '#a.......#', '##########'],
+      legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+      objects: [{ x: 3, y: 1, k: 'st_switch', a: { name: 'sw', target: 'play' } }],
+      lua: { code: 'function play() no["sw"]:sound("cloth", 0.5) end', kinds: {}, named: [] },
+    } as unknown as LevelFile;
+    const heard: string[] = [];
+    const s = await GameSession.create(file, { seed: 1, startLua, ui: { ...NO_UI, enigmaSound: (n, v) => heard.push(`${n} ${v}`) } });
+    s.lua!.callback('play', true, '');
+    expect(s.lua!.lastError).toBe('');
+    expect(heard).toEqual(['cloth 0.5']);
+  });
+});
+
+describe('timers without $id (made by the Lua init)', () => {
+  it('each calls its callback with itself as sender (Happy New Year: three fireworks, one function)', async () => {
+    const timer = (name: string) => ({ x: -1, y: -1, k: 'ot_timer', a: { name, action: 'callback', target: 'tick', interval: '0.1', $state: '1' } });
+    const file = {
+      id: 'test:zeitgeber',
+      title: 'Zeitgeber',
+      author: 'test',
+      license: 'GPL',
+      map: ['##########', '#a......@#', '#a.......#', '##########'],
+      legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+      objects: [timer('t1'), timer('t2')],
+      lua: { code: `function tick(value, sender)\n  wo["_" .. sender.name] = (wo["_" .. sender.name] or 0) + 1\nend`, kinds: {}, named: [] },
+    } as unknown as LevelFile;
+    const s = await GameSession.create(file, { seed: 1, startLua });
+    for (let i = 0; i < 200; i++) s.step(NO_CONTROL);
+    expect(s.lua!.lastError).toBe('');
+    expect(Number(s.luaHost!.world('_t1'))).toBeGreaterThan(0);
+    expect(s.luaHost!.world('_t2')).toBe(s.luaHost!.world('_t1'));
+  });
+});
+
+describe('horse with an owner (Enignimm, Rotor Guards: player::MayPickup)', () => {
+  it('picks up the items it rolls over into its owner\'s inventory', async () => {
+    const file = {
+      id: 'test:pferd-besitzer',
+      title: 'Pferd',
+      author: 'test',
+      license: 'GPL',
+      map: ['##########', '#a......@#', '#........#', '#a.......#', '##########'],
+      legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+      objects: [{ x: 3, y: 2, k: 'it_hammer', a: {} }, { x: 5, y: 2, k: 'it_umbrella', a: {} }],
+      actors: [
+        { k: 'ac_horse', x: 3.5, y: 2.5, a: { owner: '1' } },
+        { k: 'ac_horse', x: 5.5, y: 2.5 },
+      ],
+    } as unknown as LevelFile;
+    const s = await GameSession.create(file, { seed: 1 });
+    s.step(NO_CONTROL);
+    expect(s.objects.inventories[1]).toEqual(['it_hammer']);
+    expect(s.objects.inventories[0]).not.toContain('it_hammer');
+    // a horse without owner picks up nothing
+    expect(s.objects.objects.find((o) => o.kind === 'it_umbrella')!.gone).toBeFalsy();
+  });
+});

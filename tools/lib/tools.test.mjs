@@ -1,7 +1,7 @@
 // node --test "tools/**/*.test.mjs": the check tools as the CI and the nightly run call them.
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
@@ -69,4 +69,23 @@ test('check-load: ein Paket, JSON mit Ergebnis je Level', async () => {
 
   assert.match(stdout, /Ladeprobe: 3 Levels, 3 ok/);
   assert.deepEqual(JSON.parse(readFileSync(out, 'utf8')).results.map((r) => r.level), ['01', '02', '03']);
+});
+
+test('loadLevels: Querverweise (Level eines anderen Pakets) sind markiert, jedes Level genau einmal ohne ref', () => {
+  const root = mkdtempSync(join(tmpdir(), 'murmel-ref-'));
+  try {
+    const dir = join(root, 'public', 'levels', 'enigma');
+    const own = join(root, 'src', 'levels');
+    for (const d of [dir, own]) mkdirSync(d, { recursive: true });
+    writeFileSync(join(own, '01.json'), JSON.stringify(level01));
+    const home = { id: 'enigma:x', title: 'X', source: { pack: 'enigma_i', file: 'x_1.xml' } };
+    const other = { id: 'enigma:y', title: 'Y', source: { pack: 'tutorial_basic', file: 'y_1.xml' } };
+    writeFileSync(join(dir, 'index.json'), JSON.stringify([{ pack: 'tutorial_basic' }, { pack: 'enigma_i' }]));
+    writeFileSync(join(dir, 'tutorial_basic.json'), JSON.stringify({ levels: [other, home] }));
+    writeFileSync(join(dir, 'enigma_i.json'), JSON.stringify({ levels: [home] }));
+    const all = loadLevels(root);
+    assert.deepEqual(all.map((l) => [l.pack, l.file.id, l.ref]), [['murmel', '01', false], ['tutorial_basic', 'enigma:y', false], ['tutorial_basic', 'enigma:x', true], ['enigma_i', 'enigma:x', false]]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

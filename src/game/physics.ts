@@ -504,6 +504,7 @@ export class PhysicsWorld {
       if (!f) return;
       this.advance(m, f);
       this.collide(m, onContact, { by: i, color: m.color, invisible: m.invisible, shielded: m.shielded, actor: m.rotor ? 'rotor' : m.pearl && m.color === 1 ? 'pearl_white' : '' });
+      this.keepInWorld(m);
       if (m.jump > 0) m.jump = Math.max(0, m.jump - dt);
       else if (!m.shielded && !m.rotor) this.sinkStep(m, i, onContact);
     });
@@ -512,7 +513,14 @@ export class PhysicsWorld {
       // Other actors hit stones too (Oxyd stones open for any actor), but do not touch them.
       // by -2: the bug (BreakStone st_break_bug breaks under it)
       this.collide(e, onContact, { by: e.kind === 'bug' ? -2 : -1, color: e.kind === 'killer' ? e.color : 2, actor: e.kind });
+      this.keepInWorld(e);
     }
+  }
+
+  /** World::move_actor: no actor leaves the world (a stone drawn over it at the edge pushes it out). */
+  private keepInWorld(b: Body): void {
+    b.pos.x = Math.min(Math.max(b.pos.x, 0), this.width - 1e-12);
+    b.pos.y = Math.min(Math.max(b.pos.y, 0), this.height - 1e-12);
   }
 
   /** BasicBall::sink: sinking into the swamp, rising again when fast enough. */
