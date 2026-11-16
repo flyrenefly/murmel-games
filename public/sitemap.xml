@@ -1,15 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://murmel.games/</loc>
     <lastmod>2026-11-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/"/>
+  </url>
+  <url>
+    <loc>https://murmel.games/en/</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/"/>
   </url>
   <url>
     <loc>https://murmel.games/ueber.html</loc>
     <lastmod>2026-11-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/ueber.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/ueber.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/ueber.html"/>
+  </url>
+  <url>
+    <loc>https://murmel.games/en/ueber.html</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/ueber.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/ueber.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/ueber.html"/>
   </url>
 </urlset>
