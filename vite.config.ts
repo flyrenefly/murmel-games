@@ -4,6 +4,7 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'n
 import { join, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import EN_INDEX from './src/i18n/en/seite-index';
+import EN_PRESSE from './src/i18n/en/seite-presse';
 import EN_UEBER from './src/i18n/en/seite-ueber';
 import { englischeSeite } from './src/i18n/seiten-en';
 
@@ -54,8 +55,8 @@ function offline(): Plugin {
     },
     closeBundle() {
       // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached;
-      // the level pages (level/, docs/SPEC-levelseiten.md) are for search engines and links, not for offline play
-      const skip = /^((en\/)?level\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      // the level pages (level/, docs/SPEC-levelseiten.md) and the press kit (presse.html, presse/) are for search engines and links, not for offline play
+      const skip = /^((en\/)?level\/.*|(en\/)?presse\.html|presse\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
@@ -93,7 +94,7 @@ function levelPages(): Plugin {
 }
 
 /**
- * Englische Seiten (docs/SPEC-englisch.md): dist/en/index.html und dist/en/ueber.html aus den deutschen
+ * Englische Seiten (docs/SPEC-englisch.md): dist/en/index.html, dist/en/ueber.html und dist/en/presse.html aus den deutschen
  * Seiten, übersetzt mit den Wörterbüchern unter src/i18n/en/. Läuft vor dem offline-Plugin, damit
  * en/index.html in sw.js steht; auch im Notbetrieb (MURMEL_LEVELSEITEN=0).
  */
@@ -107,7 +108,7 @@ function englishPages(): Plugin {
     },
     closeBundle() {
       mkdirSync(join(outDir, 'en'), { recursive: true });
-      for (const [pfad, datei, en] of [['', 'index.html', EN_INDEX], ['ueber.html', 'ueber.html', EN_UEBER]] as const) {
+      for (const [pfad, datei, en] of [['', 'index.html', EN_INDEX], ['ueber.html', 'ueber.html', EN_UEBER], ['presse.html', 'presse.html', EN_PRESSE]] as const) {
         writeFileSync(join(outDir, 'en', datei), englischeSeite(readFileSync(join(outDir, datei), 'utf8'), en, pfad));
       }
     },
@@ -146,6 +147,7 @@ export default defineConfig({
         bestenliste: resolve(__dirname, 'bestenliste.html'),
         editor: resolve(__dirname, 'editor.html'),
         spielerlevels: resolve(__dirname, 'spielerlevels.html'),
+        presse: resolve(__dirname, 'presse.html'),
       },
       output: {
         // Keep the big libraries in their own long-cacheable files.

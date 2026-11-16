@@ -32,6 +32,7 @@ import { auswahl, eigenenLaufSpeichern, eigenerLauf, geistLaden, geisterListe, t
 import { editorButton, LINK_PACK, noteLinkWin, openLinkFromHash } from './editor/game-link';
 import { encodeLevel, LINK_PREFIX } from './editor/link';
 import { LICENSE_LABEL, listUrl, loadPlayerLevel, PLAYER_PACK } from './spielerlevels';
+import { TEILEN_KNOPF, teilen, teilenLink, teilenMeldung, teilenText, teilenTitel, type TeilenZiel } from './teilen';
 import { indexOfLevel, startFromHash } from './startlink';
 import { loadSteering, saveSteering, type Steering } from './steuerung';
 import { steeringControl } from './steuerung-ui';
@@ -1141,22 +1142,35 @@ function onWin(): void {
   const task = !ohneRangliste && aufgabe && aufgabe.level === level.id && recording.seed === aufgabe.seed && darfEinreichen() ? aufgabenLine(recording, aufgabe) : () => '';
   const ranking: [string, () => void][] = [[t('Rangliste'), () => void window.open(ranglistenUrl(level.id, level.title), '_blank', 'noopener')]];
   const rate: [string, () => void][] = packId === PLAYER_PACK ? [[t('Bewerten'), () => location.assign(listUrl(level.id))]] : [];
+  const share = shareButton(packId === PLAYER_PACK ? { art: 'spieler', id: level.id, titel: level.title } : { art: 'paket', pack: packId, levels: packList, index: levelIndex }, formatBest(s.steps));
   const asSolution: [string, () => void][] = istAdmin() ? [[t('Als Lösung speichern'), () => void loesungSpeichern(recording).then((msg) => showToast(msg, 2600))]] : [];
   setTimeout(() => {
     showOverlay(
       t('Geschafft!'),
       `${t('Zeit {zeit} · Abstürze {n}', { zeit: formatBest(s.steps), n: s.falls })}${bestLine}${ghostLine}${tipps.siegZeile()}${weiter ? `<br><span class="note">${t('Fortgesetzter Lauf – zählt nicht für die Bestenliste.')}</span>` : ''}${board()}${task()}${last ? `<br>${t('Das war das letzte Level in „{paket}“.', { paket: escapeHtml(packName) })}` : ''}`,
       last
-        ? [[t('Levels'), showLevels], [t('Nochmal'), restart], ...raceIt, ...ranking, ...rate, ...asSolution]
+        ? [[t('Levels'), showLevels], [t('Nochmal'), restart], ...share, ...raceIt, ...ranking, ...rate, ...asSolution]
         : [
             [t('Nächstes Level'), async () => { carryLives = s.enigmaRules ? s.livesLeft() : null; await loadLevel(packId, levelIndex + 1); startPlaying(); }],
             [t('Nochmal'), restart],
+            ...share,
             ...raceIt,
             ...ranking,
             ...asSolution,
           ],
     );
   }, 900);
+}
+
+/** "Teilen" in the solved dialog: text with level, time and link (src/teilen.ts); none without a link. */
+function shareButton(ziel: TeilenZiel, zeit: string): [string, () => void][] {
+  const link = teilenLink(ziel);
+  if (!link) return [];
+  const titel = teilenTitel(ziel);
+  return [[TEILEN_KNOPF(), () => void teilen(`Murmel – ${titel}`, teilenText(titel, zeit, link)).then((r) => {
+    const msg = teilenMeldung(r, link);
+    if (msg) showToast(msg, r === 'fehler' ? 6000 : 2200);
+  })]];
 }
 
 /** Won a level from a link: no progress, statistics or best time (docs/SPEC-editor.md). */
