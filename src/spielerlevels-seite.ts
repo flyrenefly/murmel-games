@@ -3,12 +3,14 @@
 import { PHYSICS_DT } from './game/physics';
 import { LICENSE_LABEL, type LevelStatus, ratingText, STATUS_TEXT } from './spielerlevels';
 import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
+import { browserHerkunft, herkunftMelden } from './herkunft';
 import EN from './i18n/en/spielerlevels-seite';
 import EN_SEITE from './i18n/en/seite-spielerlevels';
 
 // `t` is a level text in this file, so the translator is `tr`.
 const tr = woerterbuch(EN);
 seiteUebersetzen(EN_SEITE);
+herkunftMelden(browserHerkunft()); // docs/SPEC-herkunft.md
 document.querySelector('nav.back .back-rechts')?.append(sprachKnopf('sprache'));
 
 interface Card {

@@ -165,6 +165,10 @@
       td:not(:first-child) {
         text-align: right;
       }
+      /* Herkunft je Tag: the list of domains is text */
+      #herkunft .text {
+        text-align: left;
+      }
       h3 {
         font-size: 17px;
         margin: 20px 0 8px;
@@ -255,6 +259,26 @@
           </thead>
           <tbody id="a-packs"></tbody>
         </table>
+      </section>
+      <section id="herkunft" hidden>
+        <h2 data-i18n>Herkunft</h2>
+        <p class="muted" data-i18n>Von welchen Seiten Besucher kamen: nur die Domain, einmal je Browser-Tab, ohne Kennung. Domains mit weniger als 3 Besuchern sind unter „andere“ zusammengefasst.</p>
+        <h3 data-i18n>Im Zeitraum</h3>
+        <table>
+          <thead>
+            <tr><th scope="col" data-i18n>Domain</th><th scope="col" data-i18n>Besucher</th></tr>
+          </thead>
+          <tbody id="h-gesamt"></tbody>
+        </table>
+        <h3 data-i18n>Je Tag</h3>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr><th scope="col" data-i18n>Tag</th><th scope="col" data-i18n>Besucher</th><th scope="col" class="text" data-i18n>Herkunft</th></tr>
+            </thead>
+            <tbody id="h-tage"></tbody>
+          </table>
+        </div>
       </section>
       <section id="konten" hidden>
         <h2 data-i18n>Konten</h2>

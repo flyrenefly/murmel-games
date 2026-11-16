@@ -21,6 +21,7 @@ import { cloudMoeglich, CloudSpeicher, MAX_STEPS as CLOUD_MAX_STEPS, nachspielen
 import { loesungSpeichern } from './loesung';
 import { abwarten, einreichen, ergebnisText, lohntSich, type Meine, meineLaden, ranglistenUrl } from './bestenliste';
 import { browserAuswertung, type Ende } from './auswertung';
+import { browserHerkunft, herkunftMelden } from './herkunft';
 import { reportEvent, setStatistikAus, statistikAus } from './stats';
 import { fehlerLink } from './forum-text';
 import { zuZweit } from './mehrspieler';
@@ -476,6 +477,8 @@ function noteRunStarted(s: GameSession): void {
 
 /** Auswertung: counters of runs per level, in memory only, sent in bundles without time or id. */
 const auswertung = browserAuswertung();
+// Herkunft (docs/SPEC-herkunft.md): the domain of a foreign referrer, once per tab session
+herkunftMelden(browserHerkunft());
 /** Runs the Auswertung counted as started (with their pack), and those it counted as ended. */
 const laufPaket = new WeakMap<GameSession, string>();
 const laufGezaehlt = new WeakSet<GameSession>();

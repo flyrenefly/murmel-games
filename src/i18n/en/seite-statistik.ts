@@ -39,6 +39,13 @@ export default {
   'Abbruchquote je Paket': 'Abandon rate per pack',
   'Abbrüche ÷ beendete Läufe': 'Abandoned ÷ finished runs',
   Abbruch: 'Abandoned',
+  Herkunft: 'Referrers',
+  'Von welchen Seiten Besucher kamen: nur die Domain, einmal je Browser-Tab, ohne Kennung. Domains mit weniger als 3 Besuchern sind unter „andere“ zusammengefasst.':
+    'Which sites visitors came from: only the domain, once per browser tab, without any identifier. Domains with fewer than 3 visitors are combined under “others”.',
+  'Im Zeitraum': 'In this period',
+  Domain: 'Domain',
+  Besucher: 'Visitors',
+  'Je Tag': 'Per day',
   Konten: 'Accounts',
   'Konten insgesamt': 'Accounts in total',
   'Neu im Zeitraum': 'New in period',

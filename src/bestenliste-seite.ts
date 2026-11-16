@@ -2,11 +2,13 @@
 // own place. Uses the session cookie of the game (same address); open to everybody.
 import { PHYSICS_DT } from './game/physics';
 import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
+import { browserHerkunft, herkunftMelden } from './herkunft';
 import EN from './i18n/en/bestenliste-seite';
 import EN_SEITE from './i18n/en/seite-bestenliste';
 
 const t = woerterbuch(EN);
 seiteUebersetzen(EN_SEITE);
+herkunftMelden(browserHerkunft()); // docs/SPEC-herkunft.md
 document.querySelector('main > nav')?.append(sprachKnopf('sprache'));
 
 interface Row {
