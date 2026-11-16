@@ -991,13 +991,15 @@ function convertLevel(pack, meta, xml, exp, lua) {
     }
   }
   // PuzzleStone: a cluster sinking into water/abyss leaves server::FallenPuzzle (default fl_gray):
-  // a floor kind, or "=key" = the tile ti[key]; items there (it_strip, it_pipe) are not built.
+  // a floor kind, "=key" = the tile ti[key], or "it_strip" (a strip with the stone's connections);
+  // it_pipe is not built.
   let fallenFloor = null;
   if (/FallenPuzzle/.test(xml)) {
     const v = lua?.world?.FallenPuzzle;
     const kinds = v === undefined ? null : v.startsWith('=') ? lua.fallenTile : [v];
     const floor = kinds && kinds.length === 1 && kinds[0].startsWith('fl_') ? kinds[0] : null;
-    const img = floor && !SPECIAL_FLOORS.test(floor) ? (DEADLY.has(floor) ? floor : imageFor(floor)) : null;
+    // (it_strip: the strip's image)
+    const img = v === 'it_strip' ? 'it_strip' : floor && !SPECIAL_FLOORS.test(floor) ? (DEADLY.has(floor) ? floor : imageFor(floor)) : null;
     if (!img) reject('FallenPuzzle');
     else {
       fallenFloor = img;
@@ -1036,8 +1038,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     // API 1 row painters (renderLine): a kind only in branches of characters no callback draws never
     // comes during play (Encased: the marble). Used only to drop such a block, so other levels keep their kinds.
     const reachable = lua.api1 ? new Set(runtimeKinds(pruneCharBranches(lua.code, callbacks), true, callbacks)) : null;
-    // kinds a library sets itself (libpento: the puzzle stones of its shapes)
-    for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds)]) {
+    // kinds a library sets itself (libpento: the puzzle stones of its shapes; libtrain: its trains' tiles)
+    for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds), ...(lua.trainKinds ?? [])]) {
       const v = runtimeKind(k);
       if (!runtimeOk(v)) {
         if (reachable && !reachable.has(k)) continue;

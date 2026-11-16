@@ -271,3 +271,25 @@ test('lib/libmaze nur für die freigeschalteten Levels; Labyrinth-Zellen über K
   assert.equal(r.error, '');
   assert.equal(r.world._n, '3,true,false');
 });
+
+test('lib/libtrain: drawMap im Init liest die Strecke und legt die Zug-Timer an (Enigmas wildcat)', async () => {
+  const { levelLibs, luaInit } = await import('./lua-check.mjs');
+  const xml = '<el:dependency el:path="lib/libtrain" el:id="lib/libtrain" el:release="1" el:preload="true"/>';
+  const libs = levelLibs(xml, 'enigma_x/cel3_1');
+  assert.deepEqual(libs.map((l) => l.name), ['liblua', 'libtrain']);
+  assert.deepEqual(levelLibs(xml, 'enigma_i/x'), []);
+  const code = [
+    'ti["."] = {"fl_water"}', 'ti["e"] = {"fl_water"}', 'ti["t"] = {"fl_water"}', 'ti["s"] = {"fl_sand"}',
+    'local rail = res.train(ti, {"e", edge = true}, {"t", train = {".", "s", orientation = WEST, length = 2}})',
+    'wo:drawMap(rail, po(0, 0), " ", {"e.t..", ".   .", "....e"})',
+    'wo["_n"] = #res.train_railways[1].trains',
+  ].join('\n');
+  const w = { w: 5, h: 3, cells: Array.from({ length: 15 }, () => [{ k: 'fl_water' }, null, null]), actors: [] };
+  const r = await luaInit(code, w, libs);
+  assert.equal(r.error, '');
+  assert.equal(r.world._n, '2');
+  // the tiles res.train_tick sets (runtime kinds of the level)
+  assert.deepEqual(r.trainKinds, ['fl_water', 'fl_sand']);
+  const timers = r.adds.filter((a) => a.kind === 'ot_timer').map((a) => [a.attrs.target, a.attrs._railway, a.attrs._train]);
+  assert.deepEqual(timers, [['res.train_tick', '1', '1'], ['res.train_tick', '1', '2']]);
+});

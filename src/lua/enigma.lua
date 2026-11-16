@@ -697,10 +697,12 @@ local function evaluate(resolver, key, x, y)
   return tile
 end
 
--- a resolver chain with a maze of lib/libmaze (res.maze_implementation)
+-- a resolver chain with a maze of lib/libmaze or a railway of lib/libtrain: they find their cells by the
+-- map's keys, so in init mode the map is read for them too (no tiles set)
 local function hasmaze(context)
   while type(context) == "table" and etype_of(context) ~= "tiles" do
-    if rawget(context, 1) ~= nil and rawget(context, 1) == rawget(res, "maze_implementation") then return true end
+    local impl = rawget(context, 1)
+    if impl ~= nil and (impl == rawget(res, "maze_implementation") or impl == rawget(res, "train_implementation")) then return true end
     context = rawget(context, 3)
   end
   return false
@@ -718,10 +720,11 @@ local function finalizeResolvers(context)
   end
 end
 
--- api2init.lua drawMap during play (in init mode the export holds the world), with read directions
--- and maps from wo:newMap.
+-- api2init.lua drawMap during play (in init mode the export holds the world: only a maze or railway reads
+-- the map and finalizes – libtrain's timers, Enigmas wildcat), with read directions and maps from wo:newMap.
 function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
-  if INIT then return end
+  local readonly = INIT
+  if INIT and not hasmaze(resolver) then return end
   local origin = topos(anchor)
   local ignore, map, readdir
   if etype_of(arg3) == "map" then
@@ -752,11 +755,17 @@ function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
       if key ~= ignore then
         local rx, ry = rot(x, y)
         local px, py = origin.x - 1 + rx, origin.y - 1 + ry
-        settile(newpos(px, py), evaluate(resolver, key, math.floor(px), math.floor(py)))
+        local tile = evaluate(resolver, key, math.floor(px), math.floor(py))
+        if not readonly then settile(newpos(px, py), tile) end
       end
     end
   end
   finalizeResolvers(resolver)
+end
+
+-- api2init.lua wo:_evaluate(resolver, key, x, y): the tile a resolver makes of a key (libtrain)
+function wmethods._evaluate(_, resolver, key, x, y)
+  return evaluate(resolver, key, x, y)
 end
 
 local function rectargs(arg1, arg2, arg3, arg4, arg5)

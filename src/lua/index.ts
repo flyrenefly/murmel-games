@@ -7,6 +7,7 @@ import libmath from './lib/libmath.lua?raw';
 import libmaze from './lib/libmaze.lua?raw';
 import libpento from './lib/libpento.lua?raw';
 import libpuzzle from './lib/libpuzzle.lua?raw';
+import libtrain from './lib/libtrain.lua?raw';
 import natmaze from './lib/natmaze.lua?raw';
 import { type Fengari, type LuaHost, LuaLevel } from './runtime';
 
@@ -14,7 +15,7 @@ export type { LuaHost };
 export { LuaLevel };
 
 /** Enigma libraries a level may name in lua.libs (src/lua/lib). */
-export const LIBS: Record<string, string> = { libpento, libpuzzle, liblua, libmath, libmap, libmaze, natmaze };
+export const LIBS: Record<string, string> = { libpento, libpuzzle, liblua, libmath, libmap, libmaze, libtrain, natmaze };
 
 /**
  * fengari-web is fengari's browser build: the plain package decides by `typeof process`

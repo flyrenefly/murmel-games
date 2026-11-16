@@ -53,8 +53,10 @@ export const LIBS = {
     name: 'libmaze',
     kinds: [],
     deps: ['lib/libmap'],
-    levels: new Set(['enigma_ix/raoul33_1', 'enigma_x/raoul41_1', 'enigma_iii/nat36_2', 'enigma_vii/ral45_1']),
+    levels: new Set(['enigma_ix/raoul33_1', 'enigma_x/raoul41_1', 'enigma_iii/nat36_2', 'enigma_vii/ral45_1', 'enigma_x/cel3_1']),
   },
+  // res.train (a section of tiles running round a track; the init adds its timers, res.train_tick moves it)
+  'lib/libtrain': { name: 'libtrain', kinds: [], deps: ['lib/liblua'], levels: new Set(['enigma_x/cel3_1']) },
 };
 export function libCode(name) {
   return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
@@ -91,7 +93,7 @@ export function libFunctions(libs) {
   return names;
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
-const RESOLVERS = new Set(['autotile', 'composer', 'maze', 'pento', 'puzzle', 'random']);
+const RESOLVERS = new Set(['autotile', 'composer', 'maze', 'pento', 'puzzle', 'random', 'train']);
 
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
@@ -604,7 +606,18 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
     lua.describeTile(world.FallenPuzzle.slice(1));
     fallenTile = adds.splice(before).filter((a) => a.kind.startsWith('tile:')).map((a) => a.kind.slice(5));
   }
+  // lib/libtrain: res.train_tick sets the tiles of the trains' keys (train = {"key", "front key", …})
+  const trainKinds = [];
+  if (libs.some((l) => l.name === 'libtrain')) {
+    for (const m of code.matchAll(/\btrain\s*=\s*\{([^}]*)\}/g)) {
+      for (const k of [...m[1].matchAll(/"([^"]*)"/g)].map((x) => x[1])) {
+        const before = adds.length;
+        lua.describeTile(k);
+        for (const a of adds.splice(before)) if (a.kind.startsWith('tile:') && !trainKinds.includes(a.kind.slice(5))) trainKinds.push(a.kind.slice(5));
+      }
+    }
+  }
   const error = lua.lastError;
   // callback targets that name a Lua function after the init ("pento.next" in a library's table)
-  return { world, adds, fallenTile, error, ...(lost.length ? { initNames: lost } : {}), isFunction: (name) => !error && lua.isFunction(name) };
+  return { world, adds, fallenTile, trainKinds, error, ...(lost.length ? { initNames: lost } : {}), isFunction: (name) => !error && lua.isFunction(name) };
 }
