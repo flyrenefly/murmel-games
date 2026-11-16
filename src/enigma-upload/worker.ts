@@ -3,6 +3,7 @@
 // limit (client.ts), so a script that loops or eats memory only takes this worker down.
 import shim from '../lua/enigma.lua?raw';
 import type { Fengari } from '../lua/runtime';
+import { ladefehler } from '../game/ladefehler';
 import { UploadError } from './datei';
 import { wandleUm } from './umwandeln';
 import { setzeSpracheFuerTest, woerterbuch } from '../i18n';
@@ -18,6 +19,6 @@ self.onmessage = async (e: MessageEvent<{ name: string; text: string; sprache?: 
     const { level, hinweise, herkunft } = await wandleUm(e.data.name, e.data.text, f, shim);
     self.postMessage({ ok: true, level, hinweise, herkunft });
   } catch (err) {
-    self.postMessage({ ok: false, error: err instanceof UploadError ? err.message : t('Die Umwandlung ist fehlgeschlagen: {grund}', { grund: err instanceof Error ? err.message : String(err) }) });
+    self.postMessage({ ok: false, error: err instanceof UploadError ? err.message : t('Die Umwandlung ist fehlgeschlagen: {grund}', { grund: ladefehler(err instanceof Error ? err.message : String(err)) }) });
   }
 };

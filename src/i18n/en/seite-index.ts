@@ -26,7 +26,7 @@ export default {
   // Kopf: Beschreibung, Schlagworte, Open Graph, JSON-LD
   'Murmelspiel wie Oxyd und Enigma: Murmel mit der Maus rollen, Oxyd-Steine paarweise öffnen, Enigma-Levels spielen. Kostenlos im Browser, ohne Installation.':
     'A marble game in the style of Oxyd and Enigma: roll the marble with your mouse, open Oxyd stones in pairs, play Enigma levels. Free in your browser, nothing to install.',
-  'Oxyd, Enigma, Murmelspiel, Oxyd online, Enigma Spiel, Oxyd Browser, Murmel Rätselspiel, Atari ST Spiel, Oxyd Nachfolger, Geschicklichkeitsspiel, Puzzle, kostenlos, Open Source':
+  'Oxyd, Enigma, Murmelspiel, Murmelspiel wie Oxyd, Enigma Spiel, Murmel Rätselspiel, Atari ST Spiel, Geschicklichkeitsspiel, Puzzle, kostenlos, Open Source':
     'Enigma, marble game, marble puzzle, Enigma game, browser puzzle game, Atari ST, dexterity game, puzzle, free, open source',
   'Rolle die Murmel, öffne die Oxyd-Steine paarweise – mit Levels aus Enigma. Kostenlos, ohne Installation, freie Software.':
     'Roll the marble and open the Oxyd stones in pairs – with levels from Enigma. Free, nothing to install, free software.',

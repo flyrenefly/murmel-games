@@ -4,6 +4,8 @@
 import './editor.css';
 import { drawEntry, drawLevel, ED_STYLES, type EdStyle, loadImages, symbolColor } from './draw';
 import { enigmaStart, ENIGMA_ACCEPT, type EnigmaHost, importEnigma, isEnigmaFile } from '../enigma-upload/dialog';
+import { ladefehler } from '../game/ladefehler';
+import { OHNE_TITEL } from '../game/level';
 import { History } from './history';
 import { basedOnText, decodeLevel, docText, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, MAX_BASED_ON, MAX_DOC_TEXT, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
@@ -788,7 +790,7 @@ function showMyLevels(): void {
   for (const s of list) {
     const li = document.createElement('li');
     const name = document.createElement('span');
-    const titel = s.file.title || t('Ohne Titel');
+    const titel = !s.file.title || s.file.title === OHNE_TITEL ? t('Ohne Titel') : s.file.title;
     name.textContent = s.id === id ? t('{titel} (geöffnet)', { titel }) : titel;
     const when = document.createElement('small');
     when.textContent = new Date(s.updated).toLocaleString(gebietsschema(), { dateStyle: 'medium', timeStyle: 'short' });
@@ -871,7 +873,7 @@ const gameUrl = () => new URL('./', location.href);
 async function playtest(): Promise<void> {
   const err = loadError(level);
   if (err) {
-    showDialog(t('Noch nicht spielbar'), [t('Das Spiel kann das Level so nicht laden: {grund}', { grund: err })], [[t('OK'), close, 'primary']]);
+    showDialog(t('Noch nicht spielbar'), [t('Das Spiel kann das Level so nicht laden: {grund}', { grund: ladefehler(err) })], [[t('OK'), close, 'primary']]);
     return;
   }
   persist();

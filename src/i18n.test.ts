@@ -74,6 +74,9 @@ describe('Leveltitel', () => {
     expect(levelTitel({ title: 'Brücken', titleEn: 'Bridges' }, 'en')).toBe('Bridges');
     expect(levelTitel({ title: 'Brücken', titleEn: 'Bridges' }, 'de')).toBe('Brücken');
     expect(levelTitel({ title: 'Welcome' }, 'en')).toBe('Welcome');
+    // the editor stores „Ohne Titel“ for a level without title; only the display changes
+    expect(levelTitel({ title: 'Ohne Titel' }, 'en')).toBe('Untitled');
+    expect(levelTitel({ title: 'Ohne Titel' }, 'de')).toBe('Ohne Titel');
     expect(displayTitle(LEVELS[0], 'en')).toBe('First Steps');
     expect(displayTitle(LEVELS[0])).toBe('Erste Schritte');
     expect(LEVELS.every((l) => !!l.titleEn)).toBe(true);

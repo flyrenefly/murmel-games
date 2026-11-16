@@ -217,6 +217,7 @@ describe('Englisch (docs/SPEC-englisch.md)', () => {
     expect(en).toContain('<p class="meta">Level 2 of 3 · Enigma II · by Ada</p>');
     expect(en).toContain('rel="license">GPL 2.0 or later</a>');
     expect(en).not.toMatch(/Jetzt spielen|Bestzeiten|Lizenz|Paket|Oxyd online/);
+    expect(de).not.toMatch(/oxyd\s+online/i);
   });
 
   it('beschreibt auf Englisch mit dem Original-Text, sonst mit einer erzeugten Zeile', () => {
