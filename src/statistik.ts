@@ -221,6 +221,10 @@ interface Zusammenfassung {
   besucher: number;
   domains: { domain: string; anzahl: number }[];
   andere: { domains: number; anzahl: number };
+  /** Visits with a campaign but without a foreign referrer. */
+  ohneDomain: number;
+  /** Per campaign mark `?von=` (allow list or „sonstige“). */
+  kampagnen: { von: string; anzahl: number }[];
 }
 
 /** Section „Herkunft“ (docs/SPEC-herkunft.md): hidden unless the server answers. Rare domains arrive only as a sum. */
@@ -236,18 +240,27 @@ async function loadHerkunft(count: number, headers: Record<string, string>): Pro
     const leer = t('In diesem Zeitraum kam noch niemand von einer fremden Seite.');
     const gesamtZeilen = gesamt.domains.map((d) => [d.domain, fmt.format(d.anzahl)]);
     if (gesamt.andere.anzahl) gesamtZeilen.push([t('andere (Domains: {n})', { n: fmt.format(gesamt.andere.domains) }), fmt.format(gesamt.andere.anzahl)]);
+    if (gesamt.ohneDomain) gesamtZeilen.push([t('ohne fremde Seite (nur Kampagne)'), fmt.format(gesamt.ohneDomain)]);
     rows($('h-gesamt'), 2, gesamtZeilen, leer);
     rows(
+      $('h-kampagnen'),
+      2,
+      gesamt.kampagnen.map((k) => [k.von, fmt.format(k.anzahl)]),
+      t('In diesem Zeitraum kam niemand über einen Kampagnen-Link (?von=).'),
+    );
+    const liste = (xs: { name: string; anzahl: number }[]) => xs.map((x) => `${x.name} ${fmt.format(x.anzahl)}`).join(' · ') || '–';
+    rows(
       $('h-tage'),
-      3,
+      4,
       tage.map((d) => {
-        const teile = d.domains.map((x) => `${x.domain} ${fmt.format(x.anzahl)}`);
-        if (d.andere.anzahl) teile.push(`${t('andere')} ${fmt.format(d.andere.anzahl)}`);
-        return [dayFmt.format(new Date(`${d.day}T00:00:00Z`)), fmt.format(d.besucher), teile.join(' · ')];
+        const teile = d.domains.map((x) => ({ name: x.domain, anzahl: x.anzahl }));
+        if (d.andere.anzahl) teile.push({ name: t('andere'), anzahl: d.andere.anzahl });
+        if (d.ohneDomain) teile.push({ name: t('ohne'), anzahl: d.ohneDomain });
+        return [dayFmt.format(new Date(`${d.day}T00:00:00Z`)), fmt.format(d.besucher), liste(teile), liste(d.kampagnen.map((k) => ({ name: k.von, anzahl: k.anzahl })))];
       }),
       leer,
     );
-    for (const td of $('h-tage').querySelectorAll('td:nth-child(3)')) td.classList.add('text');
+    for (const td of $('h-tage').querySelectorAll('td:nth-child(n+3)')) td.classList.add('text');
     section.hidden = false;
   } catch {
     section.hidden = true;

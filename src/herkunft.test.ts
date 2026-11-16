@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fremdeDomain, herkunftMelden, type HerkunftEnv } from './herkunft';
+import { fremdeDomain, herkunftMelden, type HerkunftEnv, kampagne } from './herkunft';
 
 describe('fremdeDomain', () => {
   it('nimmt nur den Rechnernamen, ohne Pfad, Query, Port und Zugangsdaten', () => {
@@ -17,19 +17,39 @@ describe('fremdeDomain', () => {
   });
 });
 
+describe('kampagne', () => {
+  it('liest von= (Kleinbuchstaben, Muster) und liefert die Adresse ohne den Zusatz', () => {
+    expect(kampagne('https://murmel.games/?von=google')).toEqual({ von: 'google', ohneVon: '/' });
+    expect(kampagne('https://murmel.games/en/?von=Reddit')).toEqual({ von: 'reddit', ohneVon: '/en/' });
+    // other parameters and the hash stay
+    expect(kampagne('https://murmel.games/?level=murmel%2F01&von=hn#x')).toEqual({ von: 'hn', ohneVon: '/?level=murmel%2F01#x' });
+  });
+
+  it('ungültige Werte werden nicht gezählt, aber trotzdem aus der Adresse entfernt', () => {
+    for (const v of ['', 'mit%20leerzeichen', 'a.b', 'x_y', 'a'.repeat(33), '%3Cb%3E']) {
+      expect(kampagne(`https://murmel.games/?von=${v}`), v).toEqual({ von: null, ohneVon: '/' });
+    }
+    expect(kampagne('https://murmel.games/?level=x')).toEqual({ von: null, ohneVon: null });
+    expect(kampagne('kaputt')).toEqual({ von: null, ohneVon: null });
+  });
+});
+
 function env(over: Partial<HerkunftEnv> & { referrer?: string } = {}) {
   const sent: { url: string; body: string }[] = [];
+  const ersetzt: string[] = [];
   let marked = false;
   const e: HerkunftEnv = {
     referrer: 'https://news.ycombinator.com/item?id=1',
     hostname: 'murmel.games',
+    adresse: 'https://murmel.games/',
+    adresseErsetzen: (url) => void ersetzt.push(url),
     erlaubt: () => true,
     gemeldet: () => marked,
     merken: () => (marked = true),
     senden: (url, body) => (sent.push({ url, body }), true),
     ...over,
   };
-  return { e, sent };
+  return { e, sent, ersetzt };
 }
 
 describe('herkunftMelden', () => {
@@ -59,6 +79,35 @@ describe('herkunftMelden', () => {
     const { e, sent } = env({ gemeldet: () => false, merken: () => false });
     herkunftMelden(e);
     expect(sent).toEqual([]);
+  });
+
+  it('Kampagne: mit Referrer im selben Beacon, ohne Referrer trotzdem; Zusatz aus der Adresse entfernt', () => {
+    const a = env({ referrer: 'https://www.google.com/', adresse: 'https://murmel.games/?von=google' });
+    herkunftMelden(a.e);
+    expect(a.sent).toEqual([{ url: '/api/herkunft', body: '{"domain":"www.google.com","von":"google"}' }]);
+    expect(a.ersetzt).toEqual(['/']);
+
+    const b = env({ referrer: '', adresse: 'https://murmel.games/en/?von=reddit' });
+    herkunftMelden(b.e);
+    expect(b.sent).toEqual([{ url: '/api/herkunft', body: '{"von":"reddit"}' }]);
+    expect(b.ersetzt).toEqual(['/en/']);
+  });
+
+  it('Kampagne bei späterem Aufruf der Sitzung oder abgeschalteter Statistik: nicht zählen, aber entfernen', () => {
+    const a = env({ gemeldet: () => true, adresse: 'https://murmel.games/?von=google' });
+    herkunftMelden(a.e);
+    expect(a.sent).toEqual([]);
+    expect(a.ersetzt).toEqual(['/']);
+    const b = env({ erlaubt: () => false, adresse: 'https://murmel.games/?von=google' });
+    herkunftMelden(b.e);
+    expect(b.sent).toEqual([]);
+    expect(b.ersetzt).toEqual(['/']);
+  });
+
+  it('ohne Kampagne bleibt die Adresse unberührt', () => {
+    const { e, ersetzt } = env();
+    herkunftMelden(e);
+    expect(ersetzt).toEqual([]);
   });
 
   it('Fehler beim Senden stören die Seite nicht', () => {

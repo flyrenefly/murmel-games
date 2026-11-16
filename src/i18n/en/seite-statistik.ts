@@ -46,6 +46,10 @@ export default {
   Domain: 'Domain',
   Besucher: 'Visitors',
   'Je Tag': 'Per day',
+  'Kampagne (von)': 'Campaign (von)',
+  'Eigene Links mit Zusatz, z. B. murmel.games/?von=google. Werte außerhalb der Freigabeliste zählen als „sonstige“.':
+    'Our own links with a mark, e.g. murmel.games/?von=google. Values outside the allow list count as “sonstige” (other).',
+  Kampagne: 'Campaign',
   Konten: 'Accounts',
   'Konten insgesamt': 'Accounts in total',
   'Neu im Zeitraum': 'New in period',

@@ -4,28 +4,31 @@ import { berlinDay } from './stats.ts';
 
 /**
  * Herkunft (docs/SPEC-herkunft.md): from which sites visitors came, per day. A page sends only the
- * domain of a foreign referrer, once per browser tab session; the API checks and normalizes it and adds
- * one to the Berlin day's row. No IP address, user agent, path or single visit is stored; the IP address
+ * domain of a foreign referrer and the campaign mark `?von=` of its address, once per browser tab session;
+ * the API checks and normalizes both and adds one to the Berlin day's row. No IP address, user agent, path or single visit is stored; the IP address
  * is only held in memory for the request limit (limit.ts) and never logged.
  */
 
 export interface HerkunftRow {
   day: string;
+  /** '' when only a campaign was sent. */
   domain: string;
+  /** Campaign from `?von=`; '' when none. */
+  von: string;
   anzahl: number;
 }
 
 export interface HerkunftStore {
-  /** Adds one visit from `domain` (already normalized) to `day` (YYYY-MM-DD); at most MAX_DOMAINS_PER_DAY
-   * domains a day. The first entry of a new day deletes rows older than 13 months. */
-  record(day: string, domain: string): Promise<void>;
-  /** All rows since a day (YYYY-MM-DD), ordered by day and domain. */
+  /** Adds one visit from `domain` and campaign `von` (normalized, '' when absent) to `day` (YYYY-MM-DD); at
+   * most MAX_DOMAINS_PER_DAY rows a day. The first entry of a new day deletes rows older than 13 months. */
+  record(day: string, domain: string, von: string): Promise<void>;
+  /** All rows since a day (YYYY-MM-DD), ordered by day, domain and campaign. */
   rows(since: string): Promise<HerkunftRow[]>;
 }
 
 /** Longest host name (RFC 1035). */
 export const MAX_DOMAIN = 253;
-/** Distinct domains a day: referrer spam cannot fill the table; known domains still count. */
+/** Distinct rows (domain and campaign) a day: referrer spam cannot fill the table; known domains still count. */
 export const MAX_DOMAINS_PER_DAY = 500;
 /** Domains seen fewer times are only shown as a sum („andere“). */
 export const MIN_SHOWN = 3;
@@ -34,6 +37,11 @@ export const HERKUNFT_PER_IP = 60;
 export const HERKUNFT_WINDOW_MS = 15 * 60_000;
 /** Rows are kept this many months. */
 export const KEEP_MONTHS = 13;
+/** Campaigns of our own links (ads, posts, newsletter); any other valid value counts as „sonstige“, so nobody
+ * fills the table with free text. */
+export const VON_ERLAUBT = ['google', 'reddit', 'mastodon', 'bluesky', 'hn', 'newsletter', 'presse'] as const;
+export const VON_SONSTIGE = 'sonstige';
+export const VON_MUSTER = /^[a-z0-9-]{1,32}$/;
 /** Our own domain and its subdomains are no origin. */
 const OWN = 'murmel.games';
 
@@ -57,6 +65,13 @@ export function normalizeDomain(raw: string): string | null {
   return d;
 }
 
+/** The campaign as counted: lower case; outside the allow list „sonstige“; null when it is no valid mark. */
+export function normalizeVon(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (!VON_MUSTER.test(v)) return null;
+  return (VON_ERLAUBT as readonly string[]).includes(v) ? v : VON_SONSTIGE;
+}
+
 /** The oldest day kept when `day` is today: the same day 13 months earlier, clamped to the month's end. */
 export function oldestKept(day: string): string {
   const [y, m, d] = day.split('-').map(Number);
@@ -75,6 +90,10 @@ export interface Zusammenfassung {
   domains: DomainCount[];
   /** Domains below MIN_SHOWN: only how many and their sum. */
   andere: { domains: number; anzahl: number };
+  /** Visits with a campaign but without a foreign referrer. */
+  ohneDomain: number;
+  /** Per campaign (allow list and „sonstige“, so never personal), most first. */
+  kampagnen: { von: string; anzahl: number }[];
 }
 export interface Bericht {
   /** Newest day first; only days with visits. */
@@ -83,29 +102,38 @@ export interface Bericht {
   gesamt: Zusammenfassung;
 }
 
-function zusammenfassen(counts: Map<string, number>, min: number): Zusammenfassung {
-  const all = [...counts].map(([domain, anzahl]) => ({ domain, anzahl })).sort((a, b) => b.anzahl - a.anzahl || (a.domain < b.domain ? -1 : 1));
+const add = (m: Map<string, number>, k: string, n: number) => m.set(k, (m.get(k) ?? 0) + n);
+const sorted = (m: Map<string, number>) => [...m].sort(([a, x], [b, y]) => y - x || (a < b ? -1 : 1));
+
+function zusammenfassen(rows: HerkunftRow[], min: number): Zusammenfassung {
+  const domains = new Map<string, number>();
+  const kampagnen = new Map<string, number>();
+  let besucher = 0;
+  let ohneDomain = 0;
+  for (const r of rows) {
+    besucher += r.anzahl;
+    if (r.domain) add(domains, r.domain, r.anzahl);
+    else ohneDomain += r.anzahl;
+    if (r.von) add(kampagnen, r.von, r.anzahl);
+  }
+  const all = sorted(domains).map(([domain, anzahl]) => ({ domain, anzahl }));
   const klein = all.filter((c) => c.anzahl < min);
   return {
-    besucher: all.reduce((n, c) => n + c.anzahl, 0),
+    besucher,
     domains: all.filter((c) => c.anzahl >= min),
     andere: { domains: klein.length, anzahl: klein.reduce((n, c) => n + c.anzahl, 0) },
+    ohneDomain,
+    kampagnen: sorted(kampagnen).map(([von, anzahl]) => ({ von, anzahl })),
   };
 }
 
 /** The report of the admin statistics: per day and summed, rare domains only as a sum. */
 export function bericht(rows: HerkunftRow[], min = MIN_SHOWN): Bericht {
-  const days = new Map<string, Map<string, number>>();
-  const total = new Map<string, number>();
-  for (const r of rows) {
-    if (!days.has(r.day)) days.set(r.day, new Map());
-    const d = days.get(r.day)!;
-    d.set(r.domain, (d.get(r.domain) ?? 0) + r.anzahl);
-    total.set(r.domain, (total.get(r.domain) ?? 0) + r.anzahl);
-  }
+  const days = new Map<string, HerkunftRow[]>();
+  for (const r of rows) days.set(r.day, [...(days.get(r.day) ?? []), r]);
   return {
-    tage: [...days].sort(([a], [b]) => (a < b ? 1 : -1)).map(([day, counts]) => ({ day, ...zusammenfassen(counts, min) })),
-    gesamt: zusammenfassen(total, min),
+    tage: [...days].sort(([a], [b]) => (a < b ? 1 : -1)).map(([day, r]) => ({ day, ...zusammenfassen(r, min) })),
+    gesamt: zusammenfassen(rows, min),
   };
 }
 
@@ -116,25 +144,28 @@ export function herkunftRoutes(
   const { store, mayRead, now } = opts;
   const ipLimit = new RateLimit(HERKUNFT_PER_IP, HERKUNFT_WINDOW_MS);
 
-  app.post<{ Body: { domain: string } }>(
+  app.post<{ Body: { domain?: string; von?: string } }>(
     '/api/herkunft',
     {
       schema: {
         body: {
           type: 'object',
           additionalProperties: false,
-          required: ['domain'],
-          properties: { domain: { type: 'string', minLength: 1, maxLength: MAX_DOMAIN + 1 } },
+          minProperties: 1,
+          properties: { domain: { type: 'string', minLength: 1, maxLength: MAX_DOMAIN + 1 }, von: { type: 'string', minLength: 1, maxLength: 40 } },
         },
       },
     },
     async (req, reply) => {
-      const domain = normalizeDomain(req.body.domain);
-      if (!domain) return reply.code(400).send({ error: 'ungültige Domain' });
+      // at least one of the two; each one sent must be valid
+      const { domain: d, von: v } = req.body;
+      const domain = d === undefined ? '' : normalizeDomain(d);
+      const von = v === undefined ? '' : normalizeVon(v);
+      if (domain === null || von === null || (!domain && !von)) return reply.code(400).send({ error: 'ungültige Domain' });
       // too many reports from one address: dropped without a log line (the page ignores the answer)
       if (!ipLimit.take(req.ip, now().getTime())) return reply.code(429).send({ error: 'Zu viele Anfragen. Bitte warte ein paar Minuten.' });
       try {
-        await store.record(berlinDay(now()), domain);
+        await store.record(berlinDay(now()), domain, von);
       } catch (err) {
         // The page never waits for the answer; a lost count is no error for the visitor.
         req.log.error({ err }, 'herkunft failed');
