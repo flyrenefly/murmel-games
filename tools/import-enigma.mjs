@@ -407,6 +407,8 @@ const oxydFlavors = (k) => (OXYD.exec(k)?.[2] ? [OXYD.exec(k)[2]] : ['a', 'b']);
 /** Meditation hollows and what leaves one (src/game/level.ts HOLLOW_MAKERS). */
 const HOLLOW_MAKERS = /^(it_meditation|it_dynamite$|it_landmine$|st_spitter$|st_dispenser_dynamite$)/;
 const RUNTIME_ACTORS =/^ac_(rotor|top|bug|killer(_white|_black)?)$/;
+/** Marbles and pearls Lua may make during play (passive, controllers = CTRL_NONE: The Inferno). */
+const RUNTIME_MARBLES = /^ac_(marble(_white|_black)?|pearl(_white|_black)?)$/;
 function runtimeKind(kind) {
   if (/^(st|it|fl)_nil$/.test(kind)) return 'nil';
   if (kind.startsWith('fl_')) {
@@ -1040,7 +1042,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
     const reachable = lua.api1 ? new Set(runtimeKinds(pruneCharBranches(lua.code, callbacks), true, callbacks)) : null;
     // kinds a library sets itself (libpento: the puzzle stones of its shapes; libtrain: its trains' tiles)
     for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds), ...(lua.trainKinds ?? [])]) {
-      const v = runtimeKind(k);
+      // marbles and pearls during play only as passive balls: every declaration has controllers = CTRL_NONE
+      const decls = RUNTIME_MARBLES.test(k) ? [...lua.code.matchAll(new RegExp(`\\{\\s*"#?${k}"[^{}]*\\}`, 'g'))].map((m) => m[0]) : [];
+      const v = RUNTIME_MARBLES.test(k) ? (decls.length && decls.every((d) => /\bcontrollers\s*=\s*CTRL_NONE\b/.test(d)) ? 'actor' : null) : runtimeKind(k);
       if (!runtimeOk(v)) {
         if (reachable && !reachable.has(k)) continue;
         reject(`Lua: ${k}`);

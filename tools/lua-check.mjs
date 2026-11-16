@@ -215,6 +215,12 @@ function dynamicItems(code, attr) {
 }
 
 export const RUNTIME_WORLD = new Set(['GlobalForce', 'FrictionStrength', 'ElectricStrength', 'SlopeStrength']);
+/**
+ * World attributes the game applies only when a callback sets them during play. Values the init sets are
+ * not imported (seven levels set SwampSinkTime/WaterSinkTime there – a separate decision, it changes how
+ * they play): The Inferno sets SwampSinkTime when a room is loaded.
+ */
+const PLAY_WORLD = new Set(['SwampSinkTime']);
 const API1 = /\b(set_stone|set_floor|set_item|set_actor|set_attrib|get_attrib|fill_floor|fill_stones|draw_\w+|create_world|SendMessage|enigma\.\w+)\s*\(/;
 
 /**
@@ -256,7 +262,7 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   // the resolvers the shim builds (res.autotile, res.random, res.pento) work; draw calls are checked above
   for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation') && !(m[1] === 'lib' && fns.has(`lib.${m[2]}.${m[3]}`)) && !(m[1] === 'res' && RESOLVERS.has(m[2]))) problems.add(`${m[1]}.${m[2]}`);
   // world attributes changed during play: only those the game applies
-  for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
+  for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && !PLAY_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];
 }
 
@@ -560,12 +566,13 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
   const host = {
     initSteps,
     ...(initNames ? { mapTile, initNames: lost } : {}),
-    find: (p) => named.filter(([n]) => glob(p).test(n)).map(([, r]) => r),
+    // (the timers and counters the init made: "x:<n>", n = index in adds)
+    find: (p) => [...named.filter(([n]) => glob(p).test(n)).map(([, r]) => r), ...adds.flatMap((a, i) => (a.attrs?.name && glob(p).test(a.attrs.name) ? [`x:${i}`] : []))],
     at: (l, x, y) => {
       const ref = `c:${l}:${x}:${y}`;
       return byRef.has(ref) ? ref : null;
     },
-    exists: (r) => byRef.has(r),
+    exists: (r) => byRef.has(r) || (r.startsWith('x:') && adds[Number(r.slice(2))] !== undefined),
     pos: (r) => {
       if (r.startsWith('a:')) {
         const a = byRef.get(r);
@@ -587,7 +594,11 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
       return o[k] ?? null;
     },
     set() {},
-    send() {},
+    // TimerGadget/CounterGadget made by the init: "on"/"off" in the init set the state it starts with
+    send(r, msg) {
+      const a = r.startsWith('x:') ? adds[Number(r.slice(2))] : undefined;
+      if (a && (msg === 'on' || msg === 'off')) a.attrs = { ...a.attrs, state: msg === 'on' ? '1' : '0' };
+    },
     kill() {},
     setTile() {},
     world: (k) => world[k] ?? null,

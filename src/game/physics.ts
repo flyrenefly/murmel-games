@@ -106,6 +106,8 @@ export interface Marble extends Body {
   glass?: boolean;
   /** "essential" actor: its final death restarts the level. */
   essential: boolean;
+  /** Made by Lua during play: its owner (0 YIN, 1 YANG, -1 none), whose extra life it needs to come back. */
+  luaOwner?: number;
 }
 
 /** Pearl traits (Balls.cc): radius 13/64, mass 0.7; adhesion 1 like the marble. */
@@ -129,7 +131,7 @@ export function glassBreaks(nx: number, ny: number, vx: number, vy: number): boo
 export const JUMP_SECONDS = 8 * 0.07;
 
 /** Swamp (Swamp::get_sink_speed, server::SwampSinkSpeed): sinks at 4, rises above speed 6. */
-const SWAMP_SINK_SPEED = 4;
+export const SWAMP_SINK_SPEED = 4;
 const SWAMP_RAISE_SPEED = 6;
 export const SINK_DEPTH = 7; // BasicBall::maxSinkDepth
 
@@ -190,6 +192,8 @@ export class PhysicsWorld {
   private cur = 0;
   /** Rubber bands (ot_rubberband). */
   readonly rubbers: Rubberband[] = [];
+  /** server::SwampSinkSpeed (wo["SwampSinkTime"] t: 7 / t; 0 → 10000 = at once). */
+  swampSinkSpeed = SWAMP_SINK_SPEED;
   /** Number of bands per body (damping of multiple connections). */
   private readonly bandCount = new Map<Body, number>();
   /** Rotors, tops and killers. */
@@ -450,7 +454,8 @@ export class PhysicsWorld {
       const cur = this.marbles[this.cur];
       // Zu zweit: every steered marble feels the force of its own player at the same time.
       const two = this.coop && m.color === 1 && !m.pearl;
-      const k = (this.coop ? (m.passive || m.ownerless ? 0 : adhesion) : i === this.cur || m.pearl || (m.follow && cur && cur.color === m.color) ? adhesion : 0) * (m.adhesion ?? 1);
+      // (a pearl Lua made with controllers = CTRL_NONE is passive: no mouse – The Inferno)
+      const k = (this.coop ? (m.passive || m.ownerless ? 0 : adhesion) : i === this.cur || (m.pearl && !m.passive) || (m.follow && cur && cur.color === m.color) ? adhesion : 0) * (m.adhesion ?? 1);
       const [ffx, ffy] = this.floorForce(m.pos);
       let ux = two ? this.axisForce2.x + mx2 : this.axisForce.x + mx;
       let uy = two ? this.axisForce2.y + my2 : this.axisForce.y + my;
@@ -533,7 +538,7 @@ export class PhysicsWorld {
       return;
     }
     const v = Math.hypot(m.vel.x, m.vel.y);
-    m.sink = Math.max(0, m.sink + SWAMP_SINK_SPEED * (1 - v / SWAMP_RAISE_SPEED) * PHYSICS_DT);
+    m.sink = Math.max(0, m.sink + this.swampSinkSpeed * (1 - v / SWAMP_RAISE_SPEED) * PHYSICS_DT);
     if (m.sink >= SINK_DEPTH) {
       m.vel.x = m.vel.y = 0; // stop!
       m.active = false; // BUBBLING until the respawn
@@ -813,6 +818,22 @@ export class PhysicsWorld {
       : last;
     this.rubbers.push(new Rubberband({ ...def, a: typeof i === 'number' ? i : -1, b: [x, y] }, m, null, fixed));
     this.recountBands();
+  }
+
+  /**
+   * A marble or pearl Lua makes during play (wo[pos] = {"#ac_marble_white", controllers = CTRL_NONE, …}, The Inferno):
+   * never steered and never the swapped-to marble. Returns its index in marbles.
+   */
+  addMarble(kind: string, x: number, y: number, a: Record<string, string>): number {
+    const pearl = isPearl(kind);
+    const color = kind === 'ac_marble_black' || kind === 'ac_marble' || kind === 'ac_pearl_black' || (pearl && a.color === '0') ? 0 : 1;
+    const m = makeMarble(color, x, y, pearl);
+    m.passive = true;
+    m.ownerless = true;
+    m.essential = a.essential === '1';
+    m.luaOwner = a.owner === '0' ? 0 : a.owner === '1' ? 1 : -1;
+    this.marbles.push(m);
+    return this.marbles.length - 1;
   }
 
   /** Rubberband killed by Lua (sender["rubbers"]:kill()). */

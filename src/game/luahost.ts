@@ -7,7 +7,7 @@ import type { LuaHost } from '../lua/runtime';
 import { Enemy, enemyKind } from './actors';
 import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
-import type { PhysicsWorld } from './physics';
+import { SWAMP_SINK_SPEED, type PhysicsWorld } from './physics';
 import type { Rubberband } from './rubber';
 import { OBJECT_LIST } from '../lua/runtime';
 
@@ -24,6 +24,8 @@ export interface LuaWorld {
   removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
+  /** A passive marble or pearl made during play (controllers = CTRL_NONE): its index in physics.marbles. */
+  addMarble?(kind: string, x: number, y: number, attrs: Record<string, string>): number;
   /** OxydStone oxydcolor set during play (Ingrowing colours each new cross): the stone's symbol. */
   setOxydColor?(x: number, y: number, symbol: string): void;
   /** obj:sound(name, volume) during play. */
@@ -73,6 +75,9 @@ export function applyWorld(physics: PhysicsWorld, world: Record<string, string>,
   physics.frictionFactor = world.FrictionStrength !== undefined && Number.isFinite(f) ? f : 1;
   const e = Number(world.ElectricStrength);
   physics.electricForce = world.ElectricStrength !== undefined && Number.isFinite(e) ? e : 15;
+  // WorldProxy "SwampSinkTime" (only set during play: The Inferno)
+  const t = Number(world.SwampSinkTime);
+  physics.swampSinkSpeed = world.SwampSinkTime === undefined || !Number.isFinite(t) || t < 0 ? SWAMP_SINK_SPEED : t === 0 ? 10000 : 7 / t;
 }
 
 export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: { x: number; y: number }): LuaHost {
@@ -99,15 +104,21 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
    * The marble of actor ref a:<i> as PhysicsWorld orders them (0 = main ball, then the black and
    * white marbles of level.actors, then its pearls, each in actor order), or -1 for other actors.
    */
+  /** Marbles and pearls Lua makes during play: actor index → index in physics.marbles. */
+  const playMarbles = new Map<number, number>();
+  const fileActors = level.actors.length;
   const marbleIndex = (i: number): number => {
     if (i === 0) return 0;
+    const made = playMarbles.get(i);
+    if (made !== undefined) return made;
+    if (i > fileActors) return -1;
     const a = level.actors[i - 1];
     const before = level.actors.slice(0, i - 1);
     const ball = (k: string) => k === 'ac_marble_white' || k === 'ac_marble_black';
     const pearl = (k: string) => /^ac_pearl(_white|_black)?$/.test(k);
     let m = -1;
     if (a && ball(a.k)) m = 1 + before.filter((x) => ball(x.k)).length;
-    else if (a && pearl(a.k)) m = 1 + level.actors.filter((x) => ball(x.k)).length + before.filter((x) => pearl(x.k)).length;
+    else if (a && pearl(a.k)) m = 1 + level.actors.slice(0, fileActors).filter((x) => ball(x.k)).length + before.filter((x) => pearl(x.k)).length;
     return m > 0 && physics.marbles[m] ? m : -1;
   };
   const actorPos = (i: number): [number, number] => {
@@ -441,16 +452,25 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       w.redraw();
     },
     addActor(x, y, kind, a) {
-      // lua.cc setObjectByTable → AddActor: rotors, tops, killers and bugs (lua.kinds 'actor'); outside the level nothing
+      // lua.cc setObjectByTable → AddActor: rotors, tops, killers and bugs (lua.kinds 'actor'), passive
+      // marbles and pearls (controllers = CTRL_NONE: The Inferno); outside the level nothing
       const ek = enemyKind(kind);
-      if (lua.kinds[kind] !== 'actor' || !ek) throw new Error(`Murmel kann ${kind} nicht setzen`);
+      const marble = /^ac_(marble(_white|_black)?|pearl(_white|_black)?)$/.test(kind);
+      if (lua.kinds[kind] !== 'actor' || (!ek && !marble) || (marble && (a.controllers !== '0' || !w.addMarble))) throw new Error(`Murmel kann ${kind} nicht setzen`);
       if (!inside(Math.floor(x), Math.floor(y))) return;
       const decl = { ...a };
       if (decl.name) decl.name = uniqueName(decl.name);
       const def = { k: kind, x, y, ...(Object.keys(decl).length ? { a: decl } : {}) };
+      if (marble) {
+        const idx = w.addMarble!(kind, x, y, decl);
+        level.actors.push(def);
+        playMarbles.set(level.actors.length, idx);
+        attrs.set(`a:${level.actors.length}`, decl);
+        return;
+      }
       // appended to both lists, so a:<n> keeps pointing at the same body (enemyOf, actorPos)
       level.actors.push(def);
-      physics.enemies.push(new Enemy(ek, def));
+      physics.enemies.push(new Enemy(ek!, def));
       attrs.set(`a:${level.actors.length}`, decl);
     },
     world(key) {
@@ -463,7 +483,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (key === 'SlopeStrength') scaleSlopes(Number(world.SlopeStrength ?? 25), Number(value ?? 25));
       if (value === null) delete world[key];
       else world[key] = value;
-      if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
+      if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength' || key === 'SwampSinkTime') applyWorld(physics, world, force);
     },
     size: () => [level.width, level.height],
     /** PuzzleStone "get_cluster" / "get_adjacents": the stones of the fragment / of the huddle (none for other objects). */

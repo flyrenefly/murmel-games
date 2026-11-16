@@ -293,3 +293,11 @@ test('lib/libtrain: drawMap im Init liest die Strecke und legt die Zug-Timer an 
   const timers = r.adds.filter((a) => a.kind === 'ot_timer').map((a) => [a.attrs.target, a.attrs._railway, a.attrs._train]);
   assert.deepEqual(timers, [['res.train_tick', '1', '1'], ['res.train_tick', '1', '2']]);
 });
+
+test('luaInit: Timer, die das Init anlegt und dann einschaltet, starten eingeschaltet (The Inferno: loadbalancer)', async () => {
+  const { luaInit } = await import('./lua-check.mjs');
+  const code = 'wo:add({"ot_timer", "loadbalancer", target = "load", interval = 0.1, loop = true, state = OFF})\nwo:add({"ot_timer", "other", target = "load", state = OFF})\nif wo["IsDifficult"] then no["loadbalancer"]:on() end\nfunction load() end';
+  const r = await luaInit(code, world(2, 1));
+  assert.equal(r.error, '');
+  assert.deepEqual(r.adds.map((a) => [a.attrs.name, a.attrs.state]), [['loadbalancer', '1'], ['other', '0']]);
+});

@@ -264,7 +264,9 @@ function newgroup(list)
 end
 
 local function send(o, msg, value)
-  if INIT or not o._ref then return nil end
+  -- in init mode the export holds the world; only the timers and counters the init itself made
+  -- (importer refs "x:<n>") take messages: The Inferno starts its loadbalancer there
+  if not o._ref or (INIT and string.sub(o._ref, 1, 2) ~= "x:") then return nil end
   return decode(M.send(o._ref, msg, encode(value)))
 end
 
@@ -622,8 +624,10 @@ local function settile(p, tile)
   local x, y = math.floor(p.x), math.floor(p.y)
   for _, d in ipairs(astile(tile)) do
     local kind = d[1]
+    -- lua.cc setObjectByTable: "nil" sets nothing (ti["x"] = cond(easy, {"nil"}, …), The Inferno)
+    if kind == "nil" then
     -- (only where the host makes actors during play; the Enigma upload builds its world through settile)
-    if type(kind) == "string" and string.match(kind, "^#?ac_") and M.canaddactor() then
+    elseif type(kind) == "string" and string.match(kind, "^#?ac_") and M.canaddactor() then
       -- lua.cc setObjectByTable: an actor at the exact position ("#": the cell centre), moved by
       -- the numbers in entries 2 and 3
       local ax, ay = p.x, p.y
@@ -649,12 +653,15 @@ end
 function wmethods.add(_, a, b)
   if not INIT then
     -- during play: an item into a player's inventory, a timer or counter, or a rubber band
-    if type(a) == "number" and type(b) == "table" and type(b[1]) == "string" then
-      local k = b[1]
-      -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
-      if k == "it_pipe" and type(b.connections) == "string" and b.connections ~= "" then k = "it_pipe_" .. b.connections end
-      -- a document carries its text: Murmel shows it at once, as when one is picked up
-      M.addinventory(a, k, k == "it_document" and b.text or nil)
+    -- (a tile of several items – {"it_coin_s"} .. ti{"it_coffee"}, The Inferno – adds each in turn)
+    if type(a) == "number" and type(b) == "table" and (type(b[1]) == "string" or etype_of(b) == "tile") then
+      for _, d in ipairs(astile(b)) do
+        local k = d[1]
+        -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
+        if k == "it_pipe" and type(d.connections) == "string" and d.connections ~= "" then k = "it_pipe_" .. d.connections end
+        -- a document carries its text: Murmel shows it at once, as when one is picked up
+        if type(k) == "string" then M.addinventory(a, k, k == "it_document" and d.text or nil) end
+      end
       return
     end
     local d = b or a
@@ -1202,6 +1209,8 @@ NEIGHBORS_CHESS = NNE .. ENE .. ESE .. SSE .. SSW .. WSW .. WNW .. NNW
 ORI2DIR = {[WEST] = W, [SOUTH] = S, [EAST] = E, [NORTH] = N, [NODIR] = ORIGIN,
            [NORTHWEST] = NW, [SOUTHWEST] = SW, [SOUTHEAST] = SE, [NORTHEAST] = NE}
 DISPENSABLE, INDISPENSABLE, PERKIND = 0, 1, 2
+-- api2init.lua: actor controllers
+CTRL_NONE, CTRL_YIN, CTRL_YANG, CTRL_YINYANG = 0, 1, 2, 3
 MEDITATION_CALDERA, MEDITATION_HOLLOW, MEDITATION_DENT = -3, -2, -1
 MEDITATION_BUMP, MEDITATION_HILL, MEDITATION_VOLCANO = 1, 2, 3
 AUTOLENGTH = -1
