@@ -67,6 +67,7 @@ for (const f of files) {
     }
   }
   if (!html.includes('application/ld+json')) fail(f, 'JSON-LD fehlt');
+  if (!/<script type="module" src="(\.\.\/)+level\/herkunft\.js"><\/script>/.test(html)) fail(f, 'Herkunftszählung (level/herkunft.js) fehlt');
   // relative Verweise (href/src), ohne Hash und Query
   for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
     const ref = m[1].replace(/&amp;/g, '&');

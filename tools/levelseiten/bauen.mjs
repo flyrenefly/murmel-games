@@ -1,6 +1,6 @@
 // Levelseiten bauen (docs/SPEC-levelseiten.md), nach `vite build`:
 //   node --experimental-transform-types --no-warnings tools/levelseiten/bauen.mjs [--dist dist] [--jobs N] [--max N]
-// Schreibt dist/level/ (Startseite, Paketseiten, Levelseiten mit vorschau.webp, bestzeiten.js), dieselben
+// Schreibt dist/level/ (Startseite, Paketseiten, Levelseiten mit vorschau.webp, bestzeiten.js, herkunft.js), dieselben
 // Seiten auf Englisch unter dist/en/level/ (ohne eigene Bilder: sie zeigen auf die unter level/,
 // docs/SPEC-englisch.md) und dist/sitemap.xml (public/sitemap.xml plus alle kanonischen Levelseiten,
 // je Sprache, mit hreflang-Alternativen). --max N: nur die ersten
@@ -13,6 +13,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { loadLevels, ROOT } from '../lib/levels.mjs';
+import { herkunftSkript } from './herkunft-skript.mjs';
 
 register('../lib/ts-hooks.mjs', import.meta.url);
 const S = await import('../../src/levelseiten/seiten.ts');
@@ -108,6 +109,8 @@ for (const lang of S.LANGS) {
 }
 const client = readFileSync(join(ROOT, 'src/levelseiten/bestzeiten.ts'), 'utf8');
 writeFileSync(join(OUT, 'bestzeiten.js'), stripTypeScriptTypes(client, { mode: 'strip' }));
+// Herkunftszählung aller Seiten unter level/ und en/level/ (docs/SPEC-herkunft.md)
+writeFileSync(join(OUT, 'herkunft.js'), await herkunftSkript());
 const staticXml = readFileSync(join(ROOT, 'public/sitemap.xml'), 'utf8');
 const paths = S.sitemapPaths(packs);
 writeFileSync(join(DIST, 'sitemap.xml'), S.sitemapXml(staticXml, paths));

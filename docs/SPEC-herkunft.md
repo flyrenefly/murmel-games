@@ -48,14 +48,22 @@ zusätzliche Datenerhebung ohne neuen Nutzen. (3) Weniger Anfragen, weniger Date
 
 ## Client (`src/herkunft.ts`)
 
-`herkunftMelden(browserHerkunft())` läuft beim Laden von Spiel (`main.ts`), Forum, Bestenliste und
-Spieler-Levels. Ablauf: `von` aus der Adresse lesen und entfernen; schon gemerkt → Ende; merken
+`herkunftMelden(browserHerkunft())` läuft beim Laden von Spiel (`main.ts`), Forum, Bestenliste,
+Spieler-Levels, `ueber.html` und `presse.html` (beide über `src/herkunft-seite.ts`, auch die
+englischen Fassungen) und auf allen Levelseiten (siehe unten). Ablauf: `von` aus der Adresse lesen und entfernen; schon gemerkt → Ende; merken
 (scheitert → Ende); Statistik aus → Ende; Domain fremd und `http(s)` oder Kampagne vorhanden →
 `sendBeacon('/api/herkunft', {"domain": "…", "von": "…"})` (nur die vorhandenen Felder). Nicht fremd:
 eigener Rechnername, `murmel.games` und Unterdomains, `localhost`.
 
-Nicht eingebaut: die statischen Levelseiten (`/level/…`, `tools/levelseiten`). Ihr Skript
-`bestzeiten.js` darf keine Importe haben; ein Einbau dort ist ein eigener Schritt.
+Levelseiten (`/level/…`, `/en/level/…`: Level-, Paket- und Übersichtsseiten, `tools/levelseiten`):
+jede lädt im `<head>` `<script type="module" src="…/level/herkunft.js">` (Module laufen verzögert,
+blockieren das Rendern nicht). `tools/levelseiten/herkunft-skript.mjs` bündelt dafür
+`src/herkunft-seite.ts` mit einem eigenen kleinen Vite-Build zu einer Datei ohne Importe (≈ 1,7 kB).
+Gewählt statt einer Kopie oder eines importfreien Kerns: Die Regeln stehen nur in `src/herkunft.ts`
+und `src/stats.ts`, das Spiel bleibt unverändert, und die Datei hängt nicht an einem Chunk des
+Haupt-Builds (fester Name, kein Spielcode). Derselbe `sessionStorage`-Merker wie im Spiel: Wer von
+einer Levelseite ins Spiel klickt, wird nicht noch einmal gezählt. `pruefen.mjs` verlangt das Skript
+auf jeder Seite; `tools/levelseiten/herkunft-skript.test.mjs` führt die gebündelte Datei aus.
 
 ## Server (`server/src/herkunft*.ts`, Migration `018_herkunft.sql`)
 
