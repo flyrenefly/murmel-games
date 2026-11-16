@@ -41,6 +41,12 @@ Seiten brauchen kein Spiel-JavaScript.
   statischen Server ohne Umschreibregeln (Caddy leitet `…/welcome` selbst auf `…/welcome/` um).
 - **Gleiches Level in mehreren Paketen** (22 IDs): Jede Fundstelle bekommt ihre Seite, der Canonical
   zeigt auf die erste Fundstelle in Spielreihenfolge (kein doppelter Inhalt für Suchmaschinen).
+- **Querverweise** (seit Runde 5 der fehlenden Levels): Enigmas Basic Tutorial, Pentomino und Advent
+  nennen Levels anderer Pakete (`_xpath="enigma_i/…"`). Murmel zeigt dort genau dieselbe Leveldatei
+  (gleiche ID, gleicher Hash: Fortschritt, Bestzeiten und Geister geteilt) an der Originalposition.
+  Sie bekommen **keine eigene Seite**: `loadLevels` markiert sie mit `ref` (`source.pack` ≠ Paket),
+  Levelseiten, Sitemap, Levelkatalog (Tageslevel, Bestenliste) und Ladeprobe nehmen sie einmal im
+  Heimatpaket; die Auswertung zählt Läufe unter dem Heimatpaket.
 
 ## Inhalt einer Levelseite
 

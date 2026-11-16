@@ -13,7 +13,7 @@
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { levelTexts } from './lib/enigma-texte.mjs';
-import { allTileKinds, api1Kind, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, pruneCharBranches, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -425,6 +425,12 @@ const KNOWN_BROKEN = new Map([
   // the banana "pipe_exit" (under the white marble at the start) is not in the export; the flood
   // never starts in Murmel (Enigma: it travels through the pipes)
   ['enigma_v/andreas27_2', 'Rohrpost-Banane fehlt im Export'],
+  // the init shuffles the colour list; the first cross keeps the export's colour while Murmel's own
+  // shuffle colours the other 13 – the colours need not pair up
+  ['enigma_i/ant18_2', 'Init würfelt Oxyd-Farben (erstes Kreuz aus dem Export)'],
+  // the horse plays Nim: it must press the trigger at home (horsehome) and push boulders; in Murmel
+  // only marbles press triggers and scales (Enigma: every actor that does not fly, Trigger::actor_enter)
+  ['enigma_ii/ral52_1', 'Pferd muss Auslöser drücken (Akteure auf Auslösern nicht gebaut)'],
 ]);
 
 function convert(pack, meta, xml, exp, lua) {
@@ -458,13 +464,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
   const compat = Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1;
   const actors = w.actors.map((a) => a.o.k);
   for (const k of new Set(actors)) if (!ACTORS.has(k)) reject(`Akteur ${k}`);
-  // Horse: only the passive one is built – destinations (not in the export), actions and owners are not
+  // Horse: steering (controllers) and actions other than a Lua callback are not built
   // Horse::updateTarget → performAction: a Lua function as target (callback) is built
   const horseCallbacks = [];
   for (const h of w.actors.filter((x) => x.o.k === 'ac_horse')) {
     const fn = h.o.target && (h.o.action ?? '') in { '': 1, callback: 1 } && tokens(h.o.target).length === 1 && lua?.fns.has(h.o.target);
     if (fn) horseCallbacks.push(h.o.target);
-    if ((h.o.target && !fn) || h.o.owner || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
+    // an owner (player::MayPickup): the horse picks up items for that player (Enignimm, Rotor Guards)
+    if ((h.o.target && !fn) || h.o.controllers) reject('Pferd mit Aktion oder Steuerung');
     // the export (enigma-web ef0a1ce6) carries the horse's $destination, $strength, $steady, $loop, $destidx
     for (const k of ['strength', 'steady', 'loop', 'destidx']) if (h.o['$' + k] !== undefined && h.o['$' + k] !== '') h.o[k] = h.o['$' + k];
     if (h.o.$destination) {
@@ -870,10 +877,14 @@ function convertLevel(pack, meta, xml, exp, lua) {
     const plainOxyds = !oxydDecls.some((d) => /\bnoshuffle\b|\boxydcolor\s*=\s*(-|OXYD_(FAKE|QUAKE|BOLD|AUTO)\b)/.test(d));
     const oxydFlavorAttrs = [...new Set(oxydDecls.flatMap((d) => [...d.matchAll(/\bflavor\s*=\s*"([abcde])"/g)].map((m) => m[1])))];
     const runtimeOk = (v) => v !== null && (v !== 'oxyd' || plainOxyds);
+    // API 1 row painters (renderLine): a kind only in branches of characters no callback draws never
+    // comes during play (Encased: the marble). Used only to drop such a block, so other levels keep their kinds.
+    const reachable = lua.api1 ? new Set(runtimeKinds(pruneCharBranches(lua.code, callbacks), true, callbacks)) : null;
     // kinds a library sets itself (libpento: the puzzle stones of its shapes)
     for (const k of [...runtimeKinds(lua.code, lua.api1, callbacks, lua.libs.some((l) => l.name === 'libmap')), ...lua.libs.flatMap((l) => l.kinds)]) {
       const v = runtimeKind(k);
       if (!runtimeOk(v)) {
+        if (reachable && !reachable.has(k)) continue;
         reject(`Lua: ${k}`);
         continue;
       }
@@ -915,8 +926,9 @@ function convertLevel(pack, meta, xml, exp, lua) {
       else fixed.set(d.symbol, (fixed.get(d.symbol) ?? 0) + 1);
     }
     const unpaired = [...fixed.values()].filter((n) => n % 2).length;
-    // initColors leaves unpaired colours alone: a meditation level is won by its pearls anyway
-    if (unpaired > auto && !meditation) reject('ungerade Zahl Oxyd-Steine');
+    // initColors leaves unpaired colours alone: a meditation level is won by its pearls anyway;
+    // Lua may still lay the partners during play (Happy New Year: fireworks, Armageddon: oxyd(50, 26))
+    if (unpaired > auto && !meditation && !Object.values(kinds).includes('oxyd')) reject('ungerade Zahl Oxyd-Steine');
   }
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
@@ -925,7 +937,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
   if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
     // a horse keeps its action (Lua callback at a reached target)
-    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action)$/.test(k))) && v !== ''));
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action|owner)$/.test(k))) && v !== ''));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
     if (/^ac_marble_(white|black)$/.test(x.o.k) && x.o.owner === undefined) {
       attrs.passive = 'true';
@@ -1009,13 +1021,20 @@ mkdirSync(OUT, { recursive: true });
 const index = [];
 let total = 0;
 let ok = 0;
+let refs = 0;
+/** Converted levels by "pack/file" (what a cross reference names). */
+const byPath = new Map();
+const converted = [];
 for (const pack of readPacks()) {
   const levels = [];
   for (const meta of pack.levels) {
     total++;
     const file = join(levelsDir, pack.name, `${meta.xpath.replace(/^\.\//, '')}.xml`);
     if (!existsSync(file)) {
-      reject('XML fehlt');
+      // a cross reference to a level of another pack (tutorials, Pentomino, advent): Enigma plays the
+      // same level there; Murmel shows the very same file (same id and hash), filled in below
+      if (/^\w+\/\w+$/.test(meta.xpath) && existsSync(join(levelsDir, `${meta.xpath}.xml`))) levels.push({ ref: meta.xpath, title: meta.title });
+      else reject('XML fehlt');
       continue;
     }
     const xml = readFileSync(file, 'utf8');
@@ -1028,15 +1047,32 @@ for (const pack of readPacks()) {
     if (process.env.PROBE && !new RegExp(process.env.PROBE).test(current)) continue;
     if (process.env.PROGRESS) console.log('>>', current);
     const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp));
-    if (lvl) levels.push(lvl);
+    if (lvl) {
+      levels.push(lvl);
+      byPath.set(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`, lvl);
+    }
     if (process.env.PROBE) console.log(lvl ? 'OK  ' : 'NEIN', current);
   }
-  ok += levels.length;
-  if (levels.length === 0) continue;
-  if (!process.env.PROBE) writeFileSync(join(OUT, `${pack.name}.json`), JSON.stringify({ pack: pack.name, title: pack.title, levels }) + '\n');
-  index.push({ pack: pack.name, title: pack.title, count: levels.length, of: pack.levels.length });
+  converted.push({ pack, levels });
 }
 if (process.env.PROBE) process.exit(0);
+for (const { pack, levels: raw } of converted) {
+  // cross references: the home level itself, or left out while it does not play
+  const levels = raw.flatMap((l) => {
+    if (!l.ref) return [l];
+    const home = byPath.get(l.ref);
+    if (!home) {
+      reject('Querverweis: Heimatlevel fehlt');
+      return [];
+    }
+    refs++;
+    return [home];
+  });
+  ok += levels.length;
+  if (levels.length === 0) continue;
+  writeFileSync(join(OUT, `${pack.name}.json`), JSON.stringify({ pack: pack.name, title: pack.title, levels }) + '\n');
+  index.push({ pack: pack.name, title: pack.title, count: levels.length, of: pack.levels.length });
+}
 writeFileSync(join(OUT, 'index.json'), JSON.stringify(index, null, 1) + '\n');
 
 for (const set of GFX_SETS) {
@@ -1053,7 +1089,7 @@ const top = [...reasons.entries()].sort((a, b) => b[1] - a[1]);
 const report = [
   '# Enigma-Import',
   '',
-  `${ok} von ${total} Levels übernommen (${index.length} Pakete).`,
+  `${ok} von ${total} Levels übernommen (${index.length} Pakete), davon ${refs} Querverweise auf Levels anderer Pakete.`,
   '',
   '| Fehlt | blockiert Levels | davon nur daran |',
   '|---|---|---|',
@@ -1061,5 +1097,5 @@ const report = [
   '',
 ];
 writeFileSync('tools/import-report.md', report.join('\n'));
-console.log(`${ok}/${total} Levels, ${index.length} Pakete, ${usedImages.size} Bilder`);
+console.log(`${ok}/${total} Levels (${refs} Querverweise), ${index.length} Pakete, ${usedImages.size} Bilder`);
 console.log(top.slice(0, 25).map(([r, n]) => `${String(n).padStart(4)}  ${r}`).join('\n'));

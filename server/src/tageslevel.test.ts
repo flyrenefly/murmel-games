@@ -261,6 +261,13 @@ test('Levelkatalog aus dem echten Spielcode: Paket und Position wie in den Level
     const e = list.find((x) => x.id === ii[4].id)!;
     assert.deepEqual([e.pack, e.index, e.title], ['enigma_ii', 4, ii[4].title]);
     assert.ok(list.length > 1000);
+    // a cross reference (the tutorials show levels of other packs) stays in its home pack only
+    const tb = JSON.parse(readFileSync(`${repo}/public/levels/enigma/tutorial_basic.json`, 'utf8')).levels as { id: string; source: { pack: string } }[];
+    const refs = new Set(tb.filter((l) => l.source.pack !== 'tutorial_basic').map((l) => l.id));
+    assert.ok(refs.size > 0);
+    assert.deepEqual(list.filter((x) => refs.has(x.id) && x.pack === 'tutorial_basic'), []);
+    const k = tb.findIndex((l) => l.source.pack === 'tutorial_basic' && tb.slice(0, tb.indexOf(l)).some((x) => x.source.pack !== 'tutorial_basic'));
+    if (k >= 0) assert.equal(list.find((x) => x.id === tb[k].id)!.index, k); // positions count the cross references
   } finally {
     checker.close();
   }

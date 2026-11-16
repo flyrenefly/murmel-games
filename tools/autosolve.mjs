@@ -17,7 +17,7 @@ const { values: o } = parseArgs({
     all: { type: 'boolean', default: false },
   },
 });
-const levels = loadLevels().filter((l) => (!o.pack || l.pack === o.pack) && (o.all || !existsSync(solutionPath(l.file.id))));
+const levels = loadLevels().filter((l) => !l.ref && (!o.pack || l.pack === o.pack) && (o.all || !existsSync(solutionPath(l.file.id))));
 let won = 0;
 await runChecks(
   levels.map(({ file }) => ({ kind: 'autosolve', file, seed: 1 })),

@@ -212,13 +212,15 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const luaOxyds = Object.values(file.lua?.kinds ?? {}).includes('oxyd');
   if (signals.length === 0 && !blastMeditation && !luaOxyds) throw levelError(file.id, 'keine Oxyd-Steine');
 
-  // initColors leaves a colour without partner alone; only a meditation level stays solvable then
-  assignRandomSymbols(file.id, signals, random, meditation);
+  // initColors leaves a colour without partner alone; only a meditation level stays solvable then,
+  // or one whose Lua lays the partners during play (Happy New Year, Armageddon)
+  const unpairedOk = meditation || luaOxyds;
+  assignRandomSymbols(file.id, signals, random, unpairedOk);
 
   const counts = new Map<string, number>();
   for (const s of signals) counts.set(s.symbol, (counts.get(s.symbol) ?? 0) + 1);
   for (const [symbol, n] of counts) {
-    if (n % 2 !== 0 && symbol !== FAKE_OXYD && !meditation) throw levelError(file.id, 'Symbol {symbol} kommt {n}× vor, erwartet paarweise', { symbol, n });
+    if (n % 2 !== 0 && symbol !== FAKE_OXYD && !unpairedOk) throw levelError(file.id, 'Symbol {symbol} kommt {n}× vor, erwartet paarweise', { symbol, n });
   }
 
   // Other objects (ot_timer) have no cell.

@@ -707,12 +707,14 @@ export class ObjectWorld {
     /** Enigma compatibility version of the level (API 1 below 1.10). */
     private readonly compat = 1.1,
   ) {
-    for (const d of defs) {
+    for (const [i, d] of defs.entries()) {
       const cls = objectClass(d.k);
       if (!cls) continue;
       const a = d.a ?? {};
       const o: GameObject = {
-        id: a.$id ?? '',
+        // objects without an Enigma id (timers and counters of the Lua init, Murmel's own levels) still
+        // need their own: Lua addresses an object as "o:<id>" (callback senders)
+        id: a.$id ?? `def${i}`,
         name: a.name ?? '',
         kind: d.k,
         cls,
@@ -1506,6 +1508,57 @@ export class ObjectWorld {
   }
 
   /**
+   * Item::actor_hit → player::PickupItem: the items under (x, y) go into the inventory of player
+   * `owner` (a marble's player, or the owner of a horse: player::MayPickup).
+   */
+  private pickupItems(x: number, y: number, owner: number): void {
+    const inv = this.inventories[owner] ?? this.inventory;
+    for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
+      const radius = PICKUP_RADIUS[o.cls];
+      const intoBag = isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE && !(o.cls === 'bag' && !(o.loot ?? []).length);
+      if (radius === undefined || o.gone || o.growing !== undefined || (inv.length >= MAX_ITEMS && !intoBag && o.cls !== 'bag')) continue;
+      if ((o.cls === 'dynamite' || o.cls === 'puller') && o.blast !== undefined) continue; // isStatic while burning / active
+      if (o.kind === 'it_bottle_broken') continue; // itf_static
+      if (this.inhibitPickup && owner === this.player) continue;
+      if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
+      if (o.cls === 'bag') {
+        // BagItem::actor_hit: the inventory takes its items (not into a bag in front), then maybe the bag
+        const loot = [...(o.loot ?? [])];
+        const before = loot.length;
+        if (!(isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE)) while (inv.length < MAX_ITEMS && loot.length) inv.unshift(loot.shift()!);
+        // Inventory::willAddItem: an empty bag not into a full inventory or behind another bag
+        const takeBag = inv.length < MAX_ITEMS && !(loot.length === 0 && isBag(inv[0]));
+        if (takeBag) {
+          o.gone = true;
+          this.unplace(o);
+          inv.unshift(bagKind(loot));
+        } else o.loot = loot;
+        if (takeBag || loot.length !== before) this.events.push({ type: 'sound', name: 'pickup' }, { type: 'items' });
+        continue;
+      }
+      o.gone = true;
+      o.picked = true;
+      this.unplace(o);
+      let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
+      // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
+      if (o.cls === 'surprise' || o.kind === 'it_rubberband') {
+        kind = `${o.kind}#${++this.carriedId}`;
+        this.carried.set(kind, o.attrs);
+      }
+      // Inventory::add_item: into a bag in front that is not full
+      if (intoBag) inv[0] = bagKind([kind, ...bagContents(inv[0])]);
+      else inv.unshift(kind);
+      if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
+      this.events.push({ type: 'sound', name: 'pickup' });
+    }
+  }
+
+  /** An actor with an owner (horse: player::MayPickup) at (x, y) picks up items for that player. */
+  ownerPickup(x: number, y: number, owner: number): void {
+    if (this.inventories[owner]) this.pickupItems(x, y, owner);
+  }
+
+  /**
    * An actor (marble index, or -1 for another actor) is at x/y; call after every physics step.
    * Landmine::actor_hit: closer than 0.3 to the centre it explodes; the explosion shatters
    * marbles in its cell (Explosion::actor_hit).
@@ -1615,45 +1668,7 @@ export class ObjectWorld {
         } else if (v.phase === 'closed' && d > 0.25 && truthy(o.attrs.autoopen)) this.vortexSet(o, 1);
       }
       // Item::actor_hit (SeedItem: radius 0.2, not while growing; others 0.3) → Player::pick_up.
-      for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
-        const radius = PICKUP_RADIUS[o.cls];
-        const inv = this.inventories[this.ownerOf(marble)] ?? this.inventory;
-        const intoBag = isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE && !(o.cls === 'bag' && !(o.loot ?? []).length);
-        if (radius === undefined || o.gone || o.growing !== undefined || (inv.length >= MAX_ITEMS && !intoBag && o.cls !== 'bag')) continue;
-        if ((o.cls === 'dynamite' || o.cls === 'puller') && o.blast !== undefined) continue; // isStatic while burning / active
-        if (o.kind === 'it_bottle_broken') continue; // itf_static
-        if (this.inhibitPickup && this.ownerOf(marble) === this.player) continue;
-        if (Math.hypot(x - (o.col + 0.5), y - (o.row + 0.5)) >= radius) continue;
-        if (o.cls === 'bag') {
-          // BagItem::actor_hit: the inventory takes its items (not into a bag in front), then maybe the bag
-          const loot = [...(o.loot ?? [])];
-          const before = loot.length;
-          if (!(isBag(inv[0]) && bagContents(inv[0]).length < BAG_SIZE)) while (inv.length < MAX_ITEMS && loot.length) inv.unshift(loot.shift()!);
-          // Inventory::willAddItem: an empty bag not into a full inventory or behind another bag
-          const takeBag = inv.length < MAX_ITEMS && !(loot.length === 0 && isBag(inv[0]));
-          if (takeBag) {
-            o.gone = true;
-            this.unplace(o);
-            inv.unshift(bagKind(loot));
-          } else o.loot = loot;
-          if (takeBag || loot.length !== before) this.events.push({ type: 'sound', name: 'pickup' }, { type: 'items' });
-          continue;
-        }
-        o.gone = true;
-        o.picked = true;
-        this.unplace(o);
-        let kind = o.cls === "key" && this.keyCode(o) ? `it_key_${this.keyCode(o)}` : o.kind;
-        // items whose attributes matter after the drop (it_surprise: target, selection) carry them along
-        if (o.cls === 'surprise' || o.kind === 'it_rubberband') {
-          kind = `${o.kind}#${++this.carriedId}`;
-          this.carried.set(kind, o.attrs);
-        }
-        // Inventory::add_item: into a bag in front that is not full
-        if (intoBag) inv[0] = bagKind([kind, ...bagContents(inv[0])]);
-        else inv.unshift(kind);
-        if (o.cls === 'flag') this.flagRespawn[flagColor(o.kind)] = undefined;
-        this.events.push({ type: 'sound', name: 'pickup' });
-      }
+      this.pickupItems(x, y, this.ownerOf(marble));
     }
     for (const o of [...this.at(Math.floor(x), Math.floor(y))]) {
       if (o.cls !== 'landmine' || o.gone) continue;
