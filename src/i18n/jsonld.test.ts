@@ -62,3 +62,23 @@ describe('englische Pressemappe', () => {
     expect(out).not.toMatch(/oxyd\s+online/i);
   });
 });
+
+describe('englische Screenshots (public/presse/en/, tools/presse-bilder.mjs)', () => {
+  const de = Object.keys(import.meta.glob('/public/presse/*.webp', { query: '?url', eager: true })).map((p) => p.split('/').pop());
+  const en = Object.keys(import.meta.glob('/public/presse/en/*.webp', { query: '?url', eager: true })).map((p) => p.split('/').pop());
+  it('dieselben Motive wie deutsch', () => {
+    expect(en.sort()).toEqual(de.sort());
+  });
+  it('englische Pressemappe zeigt und verlinkt nur die englischen Bilder', () => {
+    const out = englischeSeite(presse, EN_PRESSE, 'presse.html');
+    const src = [...out.matchAll(/<img[^>]*src="(presse\/[^"]+)"/g)].map((m) => m[1]);
+    const href = [...out.matchAll(/<a[^>]*href="(presse\/[^"]+)"/g)].map((m) => m[1]);
+    const soll = en.map((f) => `presse/en/${f}`).sort();
+    expect(src.sort()).toEqual(soll);
+    expect(href.sort()).toEqual(soll);
+  });
+  it('englisches JSON-LD der Startseite nennt die englischen Bilder', () => {
+    const shots = spiel(englischeSeite(index, EN_INDEX, '')).screenshot as string[];
+    expect([...shots].sort()).toEqual(en.map((f) => `https://murmel.games/presse/en/${f}`).sort());
+  });
+});
