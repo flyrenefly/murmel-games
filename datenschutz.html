@@ -188,6 +188,27 @@
         Schalter aus ist. „Do Not Track“ und „Global Privacy Control“ wirken ebenso. Rechtsgrundlage ist unser
         berechtigtes Interesse an der Verbesserung des Spiels (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
+      <p>
+        Damit wir wissen, über welche Seiten Menschen auf Murmel aufmerksam werden, zählen wir außerdem, von
+        welcher fremden Website Sie zu uns gekommen sind. Dazu liest die Seite beim ersten Aufruf in einem
+        Browser-Tab die Adresse der verweisenden Seite, die Ihr Browser mitteilt, und schickt davon nur den
+        Domainnamen (zum Beispiel „news.ycombinator.com“) – ohne Pfad, Suchbegriffe, Uhrzeit oder Kennung – an
+        unseren Server. Haben Sie Murmel über einen unserer eigenen Links aufgerufen, etwa aus einer Anzeige
+        oder einem Beitrag, enthält die Adresse einen kurzen Zusatz wie „?von=google“; die Seite schickt diesen
+        Zusatz mit und entfernt ihn sofort aus der Adresszeile, damit er nicht weitergegeben wird. Der Server
+        zählt nur Zusätze aus einer festen Liste (zum Beispiel google, reddit, newsletter), alle anderen als
+        „sonstige“. Kommen Sie weder von einer fremden Seite noch über einen solchen Link, wird nichts
+        gesendet. Damit weitere Seiten und ein Neuladen nicht erneut zählen, merkt sich der Browser bis zum
+        Schließen des Tabs im Sitzungsspeicher (<code>sessionStorage</code>), dass die Herkunft schon behandelt
+        wurde; gespeichert wird nur dieser Merker. Der Server addiert die Meldung zu einer Tageszahl je Domain
+        und Zusatz; IP-Adressen, Browserkennungen oder einzelne Besuche werden dafür nicht gespeichert. Um
+        Missbrauch zu begrenzen, nimmt der Server je IP-Adresse nur eine bestimmte Zahl solcher Meldungen an;
+        dafür wird die Adresse kurzzeitig im Arbeitsspeicher gehalten. Die Tageszahlen löschen wir nach
+        13 Monaten. Der Schalter „Anonyme Statistik senden“, „Do Not Track“ und „Global Privacy Control“
+        schalten auch diese Zählung ab. Rechtsgrundlage ist unser berechtigtes Interesse an der
+        Weiterentwicklung und Bekanntmachung des Spiels (Art. 6 Abs. 1 lit. f DSGVO). Die Daten werden auf
+        unserem Server in Deutschland verarbeitet.
+      </p>
 
       <h2>Konto (freiwillig)</h2>
       <p>
