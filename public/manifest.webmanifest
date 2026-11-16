@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Murmel – Murmel-Rätselspiel",
   "short_name": "Murmel",
-  "description": "Freies Murmel-Rätselspiel: Steine paarweise öffnen, über 1000 Levels, eigener Leveleditor – ohne Werbung und Tracking.",
+  "description": "Freies Murmel-Rätselspiel: Steine paarweise öffnen, über {levelzahl} Levels, eigener Leveleditor – ohne Werbung und Tracking.",
   "lang": "de",
   "dir": "ltr",
   "start_url": "./",
