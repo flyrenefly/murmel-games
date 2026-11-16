@@ -39,4 +39,5 @@ export default {
   'Oxyd, Enigma, Murmelspiel, Puzzle, Browserspiel': 'Enigma, marble game, puzzle, browser game',
   Webbrowser: 'Web browser',
   'Alle (Browser)': 'Any (browser)',
+  'Aktueller Webbrowser mit JavaScript': 'A current web browser with JavaScript',
 } as const;
