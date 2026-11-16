@@ -322,6 +322,8 @@ body[data-theme='klassisch'] {
   padding: 8px 14px;
   font-size: 14px;
   pointer-events: none;
+  /* above the overlay: confirmations such as "Text und Link kopiert." come from its buttons */
+  z-index: 11;
 }
 
 #toast[hidden] {

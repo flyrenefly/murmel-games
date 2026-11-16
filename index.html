@@ -44,18 +44,28 @@
             "inLanguage": "de"
           },
           {
-            "@type": "VideoGame",
+            "@type": ["VideoGame", "WebApplication"],
             "@id": "https://murmel.games/#game",
             "name": "Murmel",
             "alternateName": ["Murmel – Oxyd-artiges Murmelspiel", "Murmelspiel mit Enigma-Levels"],
             "url": "https://murmel.games/",
+            "image": "https://murmel.games/og-image.png",
+            "screenshot": [
+              "https://murmel.games/presse/murmel-1-klassisch.webp",
+              "https://murmel.games/presse/murmel-2-glas.webp",
+              "https://murmel.games/presse/murmel-3-levels.webp",
+              "https://murmel.games/presse/murmel-4-editor.webp",
+              "https://murmel.games/presse/murmel-5-handy.webp"
+            ],
             "description": "Freies Murmel-Rätselspiel im Browser in der Tradition von Oxyd (Atari ST) und Enigma: Die Murmel wird mit der Maus gerollt, Oxyd-Steine werden paarweise geöffnet. Enthält Levels aus dem freien Spiel Enigma.",
             "genre": ["Puzzle", "Geschicklichkeitsspiel", "Murmelspiel"],
             "keywords": "Oxyd, Enigma, Murmelspiel, Puzzle, Browserspiel",
             "gamePlatform": ["Webbrowser", "PC", "Smartphone"],
-            "applicationCategory": "Game",
+            "applicationCategory": "GameApplication",
             "operatingSystem": "Alle (Browser)",
-            "playMode": "SinglePlayer",
+            "browserRequirements": "Aktueller Webbrowser mit JavaScript",
+            "playMode": ["SinglePlayer", "MultiPlayer"],
+            "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 2 },
             "inLanguage": "de",
             "isAccessibleForFree": true,
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
@@ -109,7 +119,7 @@
       </div>
     </div>
 
-    <div id="toast" hidden></div>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
 
     <div id="loading" data-i18n>Murmel wird geladen …</div>
 
