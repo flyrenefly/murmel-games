@@ -6,6 +6,13 @@ export default {
   'Noch kein Level mit mindestens 5 beendeten Läufen in diesem Zeitraum.': 'No level with at least 5 finished runs in this period yet.',
   'In diesem Zeitraum wurde noch kein Lauf beendet.': 'No run was finished in this period.',
   'Lade …': 'Loading …',
+  // Herkunft (src/statistik.ts)
+  'andere (Domains: {n})': 'others (domains: {n})',
+  andere: 'others',
+  'ohne fremde Seite (nur Kampagne)': 'no other site (campaign only)',
+  ohne: 'none',
+  'In diesem Zeitraum kam niemand über einen Kampagnen-Link (?von=).': 'Nobody came through a campaign link (?von=) in this period.',
+  'In diesem Zeitraum kam noch niemand von einer fremden Seite.': 'Nobody came from another site in this period yet.',
   'Der Zugangsschlüssel stimmt nicht. Er steht auf dem Server in /opt/murmel/.env unter STATS_TOKEN.':
     'The access key is wrong. You can find it on the server in /opt/murmel/.env under STATS_TOKEN.',
   'Nicht als Admin angemeldet. Melde dich im Spiel unter „Konto“ an, dann erscheint die Statistik ohne Schlüssel – oder gib den Zugangsschlüssel ein.':

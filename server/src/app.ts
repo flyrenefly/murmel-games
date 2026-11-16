@@ -3,6 +3,7 @@ import { type AuswertungStore, auswertungRoutes } from './auswertung.ts';
 import { type Checker, type LeaderboardStore, leaderboardRoutes } from './bestenliste.ts';
 import { type ForumStore, forumRoutes } from './forum.ts';
 import { type GhostStore, ghostRoutes } from './geister.ts';
+import { herkunftRoutes, type HerkunftStore } from './herkunft.ts';
 import { type DailyStore, dailyRoutes } from './tageslevel.ts';
 import { tipRoutes } from './tipps.ts';
 import { type PushStore, pushRoutes, startPushTimer, type Vapid } from './webpush.ts';
@@ -59,6 +60,8 @@ export interface AppOptions {
   playerLevels?: { store: PlayerLevelStore; checker?: Checker };
   /** Auswertung (docs/SPEC-auswertung.md): daily counters of ended runs per level; without it the routes are absent. */
   auswertung?: AuswertungStore;
+  /** Herkunft (docs/SPEC-herkunft.md): daily counts per referring domain; without it the routes are absent. */
+  herkunft?: HerkunftStore;
   /** Bearer token for GET /api/statistik; without one the statistics stay closed. */
   statsToken?: string;
   /** Clock (tests). */
@@ -77,7 +80,7 @@ export const LOG_OPTIONS = {
   },
 };
 
-export function buildApp({ version, db, statsToken, auswertung, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
+export function buildApp({ version, db, statsToken, auswertung, herkunft, accounts, forum, solvability, leaderboard, ghosts, daily, push, playerLevels, sync, cloudSaves, raum, wettkampf, now = () => new Date(), logger = false }: AppOptions): FastifyInstance {
   // Caddy is the only hop in front of the API: req.ip is the address it saw (X-Forwarded-For).
   const app = Fastify({ logger: logger ? LOG_OPTIONS : false, bodyLimit: 64 * 1024, trustProxy: (_addr: string, hop: number) => hop === 0 });
   // English requests get English error texts (docs/SPEC-englisch.md); before all routes, so every answer passes it.
@@ -159,6 +162,7 @@ export function buildApp({ version, db, statsToken, auswertung, accounts, forum,
   // Reading the statistics needs the token from /opt/murmel/.env (STATS_TOKEN) or a signed-in admin.
   const mayRead = (req: FastifyRequest) => req.account?.role === 'admin' || tokenMatches(statsToken, req.headers.authorization);
   if (auswertung) auswertungRoutes(app, { store: auswertung, mayRead, now });
+  if (herkunft) herkunftRoutes(app, { store: herkunft, mayRead, now });
   app.get<{ Querystring: { tage?: string } }>('/api/statistik', async (req, reply) => {
     if (!mayRead(req)) return reply.code(401).send({ error: 'nicht berechtigt' });
     const days = Math.min(Math.max(Math.trunc(Number(req.query.tage ?? 30)) || 30, 1), 366);

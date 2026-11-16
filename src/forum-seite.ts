@@ -3,12 +3,14 @@
 // <a rel="nofollow ugc noopener">. Admin buttons only show for admins; the server checks again.
 import { KATEGORIEN, type Kategorie, route, STATUS, type Status, textTeile, wann } from './forum-text';
 import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
+import { browserHerkunft, herkunftMelden } from './herkunft';
 import EN from './i18n/en/forum';
 import EN_SEITE from './i18n/en/seite-forum';
 
 // `t` is a topic in this file, so the translator is `tr`.
 const tr = woerterbuch(EN);
 seiteUebersetzen(EN_SEITE);
+herkunftMelden(browserHerkunft()); // docs/SPEC-herkunft.md
 document.querySelector('nav.top')?.append(sprachKnopf('sprache'));
 
 interface Ich {

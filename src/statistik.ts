@@ -2,6 +2,7 @@
 // signed-in admin without it; admins also see the section „Konten“ (GET /api/admin/konten).
 // The token stays in this browser only (sessionStorage) and is sent as a bearer header.
 // The section „Wo Spieler hängen“ reads GET /api/statistik/auswertung with the same rights.
+// The section „Herkunft“ reads GET /api/statistik/herkunft with the same rights.
 import { type LevelCounts, paketQuoten, schwersteLevels } from './auswertung-seite';
 import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
 import EN from './i18n/en/statistik';
@@ -216,6 +217,56 @@ async function loadAuswertung(count: number, headers: Record<string, string>): P
   }
 }
 
+interface Zusammenfassung {
+  besucher: number;
+  domains: { domain: string; anzahl: number }[];
+  andere: { domains: number; anzahl: number };
+  /** Visits with a campaign but without a foreign referrer. */
+  ohneDomain: number;
+  /** Per campaign mark `?von=` (allow list or „sonstige“). */
+  kampagnen: { von: string; anzahl: number }[];
+}
+
+/** Section „Herkunft“ (docs/SPEC-herkunft.md): hidden unless the server answers. Rare domains arrive only as a sum. */
+async function loadHerkunft(count: number, headers: Record<string, string>): Promise<void> {
+  const section = $<HTMLElement>('herkunft');
+  try {
+    const res = await fetch(`/api/statistik/herkunft?tage=${count}`, { headers, cache: 'no-store' });
+    if (!res.ok) {
+      section.hidden = true;
+      return;
+    }
+    const { tage, gesamt } = (await res.json()) as { tage: (Zusammenfassung & { day: string })[]; gesamt: Zusammenfassung };
+    const leer = t('In diesem Zeitraum kam noch niemand von einer fremden Seite.');
+    const gesamtZeilen = gesamt.domains.map((d) => [d.domain, fmt.format(d.anzahl)]);
+    if (gesamt.andere.anzahl) gesamtZeilen.push([t('andere (Domains: {n})', { n: fmt.format(gesamt.andere.domains) }), fmt.format(gesamt.andere.anzahl)]);
+    if (gesamt.ohneDomain) gesamtZeilen.push([t('ohne fremde Seite (nur Kampagne)'), fmt.format(gesamt.ohneDomain)]);
+    rows($('h-gesamt'), 2, gesamtZeilen, leer);
+    rows(
+      $('h-kampagnen'),
+      2,
+      gesamt.kampagnen.map((k) => [k.von, fmt.format(k.anzahl)]),
+      t('In diesem Zeitraum kam niemand über einen Kampagnen-Link (?von=).'),
+    );
+    const liste = (xs: { name: string; anzahl: number }[]) => xs.map((x) => `${x.name} ${fmt.format(x.anzahl)}`).join(' · ') || '–';
+    rows(
+      $('h-tage'),
+      4,
+      tage.map((d) => {
+        const teile = d.domains.map((x) => ({ name: x.domain, anzahl: x.anzahl }));
+        if (d.andere.anzahl) teile.push({ name: t('andere'), anzahl: d.andere.anzahl });
+        if (d.ohneDomain) teile.push({ name: t('ohne'), anzahl: d.ohneDomain });
+        return [dayFmt.format(new Date(`${d.day}T00:00:00Z`)), fmt.format(d.besucher), liste(teile), liste(d.kampagnen.map((k) => ({ name: k.von, anzahl: k.anzahl })))];
+      }),
+      leer,
+    );
+    for (const td of $('h-tage').querySelectorAll('td:nth-child(n+3)')) td.classList.add('text');
+    section.hidden = false;
+  } catch {
+    section.hidden = true;
+  }
+}
+
 /** Loads the statistics: with the token from the form, or without it for a signed-in admin (cookie). */
 async function load(quiet = false): Promise<void> {
   const token = tokenInput.value.trim();
@@ -237,6 +288,7 @@ async function load(quiet = false): Promise<void> {
     if (!token) form.hidden = true;
     void loadAccounts(count);
     void loadAuswertung(count, headers);
+    void loadHerkunft(count, headers);
     if (token) {
       try {
         sessionStorage.setItem('murmel-stats-token', token);

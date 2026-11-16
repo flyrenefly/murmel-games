@@ -10,6 +10,7 @@ export const FEHLER_EN: Readonly<Record<string, string>> = {
   'nicht angemeldet': 'Not signed in',
   'nur für Admins': 'Admins only',
   'fremde Herkunft': 'Request from a foreign origin',
+  'ungültige Domain': 'Invalid domain',
   'Zu viele Anfragen. Bitte warte ein paar Minuten.': 'Too many requests. Please wait a few minutes.',
   'zu viele Anfragen': 'Too many requests',
   'Anfrage ungültig': 'Invalid request',
