@@ -4,6 +4,10 @@
 import { type LevelFile, parseLevel } from '../game/level';
 import { LICENSE, MAX_H, MAX_W } from './model';
 import { BY_KIND, type PaletteEntry } from './palette';
+import { einsetzen, type Werte, woerterbuch } from '../i18n';
+import EN from '../i18n/en/editor';
+
+const t = woerterbuch(EN);
 
 export const LINK_PREFIX = '#level=';
 const VERSION = '1.';
@@ -51,7 +55,26 @@ export function docText(v: unknown): string {
   return [...clean].slice(0, MAX_DOC_TEXT).join('').trim();
 }
 
-export class LinkError extends Error {}
+/**
+ * A reason for the person. `message` stays German (the server's checker, tools/lib/check-worker.mjs, and
+ * the server's error translation rely on it); `text` is the same in the page's language.
+ */
+export class LinkError extends Error {
+  readonly de: keyof typeof EN & string;
+  readonly werte?: Werte;
+
+  // no parameter properties: tools load this file with Node type stripping
+  constructor(de: keyof typeof EN & string, werte?: Werte) {
+    super(einsetzen(de, werte));
+    this.de = de;
+    this.werte = werte;
+  }
+
+  /** The message in the page's language. */
+  get text(): string {
+    return t(this.de, this.werte);
+  }
+}
 
 // ---------- base64url ----------
 function toBase64Url(bytes: Uint8Array): string {
@@ -186,7 +209,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   if (!isObj(raw)) throw new LinkError('Das ist kein Murmel-Level.');
   const map = raw.map;
   if (!Array.isArray(map) || map.length === 0 || map.length > MAX_H || !map.every((r) => typeof r === 'string' && r.length > 0 && r.length <= MAX_W))
-    throw new LinkError(`Die Karte fehlt oder ist größer als ${MAX_W}×${MAX_H}.`);
+    throw new LinkError('Die Karte fehlt oder ist größer als {w}×{h}.', { w: MAX_W, h: MAX_H });
   const width = Math.max(...(map as string[]).map((r) => r.length));
   const height = map.length;
   const legend: LevelFile['legend'] = {};
@@ -194,11 +217,11 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
     if (!isObj(raw.legend)) throw new LinkError('Die Legende des Levels ist ungültig.');
     for (const [ch, d] of Object.entries(raw.legend)) {
       if ([...ch].length !== 1 || !isObj(d)) throw new LinkError('Die Legende des Levels ist ungültig.');
-      for (const k of Object.keys(d)) if (!CELL_KEYS.has(k)) throw new LinkError(`Unbekannte Angabe „${text(k, 20)}“ im Level.`);
+      for (const k of Object.keys(d)) if (!CELL_KEYS.has(k)) throw new LinkError('Unbekannte Angabe „{angabe}“ im Level.', { angabe: text(k, 20) });
       const floor = d.floor === undefined ? undefined : text(d.floor);
       const stone = d.stone === undefined ? undefined : text(d.stone);
-      if (floor !== undefined && BY_KIND.get(floor)?.layer !== 'floor') throw new LinkError(`Der Boden „${floor}“ ist im Editor nicht erlaubt.`);
-      if (stone !== undefined && stone !== 'st_oxyd' && !BY_KIND.get(stone)?.wall) throw new LinkError(`Der Stein „${stone}“ ist im Editor nicht erlaubt.`);
+      if (floor !== undefined && BY_KIND.get(floor)?.layer !== 'floor') throw new LinkError('Der Boden „{art}“ ist im Editor nicht erlaubt.', { art: floor });
+      if (stone !== undefined && stone !== 'st_oxyd' && !BY_KIND.get(stone)?.wall) throw new LinkError('Der Stein „{art}“ ist im Editor nicht erlaubt.', { art: stone });
       legend[ch] = { ...(floor ? { floor } : {}), ...(stone ? { stone } : {}) };
       // a slope's force comes from its kind, never from the file
       const force = floor ? BY_KIND.get(floor)?.force : undefined;
@@ -215,7 +238,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   const objects = Array.isArray(raw.objects) ? raw.objects : raw.objects === undefined ? [] : null;
   const actors = Array.isArray(raw.actors) ? raw.actors : raw.actors === undefined ? [] : null;
   if (!objects || !actors || objects.length > MAX_OBJECTS || actors.length > MAX_ACTORS) throw new LinkError('Das Level enthält zu viele oder ungültige Objekte.');
-  if (objects.filter((o) => isObj(o) && o.k === 'it_document').length > MAX_DOCS) throw new LinkError(`Ein Level darf höchstens ${MAX_DOCS} Dokumente enthalten.`);
+  if (objects.filter((o) => isObj(o) && o.k === 'it_document').length > MAX_DOCS) throw new LinkError('Ein Level darf höchstens {max} Dokumente enthalten.', { max: MAX_DOCS });
   const file: LevelFile = {
     id,
     title: text(raw.title) || 'Ohne Titel',
@@ -227,7 +250,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
       if (!isObj(o)) throw new LinkError('Das Level enthält ungültige Objekte.');
       const k = text(o.k, 40);
       const e = BY_KIND.get(k);
-      if (!e || (e.layer !== 'stone' && e.layer !== 'item') || e.wall) throw new LinkError(`Das Objekt „${k}“ ist im Editor nicht erlaubt.`);
+      if (!e || (e.layer !== 'stone' && e.layer !== 'item') || e.wall) throw new LinkError('Das Objekt „{art}“ ist im Editor nicht erlaubt.', { art: k });
       const x = coord(o.x, width);
       const y = coord(o.y, height);
       if (!Number.isInteger(x) || !Number.isInteger(y)) throw new LinkError('Das Level enthält ungültige Positionen.');
@@ -237,13 +260,13 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
     actors: actors.map((o) => {
       if (!isObj(o)) throw new LinkError('Das Level enthält ungültige Gegner.');
       const k = text(o.k, 40);
-      if (BY_KIND.get(k)?.layer !== 'actor') throw new LinkError(`Der Gegner „${k}“ ist im Editor nicht erlaubt.`);
+      if (BY_KIND.get(k)?.layer !== 'actor') throw new LinkError('Der Gegner „{art}“ ist im Editor nicht erlaubt.', { art: k });
       return { k, x: coord(o.x, width), y: coord(o.y, height) };
     }),
   };
   if (raw.basedOn !== undefined) {
     const b = typeof raw.basedOn === 'string' ? raw.basedOn.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s{2,}/g, ' ').trim() : null;
-    if (b === null || [...b].length > MAX_BASED_ON) throw new LinkError(`Die Angabe „Vorlage“ darf höchstens ${MAX_BASED_ON} Zeichen haben.`);
+    if (b === null || [...b].length > MAX_BASED_ON) throw new LinkError('Die Angabe „Vorlage“ darf höchstens {max} Zeichen haben.', { max: MAX_BASED_ON });
     if (b) file.basedOn = b;
   }
   if (raw.start !== undefined) {
@@ -259,7 +282,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   try {
     parseLevel(file, () => 0.5);
   } catch (e) {
-    throw new LinkError(`Das Level lässt sich nicht laden: ${e instanceof Error ? e.message.replace(/^[^:]*: /, '') : e}`);
+    throw new LinkError('Das Level lässt sich nicht laden: {grund}', { grund: e instanceof Error ? e.message.replace(/^[^:]*: /, '') : String(e) });
   }
   return file;
 }

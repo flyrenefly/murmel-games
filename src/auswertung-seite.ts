@@ -16,7 +16,9 @@ export interface LevelCounts {
   zeitAbbruch: number[];
 }
 
-export const ZEITKLASSEN = ['unter 1 min', '1–3 min', '3–10 min', '10–30 min', 'ab 30 min'];
+/** Time classes; also keys of the English dictionary (src/i18n/en/statistik.ts). */
+export const ZEITKLASSEN = ['unter 1 min', '1–3 min', '3–10 min', '10–30 min', 'ab 30 min'] as const;
+export type Zeitklasse = (typeof ZEITKLASSEN)[number];
 
 /** Ended runs: solved, restarted or abandoned. */
 export const beendet = (l: LevelCounts) => l.geloest + l.neustart + l.abbruch;
@@ -33,7 +35,7 @@ export interface SchweresLevel {
   /** Shown tip ways in the period (absolute). */
   wegGezeigt: number;
   /** Most frequent time class of solved runs, or null when none was solved. */
-  typischeZeit: string | null;
+  typischeZeit: Zeitklasse | null;
 }
 
 /** Levels with at least `min` ended runs, lowest solve rate first (ties: more runs first), at most `n`. */

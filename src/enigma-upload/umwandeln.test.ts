@@ -7,6 +7,10 @@ import { leseDatei, MAX_FILE, UploadError } from './datei';
 import { BY_KIND } from '../editor/palette';
 import { editorKind } from './editorlevel';
 import { wandleUm } from './umwandeln';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 const xml = (lua: string, head = '') => `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <el:level xmlns:el="http://enigma-game.org/schema/level/1">

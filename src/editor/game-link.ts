@@ -6,6 +6,10 @@ import type { Recording } from '../game/session';
 import { setLinkPack } from '../packs';
 import { rememberSolution } from '../spielerlevels';
 import { decodeLevel, LINK_PREFIX, linkData, LinkError } from './link';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/editor';
+
+const t = woerterbuch(EN);
 
 export const LINK_PACK = 'link';
 
@@ -26,7 +30,7 @@ export async function openLinkFromHash(hash: string): Promise<LinkResult> {
     current = { data, edit: /&edit\b/.test(hash) };
     return { ok: true, file };
   } catch (e) {
-    return { ok: false, error: e instanceof LinkError ? e.message : 'Der Level-Link ist beschädigt.' };
+    return { ok: false, error: e instanceof LinkError ? e.text : t('Der Level-Link ist beschädigt.') };
   }
 }
 
@@ -35,8 +39,8 @@ export function editorButton(): [string, () => void] | null {
   const link = current;
   if (!link) return null;
   return link.edit
-    ? ['Zurück zum Editor', () => location.assign('./editor.html')]
-    : ['Im Editor öffnen', () => location.assign(`./editor.html${LINK_PREFIX}${link.data}`)];
+    ? [t('Zurück zum Editor'), () => location.assign('./editor.html')]
+    : [t('Im Editor öffnen'), () => location.assign(`./editor.html${LINK_PREFIX}${link.data}`)];
 }
 
 /** A won link level: the editor may publish exactly this level with this run (docs/SPEC-spielerlevels.md). */

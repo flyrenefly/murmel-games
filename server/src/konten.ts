@@ -10,6 +10,7 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { activeProviders, LAST_WAY, type ProviderConfig, providerRoutes } from './anbieter.ts';
 import { RateLimit } from './limit.ts';
+import { type Sprache, spracheVon } from './sprache.ts';
 import { berlinDay } from './stats.ts';
 
 // ---------- data model ----------
@@ -183,6 +184,28 @@ export function passkeyName(userAgent: string | undefined): string {
   return os ? `${browser} auf ${os}` : browser;
 }
 
+/** The sign-in mail in the language of the request that asked for it (docs/SPEC-englisch.md). */
+export function loginMail(sprache: Sprache, link: string, origin: string): { subject: string; text: string } {
+  if (sprache === 'en') {
+    return {
+      subject: 'Your sign-in link for Murmel',
+      text:
+        `Hello,\n\nUse this link to sign in to Murmel:\n\n${link}\n\n` +
+        `The link is valid for ${LINK_MINUTES} minutes and works only once. Murmel doesn't store passwords – ` +
+        `whenever you want to get back in, just request a new link.\n\n` +
+        `Didn't request a link? Then just ignore this email; nothing happens unless you click.\n\nMurmel – ${origin}\n`,
+    };
+  }
+  return {
+    subject: 'Dein Anmeldelink für Murmel',
+    text:
+      `Hallo,\n\nmit diesem Link meldest du dich bei Murmel an:\n\n${link}\n\n` +
+      `Der Link gilt ${LINK_MINUTES} Minuten und nur einmal. Murmel speichert keine Passwörter – ` +
+      `wenn du wieder hinein willst, forderst du einfach einen neuen Link an.\n\n` +
+      `Du hast keinen Link angefordert? Dann ignoriere diese Mail; ohne Klick passiert nichts.\n\nMurmel – ${origin}\n`,
+  };
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
     /** Signed-in account (or null), for every /api route except /api/health. */
@@ -295,14 +318,8 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
       await store.addLoginToken(email, hash(token), t, new Date(t.getTime() + LINK_MINUTES * MINUTE));
       const link = `${origin}/#anmelden=${token}`;
       try {
-        await mailer.send(
-          email,
-          'Dein Anmeldelink für Murmel',
-          `Hallo,\n\nmit diesem Link meldest du dich bei Murmel an:\n\n${link}\n\n` +
-            `Der Link gilt ${LINK_MINUTES} Minuten und nur einmal. Murmel speichert keine Passwörter – ` +
-            `wenn du wieder hinein willst, forderst du einfach einen neuen Link an.\n\n` +
-            `Du hast keinen Link angefordert? Dann ignoriere diese Mail; ohne Klick passiert nichts.\n\nMurmel – ${origin}\n`,
-        );
+        const m = loginMail(spracheVon(req), link, origin);
+        await mailer.send(email, m.subject, m.text);
       } catch (err) {
         req.log.error({ err }, 'login mail failed');
         return reply.code(502).send({ error: 'Die Mail konnte gerade nicht verschickt werden. Bitte versuch es später noch einmal.' });

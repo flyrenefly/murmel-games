@@ -222,14 +222,29 @@ export async function sendPush(sub: PushSubscription, payload: object, opts: { v
   }
 }
 
+/** Level titles in a message at most this long (in characters), so the payload stays far below 4 kB. */
+export const TITLE_MAX = 100;
+
+export interface PushMessage {
+  titel: string;
+  text: string;
+  url: string;
+  /** English version (docs/SPEC-englisch.md); the service worker picks it, older ones read titel/text. */
+  en: { titel: string; text: string };
+}
+
 /** The text of the message for a subscription, or null when it wants none of the due kinds. */
-export function message(sub: PushSubscription, due: { tag?: string | null; woche?: string | null }): { titel: string; text: string; url: string } | null {
+export function message(sub: PushSubscription, due: { tag?: string | null; woche?: string | null }): PushMessage | null {
   const tag = sub.tag && due.tag !== undefined;
   const woche = sub.woche && due.woche !== undefined;
   if (!tag && !woche) return null;
+  const short = (t: string | null | undefined) => (t && [...t].length > TITLE_MAX ? [...t].slice(0, TITLE_MAX - 1).join('') + '…' : t);
+  const day = short(due.tag);
+  const week = short(due.woche);
   const name = (t: string | null | undefined) => (t ? `: ${t}` : '');
-  const text = tag && woche ? 'Neues Tageslevel und neue Wochenaufgabe' + (due.tag ? ` – heute: ${due.tag}` : '') : tag ? `Neues Tageslevel${name(due.tag)}` : `Neue Wochenaufgabe${name(due.woche)}`;
-  return { titel: 'Murmel', text, url: './#tageslevel' };
+  const text = tag && woche ? 'Neues Tageslevel und neue Wochenaufgabe' + (day ? ` – heute: ${day}` : '') : tag ? `Neues Tageslevel${name(day)}` : `Neue Wochenaufgabe${name(week)}`;
+  const textEn = tag && woche ? 'New daily level and new weekly challenge' + (day ? ` – today: ${day}` : '') : tag ? `New daily level${name(day)}` : `New weekly challenge${name(week)}`;
+  return { titel: 'Murmel', text, url: './#tageslevel', en: { titel: 'Murmel', text: textEn } };
 }
 
 export interface SenderOptions {

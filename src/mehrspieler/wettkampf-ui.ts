@@ -7,7 +7,11 @@ import { decodeInput, type Entry, type StepInput } from '../game/recording';
 import { type GameSession, NO_CONTROL, type StepControl } from '../game/session';
 import { packLevels } from '../packs';
 import type { ActorSprite } from '../render/classic';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/mehrspieler';
 import { aufholen, Geister, GRUND_TEXT, type LevelWahl, type Platz, parseWk, rangliste, type Rolle, SCHRITT_MS, SENDEN_MS, type StandZeile, Strom, type WkNachricht } from './wettkampf';
+
+const t = woerterbuch(EN);
 
 /** What the module needs from the game (src/main.ts through src/mehrspieler/index.ts). */
 export interface WkHost {
@@ -25,21 +29,21 @@ export interface WkHost {
 }
 
 export const WK_FEHLERTEXT: Record<string, string> = {
-  'code-unbekannt': 'Diesen Code gibt es nicht. Prüfe die fünf Ziffern.',
-  'raum-voll': 'In diesem Raum fahren schon vier. Du kannst zuschauen.',
-  'zuschauer-voll': 'Diesem Rennen schauen schon acht zu.',
-  'zu-viele-raeume': 'Du hast schon Räume offen, oder der Server ist voll. Versuche es gleich noch einmal.',
-  'zu-viele-versuche': 'Zu viele Versuche. Warte ein paar Minuten.',
-  ausgelastet: 'Gerade laufen zu viele Rennen. Versuche es in ein paar Minuten noch einmal.',
-  aus: 'Wettkämpfe sind gerade abgeschaltet.',
-  'level-unbekannt': 'Dieses Level kennt der Server nicht. Wähle ein Level aus den Levelpaketen.',
-  verfallen: 'Der Raum wurde geschlossen.',
-  'kein-server': 'Keine Verbindung zum Server. Bist du online?',
+  'code-unbekannt': t('Diesen Code gibt es nicht. Prüfe die fünf Ziffern.'),
+  'raum-voll': t('In diesem Raum fahren schon vier. Du kannst zuschauen.'),
+  'zuschauer-voll': t('Diesem Rennen schauen schon acht zu.'),
+  'zu-viele-raeume': t('Du hast schon Räume offen, oder der Server ist voll. Versuche es gleich noch einmal.'),
+  'zu-viele-versuche': t('Zu viele Versuche. Warte ein paar Minuten.'),
+  ausgelastet: t('Gerade laufen zu viele Rennen. Versuche es in ein paar Minuten noch einmal.'),
+  aus: t('Wettkämpfe sind gerade abgeschaltet.'),
+  'level-unbekannt': t('Dieses Level kennt der Server nicht. Wähle ein Level aus den Levelpaketen.'),
+  verfallen: t('Der Raum wurde geschlossen.'),
+  'kein-server': t('Keine Verbindung zum Server. Bist du online?'),
 };
 
 type Ansicht = 'aus' | 'lobby' | 'laden' | 'rennen' | 'ziel' | 'ergebnis' | 'anderes';
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const name = (nr: number, du: number) => `Spieler ${nr}${nr === du ? ' (du)' : ''}`;
+const name = (nr: number, du: number) => (nr === du ? t('Spieler {nr} (du)', { nr }) : t('Spieler {nr}', { nr }));
 /** Spectators play the followed racer this far behind the clock (its input arrives in batches). */
 const ZUSCHAUER_VERZUG_MS = 400;
 
@@ -106,7 +110,7 @@ export function wettkampf(host: WkHost) {
   // ---------- standings board and countdown ----------
   const tafel = document.createElement('section');
   tafel.id = 'wk-tafel';
-  tafel.setAttribute('aria-label', 'Wettkampf');
+  tafel.setAttribute('aria-label', t('Wettkampf'));
   tafel.hidden = true;
   const zahl = document.createElement('div');
   zahl.id = 'wk-countdown';
@@ -122,15 +126,15 @@ export function wettkampf(host: WkHost) {
     }
     const zeilen = stand.length ? rangliste(stand, zuschauer() ? folgt : du) : runde.fahrer.map((nr) => ({ nr, du: nr === du, platz: null, status: 'faehrt' as const, schritte: 0 }));
     const rows = zeilen.map((p) => {
-      const zustand = p.status === 'ziel' ? `<span class="wk-ziel" aria-hidden="true">✓</span> ${host.formatTime(p.schritte)}` : p.status === 'raus' ? 'raus' : `${host.formatTime(p.schritte)}`;
+      const zustand = p.status === 'ziel' ? `<span class="wk-ziel" aria-hidden="true">✓</span> ${host.formatTime(p.schritte)}` : p.status === 'raus' ? t('raus') : `${host.formatTime(p.schritte)}`;
       const platz = p.platz !== null ? `${p.platz}.` : p.status === 'raus' ? '–' : '';
       const label = zuschauer()
-        ? `<button type="button" class="wk-folgen" data-nr="${p.nr}" aria-pressed="${p.nr === folgt}"><kbd>${p.nr}</kbd> Spieler ${p.nr}</button>`
+        ? `<button type="button" class="wk-folgen" data-nr="${p.nr}" aria-pressed="${p.nr === folgt}"><kbd>${p.nr}</kbd> ${t('Spieler {nr}', { nr: p.nr })}</button>`
         : `<span class="wk-name">${esc(name(p.nr, du))}</span>`;
       return `<li data-status="${p.status}"${p.du ? ' data-du=""' : ''}><span class="wk-platz">${platz}</span>${label}<span class="wk-zeit">${zustand}</span></li>`;
     });
-    const kopf = zuschauer() ? `Zuschauen · Spieler ${folgt}` : `Wettkampf · ${esc(code)}`;
-    tafel.innerHTML = `<h2>${kopf}</h2><ol>${rows.join('')}</ol>${zuschauer() ? '<button type="button" class="wk-raus">Verlassen</button>' : ''}`;
+    const kopf = zuschauer() ? t('Zuschauen · Spieler {nr}', { nr: folgt }) : t('Wettkampf · {code}', { code: esc(code) });
+    tafel.innerHTML = `<h2>${kopf}</h2><ol>${rows.join('')}</ol>${zuschauer() ? `<button type="button" class="wk-raus">${t('Verlassen')}</button>` : ''}`;
     tafel.hidden = false;
   }
 
@@ -157,7 +161,7 @@ export function wettkampf(host: WkHost) {
         zahl.hidden = false;
         return;
       }
-      zahl.textContent = 'Los!';
+      zahl.textContent = t('Los!');
       if (rest < -700) {
         zahl.hidden = true;
         clearInterval(countdownTimer);
@@ -176,7 +180,7 @@ export function wettkampf(host: WkHost) {
     s.onZu = () => {
       if (sock !== s || ansicht === 'aus') return;
       aufraeumen();
-      host.showOverlay('Wettkampf', 'Die Verbindung zum Server ist abgebrochen.', [['Zurück', host.showStart]]);
+      host.showOverlay(t('Wettkampf'), t('Die Verbindung zum Server ist abgebrochen.'), [[t('Zurück'), host.showStart]]);
     };
     await s.verbinden();
     return s;
@@ -222,9 +226,9 @@ export function wettkampf(host: WkHost) {
   }
 
   function fehlerZeigen(titel: string, grund: string, nochmal: () => void): void {
-    host.showOverlay(titel, esc(WK_FEHLERTEXT[grund] ?? 'Das hat nicht geklappt.'), [
-      ['Nochmal', nochmal],
-      ['Zurück', menue],
+    host.showOverlay(titel, esc(WK_FEHLERTEXT[grund] ?? t('Das hat nicht geklappt.')), [
+      [t('Nochmal'), nochmal],
+      [t('Zurück'), menue],
     ]);
   }
 
@@ -232,23 +236,23 @@ export function wettkampf(host: WkHost) {
   function menue(): void {
     if (ansicht !== 'aus') return laufendMenue();
     host.showOverlay(
-      'Wettkampf',
-      'Ein Wettrennen für bis zu vier im selben Level, dazu Zuschauer. Unser Server rechnet jeden Lauf mit und entscheidet, wer gewinnt.<br><span class="keys">Alles läuft über unseren Server in Deutschland; die anderen sehen deine IP-Adresse nicht. Gespeichert wird nichts.</span>',
+      t('Wettkampf'),
+      `${t('Ein Wettrennen für bis zu vier im selben Level, dazu Zuschauer. Unser Server rechnet jeden Lauf mit und entscheidet, wer gewinnt.')}<br><span class="keys">${t('Alles läuft über unseren Server in Deutschland; die anderen sehen deine IP-Adresse nicht. Gespeichert wird nichts.')}</span>`,
       [
-        ['Raum öffnen', levelFrage],
-        ['Mitfahren', () => codeForm('fahrer')],
-        ['Zuschauen', () => codeForm('zuschauer')],
-        ['Zurück', host.showStart],
+        [t('Raum öffnen'), levelFrage],
+        [t('Mitfahren'), () => codeForm('fahrer')],
+        [t('Zuschauen'), () => codeForm('zuschauer')],
+        [t('Zurück'), host.showStart],
       ],
     );
   }
 
   function levelFrage(): void {
     const s = host.session();
-    host.showOverlay('Welches Level?', s ? `Aktuell: <b>${esc(s.level.title)}</b>` : '', [
-      ['Dieses Level', () => void oeffnen({ pack: host.packId(), index: host.levelIndex() })],
-      ['Anderes Level', () => host.levelAuswahl((w) => void oeffnen(w), levelFrage)],
-      ['Zurück', menue],
+    host.showOverlay(t('Welches Level?'), s ? t('Aktuell: <b>{titel}</b>', { titel: esc(s.level.title) }) : '', [
+      [t('Dieses Level'), () => void oeffnen({ pack: host.packId(), index: host.levelIndex() })],
+      [t('Anderes Level'), () => host.levelAuswahl((w) => void oeffnen(w), levelFrage)],
+      [t('Zurück'), menue],
     ]);
   }
 
@@ -261,9 +265,9 @@ export function wettkampf(host: WkHost) {
   }
 
   async function oeffnen(w: { pack: string; index: number }): Promise<void> {
-    host.showOverlay('Raum öffnen', '<span class="zz-warte">Einen Moment …</span>', [['Abbrechen', () => (aufraeumen(), menue())]]);
+    host.showOverlay(t('Raum öffnen'), `<span class="zz-warte">${t('Einen Moment …')}</span>`, [[t('Abbrechen'), () => (aufraeumen(), menue())]]);
     const level = await levelVon(w);
-    if (!level) return fehlerZeigen('Raum öffnen', 'level-unbekannt', levelFrage);
+    if (!level) return fehlerZeigen(t('Raum öffnen'), 'level-unbekannt', levelFrage);
     try {
       const s = await verbinden();
       const antwort = raumAntwort(s);
@@ -271,18 +275,18 @@ export function wettkampf(host: WkHost) {
       await antwort;
     } catch (err) {
       aufraeumen();
-      fehlerZeigen('Raum öffnen', (err as Error).message, () => void oeffnen(w));
+      fehlerZeigen(t('Raum öffnen'), (err as Error).message, () => void oeffnen(w));
     }
   }
 
   function codeForm(als: Rolle): void {
-    host.showOverlay(als === 'fahrer' ? 'Mitfahren' : 'Zuschauen', 'Gib den fünfstelligen Code ein, den die Spielleitung sieht.', [['Zurück', menue]]);
+    host.showOverlay(als === 'fahrer' ? t('Mitfahren') : t('Zuschauen'), t('Gib den fünfstelligen Code ein, den die Spielleitung sieht.'), [[t('Zurück'), menue]]);
     const form = document.getElementById('ov-form') as HTMLElement;
     form.innerHTML = `<form class="konto-form zz-form" novalidate>
-      <label for="wk-code">Raumcode</label>
+      <label for="wk-code">${t('Raumcode')}</label>
       <input id="wk-code" name="code" inputmode="numeric" autocomplete="off" pattern="[0-9]{5}" maxlength="5" placeholder="00000" required aria-describedby="wk-fehler">
       <p id="wk-fehler" class="konto-hinweis" aria-live="assertive"></p>
-      <button type="submit" class="primary wide">${als === 'fahrer' ? 'Mitfahren' : 'Zuschauen'}</button>
+      <button type="submit" class="primary wide">${als === 'fahrer' ? t('Mitfahren') : t('Zuschauen')}</button>
     </form>`;
     form.hidden = false;
     const input = form.querySelector('input') as HTMLInputElement;
@@ -297,11 +301,11 @@ export function wettkampf(host: WkHost) {
       e.preventDefault();
       e.stopPropagation();
       if (!/^\d{5}$/.test(input.value)) {
-        fehler.textContent = 'Der Code hat fünf Ziffern.';
+        fehler.textContent = t('Der Code hat fünf Ziffern.');
         return;
       }
       knopf.disabled = true;
-      knopf.textContent = 'Verbinde …';
+      knopf.textContent = t('Verbinde …');
       try {
         const s = await verbinden();
         const antwort = raumAntwort(s);
@@ -309,9 +313,9 @@ export function wettkampf(host: WkHost) {
         await antwort;
       } catch (err) {
         aufraeumen();
-        fehler.textContent = WK_FEHLERTEXT[(err as Error).message] ?? 'Das hat nicht geklappt.';
+        fehler.textContent = WK_FEHLERTEXT[(err as Error).message] ?? t('Das hat nicht geklappt.');
         knopf.disabled = false;
-        knopf.textContent = als === 'fahrer' ? 'Mitfahren' : 'Zuschauen';
+        knopf.textContent = als === 'fahrer' ? t('Mitfahren') : t('Zuschauen');
       }
     });
   }
@@ -321,16 +325,16 @@ export function wettkampf(host: WkHost) {
     if (ansicht === 'lobby' || ansicht === 'anderes') return void lobbyZeigen();
     if (ansicht === 'ergebnis') return ergebnisZeigen();
     const knoepfe: [string, () => void][] = [];
-    if (!zuschauer() && ansicht === 'rennen' && !imZiel) knoepfe.push(['Weiterspielen', host.spielen], ['Aufgeben', aufgeben]);
-    if (zuschauer()) knoepfe.push(['Weiter zuschauen', zuschauen]);
-    knoepfe.push(['Wettkampf verlassen', verlassen]);
-    host.showOverlay('Wettkampf', `Raum ${esc(code)} · ${zuschauer() ? 'du schaust zu' : esc(name(du, du))}`, knoepfe);
+    if (!zuschauer() && ansicht === 'rennen' && !imZiel) knoepfe.push([t('Weiterspielen'), host.spielen], [t('Aufgeben'), aufgeben]);
+    if (zuschauer()) knoepfe.push([t('Weiter zuschauen'), zuschauen]);
+    knoepfe.push([t('Wettkampf verlassen'), verlassen]);
+    host.showOverlay(t('Wettkampf'), `${t('Raum {code}', { code: esc(code) })} · ${zuschauer() ? t('du schaust zu') : esc(name(du, du))}`, knoepfe);
   }
 
   function aufgeben(): void {
     if (runde && !imZiel) sock?.senden({ t: 'aufgeben', runde: runde.runde });
     imZiel = true;
-    host.showOverlay('Aufgegeben', '<span class="zz-warte">Die anderen fahren noch …</span>', [['Wettkampf verlassen', verlassen]]);
+    host.showOverlay(t('Aufgegeben'), `<span class="zz-warte">${t('Die anderen fahren noch …')}</span>`, [[t('Wettkampf verlassen'), verlassen]]);
   }
 
   async function lobbyZeigen(): Promise<void> {
@@ -340,25 +344,25 @@ export function wettkampf(host: WkHost) {
     if (!titel.has(l.level.id)) await levelVon(l.level);
     if (ansicht !== 'lobby' || lobby !== l) return;
     const leiter = !zuschauer() && l.leiter === du;
-    const liste = l.fahrer.map((nr) => `<li>${esc(name(nr, du))}${nr === l.leiter ? ' · Spielleitung' : ''}</li>`).join('');
+    const liste = l.fahrer.map((nr) => `<li>${esc(name(nr, du))}${nr === l.leiter ? ` · ${t('Spielleitung')}` : ''}</li>`).join('');
     const warten =
       l.phase !== 'lobby'
-        ? '<span class="zz-warte">Ein Rennen läuft – du bist in der nächsten Runde dabei.</span>'
+        ? `<span class="zz-warte">${t('Ein Rennen läuft – du bist in der nächsten Runde dabei.')}</span>`
         : leiter
           ? l.fahrer.length < 2
-            ? '<span class="zz-warte">Warte auf mindestens einen Mitfahrer …</span>'
-            : 'Alle da? Dann starte das Rennen.'
-          : '<span class="zz-warte">Die Spielleitung startet das Rennen …</span>';
+            ? `<span class="zz-warte">${t('Warte auf mindestens einen Mitfahrer …')}</span>`
+            : t('Alle da? Dann starte das Rennen.')
+          : `<span class="zz-warte">${t('Die Spielleitung startet das Rennen …')}</span>`;
     const knoepfe: [string, () => void][] = [];
-    if (leiter && l.phase === 'lobby' && l.fahrer.length >= 2) knoepfe.push(['Start', () => sock?.senden({ t: 'start' })]);
-    if (leiter && l.phase === 'lobby') knoepfe.push(['Level ändern', levelAendern]);
-    knoepfe.push(['Verlassen', verlassen]);
+    if (leiter && l.phase === 'lobby' && l.fahrer.length >= 2) knoepfe.push([t('Start'), () => sock?.senden({ t: 'start' })]);
+    if (leiter && l.phase === 'lobby') knoepfe.push([t('Level ändern'), levelAendern]);
+    knoepfe.push([t('Verlassen'), verlassen]);
     host.showOverlay(
-      zuschauer() ? 'Zuschauen' : 'Wettkampf',
-      `<span class="zz-code" aria-label="Raumcode ${code.split('').join(' ')}">${esc(code)}</span>` +
-        `Level: <b>${esc(titel.get(l.level.id) ?? l.level.id)}</b>` +
-        `<ul class="wk-liste" aria-label="Fahrer">${liste}</ul>` +
-        `${l.zuschauer ? `${l.zuschauer} ${l.zuschauer === 1 ? 'schaut' : 'schauen'} zu · ` : ''}${l.fahrer.length} von 4 Fahrern<br>${warten}`,
+      zuschauer() ? t('Zuschauen') : t('Wettkampf'),
+      `<span class="zz-code" aria-label="${t('Raumcode {ziffern}', { ziffern: code.split('').join(' ') })}">${esc(code)}</span>` +
+        t('Level: <b>{titel}</b>', { titel: esc(titel.get(l.level.id) ?? l.level.id) }) +
+        `<ul class="wk-liste" aria-label="${t('Fahrer')}">${liste}</ul>` +
+        `${l.zuschauer ? `${l.zuschauer === 1 ? t('1 schaut zu') : t('{n} schauen zu', { n: l.zuschauer })} · ` : ''}${t('{n} von 4 Fahrern', { n: l.fahrer.length })}<br>${warten}`,
       knoepfe,
     );
   }
@@ -368,7 +372,7 @@ export function wettkampf(host: WkHost) {
     host.levelAuswahl(
       (w) =>
         void levelVon(w).then((level) => {
-          if (!level) return fehlerZeigen('Level ändern', 'level-unbekannt', levelAendern);
+          if (!level) return fehlerZeigen(t('Level ändern'), 'level-unbekannt', levelAendern);
           sock?.senden({ t: 'level', level });
           void lobbyZeigen();
         }),
@@ -399,7 +403,7 @@ export function wettkampf(host: WkHost) {
         if (zuschauer()) zuschauen();
         else if (ansicht === 'laden') {
           ansicht = 'rennen';
-          host.showOverlay('Gleich geht’s los', 'Die halbdurchsichtigen Murmeln sind die anderen. Rechts oben siehst du, wer vorn liegt.', [['Spielen', host.spielen]]);
+          host.showOverlay(t('Gleich geht’s los'), t('Die halbdurchsichtigen Murmeln sind die anderen. Rechts oben siehst du, wer vorn liegt.'), [[t('Spielen'), host.spielen]]);
         }
         tafelZeigen();
         return;
@@ -408,7 +412,8 @@ export function wettkampf(host: WkHost) {
         // someone else is through: the others have two more minutes (docs/SPEC-wettkampf.md 4)
         if (!stand.some((z) => z[5] === 'ziel') && m.f.some((z) => z[5] === 'ziel' && z[0] !== du) && !imZiel) {
           const erster = m.f.find((z) => z[5] === 'ziel')!;
-          host.showToast(`Spieler ${erster[0]} ist im Ziel (${host.formatTime(erster[6] ?? 0)}). ${zuschauer() ? 'Die anderen' : 'Du'} ${zuschauer() ? 'haben' : 'hast'} noch 2 Minuten.`, 3500);
+          const werte = { nr: erster[0], zeit: host.formatTime(erster[6] ?? 0) };
+          host.showToast(zuschauer() ? t('Spieler {nr} ist im Ziel ({zeit}). Die anderen haben noch 2 Minuten.', werte) : t('Spieler {nr} ist im Ziel ({zeit}). Du hast noch 2 Minuten.', werte), 3500);
         }
         stand = m.f;
         geister.stand(m.f, zuschauer() ? folgt : du);
@@ -429,7 +434,7 @@ export function wettkampf(host: WkHost) {
       case 'fehler':
         if (m.grund === 'verfallen') {
           aufraeumen();
-          host.showOverlay('Wettkampf', WK_FEHLERTEXT.verfallen, [['Zurück', host.showStart]]);
+          host.showOverlay(t('Wettkampf'), WK_FEHLERTEXT.verfallen, [[t('Zurück'), host.showStart]]);
         } else if (WK_FEHLERTEXT[m.grund]) host.showToast(WK_FEHLERTEXT[m.grund], 3500);
         return;
     }
@@ -461,7 +466,7 @@ export function wettkampf(host: WkHost) {
     const mitdabei = zuschauer() || m.fahrer.includes(du);
     if (!mitdabei) return; // joined during the round: next round
     ansicht = 'laden';
-    host.showOverlay(zuschauer() ? 'Zuschauen' : 'Wettkampf', '<span class="zz-warte">Lade das Level …</span>', [['Wettkampf verlassen', verlassen]]);
+    host.showOverlay(zuschauer() ? t('Zuschauen') : t('Wettkampf'), `<span class="zz-warte">${t('Lade das Level …')}</span>`, [[t('Wettkampf verlassen'), verlassen]]);
     if (zuschauer()) {
       folgt = m.fahrer.includes(folgt) ? folgt : m.fahrer[0];
       puffer = [];
@@ -470,13 +475,13 @@ export function wettkampf(host: WkHost) {
     const s = await laden(m.level, m.seed, null);
     if (runde !== m) return;
     if (!s) {
-      host.showOverlay('Level nicht gefunden', 'Dein Spiel hat dieses Level nicht. Lade die Seite neu und tritt noch einmal bei.', [['Wettkampf verlassen', verlassen]]);
+      host.showOverlay(t('Level nicht gefunden'), t('Dein Spiel hat dieses Level nicht. Lade die Seite neu und tritt noch einmal bei.'), [[t('Wettkampf verlassen'), verlassen]]);
       return;
     }
     aktiv = s;
     if (zuschauer()) {
       sock?.senden({ t: 'folgen', fahrer: folgt });
-      host.showOverlay('Zuschauen', '<span class="zz-warte">Gleich geht es los …</span>', [['Wettkampf verlassen', verlassen]]);
+      host.showOverlay(t('Zuschauen'), `<span class="zz-warte">${t('Gleich geht es los …')}</span>`, [[t('Wettkampf verlassen'), verlassen]]);
     } else sock?.senden({ t: 'bereit', runde: m.runde });
     tafelZeigen();
   }
@@ -485,25 +490,25 @@ export function wettkampf(host: WkHost) {
     const e = ergebnis;
     if (!e) return void lobbyZeigen();
     const zeilen = e.plaetze.map((p: Platz) => {
-      const was = p.status === 'ziel' && p.zeit !== null ? host.formatTime(p.zeit) : esc(GRUND_TEXT[p.grund ?? ''] ?? 'nicht im Ziel');
+      const was = p.status === 'ziel' && p.zeit !== null ? host.formatTime(p.zeit) : esc(GRUND_TEXT[p.grund ?? ''] ?? t('nicht im Ziel'));
       return `<li${p.nr === du && !zuschauer() ? ' data-du=""' : ''}><span class="wk-platz">${p.platz !== null ? `${p.platz}.` : '–'}</span><span class="wk-name">${esc(name(p.nr, zuschauer() ? 0 : du))}</span><span class="wk-zeit">${was}</span></li>`;
     });
     const mein = e.plaetze.find((p) => p.nr === du);
-    const titel = e.abbruch ? 'Rennen abgebrochen' : zuschauer() ? 'Ergebnis' : mein?.platz === 1 ? 'Gewonnen!' : mein?.platz ? `Platz ${mein.platz}` : 'Ergebnis';
+    const titel = e.abbruch ? t('Rennen abgebrochen') : zuschauer() ? 'Ergebnis' : mein?.platz === 1 ? t('Gewonnen!') : mein?.platz ? t('Platz {n}', { n: mein.platz }) : t('Ergebnis');
     const leiter = !zuschauer() && lobby?.leiter === du;
     const knoepfe: [string, () => void][] = leiter
       ? [
-          ['Nochmal', () => sock?.senden({ t: 'start' })],
-          ['Anderes Level', levelAendern],
-          ['Wettkampf verlassen', verlassen],
+          [t('Nochmal'), () => sock?.senden({ t: 'start' })],
+          [t('Anderes Level'), levelAendern],
+          [t('Wettkampf verlassen'), verlassen],
         ]
       : [
-          ['Zur Lobby', () => void lobbyZeigen()],
-          ['Wettkampf verlassen', verlassen],
+          [t('Zur Lobby'), () => void lobbyZeigen()],
+          [t('Wettkampf verlassen'), verlassen],
         ];
     host.showOverlay(
       titel,
-      `${e.abbruch ? 'Der Server konnte das Rennen nicht zu Ende rechnen. Es zählt nicht.<br>' : ''}<ol class="wk-ergebnis">${zeilen.join('')}</ol><span class="keys">Zeiten und Plätze hat der Server aus euren Eingaben nachgerechnet.</span>`,
+      `${e.abbruch ? `${t('Der Server konnte das Rennen nicht zu Ende rechnen. Es zählt nicht.')}<br>` : ''}<ol class="wk-ergebnis">${zeilen.join('')}</ol><span class="keys">${t('Zeiten und Plätze hat der Server aus euren Eingaben nachgerechnet.')}</span>`,
       knoepfe,
     );
     tafel.hidden = true;
@@ -657,7 +662,7 @@ export function wettkampf(host: WkHost) {
       const r = runde;
       setTimeout(() => {
         if (runde !== r || ansicht !== 'ziel') return;
-        host.showOverlay('Im Ziel!', `Deine Zeit ${host.formatTime(vorlauf + s.steps)}<br><span class="zz-warte">Der Server prüft deinen Lauf, die anderen fahren noch …</span>`, [['Wettkampf verlassen', verlassen]]);
+        host.showOverlay(t('Im Ziel!'), `${t('Deine Zeit {zeit}', { zeit: host.formatTime(vorlauf + s.steps) })}<br><span class="zz-warte">${t('Der Server prüft deinen Lauf, die anderen fahren noch …')}</span>`, [[t('Wettkampf verlassen'), verlassen]]);
       }, 700);
       return true;
     },

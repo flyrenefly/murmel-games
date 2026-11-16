@@ -6,6 +6,10 @@ import { docText, MAIN_PEARLS, MAX_DOC_TEXT, MAX_DOCS } from '../editor/link';
 import { BY_KIND } from '../editor/palette';
 import { type EnigmaDatei, UploadError } from './datei';
 import type { Decl, Welt } from './welt';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/enigma-upload';
+
+const t = woerterbuch(EN);
 
 /** Attributes every player-level object keeps (sanitizeLevel in src/editor/link.ts); more as palette properties. */
 const KEPT = ['name', 'target', 'action', 'interval'];
@@ -165,9 +169,10 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
         if ([...raw.replace(/\s+/g, ' ').trim()].length > MAX_DOC_TEXT) shortened++;
       } else if (prop?.options.some(([value]) => value === v)) {
         if (v !== prop.options[0][0]) out[key] = v; // the first value is the default
-      } else if (!READ[k]?.includes(key) && !key.startsWith('_')) dropped.add(`${key} von ${d.k}`);
+      } else if (!READ[k]?.includes(key) && !key.startsWith('_')) dropped.add(t('{eigenschaft} von {art}', { eigenschaft: key, art: d.k }));
     }
-    for (const t of (out.target ?? '').split(/[,;]/).map((s) => s.trim()).filter(Boolean)) if (welt.isFunction(t)) callbacks.add(`${d.k} über die Lua-Funktion „${t}“`);
+    for (const f of (out.target ?? '').split(/[,;]/).map((s) => s.trim()).filter(Boolean))
+      if (welt.isFunction(f)) callbacks.add(t('{art} über die Lua-Funktion „{funktion}“', { art: d.k, funktion: f }));
     return Object.keys(out).length ? out : undefined;
   };
 
@@ -178,8 +183,8 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
       if (f) c.f = f;
       else miss(z.fl.k);
       // a slope's force is always SlopeForce 25 in player levels
-      if (f?.startsWith('fl_slope') && z.fl.a.strength !== undefined) dropped.add(`strength von ${z.fl.k}`);
-    } else hinweise.push(`Bei ${i % welt.w}, ${Math.floor(i / welt.w)} fehlt ein Boden; dort liegt jetzt ${DEFAULT_FLOOR}.`);
+      if (f?.startsWith('fl_slope') && z.fl.a.strength !== undefined) dropped.add(t('{eigenschaft} von {art}', { eigenschaft: 'strength', art: z.fl.k }));
+    } else hinweise.push(t('Bei {x}, {y} fehlt ein Boden; dort liegt jetzt {boden}.', { x: i % welt.w, y: Math.floor(i / welt.w), boden: DEFAULT_FLOOR }));
     if (z.st) stone(c, z.st);
     if (z.it) {
       const ek = editorKind(z.it);
@@ -213,7 +218,7 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
     const wall = isWall(k) ? k : (WALL_EDGES.exec(k)?.[1] ?? null);
     if (wall) {
       c.s = wall;
-      for (const key of Object.keys(d.a)) if (!key.startsWith('_') && key !== 'name') dropped.add(`${key} von ${d.k}`);
+      for (const key of Object.keys(d.a)) if (!key.startsWith('_') && key !== 'name') dropped.add(t('{eigenschaft} von {art}', { eigenschaft: key, art: d.k }));
       return;
     }
     miss(k);
@@ -226,7 +231,7 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
     const k = editorKind(a);
     if (BY_KIND.get(k)?.layer === 'actor') {
       actors.push({ k, x: a.x, y: a.y });
-      for (const key of Object.keys(a.a)) if (!key.startsWith('_') && !READ[a.k]?.includes(key)) dropped.add(`${key} von ${a.k}`);
+      for (const key of Object.keys(a.a)) if (!key.startsWith('_') && !READ[a.k]?.includes(key)) dropped.add(t('{eigenschaft} von {art}', { eigenschaft: key, art: a.k }));
     } else miss(k);
   }
   // Meditation without a black marble: the first pearl is the main ball (as tools/import-enigma.mjs)
@@ -234,27 +239,37 @@ export function zuEditorLevel(datei: EnigmaDatei, welt: Welt): Umgewandelt {
   if (mainPearl) actors.splice(actors.indexOf(mainPearl), 1);
   for (const k of welt.unsupported) miss(k);
 
-  if (callbacks.size) throw new UploadError(`Das Level steuert ${[...callbacks].join(', ')}. Lua ist in Spieler-Levels nicht erlaubt.`);
+  if (callbacks.size) throw new UploadError(t('Das Level steuert {liste}. Lua ist in Spieler-Levels nicht erlaubt.', { liste: [...callbacks].join(', ') }));
   if (missing.size)
     throw new UploadError(
-      `Diese Objekte kann ein Spieler-Level noch nicht enthalten: ${[...missing].sort(([a], [b]) => a.localeCompare(b)).map(([k, n]) => (n > 1 ? `${k} (${n}×)` : k)).join(', ')}.`,
+      t('Diese Objekte kann ein Spieler-Level noch nicht enthalten: {liste}.', {
+        liste: [...missing]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([k, n]) => (n > 1 ? `${k} (${n}×)` : k))
+          .join(', '),
+      }),
     );
 
   if (marbles.length !== 1 && !mainPearl)
-    throw new UploadError(`Das Level braucht genau eine schwarze Murmel oder, als Meditation, eine Perle (gefunden: ${marbles.length} Murmeln).`);
+    throw new UploadError(t('Das Level braucht genau eine schwarze Murmel oder, als Meditation, eine Perle (gefunden: {n} Murmeln).', { n: marbles.length }));
 
   const docs = cells.filter((c) => c.i === 'it_document').length;
-  if (docs > MAX_DOCS) throw new UploadError(`Das Level enthält ${docs} Dokumente; ein Spieler-Level darf höchstens ${MAX_DOCS} enthalten.`);
-  if (shortened) hinweise.push(`${shortened === 1 ? 'Ein Dokumenttext wurde' : `${shortened} Dokumenttexte wurden`} auf ${MAX_DOC_TEXT} Zeichen gekürzt.`);
+  if (docs > MAX_DOCS) throw new UploadError(t('Das Level enthält {n} Dokumente; ein Spieler-Level darf höchstens {max} enthalten.', { n: docs, max: MAX_DOCS }));
+  if (shortened)
+    hinweise.push(
+      shortened === 1
+        ? t('Ein Dokumenttext wurde auf {max} Zeichen gekürzt.', { max: MAX_DOC_TEXT })
+        : t('{n} Dokumenttexte wurden auf {max} Zeichen gekürzt.', { n: shortened, max: MAX_DOC_TEXT }),
+    );
 
   const world = Object.keys(welt.world);
-  if (world.length) hinweise.push(`Nicht übernommene Welteinstellungen: ${world.join(', ')}.`);
-  if (dropped.size) hinweise.push(`Nicht übernommene Eigenschaften: ${[...dropped].slice(0, 12).join(', ')}${dropped.size > 12 ? ' …' : ''}.`);
+  if (world.length) hinweise.push(t('Nicht übernommene Welteinstellungen: {liste}.', { liste: world.join(', ') }));
+  if (dropped.size) hinweise.push(t('Nicht übernommene Eigenschaften: {liste}.', { liste: `${[...dropped].slice(0, 12).join(', ')}${dropped.size > 12 ? ' …' : ''}` }));
   hinweise.push(...welt.hints);
   const m = mainPearl ?? marbles[0];
   return {
     level: {
-      title: datei.title || 'Enigma-Level',
+      title: datei.title || t('Enigma-Level'),
       author: '',
       width: welt.w,
       height: welt.h,

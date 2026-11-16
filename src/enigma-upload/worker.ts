@@ -5,13 +5,19 @@ import shim from '../lua/enigma.lua?raw';
 import type { Fengari } from '../lua/runtime';
 import { UploadError } from './datei';
 import { wandleUm } from './umwandeln';
+import { setzeSpracheFuerTest, woerterbuch } from '../i18n';
+import EN from '../i18n/en/enigma-upload';
 
-self.onmessage = async (e: MessageEvent<{ name: string; text: string }>) => {
+const t = woerterbuch(EN);
+
+self.onmessage = async (e: MessageEvent<{ name: string; text: string; sprache?: string }>) => {
+  // the page's choice (localStorage is not available here); without one the worker's own detection applies
+  if (e.data.sprache === 'de' || e.data.sprache === 'en') setzeSpracheFuerTest(e.data.sprache);
   try {
     const f = (await import('fengari-web')) as unknown as Fengari;
     const { level, hinweise, herkunft } = await wandleUm(e.data.name, e.data.text, f, shim);
     self.postMessage({ ok: true, level, hinweise, herkunft });
   } catch (err) {
-    self.postMessage({ ok: false, error: err instanceof UploadError ? err.message : `Die Umwandlung ist fehlgeschlagen: ${err instanceof Error ? err.message : String(err)}` });
+    self.postMessage({ ok: false, error: err instanceof UploadError ? err.message : t('Die Umwandlung ist fehlgeschlagen: {grund}', { grund: err instanceof Error ? err.message : String(err) }) });
   }
 };

@@ -42,7 +42,7 @@ describe('englische Startseite und About-Seite', () => {
     const out = englischeSeite(ueber, EN_UEBER, 'ueber.html');
     expect(out).toMatch(/<a class="lang"[^>]*href="ueber.html" hreflang="de" lang="de">Deutsch<\/a>/);
     expect(out).toMatch(/<a class="play"[^>]*href="en\/">Play now<\/a>/);
-    expect(out).toContain('<a href="level/">Browse all levels</a>');
+    expect(out).toContain('<a href="en/level/">Browse all levels</a>');
   });
   it('JSON-LD: Texte aus dem Wörterbuch, inLanguage en', () => {
     expect(JSON.parse(uebersetzeJsonLd('{"a":"Hallo","inLanguage":"de","b":["Hallo","x"]}', { Hallo: 'Hello' }))).toEqual({ a: 'Hello', inLanguage: 'en', b: ['Hello', 'x'] });

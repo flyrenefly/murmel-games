@@ -2,6 +2,11 @@
 // No XML parser: the header and the Lua part are read with fixed patterns, and a DOCTYPE or ENTITY
 // declaration stops the reading, so external entities (XXE) can never be resolved.
 
+import { sprache, woerterbuch } from '../i18n';
+import EN from '../i18n/en/enigma-upload';
+
+const t = woerterbuch(EN);
+
 /** Largest accepted file and Lua part (the biggest Enigma levels are below 100 KB). */
 export const MAX_FILE = 256 * 1024;
 export const MAX_LUA = 200 * 1024;
@@ -27,7 +32,7 @@ export interface EnigmaDatei {
   /** Murmel library names in load order. */
   libs: string[];
   code: string;
-  /** Texts of the el:i18n section by key (German translation if there is one, else English). */
+  /** Texts of the el:i18n section by key, in the page's language: German translation or English original, each falling back to the other. */
   texts: Record<string, string>;
 }
 
@@ -41,19 +46,19 @@ const baseName = (name: string): string => name.replace(/^.*[\\/]/, '').replace(
 
 /** Reads the file text; `name` decides between XML and Lua. Throws UploadError with a readable reason. */
 export function leseDatei(name: string, text: string, size = new TextEncoder().encode(text).length): EnigmaDatei {
-  if (size > MAX_FILE) throw new UploadError(`Die Datei ist ${Math.ceil(size / 1024)} KB groß; erlaubt sind höchstens ${MAX_FILE / 1024} KB.`);
+  if (size > MAX_FILE) throw new UploadError(t('Die Datei ist {kb} KB groß; erlaubt sind höchstens {max} KB.', { kb: Math.ceil(size / 1024), max: MAX_FILE / 1024 }));
   const lower = name.toLowerCase();
   if (lower.endsWith('.lua')) return mitLua({ title: clean(baseName(name)), author: '', license: '', compat: luaCompat(text), libs: [], code: text, texts: {} });
-  if (!lower.endsWith('.xml')) throw new UploadError('Bitte eine Enigma-Leveldatei (.xml oder .lua) wählen.');
-  if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new UploadError('Die Datei enthält eine DOCTYPE- oder ENTITY-Angabe. Aus Sicherheitsgründen liest Murmel solche Dateien nicht.');
-  if (!/<el:level\b/.test(text)) throw new UploadError('Das ist keine Enigma-Leveldatei (el:level fehlt).');
+  if (!lower.endsWith('.xml')) throw new UploadError(t('Bitte eine Enigma-Leveldatei (.xml oder .lua) wählen.'));
+  if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new UploadError(t('Die Datei enthält eine DOCTYPE- oder ENTITY-Angabe. Aus Sicherheitsgründen liest Murmel solche Dateien nicht.'));
+  if (!/<el:level\b/.test(text)) throw new UploadError(t('Das ist keine Enigma-Leveldatei (el:level fehlt).'));
   const main = /<el:luamain>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/el:luamain>/.exec(text) ?? /<el:luamain>([\s\S]*?)<\/el:luamain>/.exec(text);
-  if (!main) throw new UploadError('Die Datei enthält keinen Lua-Teil (el:luamain).');
+  if (!main) throw new UploadError(t('Die Datei enthält keinen Lua-Teil (el:luamain).'));
   const code = main[0].includes('<![CDATA[') ? main[1] : unxml(main[1]);
   const libs: string[] = [];
   const add = (path: string): void => {
     const lib = LIBS[path];
-    if (!lib) throw new UploadError(`Die Bibliothek ${path} fehlt in Murmel.`);
+    if (!lib) throw new UploadError(t('Die Bibliothek {pfad} fehlt in Murmel.', { pfad: path }));
     if (libs.includes(lib.name)) return;
     for (const d of lib.deps ?? []) add(d);
     libs.push(lib.name);
@@ -70,7 +75,11 @@ export function leseDatei(name: string, text: string, size = new TextEncoder().e
   });
 }
 
-/** el:i18n strings (fixed patterns, no parser): key → German translation or English text. At most 200 keys. */
+/**
+ * el:i18n strings (fixed patterns, no parser): key → text in the page's language. German pages take the
+ * German translation (else the English original), English pages the English original (else the German
+ * translation). At most 200 keys.
+ */
 function i18n(xml: string): Record<string, string> {
   const out: Record<string, string> = {};
   const section = /<el:i18n>([\s\S]*?)<\/el:i18n>/.exec(xml)?.[1] ?? '';
@@ -79,8 +88,9 @@ function i18n(xml: string): Record<string, string> {
     if (++n > 200) break;
     const de = /<el:translation\b[^>]*\bel:lang="de"[^>]*>([\s\S]*?)<\/el:translation>/.exec(m[2])?.[1];
     const en = /<el:english\b[^>]*>([\s\S]*?)<\/el:english>/.exec(m[2])?.[1];
-    const t = unxml((de ?? '').trim() || (en ?? '').trim());
-    if (t) out[unxml(m[1])] = t;
+    const [first, second] = sprache() === 'en' ? [en, de] : [de, en];
+    const text = unxml((first ?? '').trim() || (second ?? '').trim());
+    if (text) out[unxml(m[1])] = text;
   }
   return out;
 }
@@ -91,9 +101,9 @@ function luaCompat(code: string): number {
 }
 
 function mitLua(d: EnigmaDatei): EnigmaDatei {
-  if (new TextEncoder().encode(d.code).length > MAX_LUA) throw new UploadError(`Der Lua-Teil ist größer als ${MAX_LUA / 1024} KB.`);
-  if (!d.code.trim()) throw new UploadError('Der Lua-Teil ist leer.');
+  if (new TextEncoder().encode(d.code).length > MAX_LUA) throw new UploadError(t('Der Lua-Teil ist größer als {max} KB.', { max: MAX_LUA / 1024 }));
+  if (!d.code.trim()) throw new UploadError(t('Der Lua-Teil ist leer.'));
   if (d.compat < 1.1)
-    throw new UploadError('Dieses Level nutzt Enigmas alte Lua-API 1 (vor Enigma 1.10). Das Umwandeln kennt bisher nur API 2.');
+    throw new UploadError(t('Dieses Level nutzt Enigmas alte Lua-API 1 (vor Enigma 1.10). Das Umwandeln kennt bisher nur API 2.'));
   return d;
 }

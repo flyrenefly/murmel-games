@@ -3,6 +3,10 @@ import { newLevel } from '../editor/model';
 import { type WorkerLike, wandleImWorker } from './client';
 import { MAX_FILE } from './datei';
 import { isEnigmaFile } from './dialog';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 /** A fake worker that answers (or not) like the real one. */
 function fake(answer: ((post: (d: unknown) => void, fail: () => void) => void) | null) {
@@ -31,7 +35,7 @@ describe('Umwandeln im Worker', () => {
     const level = newLevel();
     const w = fake((post) => post({ ok: true, level, hinweise: ['h'], herkunft: { autor: 'A', lizenz: 'GPL' } }));
     await expect(wandleImWorker(file('<x/>'), () => w)).resolves.toEqual({ level, hinweise: ['h'], herkunft: { autor: 'A', lizenz: 'GPL' } });
-    expect(w.got).toEqual({ name: 'a.xml', text: '<x/>' });
+    expect(w.got).toEqual({ name: 'a.xml', text: '<x/>', sprache: 'de' }); // the worker gets the page's language
     expect(w.terminated).toBe(true);
   });
 

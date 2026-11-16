@@ -7,6 +7,10 @@
 import { MAX_H, MAX_W } from '../editor/model';
 import { type Fengari, type LuaHost, LuaLevel } from '../lua/runtime';
 import { UploadError } from './datei';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/enigma-upload';
+
+const t = woerterbuch(EN);
 
 /** Tile declarations a script may set (a 100×64 world: default floor plus three layers is 25 600). */
 export const MAX_TILES = 40_000;
@@ -42,8 +46,17 @@ export interface Welt {
 const SIZE = '_murmel_size';
 const FLOOR_ONLY = '_murmel_floor';
 
+/** A text with {name} placeholders as a Lua expression: string literals joined with tostring(name). */
+export function luaText(text: string): string {
+  return text
+    .split(/(\{\w+\})/)
+    .filter(Boolean)
+    .map((p) => (/^\{\w+\}$/.test(p) ? `tostring(${p.slice(1, -1)})` : JSON.stringify(p)))
+    .join(' .. ');
+}
+
 /** Lua run after the shim: no file access, wo(…) builds the world, unknown resolvers fail. */
-const ADDON = `
+const addon = (): string => `
 dofile, loadfile, require, collectgarbage = nil, nil, nil, nil
 do
   local tiles_mt = getmetatable(ti)
@@ -54,7 +67,7 @@ do
       return resolver[1](resolver, rawevaluate, key, x, y)
     end
     if type(resolver) == "table" then return resolver[key] end
-    error("Resolver mit falschem Typ", 3)
+    error(${luaText(t('Resolver mit falschem Typ'))}, 3)
   end
   local function finalize(context)
     if type(context) == "table" and getmetatable(context) ~= tiles_mt then
@@ -65,12 +78,12 @@ do
   end
   local function tile(resolver, key, x, y)
     local t = rawevaluate(resolver, key, x, y)
-    if t == nil then error("Die Kachel '" .. tostring(key) .. "' bei " .. x .. ", " .. y .. " ist nicht definiert", 3) end
+    if t == nil then error(${luaText(t('Die Kachel „{key}“ bei {x}, {y} ist nicht definiert'))}, 3) end
     return t
   end
   local built = false
   getmetatable(wo).__call = function(_, resolver, defaultkey, a4, a5)
-    if built then error("Die Welt wurde schon erstellt", 2) end
+    if built then error(${luaText(t('Die Welt wurde schon erstellt'))}, 2) end
     built = true
     local map, w, h
     if type(defaultkey) == "table" then
@@ -81,18 +94,18 @@ do
     else
       w, h = tonumber(a4), tonumber(a5)
     end
-    if type(defaultkey) ~= "string" or defaultkey == "" then error("wo(...) ohne gültigen Standardschlüssel", 2) end
+    if type(defaultkey) ~= "string" or defaultkey == "" then error(${luaText(t('wo(...) ohne gültigen Standardschlüssel'))}, 2) end
     local len = string.len(defaultkey)
     if map then
       h, w = #map, 0
       for i = 1, h do
-        if type(map[i]) ~= "string" then error("Die Karte enthält Zeilen, die keine Zeichenketten sind", 2) end
+        if type(map[i]) ~= "string" then error(${luaText(t('Die Karte enthält Zeilen, die keine Zeichenketten sind'))}, 2) end
         w = math.max(w, string.len(map[i]))
       end
-      if w % len ~= 0 then error("Eine Kartenzeile hat eine unpassende Länge", 2) end
+      if w % len ~= 0 then error(${luaText(t('Eine Kartenzeile hat eine unpassende Länge'))}, 2) end
       w = w // len
     end
-    if not w or not h or w <= 0 or h <= 0 then error("wo(...) mit ungültiger Größe", 2) end
+    if not w or not h or w <= 0 or h <= 0 then error(${luaText(t('wo(...) mit ungültiger Größe'))}, 2) end
     wo["${SIZE}"] = math.floor(w) .. " " .. math.floor(h)
     for y = 0, h - 1 do
       local line = map and map[y + 1] or ""
@@ -135,7 +148,7 @@ do
     return setmetatable({composer_implementation, nil, subresolver, sequence}, res.metatable)
   end
   local res_mt = getmetatable(res)
-  res_mt.__index = function(_, name) error("Murmel kennt res." .. tostring(name) .. " noch nicht", 2) end
+  res_mt.__index = function(_, name) error(${luaText(t('Murmel kennt res.{name} noch nicht'))}, 2) end
 end
 `;
 
@@ -143,7 +156,7 @@ end
 export function buildShim(shim: string): string {
   const marker = 'local INIT = true';
   if (!shim.includes(marker)) throw new Error('enigma.lua: INIT-Marke fehlt');
-  return `${shim.replace(marker, 'local INIT = false')}\n${ADDON}`;
+  return `${shim.replace(marker, 'local INIT = false')}\n${addon()}`;
 }
 
 /**
@@ -207,7 +220,7 @@ export async function baueWelt(code: string, f: Fengari, shim: string, libs: rea
       else d.a[key] = value;
     },
     send(_ref, msg) {
-      hint(`Die Nachricht „${msg}“ beim Aufbau wurde nicht ausgeführt.`);
+      hint(t('Die Nachricht „{nachricht}“ beim Aufbau wurde nicht ausgeführt.', { nachricht: msg }));
     },
     kill(ref) {
       const p = parse(ref);
@@ -219,8 +232,8 @@ export async function baueWelt(code: string, f: Fengari, shim: string, libs: rea
       }
     },
     setTile(x, y, kind, attrs) {
-      if (w === 0) throw new Error('Das Level setzt Kacheln, bevor es mit wo(...) die Welt erstellt');
-      if (++tiles > MAX_TILES) throw new Error(`Das Level setzt mehr als ${MAX_TILES} Kacheln`);
+      if (w === 0) throw new Error(t('Das Level setzt Kacheln, bevor es mit wo(...) die Welt erstellt'));
+      if (++tiles > MAX_TILES) throw new Error(t('Das Level setzt mehr als {max} Kacheln', { max: MAX_TILES }));
       const c = cell(x, y);
       if (!c) return; // Enigma ignores positions outside the world
       const k = kind.startsWith('#') ? kind.slice(1) : kind;
@@ -249,7 +262,7 @@ export async function baueWelt(code: string, f: Fengari, shim: string, libs: rea
       }
       if (k === SIZE) {
         const [nw, nh] = (v ?? '').split(' ').map(Number);
-        if (nw > MAX_W || nh > MAX_H) throw new Error(`Das Level ist ${nw}×${nh} groß; erlaubt sind höchstens ${MAX_W}×${MAX_H}`);
+        if (nw > MAX_W || nh > MAX_H) throw new Error(t('Das Level ist {w}×{h} groß; erlaubt sind höchstens {maxW}×{maxH}', { w: nw, h: nh, maxW: MAX_W, maxH: MAX_H }));
         w = nw;
         h = nh;
         cells = Array.from({ length: w * h }, () => ({}));
@@ -260,7 +273,7 @@ export async function baueWelt(code: string, f: Fengari, shim: string, libs: rea
     },
     size: () => [w, h],
     addInventory(_player, kind) {
-      unsupported.push(`${kind} (im Inventar)`);
+      unsupported.push(t('{art} (im Inventar)', { art: kind }));
     },
     addObject(kind) {
       unsupported.push(kind);
@@ -283,15 +296,14 @@ export async function baueWelt(code: string, f: Fengari, shim: string, libs: rea
     LuaLevel.INIT_STEPS = steps;
   }
   if (lua.lastError) throw new UploadError(luaMessage(lua.lastError));
-  if (w === 0) throw new UploadError('Das Level erstellt keine Welt (wo(...) fehlt).');
+  if (w === 0) throw new UploadError(t('Das Level erstellt keine Welt (wo(...) fehlt).'));
   return { w, h, cells, actors, world, unsupported, hints, isFunction: (name) => lua.isFunction(name) };
 }
 
 /** A Lua error as a sentence for the person ("level:12: …" keeps its line). */
 export function luaMessage(err: string): string {
-  if (/Level-Init läuft endlos/.test(err)) return 'Der Lua-Teil läuft zu lange (Endlosschleife?).';
+  if (/Level-Init läuft endlos/.test(err)) return t('Der Lua-Teil läuft zu lange (Endlosschleife?).');
   const m = /^(?:\[string "[^"]*"\]|level|lib\d+|enigma\.lua):(\d+): ([\s\S]*)$/.exec(err);
   const text = (m ? m[2] : err).replace(/^Error: /, '').replace(/^(?:level|lib\d+|enigma\.lua):\d+: /, '');
-  const where = m && /^level:/.test(err) ? ` (Zeile ${m[1]})` : '';
-  return `Fehler im Lua-Teil${where}: ${text}`;
+  return m && /^level:/.test(err) ? t('Fehler im Lua-Teil (Zeile {zeile}): {text}', { zeile: m[1], text }) : t('Fehler im Lua-Teil: {text}', { text });
 }

@@ -11,6 +11,10 @@ import { decodeLevel, encodeLevel, LinkError, sanitizeLevel } from './link';
 import { cellOf, type EditorLevel, fromLevelFile, MAX_H, MAX_W, newLevel, paint, toLevelFile } from './model';
 import { BY_KIND, GROUPS, PALETTE } from './palette';
 import { check } from './rules';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 const startLua: StartLua = async (code, host) => LuaLevel.create(code, host, shim, await import('fengari'));
 const P = (k: string) => BY_KIND.get(k)!;

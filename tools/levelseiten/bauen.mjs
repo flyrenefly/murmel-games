@@ -1,7 +1,9 @@
 // Levelseiten bauen (docs/SPEC-levelseiten.md), nach `vite build`:
 //   node --experimental-transform-types --no-warnings tools/levelseiten/bauen.mjs [--dist dist] [--jobs N] [--max N]
-// Schreibt dist/level/ (Startseite, Paketseiten, Levelseiten mit vorschau.webp, bestzeiten.js) und
-// dist/sitemap.xml (public/sitemap.xml plus alle kanonischen Levelseiten). --max N: nur die ersten
+// Schreibt dist/level/ (Startseite, Paketseiten, Levelseiten mit vorschau.webp, bestzeiten.js), dieselben
+// Seiten auf Englisch unter dist/en/level/ (ohne eigene Bilder: sie zeigen auf die unter level/,
+// docs/SPEC-englisch.md) und dist/sitemap.xml (public/sitemap.xml plus alle kanonischen Levelseiten,
+// je Sprache, mit hreflang-Alternativen). --max N: nur die ersten
 // N Levels je Paket (zum Ausprobieren). Ein Level ohne Vorschaubild bricht den Build ab.
 import { fork } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -25,6 +27,7 @@ const { values: o } = parseArgs({
 const t0 = Date.now();
 const DIST = resolve(ROOT, o.dist);
 const OUT = join(DIST, S.ROOT_DIR);
+const OUT_EN = join(DIST, S.langPath(S.ROOT_DIR, 'en'));
 const max = o.max ? Number(o.max) : Infinity;
 
 // ---------- Pakete in Spielreihenfolge ----------
@@ -41,6 +44,7 @@ const pages = packs.flatMap((p) => p.levels);
 
 // ---------- Vorschaubilder in Kindprozessen ----------
 rmSync(OUT, { recursive: true, force: true });
+rmSync(OUT_EN, { recursive: true, force: true });
 const WORKER = fileURLToPath(new URL('./vorschau-worker.mjs', import.meta.url));
 const sizes = new Map();
 const errors = [];
@@ -94,9 +98,11 @@ const write = (path, text) => {
   mkdirSync(join(DIST, path), { recursive: true });
   writeFileSync(join(DIST, path, 'index.html'), text);
 };
-for (const p of pages) write(p.path, S.levelHtml(p, sizes.get(p.path)));
-for (const p of packs) write(p.path, S.packHtml(p, sizes));
-write(`${S.ROOT_DIR}/`, S.indexHtml(packs, sizes));
+for (const lang of S.LANGS) {
+  for (const p of pages) write(S.langPath(p.path, lang), S.levelHtml(p, sizes.get(p.path), lang));
+  for (const p of packs) write(S.langPath(p.path, lang), S.packHtml(p, sizes, lang));
+  write(S.langPath(`${S.ROOT_DIR}/`, lang), S.indexHtml(packs, sizes, lang));
+}
 const client = readFileSync(join(ROOT, 'src/levelseiten/bestzeiten.ts'), 'utf8');
 writeFileSync(join(OUT, 'bestzeiten.js'), stripTypeScriptTypes(client, { mode: 'strip' }));
 const staticXml = readFileSync(join(ROOT, 'public/sitemap.xml'), 'utf8');
@@ -105,6 +111,6 @@ writeFileSync(join(DIST, 'sitemap.xml'), S.sitemapXml(staticXml, paths));
 
 const secs = (ms) => (ms / 1000).toFixed(1);
 console.log(
-  `Levelseiten: ${pages.length} Levelseiten, ${packs.length} Paketseiten, 1 Übersicht; Sitemap +${paths.length} Adressen; ` +
+  `Levelseiten: ${pages.length} Levelseiten, ${packs.length} Paketseiten, 1 Übersicht, je ${S.LANGS.length} Sprachen; Sitemap +${paths.length * S.LANGS.length} Adressen; ` +
     `Vorschaubilder ${(bytes / 1048576).toFixed(1)} MB; ${secs(Date.now() - t0)} s (Bilder ${secs(tImages - t0)} s, ${o.jobs} Prozesse)`,
 );

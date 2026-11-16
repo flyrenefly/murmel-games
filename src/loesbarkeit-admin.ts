@@ -1,5 +1,13 @@
 // loesbarkeit.html (docs/SPEC-loesbarkeit.md): results of the nightly run for admins. Uses the session
 // cookie of the game (same address); without an admin account the page says how to sign in.
+import { gebietsschema, seiteUebersetzen, sprachKnopf, sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/loesbarkeit';
+import EN_SEITE from './i18n/en/seite-loesbarkeit';
+
+seiteUebersetzen(EN_SEITE);
+const t = woerterbuch(EN);
+document.getElementById('sprache')?.replaceWith(sprachKnopf('sprache'));
+
 interface Run {
   id: number;
   finishedAt: string;
@@ -38,10 +46,10 @@ interface Solution {
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const statusEl = $('status');
-const fmt = new Intl.NumberFormat('de-DE');
-const when = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' });
-const day = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
-const STATUS: Record<Result['status'], string> = { ok: 'ok', lua: 'Lua-Fehler', fehler: 'Fehler', geloest: 'gelöst', 'nicht-geloest': 'nicht gelöst' };
+const fmt = new Intl.NumberFormat(gebietsschema());
+const when = new Intl.DateTimeFormat(gebietsschema(), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' });
+const day = new Intl.DateTimeFormat(gebietsschema(), { day: '2-digit', month: '2-digit', timeZone: 'Europe/Berlin' });
+const STATUS: Record<Result['status'], string> = { ok: t('ok'), lua: t('Lua-Fehler'), fehler: t('Fehler'), geloest: t('gelöst'), 'nicht-geloest': t('nicht gelöst') };
 const PHYSICS_DT = 0.0025;
 
 let problems: Result[] = [];
@@ -55,7 +63,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''):
 
 async function api<T>(path: string, init?: RequestInit): Promise<{ ok: true; data: T } | { ok: false; status: number }> {
   try {
-    const res = await fetch(`/api/admin/${path}`, { credentials: 'same-origin', cache: 'no-store', ...init });
+    const res = await fetch(`/api/admin/${path}`, { credentials: 'same-origin', cache: 'no-store', ...init, headers: { ...sprachKopf(), ...(init?.headers as Record<string, string> | undefined) } });
     if (!res.ok) return { ok: false, status: res.status };
     return { ok: true, data: (await res.json()) as T };
   } catch {
@@ -67,23 +75,28 @@ function showError(status: number): void {
   $('result').hidden = true;
   statusEl.replaceChildren();
   if (status === 401) {
-    statusEl.append('Nur für angemeldete Admins. Im Spiel unter „Konto“ anmelden, dann hier neu laden. ');
-    const a = el('a', 'Zum Spiel');
+    statusEl.append(`${t('Nur für angemeldete Admins. Im Spiel unter „Konto“ anmelden, dann hier neu laden.')} `);
+    const a = el('a', t('Zum Spiel'));
     a.href = './';
     statusEl.append(a);
-  } else if (status === 403) statusEl.textContent = 'Dieses Konto ist kein Admin. Admins stehen auf dem Server in ADMIN_EMAILS.';
-  else statusEl.textContent = 'Der Server antwortet gerade nicht. Später noch einmal versuchen.';
+  } else if (status === 403) statusEl.textContent = t('Dieses Konto ist kein Admin. Admins stehen auf dem Server in ADMIN_EMAILS.');
+  else statusEl.textContent = t('Der Server antwortet gerade nicht. Später noch einmal versuchen.');
 }
 
 const statusCell = (r: Result): HTMLTableCellElement => {
   const bad = r.status === 'fehler' || r.status === 'nicht-geloest';
   const td = el('td', STATUS[r.status], bad ? 's-bad' : r.status === 'geloest' || r.status === 'ok' ? 's-good' : '');
-  if (r.isNew) td.append(el('span', 'neu', 'tag'));
+  if (r.isNew) td.append(el('span', t('neu'), 'tag'));
   return td;
 };
-const what = (r: Result) => (r.kind === 'probe' ? 'Ladeprobe' : `Lösung ${r.ref.replace(/^repo:/, 'Repo: ').replace(/^db:/, 'gespeichert #')}`);
+const what = (r: Result) => {
+  if (r.kind === 'probe') return t('Ladeprobe');
+  const db = /^db:(.*)$/.exec(r.ref);
+  if (db) return t('Lösung gespeichert #{id}', { id: db[1] });
+  return t('Lösung {ref}', { ref: r.ref.replace(/^repo:/, 'Repo: ') });
+};
 const note = (r: Result) =>
-  [r.levelChanged ? 'Level seit der Aufnahme geändert' : '', r.error ?? '', r.status === 'geloest' && r.recordedSteps !== null && r.steps !== r.recordedSteps ? `${r.steps} statt ${r.recordedSteps} Schritte` : '']
+  [r.levelChanged ? t('Level seit der Aufnahme geändert') : '', r.error ?? '', r.status === 'geloest' && r.recordedSteps !== null && r.steps !== r.recordedSteps ? t('{n} statt {m} Schritte', { n: r.steps ?? 0, m: r.recordedSteps }) : '']
     .filter(Boolean)
     .join(' · ');
 
@@ -96,21 +109,23 @@ function levelButton(level: string): HTMLButtonElement {
 
 function renderSummary(run: Run | null, history: Run[], stored: number): void {
   if (!run) {
-    $('run').textContent = 'Noch kein Nachtlauf. Der erste läuft um 04:15 Uhr.';
+    $('run').textContent = t('Noch kein Nachtlauf. Der erste läuft um 04:15 Uhr.');
     return;
   }
   const mins = Math.max(1, Math.round((Date.parse(run.finishedAt) - Date.parse(run.startedAt)) / 60_000));
-  $('run').textContent = `Letzter Lauf ${when.format(new Date(run.finishedAt))} · Stand ${run.version} · ${mins} min${run.error ? ` · gescheitert: ${run.error}` : ''}`;
+  $('run').textContent =
+    t('Letzter Lauf {wann} · Stand {version} · {min} min', { wann: when.format(new Date(run.finishedAt)), version: run.version, min: mins }) +
+    (run.error ? t(' · gescheitert: {fehler}', { fehler: run.error }) : '');
   const tile = (id: string, value: string, small: string, bad = false) => {
-    const t = $(id);
-    t.querySelector('b')!.textContent = value;
-    t.querySelector('small')!.textContent = small;
-    t.classList.toggle('bad', bad);
+    const box = $(id);
+    box.querySelector('b')!.textContent = value;
+    box.querySelector('small')!.textContent = small;
+    box.classList.toggle('bad', bad);
   };
-  tile('t-levels', fmt.format(run.probeOk + run.probeLua), `von ${fmt.format(run.levels)} · ${run.probeFailed} Fehler, ${run.probeLua} Lua-Fehler`);
-  tile('t-solved', fmt.format(run.solvedLevels), `${Math.round((run.solvedLevels / Math.max(1, run.levels)) * 100)} % der Levels geprüft`);
-  tile('t-solutions', fmt.format(run.solved), `von ${fmt.format(run.solutions)} · davon ${stored} gespeichert`);
-  tile('t-new', fmt.format(run.newFailures), run.newFailures ? 'seit dem Lauf davor' : 'nichts Neues', run.newFailures > 0);
+  tile('t-levels', fmt.format(run.probeOk + run.probeLua), t('von {n} · {fehler} Fehler, {lua} Lua-Fehler', { n: fmt.format(run.levels), fehler: fmt.format(run.probeFailed), lua: fmt.format(run.probeLua) }));
+  tile('t-solved', fmt.format(run.solvedLevels), t('{p} % der Levels geprüft', { p: Math.round((run.solvedLevels / Math.max(1, run.levels)) * 100) }));
+  tile('t-solutions', fmt.format(run.solved), t('von {n} · davon {stored} gespeichert', { n: fmt.format(run.solutions), stored: fmt.format(stored) }));
+  tile('t-new', fmt.format(run.newFailures), run.newFailures ? t('seit dem Lauf davor') : t('nichts Neues'), run.newFailures > 0);
 
   const runs = [...history].reverse();
   $('history').replaceChildren(
@@ -119,7 +134,10 @@ function renderSummary(run: Run | null, history: Run[], stored: number): void {
       const share = r.solutions ? r.solved / r.solutions : 1;
       const col = el('div', '', `col${r.newFailures || r.error ? ' bad' : ''}`);
       col.style.height = `${Math.max(4, share * 100)}%`;
-      const label = `${when.format(new Date(r.finishedAt))}: ${r.solved} von ${r.solutions} Lösungen gewinnen, ${r.probeFailed} Ladefehler${r.newFailures ? `, ${r.newFailures} neu kaputt` : ''}${r.error ? ', Lauf gescheitert' : ''}`;
+      const label =
+        t('{wann}: {n} von {m} Lösungen gewinnen, {fehler} Ladefehler', { wann: when.format(new Date(r.finishedAt)), n: r.solved, m: r.solutions, fehler: r.probeFailed }) +
+        (r.newFailures ? t(', {n} neu kaputt', { n: r.newFailures }) : '') +
+        (r.error ? t(', Lauf gescheitert') : '');
       li.title = label;
       li.setAttribute('aria-label', label);
       li.append(col);
@@ -144,7 +162,7 @@ function renderProblems(): void {
     }),
   );
   if (!rows.length) {
-    const td = el('td', q ? 'Keine Probleme bei diesen Levels.' : 'Keine Probleme – alle Levels laden, alle Lösungen gewinnen.', 'muted');
+    const td = el('td', q ? t('Keine Probleme bei diesen Levels.') : t('Keine Probleme – alle Levels laden, alle Lösungen gewinnen.'), 'muted');
     td.colSpan = 4;
     const tr = el('tr');
     tr.append(td);
@@ -155,7 +173,7 @@ function renderProblems(): void {
 async function showLevel(level: string): Promise<void> {
   const r = await api<{ verlauf: (Result & { runId: number; finishedAt: string; version: string })[] }>(`loesbarkeit/level?id=${encodeURIComponent(level)}`);
   if (!r.ok) return showError(r.status);
-  $('level-title').textContent = `Verlauf: ${level}`;
+  $('level-title').textContent = t('Verlauf: {level}', { level });
   const body = $('level-rows');
   body.replaceChildren(
     ...r.data.verlauf.map((h) => {
@@ -165,7 +183,7 @@ async function showLevel(level: string): Promise<void> {
     }),
   );
   if (!r.data.verlauf.length) {
-    const td = el('td', 'Zu diesem Level gibt es in den letzten Läufen kein Ergebnis.', 'muted');
+    const td = el('td', t('Zu diesem Level gibt es in den letzten Läufen kein Ergebnis.'), 'muted');
     td.colSpan = 5;
     const tr = el('tr');
     tr.append(td);
@@ -184,16 +202,16 @@ function renderSolutions(list: Solution[]): void {
       const lv = el('td');
       lv.append(levelButton(s.level));
       const actions = el('td');
-      const dl = el('a', 'Herunterladen', 'button');
+      const dl = el('a', t('Herunterladen'), 'button');
       dl.href = `/api/admin/loesungen/${s.id}`;
       dl.setAttribute('download', '');
-      const del = el('button', 'Löschen', 'danger');
+      const del = el('button', t('Löschen'), 'danger');
       del.type = 'button';
       del.addEventListener('click', async () => {
-        if (!confirm(`Lösung #${s.id} für ${s.level} löschen? Das lässt sich nicht rückgängig machen.`)) return;
+        if (!confirm(t('Lösung #{id} für {level} löschen? Das lässt sich nicht rückgängig machen.', { id: s.id, level: s.level }))) return;
         const r = await api<{ ok: true }>(`loesungen/${s.id}`, { method: 'DELETE' });
         if (r.ok) void load();
-        else statusEl.textContent = 'Löschen hat nicht geklappt. Später noch einmal versuchen.';
+        else statusEl.textContent = t('Löschen hat nicht geklappt. Später noch einmal versuchen.');
       });
       actions.style.display = 'flex';
       actions.style.gap = '8px';
@@ -204,7 +222,7 @@ function renderSolutions(list: Solution[]): void {
     }),
   );
   if (!list.length) {
-    const td = el('td', 'Noch keine. Nach einem Sieg im Spiel erscheint für Admins „Als Lösung speichern“.', 'muted');
+    const td = el('td', t('Noch keine. Nach einem Sieg im Spiel erscheint für Admins „Als Lösung speichern“.'), 'muted');
     td.colSpan = 4;
     const tr = el('tr');
     tr.append(td);

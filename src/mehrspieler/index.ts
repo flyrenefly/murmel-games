@@ -12,6 +12,10 @@ import type { Aktion, Art, Nachricht } from './nachrichten';
 import { Rennen } from './rennen';
 import { FEHLERTEXT, type Status, Verbindung } from './verbindung';
 import { wettkampf } from './wettkampf-ui';
+import { woerterbuch } from '../i18n';
+import EN from '../i18n/en/mehrspieler';
+
+const t = woerterbuch(EN);
 
 /** What the module needs from the game (src/main.ts). */
 export interface SpielHost {
@@ -37,13 +41,13 @@ export function istKoopLevel(f: LevelFile): boolean {
 type Phase = 'aus' | 'warte' | 'laden' | 'spiel' | 'ende';
 
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const ART_NAME: Record<Art, string> = { gemeinsam: 'Gemeinsam', rennen: 'Wettrennen' };
+const ART_NAME: Record<Art, string> = { gemeinsam: t('Gemeinsam'), rennen: t('Wettrennen') };
 const STATUS_TEXT: Record<Status, string> = {
-  getrennt: 'getrennt',
-  raum: 'warte auf Mitspieler',
-  verbinde: 'verbinde …',
-  verbunden: 'verbunden',
-  abgebrochen: 'Verbindung unterbrochen',
+  getrennt: t('getrennt'),
+  raum: t('warte auf Mitspieler'),
+  verbinde: t('verbinde …'),
+  verbunden: t('verbunden'),
+  abgebrochen: t('Verbindung unterbrochen'),
 };
 
 export function zuZweit(host: SpielHost) {
@@ -88,7 +92,7 @@ export function zuZweit(host: SpielHost) {
     }
     marke.hidden = false;
     marke.dataset.status = v.status;
-    marke.innerHTML = `<span class="zz-punkt" aria-hidden="true"></span>Zu zweit · ${ART_NAME[art]}${v.code ? ` · ${esc(v.code)}` : ''} · ${STATUS_TEXT[v.status]}`;
+    marke.innerHTML = `<span class="zz-punkt" aria-hidden="true"></span>${t('Zu zweit')} · ${ART_NAME[art]}${v.code ? ` · ${esc(v.code)}` : ''} · ${STATUS_TEXT[v.status]}`;
   }
 
   // ---------- menus ----------
@@ -125,52 +129,52 @@ export function zuZweit(host: SpielHost) {
     if (wk.aktiv()) return wk.menue();
     if (v && v.status !== 'getrennt') return verbindungsMenue();
     host.showOverlay(
-      'Zu zweit',
-      'Spielt zu zweit an zwei Geräten. Einer öffnet einen Raum und nennt den Code, der andere tritt bei.<br><span class="keys">Die Verbindung läuft über unseren Server in Deutschland – ihr seht eure IP-Adressen gegenseitig nicht.</span>',
+      t('Zu zweit'),
+      `${t('Spielt zu zweit an zwei Geräten. Einer öffnet einen Raum und nennt den Code, der andere tritt bei.')}<br><span class="keys">${t('Die Verbindung läuft über unseren Server in Deutschland – ihr seht eure IP-Adressen gegenseitig nicht.')}</span>`,
       [
-        ['Raum öffnen', artWaehlen],
-        ['Beitreten', beitretenForm],
-        ['Wettkampf (bis 4)', wk.menue],
-        ['Zurück', host.showStart],
+        [t('Raum öffnen'), artWaehlen],
+        [t('Beitreten'), beitretenForm],
+        [t('Wettkampf (bis 4)'), wk.menue],
+        [t('Zurück'), host.showStart],
       ],
     );
   }
 
   function artWaehlen(): void {
-    host.showOverlay('Wie wollt ihr spielen?', '<b>Gemeinsam</b>: Jeder steuert eine Murmel, ihr löst ein Zwei-Murmel-Level zusammen.<br><b>Wettrennen</b>: Beide spielen dasselbe Level, der andere ist als Geist zu sehen. Wer schneller löst, gewinnt.', [
-      ['Gemeinsam', () => ((art = 'gemeinsam'), void paketWaehlen())],
-      ['Wettrennen', () => ((art = 'rennen'), rennLevel())],
-      ['Zurück', menue],
+    host.showOverlay(t('Wie wollt ihr spielen?'), `${t('<b>Gemeinsam</b>: Jeder steuert eine Murmel, ihr löst ein Zwei-Murmel-Level zusammen.')}<br>${t('<b>Wettrennen</b>: Beide spielen dasselbe Level, der andere ist als Geist zu sehen. Wer schneller löst, gewinnt.')}`, [
+      [t('Gemeinsam'), () => ((art = 'gemeinsam'), void paketWaehlen())],
+      [t('Wettrennen'), () => ((art = 'rennen'), rennLevel())],
+      [t('Zurück'), menue],
     ]);
   }
 
   function rennLevel(): void {
     const s = host.session();
-    host.showOverlay('Welches Level?', s ? `Aktuell: <b>${esc(s.level.title)}</b>` : '', [
-      ['Dieses Level', () => ((wahl = { pack: host.packId(), index: host.levelIndex() }), void raumOeffnen())],
-      ['Anderes Level', () => void paketWaehlen()],
-      ['Zurück', artWaehlen],
+    host.showOverlay(t('Welches Level?'), s ? t('Aktuell: <b>{titel}</b>', { titel: esc(s.level.title) }) : '', [
+      [t('Dieses Level'), () => ((wahl = { pack: host.packId(), index: host.levelIndex() }), void raumOeffnen())],
+      [t('Anderes Level'), () => void paketWaehlen()],
+      [t('Zurück'), artWaehlen],
     ]);
   }
 
   async function paketWaehlen(): Promise<void> {
-    host.showOverlay(art === 'gemeinsam' ? 'Zwei-Murmel-Levels' : 'Level fürs Wettrennen', art === 'gemeinsam' ? 'Levelpaket wählen' : '', [['Zurück', nachWahl ? nachWahl.zurueck : artWaehlen]]);
+    host.showOverlay(art === 'gemeinsam' ? t('Zwei-Murmel-Levels') : t('Level fürs Wettrennen'), art === 'gemeinsam' ? t('Levelpaket wählen') : '', [[t('Zurück'), nachWahl ? nachWahl.zurueck : artWaehlen]]);
     const packs = await listPacks();
     liste(
       packs.map((p) => [`<span>›</span><b>${esc(p.title)}</b>`, () => void levelWaehlen(p.id)]),
-      'Keine Levelpakete gefunden.',
+      t('Keine Levelpakete gefunden.'),
     );
   }
 
   async function levelWaehlen(pack: string): Promise<void> {
     const levels = await packLevels(pack).catch(() => null);
-    host.showOverlay(await packTitle(pack), '', [['Zurück', () => void paketWaehlen()]]);
-    if (!levels) return liste([], 'Das Paket ließ sich nicht laden.');
+    host.showOverlay(await packTitle(pack), '', [[t('Zurück'), () => void paketWaehlen()]]);
+    if (!levels) return liste([], t('Das Paket ließ sich nicht laden.'));
     liste(
       levels.flatMap((l, i): [string, () => void][] =>
         art === 'gemeinsam' && !istKoopLevel(l) ? [] : [[`<span>${i + 1}</span>${esc(l.title)}`, () => gewaehlt({ pack, index: i })]],
       ),
-      'In diesem Paket gibt es kein Level für zwei Murmeln.',
+      t('In diesem Paket gibt es kein Level für zwei Murmeln.'),
     );
   }
 
@@ -183,13 +187,13 @@ export function zuZweit(host: SpielHost) {
   }
 
   function beitretenForm(): void {
-    host.showOverlay('Raum beitreten', 'Gib den Code ein, den dein Mitspieler sieht.', [['Zurück', menue]]);
+    host.showOverlay(t('Raum beitreten'), t('Gib den Code ein, den dein Mitspieler sieht.'), [[t('Zurück'), menue]]);
     const form = ovForm();
     form.innerHTML = `<form class="konto-form zz-form" novalidate>
-      <label for="zz-code">Raumcode</label>
+      <label for="zz-code">${t('Raumcode')}</label>
       <input id="zz-code" name="code" inputmode="numeric" autocomplete="off" pattern="[0-9]{4}" maxlength="4" placeholder="0000" required aria-describedby="zz-fehler">
       <p id="zz-fehler" class="konto-hinweis" aria-live="assertive"></p>
-      <button type="submit" class="primary wide">Beitreten</button>
+      <button type="submit" class="primary wide">${t('Beitreten')}</button>
     </form>`;
     form.hidden = false;
     const input = form.querySelector('input') as HTMLInputElement;
@@ -205,18 +209,18 @@ export function zuZweit(host: SpielHost) {
       e.stopPropagation();
       const code = input.value;
       if (!/^\d{4}$/.test(code)) {
-        fehler.textContent = 'Der Code hat vier Ziffern.';
+        fehler.textContent = t('Der Code hat vier Ziffern.');
         return;
       }
       knopf.disabled = true;
-      knopf.textContent = 'Verbinde …';
+      knopf.textContent = t('Verbinde …');
       try {
         await verbinden().beitreten(code);
         warteAufStart();
       } catch (err) {
-        fehler.textContent = FEHLERTEXT[(err as Error).message] ?? 'Beitreten hat nicht geklappt.';
+        fehler.textContent = FEHLERTEXT[(err as Error).message] ?? t('Beitreten hat nicht geklappt.');
         knopf.disabled = false;
-        knopf.textContent = 'Beitreten';
+        knopf.textContent = t('Beitreten');
         trennen();
       }
     });
@@ -233,7 +237,7 @@ export function zuZweit(host: SpielHost) {
       if (s === 'verbunden' && gastgeber()) void rundeStarten();
       if (s === 'abgebrochen' && phase !== 'aus') abbruch();
       // host: the guest left; the room stays open and the guest can come back with the same code
-      if (s === 'raum' && gastgeber() && (phase === 'spiel' || phase === 'ende')) host.showToast(`Dein Mitspieler ist weg. Mit dem Code ${c.code} kann er wieder beitreten.`, 4000);
+      if (s === 'raum' && gastgeber() && (phase === 'spiel' || phase === 'ende')) host.showToast(t('Dein Mitspieler ist weg. Mit dem Code {code} kann er wieder beitreten.', { code: c.code }), 4000);
     };
     c.onNachricht = (n) => v === c && empfangen(n);
     c.onFehler = (g) => g === 'verfallen' && host.showToast(FEHLERTEXT.verfallen, 3000);
@@ -241,39 +245,39 @@ export function zuZweit(host: SpielHost) {
   }
 
   async function raumOeffnen(): Promise<void> {
-    host.showOverlay('Raum öffnen', 'Einen Moment …', [['Abbrechen', () => (trennen(), menue())]]);
+    host.showOverlay(t('Raum öffnen'), t('Einen Moment …'), [[t('Abbrechen'), () => (trennen(), menue())]]);
     try {
       const code = await verbinden().oeffnen();
       phase = 'warte';
       codeZeigen(code);
     } catch (err) {
       trennen();
-      host.showOverlay('Raum öffnen', FEHLERTEXT[(err as Error).message] ?? 'Das hat nicht geklappt.', [
-        ['Nochmal', () => void raumOeffnen()],
-        ['Zurück', menue],
+      host.showOverlay(t('Raum öffnen'), FEHLERTEXT[(err as Error).message] ?? t('Das hat nicht geklappt.'), [
+        [t('Nochmal'), () => void raumOeffnen()],
+        [t('Zurück'), menue],
       ]);
     }
   }
 
   function codeZeigen(code: string): void {
     host.showOverlay(
-      'Dein Raumcode',
-      `<span class="zz-code" aria-label="Raumcode ${code.split('').join(' ')}">${esc(code)}</span>${ART_NAME[art]} · Nenne deinem Mitspieler diesen Code.<br><span class="zz-warte">Warte auf Mitspieler …</span>`,
-      [['Abbrechen', () => (trennen(), menue())]],
+      t('Dein Raumcode'),
+      `<span class="zz-code" aria-label="${t('Raumcode {ziffern}', { ziffern: code.split('').join(' ') })}">${esc(code)}</span>${ART_NAME[art]} · ${t('Nenne deinem Mitspieler diesen Code.')}<br><span class="zz-warte">${t('Warte auf Mitspieler …')}</span>`,
+      [[t('Abbrechen'), () => (trennen(), menue())]],
     );
   }
 
   function warteAufStart(): void {
     phase = 'warte';
-    host.showOverlay('Verbunden mit dem Raum', '<span class="zz-warte">Gleich geht es los …</span>', [['Verlassen', () => (trennen(), menue())]]);
+    host.showOverlay(t('Verbunden mit dem Raum'), `<span class="zz-warte">${t('Gleich geht es los …')}</span>`, [[t('Verlassen'), () => (trennen(), menue())]]);
   }
 
   /** Connection menu while a room is open (menu button „Zu zweit“ during play). */
   function verbindungsMenue(): void {
-    host.showOverlay('Zu zweit', `${ART_NAME[art]}${v?.code ? ` · Raum ${esc(v.code)}` : ''} · ${STATUS_TEXT[v?.status ?? 'getrennt']}`, [
-      ...(phase === 'spiel' ? ([['Weiterspielen', host.spielen]] as [string, () => void][]) : []),
-      ...(v?.status === 'abgebrochen' ? ([['Neu verbinden', neuVerbinden]] as [string, () => void][]) : []),
-      ['Zu zweit verlassen', () => (trennen(), host.showStart())],
+    host.showOverlay(t('Zu zweit'), `${ART_NAME[art]}${v?.code ? ` · ${t('Raum {code}', { code: esc(v.code) })}` : ''} · ${STATUS_TEXT[v?.status ?? 'getrennt']}`, [
+      ...(phase === 'spiel' ? ([[t('Weiterspielen'), host.spielen]] as [string, () => void][]) : []),
+      ...(v?.status === 'abgebrochen' ? ([[t('Neu verbinden'), neuVerbinden]] as [string, () => void][]) : []),
+      [t('Zu zweit verlassen'), () => (trennen(), host.showStart())],
     ]);
   }
 
@@ -303,7 +307,7 @@ export function zuZweit(host: SpielHost) {
   async function rundeStarten(): Promise<void> {
     const w = wahl ?? { pack: host.packId(), index: host.levelIndex() };
     phase = 'laden';
-    host.showOverlay(ART_NAME[art], '<span class="zz-warte">Dein Mitspieler lädt das Level …</span>', [['Zu zweit verlassen', () => (trennen(), host.showStart())]]);
+    host.showOverlay(ART_NAME[art], `<span class="zz-warte">${t('Dein Mitspieler lädt das Level …')}</span>`, [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]);
     const s = await laden(w.pack, w.index, undefined);
     if (!s || !v) return;
     rundeAnkuendigen(s, w);
@@ -340,18 +344,18 @@ export function zuZweit(host: SpielHost) {
   async function empfangen(n: Nachricht): Promise<void> {
     switch (n.t) {
       case 'hallo':
-        if (n.version !== __MURMEL_VERSION__) host.showToast('Ihr spielt verschiedene Spielversionen. Ladet am besten beide die Seite neu.', 4000);
+        if (n.version !== __MURMEL_VERSION__) host.showToast(t('Ihr spielt verschiedene Spielversionen. Ladet am besten beide die Seite neu.'), 4000);
         return;
       case 'start': {
         if (gastgeber()) return;
         art = n.art;
         zeigeStatus();
         phase = 'laden';
-        host.showOverlay(ART_NAME[art], '<span class="zz-warte">Lade das Level …</span>', [['Zu zweit verlassen', () => (trennen(), host.showStart())]]);
+        host.showOverlay(ART_NAME[art], `<span class="zz-warte">${t('Lade das Level …')}</span>`, [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]);
         const s = await laden(n.pack, n.index, n.seed);
         if (!s || !v) return;
         if (s.level.id !== n.levelId || s.seed !== n.seed) {
-          host.showOverlay('Level nicht gefunden', 'Dein Spiel hat dieses Level nicht. Ladet beide die Seite neu und versucht es noch einmal.', [['Zu zweit verlassen', () => (trennen(), host.showStart())]]);
+          host.showOverlay(t('Level nicht gefunden'), t('Dein Spiel hat dieses Level nicht. Ladet beide die Seite neu und versucht es noch einmal.'), [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]);
           return;
         }
         runde = { pack: n.pack, index: n.index, seed: n.seed, levelId: n.levelId };
@@ -378,7 +382,7 @@ export function zuZweit(host: SpielHost) {
         rennen?.empfangen(n);
         if (n.t === 'ziel' && rennen && rennen.meinZiel === null && !partnerImZielGemeldet) {
           partnerImZielGemeldet = true;
-          host.showToast(`Dein Mitspieler ist im Ziel (${host.formatTime(n.schritte)}). Weiter!`, 2600);
+          host.showToast(t('Dein Mitspieler ist im Ziel ({zeit}). Weiter!', { zeit: host.formatTime(n.schritte) }), 2600);
         }
         return;
       case 'neustart':
@@ -386,7 +390,7 @@ export function zuZweit(host: SpielHost) {
         return;
       case 'tschuess':
         rennen?.empfangen(n);
-        host.showToast('Dein Mitspieler hat den Raum verlassen.', 3000);
+        host.showToast(t('Dein Mitspieler hat den Raum verlassen.'), 3000);
         return;
     }
   }
@@ -396,30 +400,32 @@ export function zuZweit(host: SpielHost) {
     host.showOverlay(
       ART_NAME[art],
       art === 'gemeinsam'
-        ? `Es geht los! Du steuerst die <b>${gastgeber() ? 'schwarze' : 'weiße'}</b> Murmel.`
-        : 'Es geht los! Die halbdurchsichtige Murmel ist dein Mitspieler.',
-      [['Spielen', host.spielen]],
+        ? gastgeber()
+          ? t('Es geht los! Du steuerst die <b>schwarze</b> Murmel.')
+          : t('Es geht los! Du steuerst die <b>weiße</b> Murmel.')
+        : t('Es geht los! Die halbdurchsichtige Murmel ist dein Mitspieler.'),
+      [[t('Spielen'), host.spielen]],
     );
   }
 
   function abbruch(): void {
     if (phase === 'aus') return;
-    host.showOverlay('Verbindung verloren', 'Die Verbindung zu deinem Mitspieler ist abgebrochen.', [
-      ['Neu verbinden', neuVerbinden],
-      ['Allein weiter', () => (trennen(), host.neustart())],
+    host.showOverlay(t('Verbindung verloren'), t('Die Verbindung zu deinem Mitspieler ist abgebrochen.'), [
+      [t('Neu verbinden'), neuVerbinden],
+      [t('Allein weiter'), () => (trennen(), host.neustart())],
     ]);
   }
 
   function neuVerbinden(): void {
     const c = v;
     if (!c) return menue();
-    host.showOverlay('Neu verbinden', '<span class="zz-warte">Verbinde …</span>', [['Zu zweit verlassen', () => (trennen(), host.showStart())]]);
+    host.showOverlay(t('Neu verbinden'), `<span class="zz-warte">${t('Verbinde …')}</span>`, [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]);
     c.neuVerbinden().then(
       () => {
         if (gastgeber() && c.status === 'raum') codeZeigen(c.code);
         else if (!gastgeber()) warteAufStart();
       },
-      (err: Error) => host.showOverlay('Neu verbinden', FEHLERTEXT[err.message] ?? 'Das hat nicht geklappt.', [['Nochmal', neuVerbinden], ['Zu zweit verlassen', () => (trennen(), host.showStart())]]),
+      (err: Error) => host.showOverlay(t('Neu verbinden'), FEHLERTEXT[err.message] ?? t('Das hat nicht geklappt.'), [[t('Nochmal'), neuVerbinden], [t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]),
     );
   }
 
@@ -430,17 +436,17 @@ export function zuZweit(host: SpielHost) {
     const zeit = host.formatTime(vorlauf + s.steps);
     setTimeout(() => {
       if (art === 'gemeinsam') {
-        host.showOverlay('Geschafft – zusammen!', `Zeit ${zeit} · Abstürze ${s.falls}`, gastgeber() ? nachDemSpiel() : [['Zu zweit verlassen', () => (trennen(), host.showStart())]]);
-        if (!gastgeber()) document.getElementById('ov-text')!.insertAdjacentHTML('beforeend', '<br><span class="zz-warte">Dein Mitspieler wählt, wie es weitergeht …</span>');
+        host.showOverlay(t('Geschafft – zusammen!'), t('Zeit {zeit} · Abstürze {n}', { zeit, n: s.falls }), gastgeber() ? nachDemSpiel() : [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]]);
+        if (!gastgeber()) document.getElementById('ov-text')!.insertAdjacentHTML('beforeend', `<br><span class="zz-warte">${t('Dein Mitspieler wählt, wie es weitergeht …')}</span>`);
       } else rennErgebnis();
     }, 900);
   }
 
   function nachDemSpiel(): [string, () => void][] {
     return [
-      ['Nochmal', () => host.neustart()],
-      ['Anderes Level', () => (art === 'gemeinsam' ? void paketWaehlen() : rennLevel())],
-      ['Zu zweit verlassen', () => (trennen(), host.showStart())],
+      [t('Nochmal'), () => host.neustart()],
+      [t('Anderes Level'), () => (art === 'gemeinsam' ? void paketWaehlen() : rennLevel())],
+      [t('Zu zweit verlassen'), () => (trennen(), host.showStart())],
     ];
   }
 
@@ -449,10 +455,10 @@ export function zuZweit(host: SpielHost) {
     if (!r || r.meinZiel === null) return;
     const e = r.ergebnis();
     const mein = host.formatTime(r.meinZiel);
-    const sein = r.partnerZiel !== null ? ` · Mitspieler ${host.formatTime(r.partnerZiel)}` : '';
-    const titel = e === 'gewonnen' ? 'Gewonnen!' : e === 'verloren' ? 'Knapp verloren' : e === 'gleich' ? 'Unentschieden!' : 'Im Ziel!';
-    const knoepfe: [string, () => void][] = gastgeber() ? nachDemSpiel() : [['Zu zweit verlassen', () => (trennen(), host.showStart())]];
-    host.showOverlay(titel, `Deine Zeit ${mein}${sein}${e === null ? '<br><span class="zz-warte">Warte auf deinen Mitspieler …</span>' : ''}`, knoepfe);
+    const sein = r.partnerZiel !== null ? ` · ${t('Mitspieler {zeit}', { zeit: host.formatTime(r.partnerZiel) })}` : '';
+    const titel = e === 'gewonnen' ? t('Gewonnen!') : e === 'verloren' ? t('Knapp verloren') : e === 'gleich' ? t('Unentschieden!') : t('Im Ziel!');
+    const knoepfe: [string, () => void][] = gastgeber() ? nachDemSpiel() : [[t('Zu zweit verlassen'), () => (trennen(), host.showStart())]];
+    host.showOverlay(titel, `${t('Deine Zeit {zeit}', { zeit: mein })}${sein}${e === null ? `<br><span class="zz-warte">${t('Warte auf deinen Mitspieler …')}</span>` : ''}`, knoepfe);
   }
 
   // Dev server only: the end-to-end test (tools/e2e-mehrspieler.mjs) looks inside

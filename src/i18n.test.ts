@@ -69,10 +69,13 @@ describe('statisches HTML', () => {
 describe('Leveltitel', () => {
   it('titleEn nur in Englisch, sonst title', async () => {
     const { levelTitel } = await import('./game/level');
+    const { displayTitle } = await import('./levelseiten/seiten');
     const { LEVELS } = await import('./levels');
     expect(levelTitel({ title: 'Brücken', titleEn: 'Bridges' }, 'en')).toBe('Bridges');
     expect(levelTitel({ title: 'Brücken', titleEn: 'Bridges' }, 'de')).toBe('Brücken');
     expect(levelTitel({ title: 'Welcome' }, 'en')).toBe('Welcome');
+    expect(displayTitle(LEVELS[0], 'en')).toBe('First Steps');
+    expect(displayTitle(LEVELS[0])).toBe('Erste Schritte');
     expect(LEVELS.every((l) => !!l.titleEn)).toBe(true);
   });
 });
