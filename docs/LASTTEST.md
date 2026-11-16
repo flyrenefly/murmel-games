@@ -82,9 +82,10 @@ Protokolle: keine Fehler in API- oder Caddy-Log, kein OOM, keine Paketverluste i
 3. **Datenmenge je Erstbesuch** ist der eigentliche Hebel: Startseite + Bundles ≈ 0,3 MB, ein
    Levelpaket bis ≈ 0,14 MB (gzip). Danach lädt der Service Worker im Hintergrund **768 Dateien**
    vor (`PRECACHE` in `dist/sw.js`): 686 Enigma-Grafiken aus `enigma/gfx32` (≈ 1,45 MB) **und**
-   `enigma/gfx32-retro` (≈ 1,10 MB), 22 Klänge (≈ 0,42 MB), 42 JS-Dateien u. a. Je neuem Besucher
-   also ≈ 3–3,5 MB und ~780 Anfragen. Bei 200 neuen Besuchern in kurzer Zeit sind das ≈ 0,7 GB –
-   bei 100 Mbit/s rund eine Minute Vollauslastung, bei 1 Gbit/s wenige Sekunden.
+   `enigma/gfx32-retro` (≈ 1,10 MB), 22 Klänge (≈ 0,42 MB), 42 JS-Dateien u. a. Gemessen über alle
+   768 Dateien: **3,76 MB übertragen** (5,5 MB entpackt). Zusammen mit der Seite selbst also ≈ 4 MB
+   und ~780 Anfragen je neuem Besucher. Bei 200 neuen Besuchern in kurzer Zeit sind das ≈ 0,8 GB –
+   bei 100 Mbit/s gut eine Minute Vollauslastung, bei 1 Gbit/s wenige Sekunden.
    Das Vorladen blockiert den Spielstart nicht, konkurriert aber um die Bandbreite mit den
    Erstaufrufen neuer Besucher.
 
