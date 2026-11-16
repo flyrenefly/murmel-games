@@ -151,12 +151,13 @@ for (const backend of backends) {
       assert.equal((await ask('en@example.de', 'en-US,en;q=0.9')).statusCode, 202);
       assert.equal(sent[0].subject, 'Your sign-in link for Murmel');
       assert.match(sent[0].text, /^Hello,/);
-      assert.match(sent[0].text, new RegExp(`${ORIGIN}/#anmelden=`));
+      assert.match(sent[0].text, new RegExp(`${ORIGIN}/en/#anmelden=`));
       assert.match(sent[0].text, /valid for 15 minutes/);
       assert.doesNotMatch(sent[0].text, /Minuten|Hallo/);
       assert.equal((await ask('de@example.de', 'de-AT,en;q=0.5')).statusCode, 202);
       assert.equal(sent[1].subject, 'Dein Anmeldelink für Murmel');
       assert.match(sent[1].text, /15 Minuten/);
+      assert.match(sent[1].text, new RegExp(`${ORIGIN}/#anmelden=`));
       assert.equal((await ask('ohne@example.de')).statusCode, 202);
       assert.equal(sent[2].subject, 'Dein Anmeldelink für Murmel');
       // the error text follows the language too
