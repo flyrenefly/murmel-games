@@ -214,6 +214,38 @@ describe('obj:sound (Acoustic Reminiscence)', () => {
   });
 });
 
+describe('it_sensor passes the actor to its Lua callback (Enibricks: Sensor::actor_enter → performAction(a))', () => {
+  const file = (inverse: boolean) => ({
+    id: 'test:sensor-akteur',
+    title: 'Sensor',
+    author: 'test',
+    license: 'GPL',
+    map: ['##########', '#a......@#', '#a.......#', '##########'],
+    legend: { a: { stone: 'st_oxyd', symbol: 'A' } },
+    objects: [{ x: 3, y: 2, k: 'it_sensor', a: { target: 'next', invisible: 'true', ...(inverse ? { inverse: 'true' } : {}) } }],
+    actors: [{ k: 'ac_pearl_black', x: 2.5, y: 2.5, a: { _vortex: 'vortex2' } }],
+    lua: { code: 'function next(value, sender)\n  wo["_v"] = type(value) == "boolean" and tostring(value) or value["_vortex"]\nend', kinds: {}, named: [] },
+  }) as unknown as LevelFile;
+
+  it('the pearl that rolls onto the sensor is the value', async () => {
+    const s = await GameSession.create(file(false), { seed: 1, startLua });
+    const pearl = s.physics.marbles.length - 1;
+    s.objects.marbleAt(2, 2, pearl);
+    s.objects.marbleAt(3, 2, pearl);
+    expect(s.lua!.lastError).toBe('');
+    expect(s.luaHost!.world('_v')).toBe('vortex2');
+  });
+
+  it('an inverse sensor sends false (invertActionValue = !toBool)', async () => {
+    const s = await GameSession.create(file(true), { seed: 1, startLua });
+    const pearl = s.physics.marbles.length - 1;
+    s.objects.marbleAt(2, 2, pearl);
+    s.objects.marbleAt(3, 2, pearl);
+    expect(s.lua!.lastError).toBe('');
+    expect(s.luaHost!.world('_v')).toBe('false');
+  });
+});
+
 describe('timers without $id (made by the Lua init)', () => {
   it('each calls its callback with itself as sender (Happy New Year: three fireworks, one function)', async () => {
     const timer = (name: string) => ({ x: -1, y: -1, k: 'ot_timer', a: { name, action: 'callback', target: 'tick', interval: '0.1', $state: '1' } });

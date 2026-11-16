@@ -234,6 +234,22 @@ describe('wo:drawMap during play', () => {
   });
 });
 
+describe('res.composer during play (Double Oneways: set_grates)', () => {
+  it('builds a missing key from its characters, each with spaces elsewhere (api2init.lua)', async () => {
+    const w = fakeHost([]);
+    const set: string[] = [];
+    w.host.setTile = (x, y, kind) => set.push(`${x},${y},${kind}`);
+    const lua = await startLua(
+      `ti["# "] = {"st_greenbrown"}\nti[" ,"] = {"fl_space"}\nti[" -"] = {"fl_metal"}\nti["X "] = {"st_grate", flavor="cross"}
+function f() wo:drawMap(res.composer(ti), po(1, 1), "  ", {"#, -X-"}) end`,
+      w.host,
+    );
+    lua.callback('f', true, 'x');
+    expect(lua.lastError).toBe('');
+    expect(set).toEqual(['1,1,st_greenbrown', '1,1,fl_space', '2,1,fl_metal', '3,1,st_grate', '3,1,fl_metal']);
+  });
+});
+
 describe('res.random during play', () => {
   it('replaces hit keys by a key chosen by frequency, other keys pass through', async () => {
     const w = fakeHost([]);
@@ -360,5 +376,36 @@ describe('actors during play', () => {
     expect(lua.lastError).toBe('');
     expect(actors).toEqual(['10,6.5 ac_rotor {"range":"30"}', '8.5,11.5 ac_top {"name":"top"}']);
     expect(w.tiles).toEqual([]);
+  });
+});
+
+describe('names the init gave and overwrote itself (Symopal: spot_left#)', () => {
+  const code = `ti[" "] = {"fl_blueslab"}
+ti[","] = {"fl_water", "spot_left#"}
+wo(ti, " ", {"  ,", ", "})
+spots = po(no["spot_left#*"])
+function count() wo["_n"] = #no["spot_left#*"] end`;
+
+  it('host.initNames: no[…] finds them during the init only, at their cells', async () => {
+    const w = fakeHost([]);
+    const host: LuaHost = {
+      ...w.host,
+      pos: (r) => (r.startsWith('c:') ? [Number(r.split(':')[2]), Number(r.split(':')[3])] : w.host.pos(r)),
+      initNames: [{ n: 'spot_left#1', l: 'fl', x: 2, y: 0 }, { n: 'spot_left#2', l: 'fl', x: 0, y: 1 }],
+    };
+    const lua = await startLua(`${code}\nwo["_init"] = #spots .. ":" .. spots[1].x .. "," .. spots[1].y`, host);
+    expect(lua.lastError).toBe('');
+    expect(host.world('_init')).toBe('2:2,0');
+    lua.callback('count', true, '');
+    expect(host.world('_n')).toBe('0');
+  });
+
+  it('host.mapTile: the importer hears the named tiles of the world building', async () => {
+    const w = fakeHost([]);
+    const heard: string[] = [];
+    const host: LuaHost = { ...w.host, mapTile: (x, y, kind, name) => void heard.push(`${x},${y} ${kind} ${name}`) };
+    const lua = await startLua(code, host);
+    expect(lua.lastError).toBe('');
+    expect(heard).toEqual(['2,0 fl_water spot_left#', '0,1 fl_water spot_left#']);
   });
 });

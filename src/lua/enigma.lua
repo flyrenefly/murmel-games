@@ -908,6 +908,22 @@ wo = setmetatable({}, {
   end,
   __call = function(_, resolver, ...)
     if not INIT then unsupported("wo() während des Spiels") end
+    -- importer: the named tiles of the world building (the init may overwrite them itself: Symopal)
+    local default, map = ...
+    if M.mapwanted() and type(default) == "string" and type(map) == "table" then
+      local len = math.max(1, string.len(default))
+      for y = 1, #map do
+        for x = 1, string.len(map[y]) // len do
+          local ok, tile = pcall(evaluate, resolver, string.sub(map[y], len * (x - 1) + 1, len * x), x - 1, y - 1)
+          if ok and tile then
+            for _, d in ipairs(astile(tile)) do
+              local name = type(d[2]) == "string" and d[2] or d.name
+              if type(d[1]) == "string" and type(name) == "string" then M.maptile(x - 1, y - 1, d[1], name) end
+            end
+          end
+        end
+      end
+    end
     -- the export holds the world; the resolvers' finalizers still run (res.pento keeps its areas)
     finalizeResolvers(resolver)
     return M.size()
@@ -1041,6 +1057,32 @@ function res.random_implementation(context, evaluator, key, x, y)
   return evaluator(context[3], key, x, y)
 end
 
+-- api2init.lua res.composer: a key the subresolver lacks is built from its characters, character i
+-- standing in a key of spaces (sequence: which characters go together, default "123456789")
+function res.composer_implementation(context, evaluator, key, x, y)
+  local tile = evaluator(context[3], key, x, y)
+  if tile ~= nil then return tile end
+  local sequence = context[4] or "123456789"
+  for i = 1, #key do
+    local subkey = ""
+    local ic = "" .. i
+    for j = 1, #key do
+      subkey = subkey .. (sequence:sub(j, j) == ic and key:sub(j, j) or " ")
+    end
+    if subkey ~= string.rep(" ", #key) then
+      local subtile = evaluator(context[3], subkey, x, y)
+      if subtile == nil then return nil end
+      tile = tile == nil and subtile or tile .. subtile
+    end
+  end
+  return tile
+end
+
+function res.composer(subresolver, sequence)
+  assert_bool(is_resolver(subresolver), "res.composer first argument (subresolver)", 2)
+  return setmetatable({res.composer_implementation, nil, subresolver, sequence}, res.metatable)
+end
+
 function res.random(subresolver, hits, replacements)
   assert_bool(is_resolver(subresolver), "res.random first argument (subresolver)", 2)
   assert_type(hits, "res.random second argument (hits)", 2, "non-empty string", "table")
@@ -1136,9 +1178,11 @@ local function lookup(name)
   return v
 end
 
-function __callback(name, value, ref)
+function __callback(name, value, ref, valueref)
   local f = lookup(name)
   if type(f) ~= "function" then return end
+  -- an object as value (Sensor::actor_enter → performAction(actor))
+  if valueref then value = obj(valueref) end
   f(value, obj(ref))
 end
 

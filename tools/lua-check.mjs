@@ -73,7 +73,7 @@ export function libFunctions(libs) {
   return names;
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
-const RESOLVERS = new Set(['autotile', 'pento', 'random']);
+const RESOLVERS = new Set(['autotile', 'composer', 'pento', 'random']);
 
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
@@ -162,7 +162,7 @@ export function pruneCharBranches(code, entries) {
  * (API 1: the callbacks the level's objects name) only the functions they reach: old levels
  * build their world with functions that run in the init only.
  */
-function bodies(code, entries) {
+export function bodies(code, entries) {
   const all = [...code.matchAll(/^([ \t]*)function\b[\s\S]*?^\1end\b/gm)].map((m) => m[0]);
   if (!entries) return all.join('\n');
   const byName = new Map([...functionRanges(code)].map(([n, [s, e]]) => [n, code.slice(s, e)]));
@@ -468,6 +468,14 @@ export function runtimeKinds(code, api1 = false, entries = undefined, libmap = f
       for (const r of d[1].matchAll(/ti\[\s*"([^"]*)"\s*\]/g)) addKey(r[1]);
     }
   };
+  // res.composer: a key without a tile of its own is built from its characters, each in a key of spaces
+  // (only where a callback composes: levels that compose in their init keep their kinds and level hashes)
+  if (/\bres\.composer\s*\(/.test(body)) {
+    for (const k of [...keys]) {
+      if (k.length < 2) continue;
+      for (let i = 0; i < k.length; i++) if (k[i] !== ' ') keys.add(' '.repeat(i) + k[i] + ' '.repeat(k.length - i - 1));
+    }
+  }
   for (const ch of keys) addKey(ch);
   // drawMap's ignore key is never set; its floors, stones and items have always counted (harmless,
   // and leaving them out would change many level files), its actors not (Sunrise Sunset: the marble)
@@ -497,7 +505,12 @@ export function allTileKinds(code) {
 }
 
 /** Run the level script in init mode on the exported world; returns world attributes and errors. */
-export async function luaInit(code, w, libs = [], api1 = false) {
+/**
+ * initSteps: instruction budget of an init known to end in an endless loop (LuaHost.initSteps).
+ * initNames: collect the names the world building gives that the export no longer has (the init
+ * overwrote them itself); no[…] finds them during this init and the result lists them (LevelLua.initNames).
+ */
+export async function luaInit(code, w, libs = [], api1 = false, initSteps = undefined, initNames = false) {
   const named = [];
   const byRef = new Map();
   const layers = ['fl', 'st', 'it'];
@@ -516,7 +529,19 @@ export async function luaInit(code, w, libs = [], api1 = false) {
   const world = {};
   const adds = [];
   const glob = (p) => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
+  // names lost by the init: [{n, l, x, y}] (Enigma numbers "name#" tiles; any number fits name#*)
+  const lost = [];
+  const mapTile = (x, y, kind, name) => {
+    const l = kind.replace(/^#/, '').slice(0, 2);
+    if (!['fl', 'st', 'it'].includes(l) || x >= w.w || y >= w.h) return;
+    const o = w.cells[y * w.w + x][layers.indexOf(l)];
+    const base = name.replace(/#$/, '');
+    const n = name.endsWith('#') ? `${name}${lost.length + 1}` : name;
+    if (!o?.name || !(o.name === name || (name.endsWith('#') && o.name.startsWith(base + '#')))) lost.push({ n, l, x, y });
+  };
   const host = {
+    initSteps,
+    ...(initNames ? { mapTile, initNames: lost } : {}),
     find: (p) => named.filter(([n]) => glob(p).test(n)).map(([, r]) => r),
     at: (l, x, y) => {
       const ref = `c:${l}:${x}:${y}`;
@@ -559,5 +584,5 @@ export async function luaInit(code, w, libs = [], api1 = false) {
   }
   const error = lua.lastError;
   // callback targets that name a Lua function after the init ("pento.next" in a library's table)
-  return { world, adds, fallenTile, error, isFunction: (name) => !error && lua.isFunction(name) };
+  return { world, adds, fallenTile, error, ...(lost.length ? { initNames: lost } : {}), isFunction: (name) => !error && lua.isFunction(name) };
 }

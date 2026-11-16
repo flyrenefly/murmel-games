@@ -147,6 +147,15 @@ end`,
       LuaLevel.INIT_STEPS = before;
     }
   });
+
+  it('host.initSteps: a known endless last call stops early without an error (Triggered Triggers)', async () => {
+    const w = fakeHost([]);
+    const host = { ...w.host, initSteps: 100_000 };
+    const lua = await startLua('function f() wo_ok = 1 end\nrepeat x = random(1, 3) until enigma.GetItem(x, 1) ~= nil', host);
+    expect(lua.lastError).toBe('');
+    lua.callback('f', true, 'sw');
+    expect(lua.lastError).toBe('');
+  });
 });
 
 describe('API 1 options', () => {

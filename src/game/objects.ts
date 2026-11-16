@@ -678,7 +678,8 @@ export class ObjectWorld {
   private readonly byCell = new Map<number, GameObject[]>();
   private now = 0;
   /** Lua function as action target (Object::performAction → lua::CallFunc). */
-  onCallback: ((fn: string, value: boolean | number, sender: GameObject) => void) | null = null;
+  /** actor: the marble index a sensor passes (Sensor::actor_enter → performAction(actor)). */
+  onCallback: ((fn: string, value: boolean | number, sender: GameObject, actor?: number) => void) | null = null;
   /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves. */
   fallenPuzzle = FALLEN_PUZZLE;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
@@ -3485,12 +3486,12 @@ export class ObjectWorld {
   // ---------- sensors (Sensor.cc) ----------
 
   /** An actor entered (leave = false) or left the cell: sensors (exit sensors on leaving) act. */
-  private sensorStep(col: number, row: number, leave: boolean): void {
+  private sensorStep(col: number, row: number, leave: boolean, marble: number): void {
     for (const o of this.at(col, row)) {
       if (o.cls !== 'sensor' || o.gone || /filter/.test(o.kind)) continue;
       if (this.sensorExit(o) !== leave) continue;
       o.bounce = this.now;
-      this.sensorAction(o);
+      this.sensorAction(o, marble);
     }
   }
 
@@ -3498,10 +3499,14 @@ export class ObjectWorld {
     return o.attrs.exit !== undefined ? truthy(o.attrs.exit) : o.kind === 'it_sensor_exit';
   }
 
-  /** performAction(true), inverted for it_sensor_inverse / _filter0 (their "inverse" default). */
-  private sensorAction(o: GameObject): void {
+  /**
+   * performAction(actor): a Lua callback gets the actor (marble index), messages get true;
+   * inverted (invertActionValue = !toBool → false) for it_sensor_inverse / _filter0 (their "inverse" default).
+   */
+  private sensorAction(o: GameObject, marble?: number): void {
     const kindInverse = o.kind === 'it_sensor_inverse' || o.kind === 'it_sensor_filter0';
-    this.performAction(o, !(kindInverse && o.attrs.inverse === undefined));
+    const value = !(kindInverse && o.attrs.inverse === undefined);
+    this.performAction(o, value, undefined, value ? marble : undefined);
   }
 
   /** it_sensor(_exit)_hit: 2 images à 300 ms, three times; invisible sensors are not drawn. */
@@ -4000,10 +4005,10 @@ export class ObjectWorld {
     // Sensor::actor_enter / actor_leave: a real change of the grid cell (not jumping or dying)
     if (col >= 0 && (col !== m.realCol || row !== m.realRow)) {
       if (m.realCol !== undefined && m.realCol >= 0) {
-        this.sensorStep(m.realCol, m.realRow!, true);
+        this.sensorStep(m.realCol, m.realRow!, true, i);
         this.blockerLeave(m.realCol, m.realRow!);
       }
-      this.sensorStep(col, row, false);
+      this.sensorStep(col, row, false, i);
       this.crackEnter(col, row);
       m.realCol = col;
       m.realRow = row;
@@ -4689,9 +4694,10 @@ export class ObjectWorld {
   }
 
   /** Enigma Object::performAction: send the action messages to all targets. */
-  performAction(o: GameObject, value: boolean, num?: number): void {
+  performAction(o: GameObject, value: boolean, num?: number, actor?: number): void {
     if (truthy(o.attrs.inverse)) {
       value = !value;
+      actor = undefined; // !toBool(actor) = false
       if (num !== undefined && o.cls === 'fourswitch') num = 3 - num; // FourSwitch::invertActionValue
     }
     const s = o.state;
@@ -4702,7 +4708,7 @@ export class ObjectWorld {
       const action = actions[i] ?? '';
       const objs = this.resolve(t);
       // No target object: a Lua function of the level, if any (action "callback" or empty).
-      if (objs.length === 0 && (action === '' || action === 'callback')) this.onCallback?.(t, num ?? value, o);
+      if (objs.length === 0 && (action === '' || action === 'callback')) this.onCallback?.(t, num ?? value, o, actor);
       for (const obj of objs) this.message(obj, action === '' ? 'toggle' : action, value, num);
     });
   }

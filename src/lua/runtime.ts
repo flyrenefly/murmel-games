@@ -41,6 +41,20 @@ export interface LuaHost {
   shuffleOxyd?(): void;
   /** obj:sound(name, volume) during play: an Enigma sound event. */
   sound?(name: string, volume: number): void;
+  /**
+   * Instruction budget of an init known to end in a loop that waits for what its own world building
+   * would have made (LevelLua.initSteps); reaching it ends the init without an error.
+   */
+  readonly initSteps?: number;
+  /**
+   * Names the world building gave that the init itself overwrote (LevelLua.initNames): during the
+   * init no[…] also finds these cells (c:<l>:<x>:<y>), as Enigma's init did before overwriting them.
+   */
+  readonly initNames?: readonly { n: string; l: string; x: number; y: number }[];
+  /** Importer: each named tile the world building wo(ti, default, map) lays (heard in init mode). */
+  mapTile?(x: number, y: number, kind: string, name: string): void;
+  /** Ref (a:<n>) of the actor that is PhysicsWorld marble `marble`, or null. */
+  actorRef?(marble: number): string | null;
 }
 
 export type Fengari = typeof import('fengari');
@@ -57,6 +71,10 @@ export function api1Source(code: string): string {
     .replace(/\bfunction\b[\w\s.:]*\(([^()]*\.\.\.)\s*\)/g, (m) => `${m} local arg = {n = select("#", ...), ...};`);
 }
 
+const ENDLESS = 'Murmel: Level-Init läuft endlos';
+/** A name pattern with * and ? (Enigma's object names). */
+const globRe = (p: string): RegExp => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')}$`);
+
 export class LuaLevel {
   /** Do not log Lua errors (the importer runs many levels). */
   static quiet = false;
@@ -64,6 +82,8 @@ export class LuaLevel {
   static INIT_STEPS = 50_000_000;
   /** Last Lua error (also logged), for tests. */
   lastError = '';
+  /** The level script's init has run (host.initNames no longer count). */
+  private initDone = false;
 
   private readonly f: Fengari;
   private readonly L: object;
@@ -92,23 +112,26 @@ export class LuaLevel {
     level.bridge(host);
     // The init runs on the finished (exported) world: a level that loops until it finds something
     // its own world building would have changed never ends there. Stop it after INIT_STEPS instructions.
+    // host.initSteps: the importer knows the level ends its init that way (its last call); stopping it is fine.
     let steps = 0;
+    const budget = host.initSteps ?? LuaLevel.INIT_STEPS;
     lua.lua_sethook(L, (s) => {
       steps += 1000;
-      if (steps > LuaLevel.INIT_STEPS) lauxlib.luaL_error(s, to_luastring('Murmel: Level-Init läuft endlos'));
+      if (steps > budget) lauxlib.luaL_error(s, to_luastring(ENDLESS));
     }, lua.LUA_MASKCOUNT, 1000);
     level.run(shim, '=enigma.lua');
     if (api1) level.run(api1, '=api1.lua');
     libs.forEach((lib, i) => level.run(lib, `=lib${i + 1}`));
-    level.run(api1 ? api1Source(code) : code, '=level');
+    level.run(api1 ? api1Source(code) : code, '=level', host.initSteps !== undefined);
     lua.lua_sethook(L, null, 0, 0);
+    level.initDone = true;
     level.callGlobal('__endinit', []);
     return level;
   }
 
   /** Call the level function `name` like Enigma's callback (value, sender). */
-  callback(name: string, value: boolean | number, senderRef: string): void {
-    this.callGlobal('__callback', [name, value, senderRef]);
+  callback(name: string, value: boolean | number, senderRef: string, valueRef?: string): void {
+    this.callGlobal('__callback', valueRef ? [name, value, senderRef, valueRef] : [name, value, senderRef]);
   }
 
   /** Importer: whether a callback target names a Lua function ("check", "pento.next"). */
@@ -134,10 +157,12 @@ export class LuaLevel {
     return this.f.to_luastring(s);
   }
 
-  private run(code: string, chunk: string): void {
+  /** endlessOk: the init stopped by the step budget is not an error. */
+  private run(code: string, chunk: string, endlessOk = false): void {
     const { lua, lauxlib } = this.f;
     if (lauxlib.luaL_loadbuffer(this.L, this.str(code), null, this.str(chunk)) !== lua.LUA_OK || lua.lua_pcall(this.L, 0, 0, 0) !== lua.LUA_OK) {
-      this.fail();
+      if (endlessOk && lua.lua_tojsstring(this.L, -1).endsWith(ENDLESS)) lua.lua_pop(this.L, 1);
+      else this.fail();
     }
   }
 
@@ -179,6 +204,10 @@ export class LuaLevel {
       find: () => {
         // a table: a group may hold more objects than the Lua stack has slots
         const refs = host.find(arg(1) ?? '');
+        if (!this.initDone && host.initNames?.length) {
+          const re = globRe(arg(1) ?? '');
+          for (const c of host.initNames) if (re.test(c.n)) refs.push(`c:${c.l}:${c.x}:${c.y}`);
+        }
         lua.lua_createtable(L, refs.length, 0);
         refs.forEach((r, i) => {
           push(r);
@@ -210,6 +239,14 @@ export class LuaLevel {
       },
       send: () => {
         host.send(arg(1) ?? '', arg(2) ?? '', arg(3));
+        return 0;
+      },
+      mapwanted: () => {
+        push(host.mapTile !== undefined);
+        return 1;
+      },
+      maptile: () => {
+        host.mapTile?.(num(1), num(2), arg(3) ?? '', arg(4) ?? '');
         return 0;
       },
       kill: () => {
