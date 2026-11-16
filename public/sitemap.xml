@@ -36,4 +36,22 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/ueber.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/ueber.html"/>
   </url>
+  <url>
+    <loc>https://murmel.games/presse.html</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/presse.html"/>
+  </url>
+  <url>
+    <loc>https://murmel.games/en/presse.html</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://murmel.games/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://murmel.games/en/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://murmel.games/presse.html"/>
+  </url>
 </urlset>

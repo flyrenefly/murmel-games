@@ -253,7 +253,7 @@ describe('Sitemap', () => {
     const canonical = new Set(pages.map((p) => `https://murmel.games/${p.canonicalPath}`));
     for (const c of canonical) expect(locs).toContain(c);
     for (const p of pages.filter((x) => x.canonicalPath !== x.path)) expect(locs).not.toContain(`https://murmel.games/${p.path}`);
-    expect(locs.length).toBe(4 + 2 * (1 + packs.length + canonical.size));
+    expect(locs.length).toBe(6 + 2 * (1 + packs.length + canonical.size));
     expect(xml.trim().endsWith('</urlset>')).toBe(true);
   });
 
@@ -276,11 +276,11 @@ describe('Sitemap', () => {
     }
   });
 
-  it('public/sitemap.xml (Notbetrieb) nennt /en/ und /en/ueber.html, aber keine Levelseiten', () => {
+  it('public/sitemap.xml (Notbetrieb) nennt /en/, /en/ueber.html und die Pressemappe, aber keine Levelseiten', () => {
     const fixed = [...STATIC_SITEMAP.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(fixed.sort()).toEqual(['https://murmel.games/', 'https://murmel.games/en/', 'https://murmel.games/en/ueber.html', 'https://murmel.games/ueber.html']);
+    expect(fixed.sort()).toEqual(['https://murmel.games/', 'https://murmel.games/en/', 'https://murmel.games/en/presse.html', 'https://murmel.games/en/ueber.html', 'https://murmel.games/presse.html', 'https://murmel.games/ueber.html']);
     expect(STATIC_SITEMAP).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
-    expect(STATIC_SITEMAP.match(/hreflang="x-default"/g)).toHaveLength(4);
+    expect(STATIC_SITEMAP.match(/hreflang="x-default"/g)).toHaveLength(6);
   });
 
   it('robots.txt erlaubt alles und nennt die Sitemap', () => {

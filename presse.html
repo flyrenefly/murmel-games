@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05050c" />
+    <title>Pressemappe – Murmel, das freie Murmelspiel im Browser</title>
+    <meta
+      data-i18n-attr="content"
+      name="description"
+      content="Pressemappe zu Murmel: Kurztexte, Fakten, Screenshots zum Herunterladen und Kontakt. Freies Murmel-Rätselspiel im Browser, ohne Tracking."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://murmel.games/presse.html" />
+    <link rel="alternate" hreflang="de" href="https://murmel.games/presse.html" />
+    <link rel="alternate" hreflang="en" href="https://murmel.games/en/presse.html" />
+    <link rel="alternate" hreflang="x-default" href="https://murmel.games/presse.html" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Murmel" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:url" content="https://murmel.games/presse.html" />
+    <meta data-i18n-attr="content" property="og:title" content="Pressemappe – Murmel" />
+    <meta data-i18n-attr="content" property="og:description" content="Kurztexte, Fakten, Screenshots und Kontakt zu Murmel, dem freien Murmelspiel im Browser." />
+    <meta property="og:image" content="https://murmel.games/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #f7f6f2;
+        --fg: #1d1c1a;
+        --muted: #5d5a54;
+        --accent: #1f5fa8;
+        --card: #ffffff;
+        --line: #e3e0d8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0b12;
+          --fg: #e9e7e1;
+          --muted: #a6a29a;
+          --accent: #7fb2ff;
+          --card: #15151f;
+          --line: #2a2a38;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 17px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      header.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      header.top a.brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 20px;
+      }
+      a {
+        color: var(--accent);
+      }
+      header.top .nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      header.top a.lang {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0 10px;
+        text-decoration: none;
+      }
+      .play {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      h1 {
+        font-size: clamp(28px, 5vw, 40px);
+        line-height: 1.15;
+        margin: 0 0 12px;
+      }
+      h2 {
+        margin-top: 40px;
+        font-size: 24px;
+      }
+      .lead {
+        font-size: 19px;
+        color: var(--muted);
+      }
+      .text {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 4px 18px;
+      }
+      .label {
+        margin: 24px 0 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      dl.facts {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 10px 20px;
+        margin: 0;
+      }
+      dl.facts dt {
+        font-weight: 600;
+      }
+      dl.facts dd {
+        margin: 0;
+      }
+      @media (max-width: 560px) {
+        dl.facts {
+          grid-template-columns: 1fr;
+          gap: 2px;
+        }
+        dl.facts dd {
+          margin-bottom: 12px;
+        }
+      }
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        margin: 16px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .shots li.tall {
+        grid-row: span 2;
+      }
+      .shots figure {
+        margin: 0;
+      }
+      .shots a {
+        display: block;
+      }
+      .shots img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #05050c;
+      }
+      .shots li.tall img {
+        max-width: 220px;
+        margin: 0 auto;
+      }
+      .shots figcaption {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      @media (max-width: 560px) {
+        .shots {
+          grid-template-columns: 1fr;
+        }
+        .shots li.tall {
+          grid-row: auto;
+        }
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 15px;
+      }
+      footer {
+        margin-top: 48px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <a class="brand" href="./"><img src="favicon.svg" width="28" height="28" alt="" />Murmel</a>
+        <span class="nav"><a class="lang" data-i18n data-i18n-attr="href,hreflang,lang" href="en/presse.html" hreflang="en" lang="en">English</a><a class="play" data-i18n data-i18n-attr="href" href="./">Jetzt spielen</a></span>
+      </header>
+
+      <h1 data-i18n>Pressemappe</h1>
+      <p class="lead" data-i18n-html>
+        Alles für einen Bericht über Murmel: zwei Kurztexte zum Übernehmen, die wichtigsten Fakten,
+        Screenshots und ein Kontakt für Rückfragen.
+      </p>
+
+      <h2 data-i18n>Kurztexte</h2>
+      <p class="label" data-i18n>Ein Satz</p>
+      <div class="text">
+        <p data-i18n-html>
+          Murmel ist ein kostenloses Murmel-Rätselspiel für den Browser in der Tradition von Oxyd und
+          Enigma: freie Software, ohne Werbung, ohne Tracking und ohne Installation.
+        </p>
+      </div>
+      <p class="label" data-i18n>Ein Absatz</p>
+      <div class="text">
+        <p data-i18n-html>
+          In Murmel rollt man eine Murmel mit Maus, Tastatur oder durch Neigen des Smartphones durch
+          verwinkelte Level und öffnet farbige Steine paarweise. Dazwischen warten Abgründe, Wasser,
+          Türen, Schalter und schiebbare Kisten. Das Spiel läuft kostenlos im Browser auf PC, Tablet
+          und Smartphone, nach dem ersten Besuch auch offline, und bringt über 1.100 Levels aus dem
+          freien Spiel Enigma mit – jedes mit Autor und Lizenz genannt. Mit dem Editor baut man eigene
+          Levels und teilt sie per Link, zu zweit spielt man gemeinsam oder im Wettrennen. Murmel ist
+          freie Software unter der GPL, zeigt keine Werbung und verzichtet auf
+          Tracking.
+        </p>
+      </div>
+
+      <h2 data-i18n>Fakten</h2>
+      <dl class="facts">
+        <dt data-i18n>Name</dt>
+        <dd data-i18n-html>Murmel, <a href="https://murmel.games/">murmel.games</a></dd>
+        <dt data-i18n>Genre</dt>
+        <dd data-i18n>Murmel-Rätselspiel und Geschicklichkeitsspiel</dd>
+        <dt data-i18n>Plattform</dt>
+        <dd data-i18n>Jeder aktuelle Browser auf PC, Tablet und Smartphone; ohne Installation, auf Wunsch wie eine App installierbar</dd>
+        <dt data-i18n>Preis</dt>
+        <dd data-i18n>Kostenlos, ohne Werbung und ohne In-App-Käufe</dd>
+        <dt data-i18n>Lizenz</dt>
+        <dd data-i18n-html>Freie Software unter der GPL-3.0-or-later, <a href="https://github.com/flyrenefly/murmel-games" rel="noopener">Quellcode auf GitHub</a></dd>
+        <dt data-i18n>Datenschutz</dt>
+        <dd data-i18n>Kein Tracking, keine Fremd-Skripte, Server in der EU; spielbar ohne Konto</dd>
+        <dt data-i18n>Offline</dt>
+        <dd data-i18n>Nach dem ersten Besuch ohne Internet spielbar</dd>
+        <dt data-i18n>Levels</dt>
+        <dd data-i18n-html>Über 1.100 Levels aus dem freien Spiel <a href="https://www.nongnu.org/enigma/" rel="noopener">Enigma</a>, jedes mit Namensnennung der Autorinnen und Autoren und Lizenz (<a href="level/">alle Levels</a>), dazu eigene Einsteiger-Levels</dd>
+        <dt data-i18n>Editor</dt>
+        <dd data-i18n>Eigene Levels bauen, per Link teilen und als Spieler-Level veröffentlichen (CC BY-SA 4.0)</dd>
+        <dt data-i18n>Zu zweit</dt>
+        <dd data-i18n>Gemeinsam oder im Wettrennen, verbunden über einen vierstelligen Raumcode, ohne Konto</dd>
+        <dt data-i18n>Steuerung</dt>
+        <dd data-i18n>Maus, Tastatur, Gamepad oder Neigen des Geräts</dd>
+        <dt data-i18n>Sprachen</dt>
+        <dd data-i18n>Deutsch und Englisch</dd>
+        <dt data-i18n>Herkunft</dt>
+        <dd data-i18n>Unabhängiges Projekt; Spielprinzip in der Tradition von Oxyd (Dongleware, 1990), Grafik, Klänge und Levels aus Enigma (GPL)</dd>
+      </dl>
+
+      <h2 data-i18n>Screenshots</h2>
+      <p class="muted" data-i18n-html>
+        Ein Klick öffnet das Bild in voller Größe (WebP). Für Berichte über Murmel dürfen die Screenshots
+        frei verwendet werden; die Grafik „Klassisch“ stammt aus Enigma (GPL).
+      </p>
+      <ul class="shots">
+        <li>
+          <figure>
+            <a href="presse/murmel-1-klassisch.webp"><img data-i18n-attr="alt" src="presse/murmel-1-klassisch.webp" width="1440" height="900" loading="lazy" decoding="async" alt="Murmel im Stil Klassisch: Sandinseln mit Holzkisten im Wasser" /></a>
+            <figcaption data-i18n>Stil „Klassisch“ mit der Grafik von Enigma</figcaption>
+          </figure>
+        </li>
+        <li class="tall">
+          <figure>
+            <a href="presse/murmel-5-handy.webp"><img data-i18n-attr="alt" src="presse/murmel-5-handy.webp" width="780" height="1688" loading="lazy" decoding="async" alt="Murmel auf dem Smartphone: Startkarte eines Levels mit Steuerung durch Neigen" /></a>
+            <figcaption data-i18n>Auf dem Smartphone: Steuerung durch Neigen oder Wischen</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <a href="presse/murmel-2-glas.webp"><img data-i18n-attr="alt" src="presse/murmel-2-glas.webp" width="1440" height="900" loading="lazy" decoding="async" alt="Murmel im Stil Glas: helles 3D-Labyrinth mit Oxyd-Steinen am Rand" /></a>
+            <figcaption data-i18n>Stil „Glas“ in 3D</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <a href="presse/murmel-3-levels.webp"><img data-i18n-attr="alt" src="presse/murmel-3-levels.webp" width="1440" height="900" loading="lazy" decoding="async" alt="Levelauswahl mit den Levelpaketen aus Enigma" /></a>
+            <figcaption data-i18n>Levelpakete aus Enigma</figcaption>
+          </figure>
+        </li>
+        <li>
+          <figure>
+            <a href="presse/murmel-4-editor.webp"><img data-i18n-attr="alt" src="presse/murmel-4-editor.webp" width="1440" height="900" loading="lazy" decoding="async" alt="Level-Editor mit Objektpalette und einem Level mit Oxyd-Steinen" /></a>
+            <figcaption data-i18n>Der Level-Editor</figcaption>
+          </figure>
+        </li>
+      </ul>
+      <p class="muted" data-i18n-html>Vorschaubild für Links: <a href="og-image.png">og-image.png</a> (1200 × 630), Symbol: <a href="favicon.svg">favicon.svg</a>.</p>
+
+      <h2 data-i18n>Kontakt</h2>
+      <p data-i18n-html>
+        Rene Benischka<br />
+        E-Mail: <a href="mailto:info@murmel.games">info@murmel.games</a><br />
+        Anschrift im <a href="impressum.html">Impressum</a>.
+      </p>
+
+      <footer data-i18n-html>
+        <a href="ueber.html">Über Murmel</a> · <a href="impressum.html">Impressum</a> · <a href="datenschutz.html">Datenschutz</a>
+      </footer>
+    </main>
+  </body>
+</html>
