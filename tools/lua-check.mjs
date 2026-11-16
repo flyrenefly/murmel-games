@@ -88,15 +88,10 @@ export function luaFunctions(code) {
 }
 
 /**
- * Bodies of the top-level functions (header line up to an "end" as far indented as the header:
- * 4 - 8 - 4 indents all its functions by one space). With entries
- * (API 1: the callbacks the level's objects name) only the functions they reach: old levels
- * build their world with functions that run in the init only.
+ * Top-level functions by name → [start, end) in the code. Old levels do not indent: a function
+ * ends at its matching "end" (blocks counted, strings and comments skipped).
  */
-function bodies(code, entries) {
-  const all = [...code.matchAll(/^([ \t]*)function\b[\s\S]*?^\1end\b/gm)].map((m) => m[0]);
-  if (!entries) return all.join('\n');
-  // old levels do not indent: a function ends at its matching "end" (blocks counted)
+function functionRanges(code) {
   const bare = code.replace(/--\[\[[\s\S]*?\]\]|--[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, (s) => s.replace(/[^\n]/g, ' '));
   const byName = new Map();
   for (const h of bare.matchAll(/^function\s+([A-Za-z_][\w.]*)/gm)) {
@@ -109,8 +104,68 @@ function bodies(code, entries) {
         break;
       }
     }
-    byName.set(h[1], code.slice(h.index, end));
+    byName.set(h[1], [h.index, end]);
   }
+  return byName;
+}
+
+/**
+ * API 1 levels draw rows with a function of their own that goes through a pattern character by
+ * character (renderLine(line, pattern): local c = strsub(pattern, i, i); if c == "#" then … elseif …).
+ * When every call the callbacks (entries) make passes a literal pattern, the branches of characters
+ * none of them draws can never run during play: they are blanked out of the returned code (for the
+ * kind analysis only – Encased: the marble's "z" is drawn in the init alone).
+ */
+export function pruneCharBranches(code, entries) {
+  const ranges = functionRanges(code);
+  const reachedNames = new Set();
+  const todo = [...entries];
+  while (todo.length) {
+    const n = todo.pop();
+    if (reachedNames.has(n) || !ranges.has(n)) continue;
+    reachedNames.add(n);
+    const [s, e] = ranges.get(n);
+    for (const m of code.slice(s, e).matchAll(/[A-Za-z_][\w.]*/g)) if (ranges.has(m[0])) todo.push(m[0]);
+  }
+  let out = code;
+  for (const [name, [s, e]] of ranges) {
+    if (!reachedNames.has(name)) continue;
+    const body = code.slice(s, e);
+    const params = /^function\s+[\w.]+\s*\(([^)]*)\)/.exec(body)?.[1].split(',').map((p) => p.trim()) ?? [];
+    const pick = new RegExp(String.raw`local\s+(\w+)\s*=\s*(?:strsub|string\.sub)\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*\3\s*\)`).exec(body);
+    const arg = pick ? params.indexOf(pick[2]) : -1;
+    if (arg < 0) continue;
+    // the characters the callbacks draw with it (outside its own body); unknown → keep everything
+    const used = new Set();
+    let known = true;
+    for (const caller of reachedNames) {
+      if (caller === name) continue;
+      const [cs, ce] = ranges.get(caller);
+      for (const call of code.slice(cs, ce).matchAll(new RegExp(String.raw`(?<![\w.:])${name.replace(/\./g, '\\.')}\s*\(([^()\n]*)\)`, 'g'))) {
+        const a = call[1].split(',')[arg]?.trim() ?? '';
+        if (/^"[^"\\]*"$/.test(a)) for (const ch of a.slice(1, -1)) used.add(ch);
+        else known = false;
+      }
+    }
+    if (!known) continue;
+    // blank each branch "if/elseif c == "x" then … " whose character is never drawn
+    const branch = new RegExp(String.raw`\b(?:if|elseif)\s+${pick[1]}\s*==\s*"(.)"\s*then\b([\s\S]*?)(?=\belseif\b|\belse\b|\bend\b)`, 'g');
+    const pruned = body.replace(branch, (all, ch, inner) => (used.has(ch) ? all : all.slice(0, all.length - inner.length) + inner.replace(/[^\n]/g, ' ')));
+    out = out.slice(0, s) + pruned + out.slice(e);
+  }
+  return out;
+}
+
+/**
+ * Bodies of the top-level functions (header line up to an "end" as far indented as the header:
+ * 4 - 8 - 4 indents all its functions by one space). With entries
+ * (API 1: the callbacks the level's objects name) only the functions they reach: old levels
+ * build their world with functions that run in the init only.
+ */
+function bodies(code, entries) {
+  const all = [...code.matchAll(/^([ \t]*)function\b[\s\S]*?^\1end\b/gm)].map((m) => m[0]);
+  if (!entries) return all.join('\n');
+  const byName = new Map([...functionRanges(code)].map(([n, [s, e]]) => [n, code.slice(s, e)]));
   const seen = new Set();
   const todo = [...entries];
   while (todo.length) {
@@ -123,7 +178,7 @@ function bodies(code, entries) {
 }
 
 // (newMap: the shim's wo:newMap, or libmap's when loaded, also works during play – Enigris)
-const METHODS = new Set(['newMap', 'shuffleOxyd','open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind', 'grid',
+const METHODS = new Set(['newMap', 'shuffleOxyd', 'sound', 'open', 'close', 'toggle', 'on', 'off', 'flip', 'turn', 'signal', 'grow', 'explode', 'shovel', 'turnback', 'orientate', 'closeall', 'peepall', 'setfire', 'forcefire', 'stopfire', 'heat', 'ignite','set', 'fl', 'st', 'it', 'message', 'exists', 'kill', 'xy', 'sub', 'sort', 'shuffle', 'nearest', 'is', 'kind', 'grid',
   // string methods
   'len', 'upper', 'lower', 'find', 'match', 'gsub', 'gmatch', 'rep', 'format', 'byte', 'reverse']);
 const FUNCS = new Set(['po', 'grp', 'st', 'it', 'fl', 'ti', 'cond', 'etype', 'ipairs', 'pairs', 'type', 'tostring', 'tonumber', 'unpack', 'select', 'next',

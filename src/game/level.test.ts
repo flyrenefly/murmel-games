@@ -29,6 +29,12 @@ describe('parseLevel', () => {
     expect(l.signals.map((s) => s.symbol)).toEqual(['A']);
   });
 
+  it('keeps an unpaired Oxyd colour when Lua lays Oxyd stones during play (Happy New Year, Armageddon)', () => {
+    const lua = { code: '', kinds: { st_oxyd: 'oxyd' }, named: [] };
+    const l = parseLevel({ ...base(['#####', '#@.A#', '#...#', '#####']), lua } as LevelFile);
+    expect(l.signals.map((s) => s.symbol)).toEqual(['A']);
+  });
+
   it('rejects missing start and unknown characters', () => {
     expect(() => parseLevel(base(['####', '#AA#', '####']))).toThrow(/Startpunkt/);
     expect(() => parseLevel(base(['####', '#@?#', '#AA#', '####']))).toThrow(/unbekanntes Zeichen/);

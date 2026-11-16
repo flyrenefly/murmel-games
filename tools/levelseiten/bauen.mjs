@@ -34,7 +34,10 @@ const max = o.max ? Number(o.max) : Infinity;
 const titles = new Map(JSON.parse(readFileSync(join(ROOT, 'public/levels/enigma/index.json'), 'utf8')).map((p) => [p.pack, p.title]));
 titles.set('murmel', 'Murmel');
 const sources = [];
-for (const { pack, file } of loadLevels()) {
+// a cross reference (the level of another pack in a tutorial) gets no page of its own: one page per
+// level, in its home pack
+for (const { pack, file, ref } of loadLevels()) {
+  if (ref) continue;
   let src = sources.at(-1);
   if (src?.id !== pack) sources.push((src = { id: pack, title: titles.get(pack) ?? pack, levels: [] }));
   if (src.levels.length < max) src.levels.push(file);

@@ -157,3 +157,31 @@ export function sprachKnopf(klasse = ''): HTMLButtonElement {
   b.addEventListener('click', () => void spracheWaehlen(andere));
   return b;
 }
+
+// ---------- fertige Meldungen ----------
+
+const muster = new WeakMap<Woerterbuch, [RegExp, string, string[]][]>();
+
+/**
+ * Übersetzt einen schon zusammengesetzten deutschen Text (z. B. eine Fehlermeldung mit eingesetzten
+ * Werten): jede Stelle, die zu einem Schlüssel des Wörterbuchs passt, wird durch die englische Fassung
+ * mit denselben Werten ersetzt. Platzhalter passen auf beliebigen Text. Unbekanntes bleibt stehen.
+ */
+export function musterUebersetzen(text: string, en: Woerterbuch): string {
+  let liste = muster.get(en);
+  if (!liste) {
+    liste = Object.keys(en)
+      .sort((a, b) => b.length - a.length)
+      .map((de) => {
+        const namen = [...de.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+        const teile = de.split(/\{\w+\}/).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const quelle = teile.map((s, i) => (i === 0 ? s : (i === teile.length - 1 && s === '' ? '(.+)' : '(.+?)') + s)).join('');
+        return [new RegExp(quelle, 'g'), en[de], namen];
+      });
+    muster.set(en, liste);
+  }
+  for (const [re, ziel, namen] of liste) {
+    text = text.replace(re, (...m: string[]) => einsetzen(ziel, Object.fromEntries(namen.map((n, i) => [n, m[i + 1]]))));
+  }
+  return text;
+}

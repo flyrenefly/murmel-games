@@ -39,6 +39,8 @@ export interface LuaHost {
   cluster?(ref: string): string[];
   /** wo:shuffleOxyd() during play. */
   shuffleOxyd?(): void;
+  /** obj:sound(name, volume) during play: an Enigma sound event. */
+  sound?(name: string, volume: number): void;
 }
 
 export type Fengari = typeof import('fengari');
@@ -286,6 +288,10 @@ export class LuaLevel {
       },
       shuffleoxyd: () => {
         host.shuffleOxyd?.();
+        return 0;
+      },
+      sound: () => {
+        host.sound?.(arg(1) ?? '', num(2));
         return 0;
       },
       size: () => {

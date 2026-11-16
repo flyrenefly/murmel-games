@@ -469,9 +469,11 @@ function noteRunStarted(s: GameSession): void {
   progress = recordAttempt(progress, s.level.id, nowIso());
   saveProgress();
   // Auswertung (docs/SPEC-auswertung.md): not zu zweit or in a race; links never get here
+  // a cross reference (a level of another pack in a tutorial) counts in its home pack: once per level
   if (!zz.laeuft()) {
-    laufPaket.set(s, packId);
-    auswertung.start(packId, s.level.id);
+    const pack = packList.find((f) => f.id === s.level.id)?.source?.pack ?? packId;
+    laufPaket.set(s, pack);
+    auswertung.start(pack, s.level.id);
   }
 }
 
@@ -1216,6 +1218,7 @@ function sessionUI(of: () => GameSession | null): SessionUI {
       else buildRenderer();
       updateHud();
     },
+    enigmaSound: (name, volume) => live() && sfx.enigma(name, volume),
     won: () => live() && onWin(),
     restart: (how) => {
       if (live()) restartNow = how;

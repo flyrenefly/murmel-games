@@ -2,7 +2,7 @@
 // It converts to and from the game's LevelFile (src/game/level.ts), which stays unchanged.
 
 import type { ActorDef } from '../game/actors';
-import { type CellDef, DEFAULT_LEGEND, type LevelFile } from '../game/level';
+import { type CellDef, DEFAULT_LEGEND, type LevelFile, OHNE_TITEL } from '../game/level';
 import type { ObjectDef } from '../game/objects';
 import { basedOnText, docText } from './link';
 import { BY_KIND, OXYD_COLORS, type PaletteEntry } from './palette';
@@ -257,7 +257,7 @@ export function toLevelFile(l: EditorLevel, id = 'eigen'): LevelFile {
     }
     map.push(row);
   }
-  const file: LevelFile = { id, title: l.title.trim() || 'Ohne Titel', author: l.author.trim(), license: LICENSE, map, legend };
+  const file: LevelFile = { id, title: l.title.trim() || OHNE_TITEL, author: l.author.trim(), license: LICENSE, map, legend };
   const basedOn = basedOnText(l.basedOn);
   if (basedOn) file.basedOn = basedOn;
   if (l.start) file.start = { x: l.start.x + 0.5, y: l.start.y + 0.5 };

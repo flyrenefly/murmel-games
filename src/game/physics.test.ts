@@ -18,6 +18,31 @@ function run(w: PhysicsWorld, seconds: number, contacts: Contact[] = []): Contac
 }
 
 describe('PhysicsWorld (Enigma model)', () => {
+  it('keeps actors inside the world without border stones (World::move_actor; Encased clears its walls)', () => {
+    const open = parseLevel({ id: 'o', title: 'O', author: 'x', license: 'GPL', map: ['@...A', '....A'], legend: { '.': { floor: 'fl_gray' }, '@': { floor: 'fl_gray', start: true }, A: { stone: 'st_oxyd', symbol: 'A' } } });
+    for (const [vx, vy] of [[-40, -40], [-40, 5], [5, -40], [-3, -60]]) {
+      const w = new PhysicsWorld(open);
+      w.marbles[0].vel.x = vx;
+      w.marbles[0].vel.y = vy;
+      for (let i = 0; i < 400; i++) {
+        w.step(() => {});
+        const { x, y } = w.marbles[0].pos;
+        expect(x >= 0 && x < 5 && y >= 0 && y < 2, `${vx},${vy} step ${i}: ${x},${y}`).toBe(true);
+      }
+    }
+    // a stone at the edge of the world over the marble (Encased draws its walls anew every second)
+    const walled = parseLevel({ id: 'w', title: 'W', author: 'x', license: 'GPL', map: ['#...A', '@...A'], legend: { '.': { floor: 'fl_gray' }, '@': { floor: 'fl_gray', start: true }, A: { stone: 'st_oxyd', symbol: 'A' } } });
+    const w = new PhysicsWorld(walled);
+    w.marbles[0].pos.x = 0.25;
+    w.marbles[0].pos.y = 0.2;
+    w.marbles[0].vel.y = -5;
+    for (let i = 0; i < 100; i++) {
+      w.step(() => {});
+      const { x, y } = w.marbles[0].pos;
+      expect(x >= 0 && y >= 0, `step ${i}: ${x},${y}`).toBe(true);
+    }
+  });
+
   it('starts at the centre of the start cell', () => {
     const w = new PhysicsWorld(level);
     expect(w.position).toEqual({ x: 1.5, y: 1.5 });

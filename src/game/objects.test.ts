@@ -299,6 +299,27 @@ describe('ObjectWorld', () => {
     expect(w.warpTarget(5.55, 0.45)).toEqual({ x: 8.5, y: 2.5, cut: false });
   });
 
+  describe("an actor with an owner picks up items (player::MayPickup: horse with owner)", () => {
+    it("the item goes into the owner's inventory, not the steering player's", () => {
+      const w = world([{ x: 3, y: 0, k: "it_hammer", a: {} }]);
+      w.ownerPickup(3.1, 0.5, 1); // 0.4 from the centre: not yet (Item::actor_hit, 0.3)
+      expect(w.inventories[1]).toEqual([]);
+      w.ownerPickup(3.4, 0.5, 1);
+      expect(w.inventories[1]).toEqual(["it_hammer"]);
+      expect(w.inventories[0]).toEqual([]);
+      expect(w.objects[0].gone).toBe(true);
+    });
+
+    it("nothing when the owner's inventory is full or the owner does not exist", () => {
+      const w = world([{ x: 3, y: 0, k: "it_hammer", a: {} }]);
+      w.ownerPickup(3.5, 0.5, 2);
+      expect(w.objects[0].gone).toBeFalsy();
+      for (let i = 0; i < 13; i++) w.inventories[1].push("it_coin_s");
+      w.ownerPickup(3.5, 0.5, 1);
+      expect(w.objects[0].gone).toBeFalsy();
+    });
+  });
+
   describe("vortex (Vortex.cc)", () => {
     it("an open vortex swallows a marble near its centre and gives it out at the next open vortex", () => {
       const w = world([

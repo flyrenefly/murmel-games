@@ -165,3 +165,24 @@ test('Hook: grund einer abgelehnten Prüfung, Fastify-Fehler und andere Felder',
   assert.equal(vary.headers.vary, 'Origin, Accept-Language');
   await app.close();
 });
+
+test('Ablehnungsgründe des Level-Prüfers: jeder LinkError und jeder Ladefehler hat dieselbe englische Fassung wie im Spiel', async () => {
+  const ROOT = new URL('../../src/', import.meta.url);
+  const editor = (await import(new URL('i18n/en/editor.ts', ROOT).href)).default as Record<string, string>;
+  const lade = (await import(new URL('i18n/en/ladefehler.ts', ROOT).href)).default as Record<string, string>;
+  const link = readFileSync(new URL('editor/link.ts', ROOT), 'utf8');
+  const vorlagen = [...new Set([...link.matchAll(/new LinkError\('([^']*)'/g)].map((m) => m[1]))];
+  assert.ok(vorlagen.length > 20, String(vorlagen.length));
+  const sample = (s: string) => s.replace(/\{\w+\}/g, 'it_x');
+  for (const de of vorlagen) assert.equal(fehlerAufEnglisch(sample(de)), sample(editor[de]), de);
+  for (const [de, en] of Object.entries(lade)) assert.equal(fehlerAufEnglisch(sample(de)), sample(en), de);
+  assert.equal(fehlerAufEnglisch('Das ist kein gültiges Level.'), 'This is not a valid level.');
+});
+
+test('Ablehnungsgründe des Level-Prüfers: Werte bleiben, verschachtelte Ladefehler werden übersetzt', () => {
+  assert.equal(fehlerAufEnglisch('Das Objekt „st_lua“ ist im Editor nicht erlaubt.'), 'The object “st_lua” is not allowed in the editor.');
+  assert.equal(fehlerAufEnglisch('Das Level lässt sich nicht laden: Symbol B kommt 3× vor, erwartet paarweise'), 'The level cannot be loaded: symbol B occurs 3×, expected in pairs');
+  assert.equal(fehlerAufEnglisch("Das Level lässt sich nicht laden: unbekanntes Zeichen '%' in Zeile 2"), "The level cannot be loaded: unknown character '%' in row 2");
+  // Lua's own (English) messages stay
+  assert.equal(fehlerAufEnglisch('Das Level lässt sich nicht laden: attempt to index a nil value'), 'The level cannot be loaded: attempt to index a nil value');
+});

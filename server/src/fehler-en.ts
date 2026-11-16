@@ -160,3 +160,49 @@ export const FEHLER_MUSTER_EN: readonly [RegExp, (m: RegExpExecArray, t: (s: str
   [/^Die Angabe „Vorlage“ darf höchstens (\d+) Zeichen haben\.$/, (m) => `The “based on” credit may have ${m[1]} characters at most.`],
   [/^Lösung: (.+)$/s, (m, t) => `Solution: ${t(m[1])}`],
 ];
+
+/**
+ * Reasons the level checker (tools/lib/check-worker.mjs) gives for a refused player level: the German
+ * LinkError messages of src/editor/link.ts with their values inserted, and inside „Das Level lässt sich
+ * nicht laden: {grund}“ the reasons of parseLevel. Same English as the game (src/i18n/en/editor.ts,
+ * src/i18n/en/ladefehler.ts; src/sprache.test.ts compares them). A {name} matches any text; the value is
+ * translated too (a nested reason), unknown values stay.
+ */
+export const PRUEFER_EN: Readonly<Record<string, string>> = {
+  'Das ist kein gültiges Level.': 'This is not a valid level.',
+  'Der Link enthält ungültige Zeichen.': 'The link contains invalid characters.',
+  'Der Link ist beschädigt.': 'The link is damaged.',
+  'Das Level im Link ist zu groß.': 'The level in the link is too large.',
+  'Dieser Level-Link stammt aus einer anderen Version oder ist beschädigt.': 'This level link comes from another version or is damaged.',
+  'Der Link ist zu lang.': 'The link is too long.',
+  'Der Link ist beschädigt (nicht entpackbar).': 'The link is damaged (cannot be unpacked).',
+  'Der Link ist beschädigt (kein Level).': 'The link is damaged (no level).',
+  'Das Level enthält ungültige Positionen.': 'The level contains invalid positions.',
+  'Das ist kein Murmel-Level.': 'This is not a Murmel level.',
+  'Die Karte fehlt oder ist größer als {w}×{h}.': 'The map is missing or larger than {w}×{h}.',
+  'Die Legende des Levels ist ungültig.': 'The level legend is invalid.',
+  'Unbekannte Angabe „{angabe}“ im Level.': 'Unknown entry “{angabe}” in the level.',
+  'Der Boden „{art}“ ist im Editor nicht erlaubt.': 'The floor “{art}” is not allowed in the editor.',
+  'Der Stein „{art}“ ist im Editor nicht erlaubt.': 'The stone “{art}” is not allowed in the editor.',
+  'Ein Oxyd-Stein hat keine gültige Farbe.': 'An Oxyd stone has no valid color.',
+  'Das Level enthält zu viele oder ungültige Objekte.': 'The level contains too many or invalid objects.',
+  'Ein Level darf höchstens {max} Dokumente enthalten.': 'A level may contain at most {max} documents.',
+  'Das Level enthält ungültige Objekte.': 'The level contains invalid objects.',
+  'Das Objekt „{art}“ ist im Editor nicht erlaubt.': 'The object “{art}” is not allowed in the editor.',
+  'Das Level enthält ungültige Gegner.': 'The level contains invalid enemies.',
+  'Der Gegner „{art}“ ist im Editor nicht erlaubt.': 'The enemy “{art}” is not allowed in the editor.',
+  'Die Angabe „Vorlage“ darf höchstens {max} Zeichen haben.': '“Based on” may have at most {max} characters.',
+  'Der Startpunkt ist ungültig.': 'The start position is invalid.',
+  'Die Start-Perle des Levels ist ungültig.': 'The level’s start pearl is invalid.',
+  'Die Start-Perle braucht einen Startpunkt.': 'The start pearl needs a start position.',
+  'Das Level lässt sich nicht laden: {grund}': 'The level cannot be loaded: {grund}',
+  // reasons of parseLevel inside „Das Level lässt sich nicht laden: …“ (src/i18n/en/ladefehler.ts)
+  'leere Karte': 'empty map',
+  "unbekanntes Zeichen '{zeichen}' in Zeile {zeile}": "unknown character '{zeichen}' in row {zeile}",
+  'Oxyd-Stein ohne Symbol': 'Oxyd stone without a symbol',
+  'mehr als ein Startpunkt': 'more than one starting point',
+  "kein Startpunkt '@'": "no starting point '@'",
+  'keine Oxyd-Steine': 'no Oxyd stones',
+  'Symbol {symbol} kommt {n}× vor, erwartet paarweise': 'symbol {symbol} occurs {n}×, expected in pairs',
+  'Oxyd-Farbe {farbe} ohne Partner': 'Oxyd color {farbe} has no partner',
+};

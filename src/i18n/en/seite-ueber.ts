@@ -2,10 +2,10 @@
 // Attributwert oder Text aus dem JSON-LD. Markenrecht: nie „Oxyd online“ (docs/SPEC-englisch.md).
 export default {
   // Kopf
-  'Über Murmel – Oxyd und Enigma online spielen, kostenlos im Browser': 'About Murmel – a free marble game in the style of Oxyd and Enigma',
-  'Oxyd und Enigma im Browser: Murmel ist ein kostenloses Murmelspiel in ihrer Tradition. Spielprinzip, Steuerung, Enigma-Levels und häufige Fragen.':
+  'Über Murmel – Murmelspiel im Stil von Oxyd und Enigma, kostenlos im Browser': 'About Murmel – a free marble game in the style of Oxyd and Enigma',
+  'Murmel ist ein kostenloses Murmelspiel im Browser im Stil von Oxyd und Enigma. Spielprinzip, Steuerung, Enigma-Levels und häufige Fragen.':
     'Murmel is a free browser marble game in the tradition of Oxyd and Enigma. How it plays, controls, Enigma levels and frequently asked questions.',
-  'Über Murmel – Oxyd und Enigma online spielen': 'About Murmel – a marble game in the style of Oxyd and Enigma',
+  'Über Murmel – Murmelspiel im Stil von Oxyd und Enigma': 'About Murmel – a marble game in the style of Oxyd and Enigma',
   'Kostenloses Murmelspiel im Browser in der Tradition von Oxyd und Enigma.': 'A free browser marble game in the tradition of Oxyd and Enigma.',
   // Sprachlink und Spielen-Link (Attribute der englischen Seite)
   English: 'Deutsch',
@@ -38,7 +38,7 @@ export default {
     'Besides its own beginner levels, Murmel brings over level packs from Enigma, such as the Tutorial and “Enigma I” to “Enigma VII”. A level becomes available as soon as Murmel supports every object in it; each new object unlocks more. Remakes of the original Oxyd levels are deliberately left out.',
   'Alle Levels ansehen – mit Vorschau, Autor, Lizenz und Bestzeiten.': '<a href="en/level/">Browse all levels</a> – with preview, author, license and best times.',
   'Häufige Fragen': 'Frequently asked questions',
-  'Kann man Oxyd online im Browser spielen?': 'Is there a browser game like Oxyd?',
+  'Gibt es ein Murmelspiel wie Oxyd im Browser?': 'Is there a browser game like Oxyd?',
   'Murmel spielt sich wie Oxyd und läuft kostenlos im Browser. Die Original-Levels und -Grafiken von Oxyd sind nicht enthalten; stattdessen nutzt Murmel die freie Grafik und die Levels von Enigma.':
     'Yes: Murmel plays in the style of Oxyd and runs for free in your browser. Oxyd’s original levels and graphics are not included; instead Murmel uses Enigma’s free graphics and levels.',
   'Was ist der Unterschied zwischen Murmel, Enigma und Oxyd?': 'What is the difference between Murmel, Enigma and Oxyd?',

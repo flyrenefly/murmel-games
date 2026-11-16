@@ -70,6 +70,8 @@ export class Enemy {
   steady: boolean;
   loop: boolean;
   horseStrength: number;
+  /** Horse with attribute owner: picks up items for that player (player::MayPickup). */
+  readonly owner: number | undefined;
   /** Horse OBJBIT_NEWDEST: a new destination list from Lua; the target follows on the next step. */
   newDest = false;
   /** Horse target (Horse::target): the destination it heads for. */
@@ -104,6 +106,7 @@ export class Enemy {
     this.steady = bool(a.steady, true);
     this.loop = bool(a.loop, true);
     this.horseStrength = num(a.strength, 10);
+    this.owner = kind === 'horse' && a.owner !== undefined && a.owner !== '' ? num(a.owner, -1) : undefined;
   }
 
   /**

@@ -22,6 +22,8 @@ export interface LuaWorld {
   removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
+  /** obj:sound(name, volume) during play. */
+  sound?(name: string, volume: number): void;
 }
 
 /** The physics body of actor ref a:<n> (n ≥ 1) if it is an enemy, counted like PhysicsWorld (enemy kinds only). */
@@ -399,6 +401,9 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     },
     shuffleOxyd() {
       w.shuffleOxyd?.();
+    },
+    sound(name, volume) {
+      w.sound?.(name, volume);
     },
     /** wo:add(YIN/YANG, {"it_…"}) during play: the item into that player's inventory. */
     addInventory(player, kind, text) {

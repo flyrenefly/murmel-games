@@ -6,7 +6,8 @@
 import type { ActorDef } from './actors';
 import type { RubberDef } from './rubber';
 import type { ObjectDef } from './objects';
-import { type Sprache, sprache } from '../i18n';
+import { einsetzen, type Sprache, sprache, type Werte } from '../i18n';
+import EN_WELT from '../i18n/en/spielwelt';
 
 /** Floors that kill the marble (it falls or drowns). */
 export const DEADLY_FLOORS = new Set(['fl_abyss', 'fl_water']);
@@ -132,6 +133,9 @@ const LEGACY_STONE: Record<string, string> = { wall: 'st_greenbrown', signal: 's
 
 export class LevelError extends Error {}
 
+/** „id: text“; the text stays German, src/game/ladefehler.ts shows it in the page's language. */
+const levelError = (id: string, de: string, werte?: Werte) => new LevelError(`${id}: ${einsetzen(de, werte)}`);
+
 /** Letters A–Z are Oxyd stones with that letter as symbol. */
 function resolve(ch: string, legend: Record<string, CellDef>): CellDef | undefined {
   if (legend[ch]) return legend[ch];
@@ -146,8 +150,12 @@ export const isDeadly = (floor: string): boolean => DEADLY_FLOORS.has(floor) || 
  * @param random random source for the colour assignment of '?' Oxyd stones
  *               (Enigma shuffles the colours at every level start).
  */
-/** Title in the page's language: titleEn in English where a level has one. */
+/** Title the editor stores for a level without one (links, files, playtest); shown translated by levelTitel. */
+export const OHNE_TITEL = 'Ohne Titel';
+
+/** Title in the page's language: titleEn in English where a level has one; „Ohne Titel“ becomes „Untitled“. */
 export function levelTitel(file: Pick<LevelFile, 'title' | 'titleEn'>, s: Sprache = sprache()): string {
+  if (s === 'en' && file.title === OHNE_TITEL && !file.titleEn) return EN_WELT['Ohne Titel'];
   return (s === 'en' && file.titleEn) || file.title;
 }
 
@@ -160,7 +168,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const legend = { ...DEFAULT_LEGEND, ...(file.legend ?? {}) };
   const height = file.map.length;
   const width = Math.max(0, ...file.map.map((r) => r.length));
-  if (height === 0 || width === 0) throw new LevelError(`${file.id}: leere Karte`);
+  if (height === 0 || width === 0) throw levelError(file.id, 'leere Karte');
 
   const cells: Cell[] = [];
   const signals: SignalStone[] = [];
@@ -172,11 +180,11 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     for (let col = 0; col < width; col++) {
       const ch = line[col];
       const def = resolve(ch, legend);
-      if (!def) throw new LevelError(`${file.id}: unbekanntes Zeichen '${ch}' in Zeile ${row + 1}`);
+      if (!def) throw levelError(file.id, "unbekanntes Zeichen '{zeichen}' in Zeile {zeile}", { zeichen: ch, zeile: row + 1 });
       const floor = LEGACY_FLOOR[def.floor ?? ''] ?? def.floor ?? 'fl_gray';
       const stone = def.stone ? (LEGACY_STONE[def.stone] ?? def.stone) : null;
       if (stone === 'st_oxyd') {
-        if (!def.symbol) throw new LevelError(`${file.id}: Oxyd-Stein ohne Symbol`);
+        if (!def.symbol) throw levelError(file.id, 'Oxyd-Stein ohne Symbol');
         signals.push({ index: signals.length, col, row, symbol: def.symbol, flavor: def.flavor ?? 'a' });
       }
       if (def.start) {
@@ -191,8 +199,8 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     }
   }
 
-  if (startCells > 1) throw new LevelError(`${file.id}: mehr als ein Startpunkt`);
-  if (!start) throw new LevelError(`${file.id}: kein Startpunkt '@'`);
+  if (startCells > 1) throw levelError(file.id, 'mehr als ein Startpunkt');
+  if (!start) throw levelError(file.id, "kein Startpunkt '@'");
   // Meditation levels (Enigma ChangeMeditation): pearls and hollows instead of Oxyd stones
   // Meditation levels: pearls (also the main pearl, which is not in actors) and meditation hollows
   const pearls = !!file.mainPearl || (file.actors ?? []).some((a) => /^ac_pearl/.test(a.k));
@@ -202,15 +210,17 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const blastMeditation = pearls && (file.objects ?? []).some((o) => HOLLOW_MAKERS.test(o.k));
   // Lua may set Oxyd stones during play (Pentomino: wo[…] = {"st_oxyd"} once the puzzle is done; st_oxyd_d …)
   const luaOxyds = Object.values(file.lua?.kinds ?? {}).includes('oxyd');
-  if (signals.length === 0 && !blastMeditation && !luaOxyds) throw new LevelError(`${file.id}: keine Oxyd-Steine`);
+  if (signals.length === 0 && !blastMeditation && !luaOxyds) throw levelError(file.id, 'keine Oxyd-Steine');
 
-  // initColors leaves a colour without partner alone; only a meditation level stays solvable then
-  assignRandomSymbols(file.id, signals, random, meditation);
+  // initColors leaves a colour without partner alone; only a meditation level stays solvable then,
+  // or one whose Lua lays the partners during play (Happy New Year, Armageddon)
+  const unpairedOk = meditation || luaOxyds;
+  assignRandomSymbols(file.id, signals, random, unpairedOk);
 
   const counts = new Map<string, number>();
   for (const s of signals) counts.set(s.symbol, (counts.get(s.symbol) ?? 0) + 1);
   for (const [symbol, n] of counts) {
-    if (n % 2 !== 0 && symbol !== FAKE_OXYD && !meditation) throw new LevelError(`${file.id}: Symbol ${symbol} kommt ${n}× vor, erwartet paarweise`);
+    if (n % 2 !== 0 && symbol !== FAKE_OXYD && !unpairedOk) throw levelError(file.id, 'Symbol {symbol} kommt {n}× vor, erwartet paarweise', { symbol, n });
   }
 
   // Other objects (ot_timer) have no cell.
@@ -256,7 +266,7 @@ export function assignRandomSymbols(id: string, signals: SignalStone[], random: 
     if (n % 2 === 0) continue;
     if (pool.length >= auto.length) {
       if (allowUnpaired) continue;
-      throw new LevelError(`${id}: Oxyd-Farbe ${sym} ohne Partner`);
+      throw levelError(id, 'Oxyd-Farbe {farbe} ohne Partner', { farbe: sym });
     }
     pool.push(sym);
   }

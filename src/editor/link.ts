@@ -1,7 +1,8 @@
 // Sharing a level in the link: murmel.games/#level=1.<base64url(deflate-raw(JSON))>.
 // Links are foreign input: decoding is strict, keeps only what the editor can make, never Lua.
 
-import { type LevelFile, parseLevel } from '../game/level';
+import { ladefehler } from '../game/ladefehler';
+import { type LevelFile, OHNE_TITEL, parseLevel } from '../game/level';
 import { LICENSE, MAX_H, MAX_W } from './model';
 import { BY_KIND, type PaletteEntry } from './palette';
 import { einsetzen, type Werte, woerterbuch } from '../i18n';
@@ -70,9 +71,10 @@ export class LinkError extends Error {
     this.werte = werte;
   }
 
-  /** The message in the page's language. */
+  /** The message in the page's language (a parseLevel reason inside it too). */
   get text(): string {
-    return t(this.de, this.werte);
+    const w = this.werte;
+    return t(this.de, w && typeof w.grund === 'string' ? { ...w, grund: ladefehler(w.grund) } : w);
   }
 }
 
@@ -241,7 +243,7 @@ export function sanitizeLevel(raw: unknown, id: string): LevelFile {
   if (objects.filter((o) => isObj(o) && o.k === 'it_document').length > MAX_DOCS) throw new LinkError('Ein Level darf höchstens {max} Dokumente enthalten.', { max: MAX_DOCS });
   const file: LevelFile = {
     id,
-    title: text(raw.title) || 'Ohne Titel',
+    title: text(raw.title) || OHNE_TITEL,
     author: text(raw.author),
     license: LICENSE,
     map: map as string[],

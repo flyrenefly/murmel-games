@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { FEHLER_EN, FEHLER_MUSTER_EN } from './fehler-en.ts';
+import { FEHLER_EN, FEHLER_MUSTER_EN, PRUEFER_EN } from './fehler-en.ts';
 
 /**
  * Language per request (docs/SPEC-englisch.md, „Server“): the game sets Accept-Language to its chosen
@@ -25,8 +25,24 @@ export function fehlerAufEnglisch(de: string): string {
     const m = pattern.exec(de);
     if (m) return build(m, fehlerAufEnglisch);
   }
+  for (const [pattern, names, en] of PRUEFER_MUSTER) {
+    const m = pattern.exec(de);
+    if (m) return en.replace(/\{(\w+)\}/g, (_, k: string) => fehlerAufEnglisch(m[names.indexOf(k) + 1] ?? ''));
+  }
   return de;
 }
+
+/** PRUEFER_EN as whole-text patterns: each {name} matches any text (longest templates first). */
+const PRUEFER_MUSTER: readonly [RegExp, string[], string][] = Object.keys(PRUEFER_EN)
+  .sort((a, b) => b.length - a.length)
+  .map((de) => {
+    const names = [...de.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+    const source = de
+      .split(/\{\w+\}/)
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('(.+?)');
+    return [new RegExp(`^${source}$`, 's'), names, PRUEFER_EN[de]];
+  });
 
 /**
  * Translates `error` (and `grund` of a rejected check, `status: 'abgelehnt'`) of JSON answers to English

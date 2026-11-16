@@ -1,6 +1,7 @@
 // The editor in English (docs/SPEC-englisch.md): every palette text has a translation, link errors keep
 // a German message (the server's checker relies on it) and show English text, checks speak English.
 import { afterEach, describe, expect, it } from 'vitest';
+import { ladefehler } from '../game/ladefehler';
 import { setzeSpracheFuerTest } from '../i18n';
 import EN_PALETTE from '../i18n/en/editor-palette';
 import { ED_STYLES } from './draw';
@@ -47,6 +48,26 @@ describe('Meldungen auf Englisch', () => {
       expect((e as LinkError).message).toBe('Das Objekt „it_wormhole“ ist im Editor nicht erlaubt.');
       expect((e as LinkError).text).toBe('The object “it_wormhole” is not allowed in the editor.');
     }
+  });
+
+  it('LinkError: Ladefehler von parseLevel im {grund} englisch, message bleibt deutsch', () => {
+    setzeSpracheFuerTest('en');
+    try {
+      sanitizeLevel({ map: ['###', '#A#', '###'] }, 'x');
+      expect.unreachable();
+    } catch (e) {
+      expect((e as LinkError).message).toBe("Das Level lässt sich nicht laden: kein Startpunkt '@'");
+      expect((e as LinkError).text).toBe("The level cannot be loaded: no starting point '@'");
+    }
+  });
+
+  it('Ladefehler: Muster mit Werten, Unbekanntes bleibt, Deutsch unverändert', () => {
+    setzeSpracheFuerTest('en');
+    expect(ladefehler('Symbol B kommt 3× vor, erwartet paarweise')).toBe('symbol B occurs 3×, expected in pairs');
+    expect(ladefehler("unbekanntes Zeichen 'x' in Zeile 4")).toBe("unknown character 'x' in row 4");
+    expect(ladefehler('[string "level"]:3: attempt to call a nil value')).toBe('[string "level"]:3: attempt to call a nil value');
+    setzeSpracheFuerTest('de');
+    expect(ladefehler('keine Oxyd-Steine')).toBe('keine Oxyd-Steine');
   });
 
   it('Prüfungen vor dem Teilen', () => {

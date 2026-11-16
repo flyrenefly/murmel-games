@@ -41,6 +41,8 @@ export interface SessionUI {
   peepAll(indices: number[]): void;
   /** Lua made new Oxyd stones or removed some (gone): redraw them. */
   signalsAdded(): void;
+  /** obj:sound(name, volume) in the level script: an Enigma sound event. */
+  enigmaSound(name: string, volume: number): void;
   /** The level is solved. */
   won(): void;
   /** The level starts over: a new game, or keeping the extra lives. */
@@ -49,7 +51,7 @@ export interface SessionUI {
 
 const noop = (): void => {};
 export const NO_UI: SessionUI = {
-  sound: noop, toast: noop, stoneState: noop, items: noop, hud: noop, floorChanged: noop, peepAll: noop, signalsAdded: noop, won: noop, restart: noop,
+  sound: noop, toast: noop, stoneState: noop, items: noop, hud: noop, floorChanged: noop, peepAll: noop, signalsAdded: noop, enigmaSound: noop, won: noop, restart: noop,
 };
 
 export type StartLua = (code: string, host: LuaHost, libs: readonly string[], oldApi: boolean) => Promise<LuaLevel>;
@@ -247,7 +249,7 @@ export class GameSession {
       this.board.shuffle(this.rng);
       lv.signals.forEach((x) => (x.symbol = this.board.symbolOf(x.index)));
     };
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd }, this.world, this.globalForce);
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd, sound: (n, v) => this.ui.enigmaSound(n, v) }, this.world, this.globalForce);
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     this.lua = l;
     this.luaHost = host;
@@ -316,7 +318,10 @@ export class GameSession {
       objects.marbleAt(Math.floor(m.pos.x), Math.floor(m.pos.y), i);
       objects.actorStep(m.pos.x, m.pos.y, i, m.radius);
     });
-    for (const e of ph.enemies) objects.actorStep(e.pos.x, e.pos.y, -1);
+    for (const e of ph.enemies) {
+      objects.actorStep(e.pos.x, e.pos.y, -1);
+      if (e.owner !== undefined) objects.ownerPickup(e.pos.x, e.pos.y, e.owner);
+    }
     objects.update(PHYSICS_DT * 1000);
     this.handleObjectEvents(objects.events);
     // ChangeMeditation → server::FinishLevel: all pearls rest in hollows
