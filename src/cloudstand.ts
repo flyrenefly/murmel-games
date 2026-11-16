@@ -4,6 +4,10 @@
 // version or browser engine may not). Only signed in; without an account nothing leaves the device.
 import { type DecodedInput, decodeInput } from './game/recording';
 import type { GameSession } from './game/session';
+import { sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
 
 /** One hour of play at 400 physics steps per second (as the leaderboard and the server). */
 export const MAX_STEPS = 3600 * 400;
@@ -154,7 +158,7 @@ export function cloudApi(base = '/api/spielstand', fetchFn: Fetch = (...a) => fe
         method,
         credentials: 'same-origin',
         keepalive,
-        headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+        headers: body === undefined ? sprachKopf() : { ...sprachKopf(), 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch {
@@ -183,11 +187,11 @@ export function cloudApi(base = '/api/spielstand', fetchFn: Fetch = (...a) => fe
 export type SichernErgebnis = 'ok' | 'zu-lang' | 'offline' | 'fehler';
 
 export const SICHERN_TEXT: Record<SichernErgebnis | 'laeuft', string> = {
-  laeuft: 'Wird in der Cloud gesichert …',
-  ok: 'In der Cloud gesichert.',
-  'zu-lang': 'Dieser Lauf ist zu lang für die Cloud.',
-  offline: 'Sichern gerade nicht möglich – kein Netz.',
-  fehler: 'Sichern gerade nicht möglich.',
+  laeuft: t('Wird in der Cloud gesichert …'),
+  ok: t('In der Cloud gesichert.'),
+  'zu-lang': t('Dieser Lauf ist zu lang für die Cloud.'),
+  offline: t('Sichern gerade nicht möglich – kein Netz.'),
+  fehler: t('Sichern gerade nicht möglich.'),
 };
 
 /** The saves of the signed-in account and what this device saved last (to skip unchanged saves). */
@@ -264,13 +268,13 @@ export class CloudSpeicher {
     const r = await this.api.holen(level);
     if (!r.ok) {
       if (r.status === 404) this.staende.delete(level);
-      return { ok: false, grund: r.status === 0 ? 'Der Spielstand ist gerade nicht erreichbar.' : r.status === 404 ? 'Kein Spielstand mehr in der Cloud.' : 'Der Spielstand ließ sich nicht laden.' };
+      return { ok: false, grund: r.status === 0 ? t('Der Spielstand ist gerade nicht erreichbar.') : r.status === 404 ? t('Kein Spielstand mehr in der Cloud.') : t('Der Spielstand ließ sich nicht laden.') };
     }
     try {
       return { ok: true, stand: r.daten, eingabe: await eingabeAus(r.daten) };
     } catch {
       this.passtNicht(level);
-      return { ok: false, grund: 'Der Spielstand ist beschädigt.' };
+      return { ok: false, grund: t('Der Spielstand ist beschädigt.') };
     }
   }
 

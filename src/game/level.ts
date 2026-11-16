@@ -6,6 +6,7 @@
 import type { ActorDef } from './actors';
 import type { RubberDef } from './rubber';
 import type { ObjectDef } from './objects';
+import { type Sprache, sprache } from '../i18n';
 
 /** Floors that kill the marble (it falls or drowns). */
 export const DEADLY_FLOORS = new Set(['fl_abyss', 'fl_water']);
@@ -44,8 +45,12 @@ export interface LevelFile {
   basedOn?: string;
   /** Interactive objects (doors, switches, triggers, documents, grates). */
   objects?: ObjectDef[];
-  /** Texts of documents by key. */
+  /** Texts of documents by key (imported levels: the German translation where Enigma has one). */
   texts?: Record<string, string>;
+  /** English title where `title` is German (Murmel's own levels, docs/SPEC-englisch.md). */
+  titleEn?: string;
+  /** Imported levels: the English original of the texts where it differs from `texts` (docs/SPEC-englisch.md). */
+  textsEn?: Record<string, string>;
   /** Enigma compatibility version of an imported level (message names of API 1 below 1.10). */
   compat?: number;
   /** Other actors (rotors, tops, killers), positions in tile units. */
@@ -141,6 +146,16 @@ export const isDeadly = (floor: string): boolean => DEADLY_FLOORS.has(floor) || 
  * @param random random source for the colour assignment of '?' Oxyd stones
  *               (Enigma shuffles the colours at every level start).
  */
+/** Title in the page's language: titleEn in English where a level has one. */
+export function levelTitel(file: Pick<LevelFile, 'title' | 'titleEn'>, s: Sprache = sprache()): string {
+  return (s === 'en' && file.titleEn) || file.title;
+}
+
+/** Document texts in the page's language: in English the original wins where the import kept one. */
+export function levelTexte(file: Pick<LevelFile, 'texts' | 'textsEn'>, s: Sprache = sprache()): Record<string, string> {
+  return s === 'en' ? { ...file.texts, ...file.textsEn } : (file.texts ?? {});
+}
+
 export function parseLevel(file: LevelFile, random: () => number = Math.random): Level {
   const legend = { ...DEFAULT_LEGEND, ...(file.legend ?? {}) };
   const height = file.map.length;
@@ -202,7 +217,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
   const objects = (file.objects ?? []).filter((o) => o.k.startsWith('ot_') || (o.x >= 0 && o.y >= 0 && o.x < width && o.y < height));
   return {
     id: file.id,
-    title: file.title,
+    title: levelTitel(file),
     author: file.author,
     license: file.license,
     width,
@@ -211,7 +226,7 @@ export function parseLevel(file: LevelFile, random: () => number = Math.random):
     start,
     signals,
     objects,
-    texts: file.texts ?? {},
+    texts: levelTexte(file),
     compat: file.compat ?? 1.1,
     actors: file.actors ?? [],
     rubbers: file.rubbers ?? [],

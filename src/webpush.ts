@@ -2,6 +2,11 @@
 // reminders, subscribing and unsubscribing, the texts. No account needed: one subscription per browser.
 // The permission is asked only after the player switches a reminder on, never on load.
 
+import { sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
+
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 const netz: Fetch = (...a) => fetch(...a);
 
@@ -57,7 +62,7 @@ export function umgebung(): Umgebung {
 /** The server's public key, or null when reminders are off there (or offline). */
 export async function schluesselLaden(fetchFn: Fetch = netz): Promise<string | null> {
   try {
-    const res = await fetchFn('/api/push', { cache: 'no-store' });
+    const res = await fetchFn('/api/push', { cache: 'no-store', headers: sprachKopf() });
     if (!res.ok) return null;
     const data = (await res.json()) as { schluessel?: unknown };
     return typeof data.schluessel === 'string' && /^[\w-]{80,100}$/.test(data.schluessel) ? data.schluessel : null;
@@ -86,7 +91,7 @@ export async function aboSenden(sub: PushSubscriptionJSON, wahl: Wahl, fetchFn: 
   try {
     const res = await fetchFn('/api/push/abo', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...sprachKopf(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.keys, tag: wahl.tag, woche: wahl.woche }),
     });
     return res.status === 204;
@@ -97,7 +102,7 @@ export async function aboSenden(sub: PushSubscriptionJSON, wahl: Wahl, fetchFn: 
 
 export async function aboLoeschen(endpoint: string, fetchFn: Fetch = netz): Promise<void> {
   try {
-    await fetchFn('/api/push/abo', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint }) });
+    await fetchFn('/api/push/abo', { method: 'DELETE', headers: { ...sprachKopf(), 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint }) });
   } catch {
     /* offline: the push service answers 410 once the browser dropped it */
   }
@@ -146,11 +151,11 @@ export async function wahlAnwenden(wahl: Wahl, schluessel: string, t: Teile): Pr
 
 /** The state in the list row. */
 export function standText(w: Wahl): string {
-  if (w.tag && w.woche) return 'Täglich und Wochenaufgabe';
-  if (w.tag) return 'Täglich';
-  if (w.woche) return 'Wochenaufgabe';
-  return 'Aus';
+  if (w.tag && w.woche) return t('Täglich und Wochenaufgabe');
+  if (w.tag) return t('Täglich');
+  if (w.woche) return t('Wochenaufgabe');
+  return t('Aus');
 }
 
-export const IOS_HINWEIS = 'Auf iPhone und iPad gibt es Erinnerungen nur, wenn Murmel auf dem Home-Bildschirm liegt: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Murmel von dort öffnen.';
-export const VERWEIGERT_HINWEIS = 'Mitteilungen sind für Murmel blockiert. Du kannst sie in den Website-Einstellungen des Browsers wieder erlauben.';
+export const IOS_HINWEIS = t('Auf iPhone und iPad gibt es Erinnerungen nur, wenn Murmel auf dem Home-Bildschirm liegt: im Teilen-Menü „Zum Home-Bildschirm“ wählen und Murmel von dort öffnen.');
+export const VERWEIGERT_HINWEIS = t('Mitteilungen sind für Murmel blockiert. Du kannst sie in den Website-Einstellungen des Browsers wieder erlauben.');

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setzeSpracheFuerTest } from './i18n';
 import { abwarten, einreichen, ergebnisText, lohntSich, meineLaden, NICHT_ERREICHBAR, ranglistenUrl } from './bestenliste';
 import type { Recording } from './game/session';
 
@@ -49,5 +50,22 @@ describe('bestenliste (Spiel)', () => {
     expect(ergebnisText({ status: 'angenommen', lauf: 9, zeit: 5, neu: false, platz: 3, von: 57 }, zeit)).toBe('Bestenliste: Platz 3 von 57 (deine Bestzeit 5s)');
     expect(ergebnisText({ status: 'abgelehnt', grund: 'Nein.' }, zeit)).toBe('Bestenliste: Nein.');
     expect(ranglistenUrl('enigma:a b', 'Tür & Tor')).toBe('bestenliste.html?level=enigma%3Aa+b&titel=T%C3%BCr+%26+Tor');
+  });
+});
+
+describe('bestenliste auf Englisch', () => {
+  it('Siegzeile und Sprachkopf', async () => {
+    setzeSpracheFuerTest('en');
+    try {
+      expect(ergebnisText({ status: 'wartet' }, zeit)).toBe('Leaderboard: checking …');
+      expect(ergebnisText({ status: 'angenommen', lauf: 1, zeit: 800, neu: true, platz: 2, von: 9 }, zeit)).toBe('Leaderboard: Place 2 of 9 · new personal best');
+      expect(ergebnisText({ status: 'angenommen', lauf: 900, zeit: 800, neu: false, platz: null, von: 1 }, zeit)).toBe('Leaderboard: 1 entry (your best time 800s)');
+      const inits: (RequestInit | undefined)[] = [];
+      const r = await einreichen(REC, 'v', (async (_u: unknown, i?: RequestInit) => (inits.push(i), new Response('x', { status: 401 }))) as typeof fetch);
+      expect(r).toEqual({ fehler: 'Sign in to get onto the leaderboard.' });
+      expect(new Headers(inits[0]?.headers).get('Accept-Language')).toBe('en');
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
   });
 });

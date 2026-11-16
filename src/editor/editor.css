@@ -123,6 +123,20 @@ select {
   color: var(--text);
 }
 
+/* language switch (sprachKnopf): quiet like „‹ Spiel“, names the other language in that language */
+.ed-lang {
+  flex: none;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.ed-lang:hover:not(:disabled) {
+  color: var(--text);
+}
+
 .ed-meta {
   display: flex;
   gap: 8px;

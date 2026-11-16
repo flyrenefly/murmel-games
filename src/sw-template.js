@@ -67,8 +67,24 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(caches.match(req, { ignoreSearch: true, ignoreVary: true }).then((hit) => hit ?? fetch(req)));
 });
 
+/**
+ * The language the page chose (docs/SPEC-englisch.md): src/i18n.ts puts "de" or "en" into the cache
+ * murmel-einstellungen; without it the browser's language (de* → German, else English).
+ */
+async function sprache() {
+  try {
+    const hit = await (await caches.open('murmel-einstellungen')).match(url('./sprache'));
+    const s = hit ? (await hit.text()).trim() : '';
+    if (s === 'de' || s === 'en') return s;
+  } catch {
+    /* no cache: the browser decides */
+  }
+  return /^de/i.test(self.navigator.language || 'de') ? 'de' : 'en';
+}
+
 // Erinnerung an das Tageslevel (docs/SPEC-webpush.md): the server sends { titel, text, url } at
-// Berlin midnight. A newer reminder replaces an older one (same tag).
+// Berlin midnight, and the English text as { en: { titel, text } }. A newer reminder replaces an
+// older one (same tag).
 self.addEventListener('push', (event) => {
   let d = {};
   try {
@@ -78,11 +94,14 @@ self.addEventListener('push', (event) => {
   }
   const ziel = new URL(typeof d.url === 'string' ? d.url : './#tageslevel', self.registration.scope);
   event.waitUntil(
-    self.registration.showNotification(typeof d.titel === 'string' ? d.titel : 'Murmel', {
-      body: typeof d.text === 'string' ? d.text : 'Neues Tageslevel',
-      tag: 'murmel-tageslevel',
-      lang: 'de',
-      data: { url: ziel.origin === self.location.origin ? ziel.href : url('./#tageslevel') },
+    sprache().then((lang) => {
+      const t = lang === 'en' && d.en && typeof d.en === 'object' ? d.en : d;
+      return self.registration.showNotification(typeof t.titel === 'string' ? t.titel : 'Murmel', {
+        body: typeof t.text === 'string' ? t.text : lang === 'en' ? 'New daily level' : 'Neues Tageslevel',
+        tag: 'murmel-tageslevel',
+        lang,
+        data: { url: ziel.origin === self.location.origin ? ziel.href : url('./#tageslevel') },
+      });
     }),
   );
 });
@@ -94,7 +113,7 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
       const start = new URL(url('./')).pathname;
-      const spiel = list.find((c) => [start, `${start}index.html`].includes(new URL(c.url).pathname));
+      const spiel = list.find((c) => [start, `${start}index.html`, `${start}en/`, `${start}en/index.html`].includes(new URL(c.url).pathname));
       if (spiel) {
         await spiel.focus();
         spiel.postMessage({ murmel: 'tageslevel' });

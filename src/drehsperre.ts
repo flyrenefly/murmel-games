@@ -2,6 +2,11 @@
 // turn with it. Android Chrome allows screen.orientation.lock() in fullscreen; iOS Safari has
 // neither, there the player switches on the lock in Control Center (one quiet hint).
 
+import { woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
+
 type Lockable = ScreenOrientation & { lock?: (o: string) => Promise<void>; unlock?: () => void };
 
 let held = false;
@@ -49,6 +54,6 @@ export function unlockRotation(): void {
 export function rotationHint(): string {
   // navigator.standalone exists only in Safari on iPhone and iPad
   return 'standalone' in navigator
-    ? 'Für das Spielen im Liegen die Drehsperre im Kontrollzentrum einschalten.'
-    : 'Für das Spielen im Liegen „Automatisch drehen“ in den Schnelleinstellungen ausschalten.';
+    ? t('Für das Spielen im Liegen die Drehsperre im Kontrollzentrum einschalten.')
+    : t('Für das Spielen im Liegen „Automatisch drehen“ in den Schnelleinstellungen ausschalten.');
 }

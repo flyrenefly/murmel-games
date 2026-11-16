@@ -2,6 +2,11 @@
 // this browser (IndexedDB) and the account switch "Meine Läufe als Geist zeigen". Everything is optional:
 // offline or without the API only the local run is offered.
 
+import { sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/dienste';
+
+const t = woerterbuch(EN);
+
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 const netz: Fetch = (...a) => fetch(...a);
 
@@ -27,7 +32,7 @@ const istGeist = (g: unknown): g is ServerGeist => {
 
 export async function geisterListe(level: string, fetchFn: Fetch = netz): Promise<ServerGeist[]> {
   try {
-    const res = await fetchFn(`/api/geister/level?${new URLSearchParams({ id: level })}`, { credentials: 'same-origin', cache: 'no-store' });
+    const res = await fetchFn(`/api/geister/level?${new URLSearchParams({ id: level })}`, { credentials: 'same-origin', cache: 'no-store', headers: sprachKopf() });
     if (!res.ok) return [];
     const data = (await res.json()) as { geister?: unknown };
     return Array.isArray(data.geister) ? data.geister.filter(istGeist) : [];
@@ -38,7 +43,7 @@ export async function geisterListe(level: string, fetchFn: Fetch = netz): Promis
 
 export async function geistLaden(id: number, fetchFn: Fetch = netz): Promise<unknown> {
   try {
-    const res = await fetchFn(`/api/geister/lauf/${id}`, { credentials: 'same-origin' });
+    const res = await fetchFn(`/api/geister/lauf/${id}`, { credentials: 'same-origin', headers: sprachKopf() });
     return res.ok ? await res.json() : null;
   } catch {
     return null;
@@ -48,7 +53,7 @@ export async function geistLaden(id: number, fetchFn: Fetch = netz): Promise<unk
 /** The account switch; null without account or API. */
 export async function freigabeLaden(fetchFn: Fetch = netz): Promise<boolean | null> {
   try {
-    const res = await fetchFn('/api/geister/freigabe', { credentials: 'same-origin', cache: 'no-store' });
+    const res = await fetchFn('/api/geister/freigabe', { credentials: 'same-origin', cache: 'no-store', headers: sprachKopf() });
     const data = res.ok ? ((await res.json()) as { an?: unknown }) : null;
     return typeof data?.an === 'boolean' ? data.an : null;
   } catch {
@@ -61,7 +66,7 @@ export async function freigabeSetzen(an: boolean, fetchFn: Fetch = netz): Promis
     const res = await fetchFn('/api/geister/freigabe', {
       method: 'PUT',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...sprachKopf(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ an }),
     });
     return res.status === 204;
@@ -74,10 +79,10 @@ export async function freigabeSetzen(an: boolean, fetchFn: Fetch = netz): Promis
 export function auswahl(lokal: { steps: number } | null, server: ServerGeist[], zeit: (steps: number) => string): Option[] {
   const out: Option[] = [];
   const meiner = server.find((g) => g.ich);
-  if (meiner && (!lokal || meiner.zeit < lokal.steps)) out.push({ titel: `Deine Bestzeit ${zeit(meiner.zeit)}`, quelle: meiner.id });
-  else if (lokal) out.push({ titel: `Deine Bestzeit ${zeit(lokal.steps)}`, quelle: 'lokal' });
+  if (meiner && (!lokal || meiner.zeit < lokal.steps)) out.push({ titel: t('Deine Bestzeit {zeit}', { zeit: zeit(meiner.zeit) }), quelle: meiner.id });
+  else if (lokal) out.push({ titel: t('Deine Bestzeit {zeit}', { zeit: zeit(lokal.steps) }), quelle: 'lokal' });
   for (const g of server) {
-    if (!g.ich) out.push({ titel: `Platz ${g.platz} · ${g.name ?? 'Spieler ohne Namen'} · ${zeit(g.zeit)}`, quelle: g.id });
+    if (!g.ich) out.push({ titel: t('Platz {platz} · {name} · {zeit}', { platz: g.platz, name: g.name ?? t('Spieler ohne Namen'), zeit: zeit(g.zeit) }), quelle: g.id });
   }
   return out;
 }

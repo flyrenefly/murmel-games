@@ -6,7 +6,7 @@ import { buildApp } from './app.ts';
 import { connect } from './db.ts';
 import { RateLimit } from './limit.ts';
 import { migrate } from './migrate.ts';
-import { encrypt, generateVapidKeys, WRITE_WINDOW_MS, WRITES_PER_HOUR, message, nextDelay, parseSubscription, type PushSubscription, sendDue, vapidAuthorization, vapidFromEnv, verifyVapid } from './webpush.ts';
+import { encrypt, generateVapidKeys, WRITE_WINDOW_MS, WRITES_PER_HOUR, message, nextDelay, parseSubscription, type PushSubscription, sendDue, TITLE_MAX, vapidAuthorization, vapidFromEnv, verifyVapid } from './webpush.ts';
 import { pushStore } from './webpush-db.ts';
 import { memoryPushStore } from './webpush-memory.ts';
 
@@ -100,12 +100,31 @@ test('Abo prüfen: nur bekannte Push-Dienste über https, Schlüssel in fester L
 
 test('Text: Tag, Woche, beides montags in einer Mitteilung; ohne Wunsch keine', () => {
   const s = (tag: boolean, woche: boolean) => ({ endpoint: 'e', p256dh: '', auth: '', tag, woche });
-  assert.deepEqual(message(s(true, false), { tag: 'Brücken' }), { titel: 'Murmel', text: 'Neues Tageslevel: Brücken', url: './#tageslevel' });
+  assert.deepEqual(message(s(true, false), { tag: 'Brücken' }), { titel: 'Murmel', text: 'Neues Tageslevel: Brücken', url: './#tageslevel', en: { titel: 'Murmel', text: 'New daily level: Brücken' } });
   assert.equal(message(s(true, false), { tag: null })!.text, 'Neues Tageslevel');
   assert.equal(message(s(false, true), { tag: 'Brücken' }), null);
   assert.equal(message(s(false, true), { tag: 'Brücken', woche: 'Labyrinth' })!.text, 'Neue Wochenaufgabe: Labyrinth');
   assert.equal(message(s(true, true), { tag: 'Brücken', woche: 'Labyrinth' })!.text, 'Neues Tageslevel und neue Wochenaufgabe – heute: Brücken');
   assert.equal(message(s(true, true), { tag: 'Brücken' })!.text, 'Neues Tageslevel: Brücken');
+});
+
+test('Text englisch unter en: deutsche Felder unverändert für alte Service Worker', () => {
+  const s = (tag: boolean, woche: boolean) => ({ endpoint: 'e', p256dh: '', auth: '', tag, woche });
+  assert.deepEqual(message(s(true, false), { tag: null })!.en, { titel: 'Murmel', text: 'New daily level' });
+  assert.deepEqual(message(s(false, true), { tag: 'Brücken', woche: 'Labyrinth' })!.en, { titel: 'Murmel', text: 'New weekly challenge: Labyrinth' });
+  assert.deepEqual(message(s(true, true), { tag: 'Brücken', woche: 'Labyrinth' })!.en, { titel: 'Murmel', text: 'New daily level and new weekly challenge – today: Brücken' });
+  assert.deepEqual(Object.keys(message(s(true, true), { tag: 'Brücken', woche: 'Labyrinth' })!), ['titel', 'text', 'url', 'en']);
+});
+
+test('Nutzlast bleibt unter der 4-kB-Grenze: lange Leveltitel werden gekürzt', () => {
+  const s = { endpoint: 'e', p256dh: '', auth: '', tag: true, woche: true };
+  const long = 'Ü'.repeat(5000);
+  const m = message(s, { tag: long, woche: long })!;
+  assert.equal(m.text, `Neues Tageslevel und neue Wochenaufgabe – heute: ${'Ü'.repeat(TITLE_MAX - 1)}…`);
+  assert.ok(m.en.text.endsWith('…'));
+  // RFC 8291: push services take 4096 bytes of body: 86 bytes header, 1 padding delimiter, 16 bytes tag
+  assert.ok(Buffer.byteLength(JSON.stringify(m)) <= 4096 - 86 - 17,String(Buffer.byteLength(JSON.stringify(m))));
+  assert.equal(message({ ...s, woche: false }, { tag: 'x'.repeat(TITLE_MAX) })!.text, `Neues Tageslevel: ${'x'.repeat(TITLE_MAX)}`);
 });
 
 test('Wecker: kurz nach der nächsten Berliner Mitternacht, höchstens eine Stunde voraus', () => {
@@ -146,7 +165,7 @@ describe('Versand', () => {
     assert.equal(h.Topic, 'tageslevel');
     assert.ok(verifyVapid(h.Authorization, VAPID.publicKey));
     const toBeides = sent.find((s) => s.url === beides.endpoint)!;
-    assert.deepEqual(JSON.parse(decrypt(Buffer.from(toBeides.init.body as Uint8Array), beides)), { titel: 'Murmel', text: 'Neues Tageslevel: tag 2026-11-17', url: './#tageslevel' });
+    assert.deepEqual(JSON.parse(decrypt(Buffer.from(toBeides.init.body as Uint8Array), beides)), { titel: 'Murmel', text: 'Neues Tageslevel: tag 2026-11-17', url: './#tageslevel', en: { titel: 'Murmel', text: 'New daily level: tag 2026-11-17' } });
     assert.equal(store.all().length, 4); // the 410 one is gone, the 500 one stays
     // again (restart of the API): nothing new
     sent.length = 0;
@@ -166,6 +185,8 @@ describe('Versand', () => {
     assert.deepEqual(await sendDue({ store, vapid: VAPID, title: async () => null, now, fetch }), { gesendet: 2, entfernt: 0 });
     assert.equal(JSON.parse(decrypt(bodies.get(b.endpoint)!, b)).text, 'Neues Tageslevel und neue Wochenaufgabe');
     assert.equal(JSON.parse(decrypt(bodies.get(w.endpoint)!, w)).text, 'Neue Wochenaufgabe');
+    assert.equal(JSON.parse(decrypt(bodies.get(b.endpoint)!, b)).en.text, 'New daily level and new weekly challenge');
+    assert.equal(JSON.parse(decrypt(bodies.get(w.endpoint)!, w)).en.text, 'New weekly challenge');
   });
 
   test('ein Push-Dienst ohne Antwort hält den Versand nicht auf', async () => {

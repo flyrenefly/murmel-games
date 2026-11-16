@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setzeSpracheFuerTest } from './i18n';
 import { AUS, istIOS, moeglich, schluesselBytes, schluesselLaden, standText, type Umgebung, wahlAnwenden } from './webpush';
 
 const KEY = 'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4';
@@ -115,5 +116,17 @@ describe('Erinnerung (Web Push) im Spiel', () => {
     expect(standText({ tag: true, woche: false })).toBe('Täglich');
     expect(standText({ tag: false, woche: true })).toBe('Wochenaufgabe');
     expect(standText({ tag: true, woche: true })).toBe('Täglich und Wochenaufgabe');
+  });
+});
+
+describe('Erinnerungen auf Englisch', () => {
+  it('Zustand in der Liste', () => {
+    setzeSpracheFuerTest('en');
+    try {
+      expect(standText({ tag: true, woche: true })).toBe('Daily and weekly challenge');
+      expect(standText(AUS)).toBe('Off');
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
   });
 });

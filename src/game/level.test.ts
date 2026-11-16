@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { cellAt, LevelError, parseLevel, type LevelFile } from './level';
+import { setzeSpracheFuerTest } from '../i18n';
+import { cellAt, LevelError, levelTexte, parseLevel, type LevelFile } from './level';
 import { LEVELS } from '../levels';
 
 const base = (map: string[]): LevelFile => ({ id: 't', title: 'T', author: 'x', license: 'GPL', map });
@@ -84,5 +85,30 @@ describe('meditation levels with a main pearl', () => {
     expect(() => parseLevel(file)).not.toThrow();
     expect(() => parseLevel({ ...file, objects: [{ x: 2, y: 1, k: 'it_landmine' }] })).not.toThrow();
     expect(() => parseLevel({ ...file, mainPearl: undefined })).toThrow(/keine Oxyd-Steine/);
+  });
+});
+
+describe('Dokumenttexte (textsEn)', () => {
+  const file = { texts: { a: 'Hallo', b: 'Nur deutsch' }, textsEn: { a: 'Hello' } };
+  it('Deutsch: texts; Englisch: das Original aus textsEn, sonst texts', () => {
+    expect(levelTexte(file, 'de')).toEqual({ a: 'Hallo', b: 'Nur deutsch' });
+    expect(levelTexte(file, 'en')).toEqual({ a: 'Hello', b: 'Nur deutsch' });
+    expect(levelTexte({}, 'en')).toEqual({});
+    expect(levelTexte({}, 'de')).toEqual({});
+  });
+  it('parseLevel nimmt die Texte der Sprache', () => {
+    const lf: LevelFile = { ...LEVELS[0], ...file };
+    setzeSpracheFuerTest('en');
+    try {
+      expect(parseLevel(lf).texts).toEqual({ a: 'Hello', b: 'Nur deutsch' });
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
+    setzeSpracheFuerTest('de');
+    try {
+      expect(parseLevel(lf).texts).toEqual({ a: 'Hallo', b: 'Nur deutsch' });
+    } finally {
+      setzeSpracheFuerTest(null);
+    }
   });
 });

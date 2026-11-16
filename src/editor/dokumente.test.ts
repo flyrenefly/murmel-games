@@ -8,6 +8,10 @@ import { decodeLevel, docText, encodeLevel, LinkError, MAX_DOC_TEXT, MAX_DOCS, s
 import { cellOf, fromLevelFile, newLevel, paint, toLevelFile } from './model';
 import { BY_KIND } from './palette';
 import { check } from './rules';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 const P = (k: string) => BY_KIND.get(k)!;
 

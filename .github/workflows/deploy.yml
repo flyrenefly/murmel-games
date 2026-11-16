@@ -40,7 +40,7 @@ jobs:
       # deploy-sftp.mjs löscht remote jede Datei, die hier fehlt – Reste auf dem Webspace verschwinden also.
       - name: Levelseiten nicht spiegeln
         run: |
-          rm -rf dist/level
+          rm -rf dist/level dist/en/level
           cp public/sitemap.xml dist/sitemap.xml
       - name: Check credentials
         env:

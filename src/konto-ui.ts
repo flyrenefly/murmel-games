@@ -13,6 +13,10 @@ import {
   passkeysMoeglich,
 } from './konto';
 import { freigabeLaden, freigabeSetzen } from './geister';
+import { gebietsschema, woerterbuch } from './i18n';
+import EN from './i18n/en/konto';
+
+const t = woerterbuch(EN);
 
 /** What the dialogs need from the game (src/main.ts). */
 export interface KontoHost {
@@ -28,7 +32,7 @@ const api = new KontoApi();
 let stand: KontoStand | null = null;
 
 /** Menu label: "Anmelden" or "Konto" (known after the first status call). */
-export const kontoLabel = (): string => (stand?.angemeldet ? 'Konto' : 'Anmelden');
+export const kontoLabel = (): string => (stand?.angemeldet ? t('Konto') : t('Anmelden'));
 
 /** Signed in and not blocked: runs go to the leaderboard (docs/SPEC-bestenliste.md). */
 export const darfEinreichen = (): boolean => stand?.angemeldet === true && !stand.konto.gesperrt;
@@ -82,10 +86,10 @@ function status(text: string, kind: 'info' | 'fehler' = 'info'): HTMLParagraphEl
 
 /** Opens the account dialog: sign-in when signed out, otherwise the account page. */
 export async function kontoOeffnen(host: KontoHost): Promise<void> {
-  host.showOverlay('Konto', 'Einen Moment …', [['Zurück', host.back]]);
+  host.showOverlay(t('Konto'), t('Einen Moment …'), [[t('Zurück'), host.back]]);
   const r = await api.stand();
   if (!r.ok) {
-    host.showOverlay('Konto', r.fehler, [['Zurück', host.back]]);
+    host.showOverlay(t('Konto'), r.fehler, [[t('Zurück'), host.back]]);
     return;
   }
   stand = setStand(r.daten);
@@ -98,38 +102,38 @@ export function mailLinkPruefen(host: KontoHost): boolean {
   const token = loginTokenFromHash(location.hash);
   if (!token) return false;
   history.replaceState(null, '', location.pathname + location.search);
-  host.showOverlay('Anmelden', 'Du hast einen Anmeldelink geöffnet.', [
+  host.showOverlay(t('Anmelden'), t('Du hast einen Anmeldelink geöffnet.'), [
     [
-      'Jetzt anmelden',
+      t('Jetzt anmelden'),
       async () => {
         const r = await api.linkEinloesen(token);
         if (!r.ok) {
-          host.showOverlay('Anmelden', r.fehler, [['Neuen Link anfordern', () => anmelden(host)], ['Zurück', host.back]]);
+          host.showOverlay(t('Anmelden'), r.fehler, [[t('Neuen Link anfordern'), () => anmelden(host)], [t('Zurück'), host.back]]);
           return;
         }
         stand = setStand(r.daten);
         if (stand.angemeldet) kontoSeite(host, stand.konto, true);
       },
     ],
-    ['Abbrechen', host.back],
+    [t('Abbrechen'), host.back],
   ]);
   return true;
 }
 
 function anmelden(host: KontoHost, email = ''): void {
   host.showOverlay(
-    'Anmelden',
-    'Ein Konto ist freiwillig – Murmel spielst du auch ohne. Murmel speichert keine Passwörter.',
-    [['Zurück', host.back]],
+    t('Anmelden'),
+    t('Ein Konto ist freiwillig – Murmel spielst du auch ohne. Murmel speichert keine Passwörter.'),
+    [[t('Zurück'), host.back]],
   );
   const meldung = el('div');
   const parts: Node[] = [];
   const anbieter = REIHENFOLGE.filter((a) => stand?.anbieter?.includes(a));
 
-  if (passkeysMoeglich()) parts.push(button('Mit Passkey anmelden', () => void passkeyAnmelden(host, meldung), 'primary wide'));
+  if (passkeysMoeglich()) parts.push(button(t('Mit Passkey anmelden'), () => void passkeyAnmelden(host, meldung), 'primary wide'));
   // Google, Apple, GitHub (Konten Stufe 2): all the same size, in the providers' own button styles
   if (anbieter.length) parts.push(el('div', { className: 'anbieter-knoepfe' }, ...anbieter.map((a) => anbieterKnopf(a, meldung))));
-  if (passkeysMoeglich() || anbieter.length) parts.push(el('div', { className: 'konto-oder', textContent: 'oder per Mail' }));
+  if (passkeysMoeglich() || anbieter.length) parts.push(el('div', { className: 'konto-oder', textContent: t('oder per Mail') }));
   const mailPrimaer = !passkeysMoeglich() && !anbieter.length;
 
   const input = el('input', {
@@ -138,28 +142,28 @@ function anmelden(host: KontoHost, email = ''): void {
     name: 'email',
     autocomplete: 'email',
     required: true,
-    placeholder: 'name@beispiel.de',
+    placeholder: t('name@beispiel.de'),
     value: email,
   });
   input.setAttribute('autocapitalize', 'off');
   input.setAttribute('spellcheck', 'false');
-  const senden = el('button', { type: 'submit', textContent: 'Anmeldelink per Mail schicken', className: mailPrimaer ? 'primary wide' : 'wide' });
+  const senden = el('button', { type: 'submit', textContent: t('Anmeldelink per Mail schicken'), className: mailPrimaer ? 'primary wide' : 'wide' });
   const form = el(
     'form',
     { className: 'konto-form', noValidate: true },
-    el('label', { htmlFor: 'konto-mail', textContent: 'Mailadresse' }),
+    el('label', { htmlFor: 'konto-mail', textContent: t('Mailadresse') }),
     input,
     senden,
     el('p', {
       className: 'konto-hinweis',
-      textContent: 'Passwort vergessen oder neu hier? Murmel braucht kein Passwort: Du bekommst einen Link per Mail, der dich anmeldet. Das legt beim ersten Mal auch dein Konto an.',
+      textContent: t('Passwort vergessen oder neu hier? Murmel braucht kein Passwort: Du bekommst einen Link per Mail, der dich anmeldet. Das legt beim ersten Mal auch dein Konto an.'),
     }),
   );
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
     senden.disabled = true;
-    meldung.replaceChildren(status('Link wird verschickt …'));
+    meldung.replaceChildren(status(t('Link wird verschickt …')));
     const r = await api.linkSchicken(input.value);
     senden.disabled = false;
     if (!r.ok) {
@@ -167,9 +171,9 @@ function anmelden(host: KontoHost, email = ''): void {
       return;
     }
     host.showOverlay(
-      'Schau in dein Postfach',
-      `Wir haben einen Anmeldelink an ${escape(input.value.trim())} geschickt. Er gilt 15 Minuten und nur einmal. Keine Mail? Sieh im Spam-Ordner nach.`,
-      [['OK', host.back], ['Andere Adresse', () => anmelden(host, input.value)]],
+      t('Schau in dein Postfach'),
+      t('Wir haben einen Anmeldelink an {adresse} geschickt. Er gilt 15 Minuten und nur einmal. Keine Mail? Sieh im Spam-Ordner nach.', { adresse: escape(input.value.trim()) }),
+      [['OK', host.back], [t('Andere Adresse'), () => anmelden(host, input.value)]],
     );
   });
   parts.push(form, meldung);
@@ -197,11 +201,11 @@ const LOGO: Record<Anbieter, string> = {
 /** "Mit Apple anmelden" etc.: leaves the game page for the provider and comes back with #anbieter=… */
 function anbieterKnopf(a: Anbieter, meldung: HTMLElement): HTMLButtonElement {
   const b = el('button', { type: 'button', className: `anbieter anbieter-${a}` });
-  b.append(el('span', { className: 'anbieter-logo', innerHTML: LOGO[a] }), el('span', { textContent: `Mit ${ANBIETER_NAME[a]} anmelden` }));
+  b.append(el('span', { className: 'anbieter-logo', innerHTML: LOGO[a] }), el('span', { textContent: t('Mit {anbieter} anmelden', { anbieter: ANBIETER_NAME[a] }) }));
   b.addEventListener('click', (e) => {
     e.stopPropagation();
     for (const k of b.parentElement?.querySelectorAll('button') ?? []) k.disabled = true;
-    meldung.replaceChildren(status(`Weiter zu ${ANBIETER_NAME[a]} …`));
+    meldung.replaceChildren(status(t('Weiter zu {anbieter} …', { anbieter: ANBIETER_NAME[a] })));
     location.assign(anbieterStart(a));
   });
   return b;
@@ -213,20 +217,20 @@ export function anbieterRueckkehrPruefen(host: KontoHost): boolean {
   if (!r) return false;
   history.replaceState(null, '', location.pathname + location.search);
   if ('fehler' in r) {
-    host.showOverlay('Anmelden', anbieterFehlerText(r.fehler), [['Noch einmal', () => void kontoOeffnen(host)], ['Zurück', host.back]]);
+    host.showOverlay(t('Anmelden'), anbieterFehlerText(r.fehler), [[t('Noch einmal'), () => void kontoOeffnen(host)], [t('Zurück'), host.back]]);
     return true;
   }
-  host.showOverlay('Anmelden', 'Einen Moment …', [['Zurück', host.back]]);
+  host.showOverlay(t('Anmelden'), t('Einen Moment …'), [[t('Zurück'), host.back]]);
   void api.anbieterAbschliessen(r.vorgang).then(async (res) => {
     if (!res.ok) {
-      host.showOverlay('Anmelden', res.fehler, [['Noch einmal', () => void kontoOeffnen(host)], ['Zurück', host.back]]);
+      host.showOverlay(t('Anmelden'), res.fehler, [[t('Noch einmal'), () => void kontoOeffnen(host)], [t('Zurück'), host.back]]);
       return;
     }
     const verbunden = res.daten.angemeldet ? res.daten.verbunden : undefined;
     // the status call also says which providers are on (for "Verbinden" on the account page)
     const s = await api.stand();
     stand = setStand(s.ok && s.daten.angemeldet ? s.daten : res.daten);
-    if (stand.angemeldet) kontoSeite(host, stand.konto, verbunden ? `${ANBIETER_NAME[verbunden]} ist jetzt mit deinem Konto verbunden.` : 'Du bist angemeldet.');
+    if (stand.angemeldet) kontoSeite(host, stand.konto, verbunden ? t('{anbieter} ist jetzt mit deinem Konto verbunden.', { anbieter: ANBIETER_NAME[verbunden] }) : t('Du bist angemeldet.'));
   });
   return true;
 }
@@ -250,11 +254,11 @@ async function passkeyAnmelden(host: KontoHost, meldung: HTMLElement): Promise<v
 }
 
 function datum(iso: string): string {
-  return new Date(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(gebietsschema(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet: boolean | string = false): void {
-  host.showOverlay('Dein Konto', '', [['Zurück', host.back]]);
+  host.showOverlay(t('Dein Konto'), '', [[t('Zurück'), host.back]]);
   const meldung = el('div');
   const parts: Node[] = [
     el(
@@ -262,11 +266,11 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet: boolean | stri
       { className: 'konto-kopf' },
       el('strong', { textContent: konto.email }),
       ...(konto.rolle === 'admin' ? [el('span', { className: 'konto-admin', textContent: 'Admin' })] : []),
-      el('small', { textContent: `Konto seit ${datum(konto.erstellt)}` }),
+      el('small', { textContent: t('Konto seit {datum}', { datum: datum(konto.erstellt) }) }),
     ),
   ];
-  if (neuAngemeldet) parts.push(status(typeof neuAngemeldet === 'string' ? neuAngemeldet : 'Du bist angemeldet.'));
-  if (konto.gesperrt) parts.push(status('Dieses Konto ist gesperrt. Spielen geht weiter; schreiben kannst du nicht. Fragen an info@murmel.games.', 'fehler'));
+  if (neuAngemeldet) parts.push(status(typeof neuAngemeldet === 'string' ? neuAngemeldet : t('Du bist angemeldet.')));
+  if (konto.gesperrt) parts.push(status(t('Dieses Konto ist gesperrt. Spielen geht weiter; schreiben kannst du nicht. Fragen an info@murmel.games.'), 'fehler'));
 
   // Passkeys: after the first mail login the page offers one, so the next sign-in needs no mail.
   const liste = el('ul', { className: 'konto-passkeys' });
@@ -275,8 +279,8 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet: boolean | stri
       el(
         'li',
         {},
-        el('span', {}, el('b', { textContent: p.name }), el('small', { textContent: p.zuletzt ? `zuletzt ${datum(p.zuletzt)}` : `seit ${datum(p.erstellt)}` })),
-        button('Entfernen', async () => {
+        el('span', {}, el('b', { textContent: p.name }), el('small', { textContent: p.zuletzt ? t('zuletzt {datum}', { datum: datum(p.zuletzt) }) : t('seit {datum}', { datum: datum(p.erstellt) }) })),
+        button(t('Entfernen'), async () => {
           const r = await api.passkeyEntfernen(p.id);
           if (!r.ok) return void meldung.replaceChildren(status(r.fehler, 'fehler'));
           if (r.daten.angemeldet) kontoSeite(host, r.daten.konto);
@@ -286,11 +290,11 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet: boolean | stri
   }
   const section = el('section', { className: 'konto-abschnitt' }, el('h2', { textContent: 'Passkeys' }));
   if (konto.passkeys.length) section.append(liste);
-  else section.append(el('p', { className: 'konto-hinweis', textContent: 'Mit einem Passkey meldest du dich per Fingerabdruck, Gesicht oder Geräte-PIN an – ohne Mail und ohne Passwort.' }));
+  else section.append(el('p', { className: 'konto-hinweis', textContent: t('Mit einem Passkey meldest du dich per Fingerabdruck, Gesicht oder Geräte-PIN an – ohne Mail und ohne Passwort.') }));
   if (passkeysMoeglich()) {
-    section.append(button(konto.passkeys.length ? 'Passkey hinzufügen' : 'Passkey einrichten', () => void passkeyEinrichten(host, meldung), konto.passkeys.length ? 'wide' : 'primary wide'));
+    section.append(button(konto.passkeys.length ? t('Passkey hinzufügen') : t('Passkey einrichten'), () => void passkeyEinrichten(host, meldung), konto.passkeys.length ? 'wide' : 'primary wide'));
   } else {
-    section.append(el('p', { className: 'konto-hinweis', textContent: 'Dieser Browser unterstützt keine Passkeys.' }));
+    section.append(el('p', { className: 'konto-hinweis', textContent: t('Dieser Browser unterstützt keine Passkeys.') }));
   }
   const wege = anmeldewegeAbschnitt(host, konto, meldung);
   parts.push(section, ...(wege ? [wege] : []), meldung, geisterAbschnitt());
@@ -300,9 +304,9 @@ function kontoSeite(host: KontoHost, konto: Konto, neuAngemeldet: boolean | stri
     el(
       'div',
       { className: 'konto-aktionen' },
-      button('Abmelden', () => void abmelden(host, false)),
-      button('Überall abmelden', () => void abmelden(host, true)),
-      button('Konto löschen …', () => loeschenFragen(host, konto), 'gefahr'),
+      button(t('Abmelden'), () => void abmelden(host, false)),
+      button(t('Überall abmelden'), () => void abmelden(host, true)),
+      button(t('Konto löschen …'), () => loeschenFragen(host, konto), 'gefahr'),
     ),
   );
   host.form.replaceChildren(...parts);
@@ -321,31 +325,31 @@ function anmeldewegeAbschnitt(host: KontoHost, konto: Konto, meldung: HTMLElemen
   const letzter = wege.length + konto.passkeys.length <= 1;
   const liste = el('ul', { className: 'konto-passkeys konto-wege' });
   for (const w of wege) {
-    const zeile = el('li', {}, el('span', {}, el('b', { textContent: ANBIETER_NAME[w.anbieter] }), el('small', { textContent: w.email ?? `seit ${datum(w.seit)}` })));
+    const zeile = el('li', {}, el('span', {}, el('b', { textContent: ANBIETER_NAME[w.anbieter] }), el('small', { textContent: w.email ?? t('seit {datum}', { datum: datum(w.seit) }) })));
     if (w.anbieter !== 'mail') {
-      const trennen = button('Trennen', async () => {
+      const trennen = button(t('Trennen'), async () => {
         const r = await api.anbieterTrennen(w.anbieter as Anbieter, w.kennung);
         if (!r.ok) return void meldung.replaceChildren(status(r.fehler, 'fehler'));
         stand = setStand(r.daten);
-        if (stand.angemeldet) kontoSeite(host, stand.konto, `${ANBIETER_NAME[w.anbieter]} ist getrennt.`);
+        if (stand.angemeldet) kontoSeite(host, stand.konto, t('{anbieter} ist getrennt.', { anbieter: ANBIETER_NAME[w.anbieter] }));
       }, 'klein');
       trennen.disabled = letzter;
-      trennen.setAttribute('aria-label', `${ANBIETER_NAME[w.anbieter]} trennen`);
+      trennen.setAttribute('aria-label', t('{anbieter} trennen', { anbieter: ANBIETER_NAME[w.anbieter] }));
       zeile.append(trennen);
     }
     liste.append(zeile);
   }
   for (const a of offen) {
-    const verbinden = button('Verbinden', () => {
-      meldung.replaceChildren(status(`Weiter zu ${ANBIETER_NAME[a]} …`));
+    const verbinden = button(t('Verbinden'), () => {
+      meldung.replaceChildren(status(t('Weiter zu {anbieter} …', { anbieter: ANBIETER_NAME[a] })));
       location.assign(anbieterStart(a));
     }, 'klein');
-    verbinden.setAttribute('aria-label', `Mit ${ANBIETER_NAME[a]} verbinden`);
-    liste.append(el('li', {}, el('span', {}, el('b', { textContent: ANBIETER_NAME[a] }), el('small', { textContent: 'nicht verbunden' })), verbinden));
+    verbinden.setAttribute('aria-label', t('Mit {anbieter} verbinden', { anbieter: ANBIETER_NAME[a] }));
+    liste.append(el('li', {}, el('span', {}, el('b', { textContent: ANBIETER_NAME[a] }), el('small', { textContent: t('nicht verbunden') })), verbinden));
   }
-  const section = el('section', { className: 'konto-abschnitt' }, el('h2', { textContent: 'Anmeldewege' }), liste);
+  const section = el('section', { className: 'konto-abschnitt' }, el('h2', { textContent: t('Anmeldewege') }), liste);
   if (letzter && wege.some((w) => w.anbieter !== 'mail')) {
-    section.append(el('p', { className: 'konto-hinweis', textContent: 'Ein Anmeldeweg bleibt immer bestehen. Richte einen Passkey ein oder verbinde einen weiteren Anbieter, dann kannst du diesen trennen.' }));
+    section.append(el('p', { className: 'konto-hinweis', textContent: t('Ein Anmeldeweg bleibt immer bestehen. Richte einen Passkey ein oder verbinde einen weiteren Anbieter, dann kannst du diesen trennen.') }));
   }
   return section;
 }
@@ -356,7 +360,7 @@ function geisterAbschnitt(): HTMLElement {
   box.setAttribute('role', 'switch');
   const meldung = el('div');
   void freigabeLaden().then((an) => {
-    if (an === null) return void meldung.replaceChildren(status('Die Einstellung ist gerade nicht erreichbar.', 'fehler'));
+    if (an === null) return void meldung.replaceChildren(status(t('Die Einstellung ist gerade nicht erreichbar.'), 'fehler'));
     box.checked = an;
     box.disabled = false;
   });
@@ -366,16 +370,16 @@ function geisterAbschnitt(): HTMLElement {
     if (await freigabeSetzen(box.checked)) meldung.replaceChildren();
     else {
       box.checked = !box.checked;
-      meldung.replaceChildren(status('Das hat nicht geklappt. Bitte versuch es später noch einmal.', 'fehler'));
+      meldung.replaceChildren(status(t('Das hat nicht geklappt. Bitte versuch es später noch einmal.'), 'fehler'));
     }
     box.disabled = false;
   });
   return el(
     'section',
     { className: 'konto-abschnitt' },
-    el('h2', { textContent: 'Geister' }),
-    el('label', { className: 'konto-schalter', htmlFor: 'konto-geist' }, box, el('span', { textContent: 'Meine Läufe als Geist zeigen' })),
-    el('p', { className: 'konto-hinweis', textContent: 'Andere können dann gegen deine Läufe aus der Bestenliste spielen – als durchscheinende Murmel mit deinem Anzeigenamen. Ausschalten macht sie sofort wieder privat.' }),
+    el('h2', { textContent: t('Geister') }),
+    el('label', { className: 'konto-schalter', htmlFor: 'konto-geist' }, box, el('span', { textContent: t('Meine Läufe als Geist zeigen') })),
+    el('p', { className: 'konto-hinweis', textContent: t('Andere können dann gegen deine Läufe aus der Bestenliste spielen – als durchscheinende Murmel mit deinem Anzeigenamen. Ausschalten macht sie sofort wieder privat.') }),
     meldung,
   );
 }
@@ -395,7 +399,7 @@ async function passkeyEinrichten(host: KontoHost, meldung: HTMLElement): Promise
   stand = setStand(r.daten);
   if (stand.angemeldet) {
     kontoSeite(host, stand.konto);
-    host.form.append(status('Passkey eingerichtet. Beim nächsten Mal: „Mit Passkey anmelden“.'));
+    host.form.append(status(t('Passkey eingerichtet. Beim nächsten Mal: „Mit Passkey anmelden“.')));
   }
 }
 
@@ -403,25 +407,25 @@ async function abmelden(host: KontoHost, alle: boolean): Promise<void> {
   const r = await api.abmelden(alle);
   if (!r.ok) return void host.form.append(status(r.fehler, 'fehler'));
   stand = setStand(r.daten);
-  host.showOverlay('Abgemeldet', alle ? 'Du bist auf allen Geräten abgemeldet.' : 'Du bist abgemeldet. Dein Spielstand auf diesem Gerät bleibt.', [['OK', host.back]]);
+  host.showOverlay(t('Abgemeldet'), alle ? t('Du bist auf allen Geräten abgemeldet.') : t('Du bist abgemeldet. Dein Spielstand auf diesem Gerät bleibt.'), [['OK', host.back]]);
 }
 
 function loeschenFragen(host: KontoHost, konto: Konto): void {
   // Cancel first (primary): deleting cannot be undone.
   host.showOverlay(
-    'Konto löschen?',
-    `Das Konto ${escape(konto.email)} wird sofort und endgültig gelöscht, mit allen Passkeys und Anmeldungen. Das lässt sich nicht rückgängig machen. Dein Spielstand auf diesem Gerät bleibt.`,
-    [['Abbrechen', () => kontoSeite(host, konto)]],
+    t('Konto löschen?'),
+    t('Das Konto {email} wird sofort und endgültig gelöscht, mit allen Passkeys und Anmeldungen. Das lässt sich nicht rückgängig machen. Dein Spielstand auf diesem Gerät bleibt.', { email: escape(konto.email) }),
+    [[t('Abbrechen'), () => kontoSeite(host, konto)]],
   );
   host.form.replaceChildren(
     el(
       'div',
       { className: 'konto-aktionen' },
-      button('Konto endgültig löschen', async () => {
+      button(t('Konto endgültig löschen'), async () => {
         const r = await api.loeschen();
         if (!r.ok) return void host.form.append(status(r.fehler, 'fehler'));
         stand = setStand(r.daten);
-        host.showOverlay('Konto gelöscht', 'Dein Konto ist gelöscht. Murmel spielst du weiter wie bisher.', [['OK', host.back]]);
+        host.showOverlay(t('Konto gelöscht'), t('Dein Konto ist gelöscht. Murmel spielst du weiter wie bisher.'), [['OK', host.back]]);
       }, 'gefahr'),
     ),
   );

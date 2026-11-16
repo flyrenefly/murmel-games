@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { basedOnText, decodeLevel, encodeLevel, MAX_BASED_ON, sanitizeLevel } from './link';
 import { fromLevelFile, newLevel, toLevelFile } from './model';
 import { basedOnFor } from './publish';
+import { setzeSpracheFuerTest } from '../i18n';
+
+// German texts are checked here: the page language must not come from the machine (navigator.language)
+setzeSpracheFuerTest('de');
 
 const level = () => {
   const l = newLevel(8, 6);

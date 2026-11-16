@@ -7,10 +7,21 @@ import { enigmaStart, ENIGMA_ACCEPT, type EnigmaHost, importEnigma, isEnigmaFile
 import { History } from './history';
 import { basedOnText, decodeLevel, docText, encodeLevel, LINK_PREFIX, linkData, linkLength, LinkError, MAX_BASED_ON, MAX_DOC_TEXT, sanitizeLevel } from './link';
 import { cellOf, clone, LICENSE_NOTE, type EditorLevel, erase, fromLevelFile, MAX_H, MAX_W, MIN_H, MIN_W, newLevel, paint, resize, sourceAt, sources, targets, toLevelFile } from './model';
-import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, searchPalette } from './palette';
+import { ACTIONS, BY_KIND, GROUPS, OXYD_COLORS, OXYD_FLAVORS, type PaletteEntry, paletteText, searchPalette } from './palette';
 import { publish } from './publish';
 import { canShare, check, loadError, type Problem } from './rules';
 import { currentId, deleteLevel, listLevels, loadHistory, loadStored, newId, saveHistory, saveLevel, setCurrentId } from './storage';
+import { gebietsschema, seiteUebersetzen, sprachKnopf, woerterbuch } from '../i18n';
+import EN from '../i18n/en/editor';
+import EN_SEITE from '../i18n/en/seite-editor';
+
+const t = woerterbuch(EN);
+/** Palette label of an entry in the page's language. */
+const label = (e: PaletteEntry): string => paletteText(e.label);
+
+// static texts (data-i18n in editor.html) and the language switch next to „‹ Spiel“
+seiteUebersetzen(EN_SEITE);
+document.querySelector('.ed-back')?.after(sprachKnopf('ed-lang'));
 
 type Tool = 'paint' | 'rect' | 'erase' | 'select';
 type Cell = { x: number; y: number };
@@ -74,7 +85,7 @@ let warnedStorage = false;
 function persist(): void {
   if (!saveLevel(id, level) && !warnedStorage) {
     warnedStorage = true;
-    toast('Speichern im Browser ist nicht möglich (privater Modus?). Exportiere das Level als Datei.', 5000);
+    toast(t('Speichern im Browser ist nicht möglich (privater Modus?). Exportiere das Level als Datei.'), 5000);
   }
   saveHistory(id, history.toJSON());
 }
@@ -157,7 +168,8 @@ function refresh(): void {
   renderStatus();
   $<HTMLButtonElement>('ed-undo').disabled = !history.canUndo;
   $<HTMLButtonElement>('ed-redo').disabled = !history.canRedo;
-  canvas.setAttribute('aria-label', `Spielfeld ${level.width} × ${level.height}${level.title ? `: ${level.title}` : ''}`);
+  const size = { w: level.width, h: level.height };
+  canvas.setAttribute('aria-label', level.title ? t('Spielfeld {w} × {h}: {titel}', { ...size, titel: level.title }) : t('Spielfeld {w} × {h}', size));
 }
 
 // ---------- palette ----------
@@ -179,7 +191,7 @@ function renderChips(searching: boolean): void {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ed-chip';
-    b.textContent = g || 'Alle';
+    b.textContent = g ? paletteText(g) : t('Alle');
     b.setAttribute('aria-pressed', String(!searching && g === group));
     b.addEventListener('click', () => {
       group = g;
@@ -204,22 +216,22 @@ function renderPalette(): void {
     if (!items.length) continue;
     const sec = document.createElement('section');
     const h = document.createElement('h3');
-    h.textContent = g;
+    h.textContent = paletteText(g);
     const grid = document.createElement('div');
     grid.className = 'ed-tiles';
     grid.setAttribute('role', 'listbox');
-    grid.setAttribute('aria-label', g);
+    grid.setAttribute('aria-label', paletteText(g));
     for (const e of items) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'ed-tile';
       b.setAttribute('role', 'option');
       b.setAttribute('aria-selected', String(e === entry));
-      b.title = `${e.label} (${e.kind})`;
+      b.title = `${label(e)} (${e.kind})`;
       b.append(tileCanvas(e));
-      const label = document.createElement('span');
-      label.textContent = e.label;
-      b.append(label);
+      const name = document.createElement('span');
+      name.textContent = label(e);
+      b.append(name);
       b.addEventListener('click', () => choose(e));
       grid.append(b);
     }
@@ -229,7 +241,7 @@ function renderPalette(): void {
   if (!parts.length) {
     const p = document.createElement('p');
     p.className = 'ed-empty';
-    p.textContent = `Nichts gefunden für „${q}“.`;
+    p.textContent = t('Nichts gefunden für „{q}“.', { q });
     parts.push(p);
   }
   groupsEl.replaceChildren(...parts);
@@ -244,7 +256,7 @@ function choose(e: PaletteEntry): void {
   }
   if (tool === 'erase' || tool === 'select') setTool('paint');
   picking = false;
-  for (const b of groupsEl.querySelectorAll<HTMLButtonElement>('.ed-tile')) b.setAttribute('aria-selected', String(b.title === `${e.label} (${e.kind})`));
+  for (const b of groupsEl.querySelectorAll<HTMLButtonElement>('.ed-tile')) b.setAttribute('aria-selected', String(b.title === `${label(e)} (${e.kind})`));
   renderCurrent();
 }
 
@@ -260,21 +272,25 @@ function setTool(t: Tool): void {
 function renderCurrent(): void {
   const head = document.createElement('div');
   head.className = 'ed-current-head';
-  const label = document.createElement('div');
-  if (tool === 'erase') label.innerHTML = '<strong>Radierer</strong><small>Entfernt Stein, Gegenstand und Gegner. Der Boden bleibt.</small>';
-  else if (tool === 'select') label.innerHTML = '<strong>Auswahl</strong><small>Feld antippen, um Schalter mit Türen zu verbinden.</small>';
-  else {
+  const text = document.createElement('div');
+  const s = document.createElement('strong');
+  const sm = document.createElement('small');
+  if (tool === 'erase') {
+    s.textContent = t('Radierer');
+    sm.textContent = t('Entfernt Stein, Gegenstand und Gegner. Der Boden bleibt.');
+  } else if (tool === 'select') {
+    s.textContent = t('Auswahl');
+    sm.textContent = t('Feld antippen, um Schalter mit Türen zu verbinden.');
+  } else {
     head.append(tileCanvas(entry, 40));
-    const s = document.createElement('strong');
-    s.textContent = entry.label;
-    const sm = document.createElement('small');
-    sm.textContent = tool === 'rect' ? 'Rechteck ziehen zum Füllen' : 'Tippen oder ziehen · Umschalt+Ziehen = Rechteck';
-    label.append(s, sm);
+    s.textContent = label(entry);
+    sm.textContent = tool === 'rect' ? t('Rechteck ziehen zum Füllen') : t('Tippen oder ziehen · Umschalt+Ziehen = Rechteck');
   }
-  head.append(label);
+  text.append(s, sm);
+  head.append(text);
   const parts: HTMLElement[] = [head];
   if (entry.layer === 'oxyd' && tool !== 'erase' && tool !== 'select') {
-    parts.push(colorChooser('Farbe', oxydColor, true, (c) => ((oxydColor = c), renderPalette(), renderCurrent())));
+    parts.push(colorChooser(t('Farbe'), oxydColor, true, (c) => ((oxydColor = c), renderPalette(), renderCurrent())));
     parts.push(flavorChooser(oxydFlavor, (f) => ((oxydFlavor = f), renderPalette(), renderCurrent())));
   }
   currentEl.replaceChildren(...parts);
@@ -292,8 +308,8 @@ function colorChooser(title: string, value: string, withAuto: boolean, onPick: (
     b.type = 'button';
     b.className = 'ed-color';
     b.setAttribute('aria-pressed', String(c === value));
-    b.textContent = c === 'auto' ? 'Auto' : c === '?' ? 'Zufall' : c;
-    b.setAttribute('aria-label', c === 'auto' ? 'Automatisch paarweise' : c === '?' ? 'Zufällige Farbe beim Start' : `Farbe ${c}`);
+    b.textContent = c === 'auto' ? t('Auto') : c === '?' ? t('Zufall') : c;
+    b.setAttribute('aria-label', c === 'auto' ? t('Automatisch paarweise') : c === '?' ? t('Zufällige Farbe beim Start') : t('Farbe {c}', { c }));
     if (c !== 'auto') b.style.setProperty('--sym', symbolColor(c));
     b.addEventListener('click', () => onPick(c));
     box.append(b);
@@ -304,9 +320,9 @@ function colorChooser(title: string, value: string, withAuto: boolean, onPick: (
 function flavorChooser(value: string, onPick: (f: string) => void): HTMLElement {
   const lab = document.createElement('label');
   lab.className = 'ed-field';
-  lab.textContent = 'Aussehen ';
+  lab.textContent = `${t('Aussehen')} `;
   const sel = document.createElement('select');
-  for (const f of OXYD_FLAVORS) sel.append(new Option(`Sorte ${f.toUpperCase()}`, f, false, f === value));
+  for (const f of OXYD_FLAVORS) sel.append(new Option(t('Sorte {f}', { f: f.toUpperCase() }), f, false, f === value));
   sel.addEventListener('change', () => onPick(sel.value));
   lab.append(sel);
   return lab;
@@ -321,14 +337,21 @@ function renderSelection(): void {
   }
   const { x, y } = selected;
   const h = document.createElement('h3');
-  h.textContent = `Feld ${x + 1}, ${y + 1}`;
+  h.textContent = t('Feld {x}, {y}', { x: x + 1, y: y + 1 });
   const parts: HTMLElement[] = [h];
-  const rows: [string, string][] = [['Boden', BY_KIND.get(c.f)?.label ?? c.f]];
-  if (c.s) rows.push(['Stein', c.s === 'st_oxyd' ? `Oxyd ${c.sa?.symbol === '?' ? 'Zufall' : c.sa?.symbol}` : (BY_KIND.get(c.s)?.label ?? c.s)]);
-  if (c.i) rows.push(['Gegenstand', BY_KIND.get(c.i)?.label ?? c.i]);
+  const name = (kind: string) => {
+    const e = BY_KIND.get(kind);
+    return e ? label(e) : kind;
+  };
+  const rows: [string, string][] = [[t('Boden'), name(c.f)]];
+  if (c.s) rows.push([t('Stein'), c.s === 'st_oxyd' ? `Oxyd ${c.sa?.symbol === '?' ? t('Zufall') : c.sa?.symbol}` : name(c.s)]);
+  if (c.i) rows.push([t('Gegenstand'), name(c.i)]);
   const actor = level.actors.find((a) => Math.floor(a.x) === x && Math.floor(a.y) === y);
-  if (actor) rows.push([BY_KIND.get(actor.k)?.group === 'Gegner' ? 'Gegner' : 'Kugel', BY_KIND.get(actor.k)?.label ?? actor.k]);
-  if (level.start?.x === x && level.start.y === y) rows.push(['Start', level.mainPearl ? (BY_KIND.get(`start_${level.mainPearl.slice(3)}`)?.label ?? 'Perle') : 'Murmel']);
+  if (actor) rows.push([BY_KIND.get(actor.k)?.group === 'Gegner' ? t('Gegner') : t('Kugel'), name(actor.k)]);
+  if (level.start?.x === x && level.start.y === y) {
+    const pearl = level.mainPearl ? BY_KIND.get(`start_${level.mainPearl.slice(3)}`) : undefined;
+    rows.push([t('Start'), pearl ? label(pearl) : level.mainPearl ? t('Perle') : t('Murmel')]);
+  }
   const dl = document.createElement('dl');
   for (const [k, v] of rows) {
     const dt = document.createElement('dt');
@@ -340,7 +363,7 @@ function renderSelection(): void {
   parts.push(dl);
 
   if (c.s === 'st_oxyd') {
-    parts.push(colorChooser('Farbe', c.sa?.symbol ?? '?', false, (sym) => change(() => (c.sa = { ...(c.sa ?? {}), symbol: sym }))));
+    parts.push(colorChooser(t('Farbe'), c.sa?.symbol ?? '?', false, (sym) => change(() => (c.sa = { ...(c.sa ?? {}), symbol: sym }))));
     parts.push(flavorChooser(c.sa?.flavor ?? 'b', (f) => change(() => (c.sa = { ...(c.sa ?? {}), flavor: f }))));
   }
 
@@ -351,7 +374,7 @@ function renderSelection(): void {
     for (const prop of e?.props ?? []) {
       const sel = document.createElement('select');
       const attrs = layer === 's' ? c.sa : c.ia;
-      for (const [v, label] of prop.options) sel.append(new Option(label, v, false, (attrs?.[prop.key] ?? prop.options[0][0]) === v));
+      for (const [v, text] of prop.options) sel.append(new Option(paletteText(text), v, false, (attrs?.[prop.key] ?? prop.options[0][0]) === v));
       sel.addEventListener('change', () =>
         change(() => {
           const cell = cellOf(level, x, y)!;
@@ -361,7 +384,7 @@ function renderSelection(): void {
           else a[prop.key] = sel.value;
         }),
       );
-      parts.push(field(prop.label, sel));
+      parts.push(field(paletteText(prop.label), sel));
     }
   }
 
@@ -371,10 +394,11 @@ function renderSelection(): void {
     ta.maxLength = MAX_DOC_TEXT;
     ta.rows = 4;
     ta.value = c.ia?.text ?? '';
-    ta.placeholder = 'Was das Dokument zeigt, wenn die Murmel es aufsammelt';
-    const count = note(`${[...ta.value].length} / ${MAX_DOC_TEXT} Zeichen`);
+    ta.placeholder = t('Was das Dokument zeigt, wenn die Murmel es aufsammelt');
+    const chars = () => t('{n} / {max} Zeichen', { n: [...ta.value].length, max: MAX_DOC_TEXT });
+    const count = note(chars());
     count.setAttribute('aria-live', 'polite');
-    ta.addEventListener('input', () => (count.textContent = `${[...ta.value].length} / ${MAX_DOC_TEXT} Zeichen`));
+    ta.addEventListener('input', () => (count.textContent = chars()));
     ta.addEventListener('change', () =>
       change(() => {
         const cell = cellOf(level, x, y)!;
@@ -384,21 +408,21 @@ function renderSelection(): void {
         else delete cell.ia.text;
       }),
     );
-    parts.push(field('Text', ta), count, note('Nur Text, keine Links oder Formatierung. Texte sind mit dem Level öffentlich; bitte keine persönlichen Daten.'));
+    parts.push(field(t('Text'), ta), count, note(t('Nur Text, keine Links oder Formatierung. Texte sind mit dem Level öffentlich; bitte keine persönlichen Daten.')));
   }
 
   const src = sourceAt(level, x, y);
   if (src) {
     const tg = targets(level);
     const sel = document.createElement('select');
-    sel.append(new Option('— kein Ziel —', '', false, !src.attrs.target));
+    sel.append(new Option(t('— kein Ziel —'), '', false, !src.attrs.target));
     for (const t of tg) sel.append(new Option(`${t.name} (${t.x + 1}, ${t.y + 1})`, t.name, false, t.name === src.attrs.target));
-    if (src.attrs.target && !tg.some((t) => t.name === src.attrs.target)) sel.append(new Option(`fehlt: ${src.attrs.target}`, src.attrs.target, false, true));
+    if (src.attrs.target && !tg.some((t) => t.name === src.attrs.target)) sel.append(new Option(t('fehlt: {ziel}', { ziel: src.attrs.target }), src.attrs.target, false, true));
     sel.addEventListener('change', () => change(() => (sourceAt(level, x, y)!.attrs.target = sel.value)));
-    parts.push(field('Ziel', sel));
+    parts.push(field(t('Ziel'), sel));
     const pick = document.createElement('button');
     pick.type = 'button';
-    pick.textContent = picking ? 'Tippe auf ein Ziel … (Esc bricht ab)' : 'Ziel auf der Karte wählen';
+    pick.textContent = picking ? t('Tippe auf ein Ziel … (Esc bricht ab)') : t('Ziel auf der Karte wählen');
     pick.setAttribute('aria-pressed', String(picking));
     pick.disabled = tg.length === 0;
     pick.addEventListener('click', () => {
@@ -406,22 +430,28 @@ function renderSelection(): void {
       renderSelection();
     });
     parts.push(pick);
-    if (!tg.length) parts.push(note('Setze zuerst ein Ziel: eine Tür (Schalter und Türen) oder einen Laser.'));
+    if (!tg.length) parts.push(note(t('Setze zuerst ein Ziel: eine Tür (Schalter und Türen) oder einen Laser.')));
     const act = document.createElement('select');
-    for (const [v, label] of ACTIONS) act.append(new Option(label, v, false, (src.attrs.action ?? '') === v));
+    for (const [v, text] of ACTIONS) act.append(new Option(paletteText(text), v, false, (src.attrs.action ?? '') === v));
     act.addEventListener('change', () => change(() => (sourceAt(level, x, y)!.attrs.action = act.value)));
-    parts.push(field('Aktion', act));
+    parts.push(field(t('Aktion'), act));
     if (src.entry.kind === 'st_timer') {
       const iv = document.createElement('select');
-      for (const s of ['0.5', '1', '2', '3', '5', '10']) iv.append(new Option(`${s.replace('.', ',')} s`, s, false, (src.attrs.interval ?? '1') === s));
+      for (const s of ['0.5', '1', '2', '3', '5', '10']) iv.append(new Option(`${Number(s).toLocaleString(gebietsschema())} s`, s, false, (src.attrs.interval ?? '1') === s));
       iv.addEventListener('change', () => change(() => (sourceAt(level, x, y)!.attrs.interval = iv.value)));
-      parts.push(field('Takt', iv));
+      parts.push(field(t('Takt'), iv));
     }
   }
   const tgt = targets(level).find((t) => t.x === x && t.y === y);
   if (tgt) {
     const from = sources(level).filter((s) => s.target === tgt.name);
-    parts.push(note(from.length ? `Gesteuert von: ${from.map((s) => `${s.entry.label} (${s.x + 1}, ${s.y + 1})`).join(', ')}` : `Name ${tgt.name}. Noch kein Schalter verbunden.`));
+    parts.push(
+      note(
+        from.length
+          ? t('Gesteuert von: {liste}', { liste: from.map((s) => `${label(s.entry)} (${s.x + 1}, ${s.y + 1})`).join(', ') })
+          : t('Name {name}. Noch kein Schalter verbunden.', { name: tgt.name }),
+      ),
+    );
   }
   selectionEl.replaceChildren(...parts);
   selectionEl.hidden = false;
@@ -452,7 +482,7 @@ function change(fn: () => void): void {
 function renderStatus(): void {
   const errors = problems.filter((p) => p.level === 'fehler');
   const h = document.createElement('h3');
-  h.textContent = errors.length ? `${errors.length} ${errors.length === 1 ? 'Problem' : 'Probleme'} vor dem Teilen` : 'Bereit zum Teilen';
+  h.textContent = errors.length === 1 ? t('1 Problem vor dem Teilen') : errors.length ? t('{n} Probleme vor dem Teilen', { n: errors.length }) : t('Bereit zum Teilen');
   h.className = errors.length ? 'bad' : 'good';
   const ul = document.createElement('ul');
   for (const p of problems) {
@@ -461,7 +491,7 @@ function renderStatus(): void {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ed-problem';
-    b.textContent = `${p.level === 'fehler' ? 'Fehler' : 'Hinweis'}: ${p.text}`;
+    b.textContent = p.level === 'fehler' ? t('Fehler: {text}', { text: p.text }) : t('Hinweis: {text}', { text: p.text });
     b.disabled = !p.cells?.length;
     b.addEventListener('click', () => {
       marked = p.cells ?? [];
@@ -506,7 +536,7 @@ function pipette(c: Cell): void {
     oxydFlavor = cell.sa?.flavor ?? 'b';
   }
   choose(e);
-  toast(`Pipette: ${e.label}`, 1200);
+  toast(t('Pipette: {name}', { name: label(e) }), 1200);
 }
 
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -517,14 +547,14 @@ canvas.addEventListener('pointerdown', (e) => {
   if (e.button === 2 || e.altKey) return pipette(c);
   if (e.button !== 0) return;
   if (picking && selected) {
-    const t = targets(level).find((t) => t.x === c.x && t.y === c.y);
-    if (t) {
+    const tg = targets(level).find((g) => g.x === c.x && g.y === c.y);
+    if (tg) {
       const s = selected;
-      change(() => (sourceAt(level, s.x, s.y)!.attrs.target = t.name));
+      change(() => (sourceAt(level, s.x, s.y)!.attrs.target = tg.name));
       picking = false;
       renderSelection();
-      toast(`Verbunden mit ${t.name}`, 1500);
-    } else toast('Das ist kein Ziel. Tippe auf eine Tür oder einen Laser, oder drücke Esc.', 2000);
+      toast(t('Verbunden mit {name}', { name: tg.name }), 1500);
+    } else toast(t('Das ist kein Ziel. Tippe auf eine Tür oder einen Laser, oder drücke Esc.'), 2000);
     return;
   }
   if (tool === 'select') {
@@ -603,8 +633,8 @@ document.addEventListener('keydown', (e) => {
     picking = false;
     renderSelection();
   } else if (!typing && !mod && !dialog.open) {
-    const t = ({ b: 'paint', r: 'rect', e: 'erase', v: 'select' } as Record<string, Tool>)[e.key.toLowerCase()];
-    if (t) setTool(t);
+    const next = ({ b: 'paint', r: 'rect', e: 'erase', v: 'select' } as Record<string, Tool>)[e.key.toLowerCase()];
+    if (next) setTool(next);
   }
 });
 
@@ -670,7 +700,7 @@ function basedOnField(): HTMLElement {
     autocomplete: 'off',
     enterKeyHint: 'done',
     className: 'ed-based-on',
-    placeholder: 'etwa „Ronald Lamprecht (GPL)“',
+    placeholder: t('etwa „Ronald Lamprecht (GPL)“'),
   });
   input.setAttribute('aria-describedby', 'ed-based-on-hint');
   let before = clone(level);
@@ -692,9 +722,9 @@ function basedOnField(): HTMLElement {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') input.blur();
   });
-  const box = field('Vorlage/Herkunft (optional)', input);
+  const box = field(t('Vorlage/Herkunft (optional)'), input);
   box.classList.add('ed-field-stack');
-  const hint = note(`Erscheint beim Level als „Vorlage: …“, z. B. „Enigma-Level von Autor (Lizenz)“. Höchstens ${MAX_BASED_ON} Zeichen; leer lassen, wenn es keine Vorlage gibt.`);
+  const hint = note(t('Erscheint beim Level als „Vorlage: …“, z. B. „Enigma-Level von Autor (Lizenz)“. Höchstens {max} Zeichen; leer lassen, wenn es keine Vorlage gibt.', { max: MAX_BASED_ON }));
   hint.id = 'ed-based-on-hint';
   const wrap = document.createElement('div');
   wrap.append(box, hint);
@@ -707,9 +737,9 @@ function showLevelMenu(): void {
   const w = Object.assign(document.createElement('input'), { type: 'number', min: String(MIN_W), max: String(MAX_W), value: String(level.width), inputMode: 'numeric' });
   const h = Object.assign(document.createElement('input'), { type: 'number', min: String(MIN_H), max: String(MAX_H), value: String(level.height), inputMode: 'numeric' });
   size.append(
-    field('Breite', w),
-    field('Höhe', h),
-    button('Größe ändern', () => {
+    field(t('Breite'), w),
+    field(t('Höhe'), h),
+    button(t('Größe ändern'), () => {
       const before = clone(level);
       level = resize(level, Number(w.value), Number(h.value));
       if (selected && !cellOf(level, selected.x, selected.y)) selected = null;
@@ -719,7 +749,7 @@ function showLevelMenu(): void {
     }),
   );
   const styleSel = document.createElement('select');
-  for (const [s, label] of ED_STYLES) styleSel.append(new Option(label, s, false, s === style));
+  for (const [s, name] of ED_STYLES) styleSel.append(new Option(paletteText(name), s, false, s === style));
   styleSel.addEventListener('change', async () => {
     style = styleSel.value as EdStyle;
     try {
@@ -732,21 +762,21 @@ function showLevelMenu(): void {
     refresh();
   });
   showDialog(
-    'Level',
+    t('Level'),
     [
       basedOnField(),
       size,
-      note(`Inhalt bleibt oben links. ${MIN_W}–${MAX_W} × ${MIN_H}–${MAX_H} Felder.`),
-      field('Stil der Vorschau', styleSel),
-      note('Alles wird automatisch in diesem Browser gespeichert.'),
-      note(LICENSE_NOTE),
+      note(t('Inhalt bleibt oben links. {minW}–{maxW} × {minH}–{maxH} Felder.', { minW: MIN_W, maxW: MAX_W, minH: MIN_H, maxH: MAX_H })),
+      field(t('Stil der Vorschau'), styleSel),
+      note(t('Alles wird automatisch in diesem Browser gespeichert.')),
+      note(t(LICENSE_NOTE)),
     ],
     [
-      ['Neues Level', () => (close(), open(newId(), newLevel()))],
-      ['Meine Levels', showMyLevels],
-      ['Exportieren', exportFile],
-      ['Importieren', importFile],
-      ['Fertig', close, 'primary'],
+      [t('Neues Level'), () => (close(), open(newId(), newLevel()))],
+      [t('Meine Levels'), showMyLevels],
+      [t('Exportieren'), exportFile],
+      [t('Importieren'), importFile],
+      [t('Fertig'), close, 'primary'],
     ],
   );
 }
@@ -758,23 +788,24 @@ function showMyLevels(): void {
   for (const s of list) {
     const li = document.createElement('li');
     const name = document.createElement('span');
-    name.textContent = `${s.file.title || 'Ohne Titel'}${s.id === id ? ' (geöffnet)' : ''}`;
+    const titel = s.file.title || t('Ohne Titel');
+    name.textContent = s.id === id ? t('{titel} (geöffnet)', { titel }) : titel;
     const when = document.createElement('small');
-    when.textContent = new Date(s.updated).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+    when.textContent = new Date(s.updated).toLocaleString(gebietsschema(), { dateStyle: 'medium', timeStyle: 'short' });
     const info = document.createElement('div');
     info.append(name, when);
-    const openB = button('Öffnen', () => {
+    const openB = button(t('Öffnen'), () => {
       const l = loadStored(s.id);
-      if (!l) return toast('Dieses Level lässt sich nicht öffnen.');
+      if (!l) return toast(t('Dieses Level lässt sich nicht öffnen.'));
       close();
       const h = loadHistory(s.id);
       open(s.id, l, History.from(h));
     });
     let armed = false;
-    const del = button('Löschen', () => {
+    const del = button(t('Löschen'), () => {
       if (!armed) {
         armed = true;
-        del.textContent = 'Wirklich löschen?';
+        del.textContent = t('Wirklich löschen?');
         del.classList.add('danger');
         return;
       }
@@ -785,9 +816,9 @@ function showMyLevels(): void {
     li.append(info, openB, del);
     ul.append(li);
   }
-  showDialog('Meine Levels', list.length ? [ul] : ['Noch keine eigenen Levels.'], [
-    ['Neues Level', () => (close(), open(newId(), newLevel()))],
-    ['Fertig', close, 'primary'],
+  showDialog(t('Meine Levels'), list.length ? [ul] : [t('Noch keine eigenen Levels.')], [
+    [t('Neues Level'), () => (close(), open(newId(), newLevel()))],
+    [t('Fertig'), close, 'primary'],
   ]);
 }
 
@@ -800,7 +831,7 @@ function exportFile(): void {
   a.download = `${slug(level.title)}.murmel.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(`Gespeichert als ${a.download} (Lizenz CC BY-SA 4.0)`);
+  toast(t('Gespeichert als {datei} (Lizenz CC BY-SA 4.0)', { datei: a.download }));
 }
 
 function importFile(): void {
@@ -824,9 +855,9 @@ function importFile(): void {
       const { level: l, dropped } = fromLevelFile(sanitizeLevel(raw, nid));
       close();
       open(nid, l);
-      toast(dropped.length ? `Importiert, ohne: ${dropped.join(', ')}` : `„${l.title || 'Level'}“ importiert.`);
+      toast(dropped.length ? t('Importiert, ohne: {liste}', { liste: dropped.join(', ') }) : t('„{titel}“ importiert.', { titel: l.title || t('Level') }));
     } catch (e) {
-      toast(e instanceof LinkError ? e.message : 'Die Datei lässt sich nicht lesen.', 4000);
+      toast(e instanceof LinkError ? e.text : t('Die Datei lässt sich nicht lesen.'), 4000);
     }
   });
   pick.click();
@@ -840,7 +871,7 @@ const gameUrl = () => new URL('./', location.href);
 async function playtest(): Promise<void> {
   const err = loadError(level);
   if (err) {
-    showDialog('Noch nicht spielbar', [`Das Spiel kann das Level so nicht laden: ${err}`], [['OK', close, 'primary']]);
+    showDialog(t('Noch nicht spielbar'), [t('Das Spiel kann das Level so nicht laden: {grund}', { grund: err })], [[t('OK'), close, 'primary']]);
     return;
   }
   persist();
@@ -860,13 +891,16 @@ async function share(): Promise<void> {
     }
     marked = errors.flatMap((p) => p.cells ?? []);
     draw();
-    showDialog('Vor dem Teilen beheben', [ul], [['OK', close, 'primary']]);
+    showDialog(t('Vor dem Teilen beheben'), [ul], [[t('OK'), close, 'primary']]);
     return;
   }
   const data = await encodeLevel(toLevelFile(level, id));
   const kind = linkLength(data);
   if (kind === 'zu-lang') {
-    showDialog('Level zu groß für einen Link', ['Exportiere es als Datei und teile die Datei.'], [['Exportieren', () => (exportFile(), close()), 'primary'], ['Abbrechen', close]]);
+    showDialog(t('Level zu groß für einen Link'), [t('Exportiere es als Datei und teile die Datei.')], [
+      [t('Exportieren'), () => (exportFile(), close()), 'primary'],
+      [t('Abbrechen'), close],
+    ]);
     return;
   }
   const url = `${gameUrl().href}${LINK_PREFIX}${data}`;
@@ -875,27 +909,32 @@ async function share(): Promise<void> {
   out.readOnly = true;
   out.value = url;
   out.className = 'ed-link';
-  out.setAttribute('aria-label', 'Link zum Level');
+  out.setAttribute('aria-label', t('Link zum Level'));
   out.addEventListener('focus', () => out.select());
-  const body: (HTMLElement | string)[] = [out, `${url.length} Zeichen.${kind === 'lang' ? ' Langer Link: manche Messenger kürzen ihn – im Zweifel als Datei teilen.' : ''}`, `${LICENSE_NOTE} Wer den Link hat, kann das Level spielen und im Editor öffnen.`];
+  const length = t('{n} Zeichen.', { n: url.length });
+  const body: (HTMLElement | string)[] = [
+    out,
+    kind === 'lang' ? `${length} ${t('Langer Link: manche Messenger kürzen ihn – im Zweifel als Datei teilen.')}` : length,
+    `${t(LICENSE_NOTE)} ${t('Wer den Link hat, kann das Level spielen und im Editor öffnen.')}`,
+  ];
   const buttons: [string, () => void, string?][] = [
     [
-      'Link kopieren',
+      t('Link kopieren'),
       async () => {
         try {
           await navigator.clipboard.writeText(url);
-          toast('Link kopiert.');
+          toast(t('Link kopiert.'));
         } catch {
           out.focus();
-          toast('Kopieren nicht erlaubt – Link ist markiert.');
+          toast(t('Kopieren nicht erlaubt – Link ist markiert.'));
         }
       },
       'primary',
     ],
   ];
-  if (navigator.share) buttons.push(['Teilen …', () => void navigator.share({ title: `Murmel: ${level.title}`, url }).catch(() => {})]);
-  buttons.push(['Ausprobieren', () => window.open(url, '_blank', 'noopener')], ['Schließen', close]);
-  showDialog('Level teilen', body, buttons);
+  if (navigator.share) buttons.push([t('Teilen …'), () => void navigator.share({ title: `Murmel: ${level.title}`, url }).catch(() => {})]);
+  buttons.push([t('Ausprobieren'), () => window.open(url, '_blank', 'noopener')], [t('Schließen'), close]);
+  showDialog(t('Level teilen'), body, buttons);
 }
 
 $('ed-publish').addEventListener('click', () => {
@@ -933,10 +972,11 @@ async function start(): Promise<void> {
       const nid = newId();
       const { level: l, dropped } = fromLevelFile(await decodeLevel(data));
       open(nid, l);
-      toast(`Geteiltes Level geöffnet und unter „Meine Levels“ gespeichert.${dropped.length ? ` Ohne: ${dropped.join(', ')}` : ''}`, 4000);
+      const opened = t('Geteiltes Level geöffnet und unter „Meine Levels“ gespeichert.');
+      toast(dropped.length ? `${opened} ${t('Ohne: {liste}', { liste: dropped.join(', ') })}` : opened, 4000);
       return;
     } catch (e) {
-      toast(e instanceof LinkError ? e.message : 'Der Level-Link ist beschädigt.', 4000);
+      toast(e instanceof LinkError ? e.text : t('Der Level-Link ist beschädigt.'), 4000);
     }
   }
   const cid = currentId();

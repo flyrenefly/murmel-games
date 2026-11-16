@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { setzeSpracheFuerTest } from './i18n';
 import { emptyProgress, type Progress, recordAttempt, recordWin } from './game/progress';
 import { Abgleich, abgleichen, type Antwort, type ServerStand, statusText, type SyncApi, syncApi } from './sync';
 
@@ -278,4 +279,16 @@ test('statusText', () => {
   expect(statusText({ art: 'ok', zeit: new Date('2026-11-13T14:32:00').toISOString() }, heute)).toBe('Auf allen Geräten abgeglichen um 14:32.');
   expect(statusText({ art: 'ok', zeit: new Date('2026-11-12T09:00:00').toISOString() }, heute)).toMatch(/am 12\. Nov/);
   expect(statusText({ art: 'offline' })).toMatch(/Wartet auf Netz/);
+});
+
+test('statusText auf Englisch', () => {
+  setzeSpracheFuerTest('en');
+  try {
+    const heute = new Date('2026-11-13T18:00:00');
+    expect(statusText({ art: 'ok', zeit: new Date('2026-11-13T14:32:00').toISOString() }, heute)).toBe('Synced across all devices at 14:32.');
+    expect(statusText({ art: 'ok', zeit: new Date('2026-11-12T09:00:00').toISOString() }, heute)).toBe('Synced across all devices on 12 Nov.');
+    expect(statusText({ art: 'abgemeldet' })).toBe('Only on this device. With an account, on all your devices.');
+  } finally {
+    setzeSpracheFuerTest(null);
+  }
 });

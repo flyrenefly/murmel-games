@@ -773,3 +773,37 @@ body[data-mode='play'][data-steer='tilt'] #btn-rest {
   max-width: calc(100vw - 32px);
   text-align: center;
 }
+
+/* Sprachwahl (docs/SPEC-englisch.md): unter den Knöpfen der Startkarte und im Fortschritt */
+#ov-sprache[hidden] {
+  display: none;
+}
+.card .sprache {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+.card button.sprache-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--muted);
+  font-size: 15px;
+}
+.card button.sprache-knopf:hover,
+.card button.sprache-knopf:focus-visible {
+  color: inherit;
+  border-color: var(--accent);
+}
+.card button.sprache-knopf svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}

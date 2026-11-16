@@ -1,5 +1,9 @@
 // Accounts in the game: talks to /api/konto (server/src/konten.ts). Everything is optional – without
 // an account, or offline, the game plays as before; account calls then report "nicht erreichbar".
+import { sprachKopf, woerterbuch } from './i18n';
+import EN from './i18n/en/konto';
+
+const t = woerterbuch(EN);
 
 export interface Konto {
   email: string;
@@ -14,7 +18,7 @@ export interface Konto {
 
 /** Anmeldung über einen Anbieter (Konten Stufe 2, docs/SPEC-konten.md). */
 export type Anbieter = 'google' | 'apple' | 'github';
-export const ANBIETER_NAME: Record<Anbieter | 'mail', string> = { mail: 'Mail-Link', google: 'Google', apple: 'Apple', github: 'GitHub' };
+export const ANBIETER_NAME: Record<Anbieter | 'mail', string> = { mail: t('Mail-Link'), google: 'Google', apple: 'Apple', github: 'GitHub' };
 
 export interface Anmeldeweg {
   anbieter: Anbieter | 'mail';
@@ -30,7 +34,7 @@ export type KontoStand =
 /** Result of an account call: data, or a message that can be shown as it is. */
 export type Ergebnis<T> = { ok: true; daten: T } | { ok: false; fehler: string; status: number };
 
-export const OFFLINE = 'Das Konto ist gerade nicht erreichbar. Spielen geht trotzdem – auch ohne Konto.';
+export const OFFLINE = t('Das Konto ist gerade nicht erreichbar. Spielen geht trotzdem – auch ohne Konto.');
 
 /** The one-time token from a mail link (https://murmel.games/#anmelden=…), or null. */
 export function loginTokenFromHash(hash: string): string | null {
@@ -50,17 +54,17 @@ export function anbieterRueckkehr(hash: string): { vorgang: string } | { fehler:
 export function anbieterFehlerText(grund: string): string {
   switch (grund) {
     case 'abgebrochen':
-      return 'Anmeldung abgebrochen. Du kannst es jederzeit noch einmal versuchen.';
+      return t('Anmeldung abgebrochen. Du kannst es jederzeit noch einmal versuchen.');
     case 'abgelaufen':
-      return 'Die Anmeldung ist abgelaufen. Bitte versuch es noch einmal.';
+      return t('Die Anmeldung ist abgelaufen. Bitte versuch es noch einmal.');
     case 'adresse':
-      return 'Der Anbieter hat keine bestätigte Mailadresse geschickt. Bestätige deine Adresse dort oder melde dich per Mail-Link an.';
+      return t('Der Anbieter hat keine bestätigte Mailadresse geschickt. Bestätige deine Adresse dort oder melde dich per Mail-Link an.');
     case 'zuviele':
-      return 'Zu viele Anmeldeversuche von hier. Bitte warte ein paar Minuten.';
+      return t('Zu viele Anmeldeversuche von hier. Bitte warte ein paar Minuten.');
     case 'pruefung':
-      return 'Die Antwort des Anbieters ließ sich nicht prüfen. Bitte versuch es noch einmal.';
+      return t('Die Antwort des Anbieters ließ sich nicht prüfen. Bitte versuch es noch einmal.');
     default:
-      return 'Der Anbieter ist gerade nicht erreichbar. Bitte versuch es später noch einmal oder melde dich per Mail-Link an.';
+      return t('Der Anbieter ist gerade nicht erreichbar. Bitte versuch es später noch einmal oder melde dich per Mail-Link an.');
   }
 }
 
@@ -85,7 +89,7 @@ export class KontoApi {
       res = await this.fetchFn(this.base + path, {
         method,
         credentials: 'same-origin',
-        headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+        headers: body === undefined ? sprachKopf() : { ...sprachKopf(), 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch {
@@ -145,9 +149,9 @@ export class KontoApi {
 /** Message for a failed or cancelled passkey prompt of the browser. */
 export function passkeyFehler(err: unknown): string {
   const name = (err as { name?: string } | null)?.name;
-  if (name === 'NotAllowedError' || name === 'AbortError') return 'Abgebrochen. Du kannst es jederzeit noch einmal versuchen.';
-  if (name === 'InvalidStateError') return 'Auf diesem Gerät gibt es schon einen Passkey für Murmel.';
-  return 'Der Passkey hat gerade nicht geklappt. Du kannst dich weiter per Mail-Link anmelden.';
+  if (name === 'NotAllowedError' || name === 'AbortError') return t('Abgebrochen. Du kannst es jederzeit noch einmal versuchen.');
+  if (name === 'InvalidStateError') return t('Auf diesem Gerät gibt es schon einen Passkey für Murmel.');
+  return t('Der Passkey hat gerade nicht geklappt. Du kannst dich weiter per Mail-Link anmelden.');
 }
 
 export const passkeysMoeglich = (): boolean => typeof window !== 'undefined' && 'PublicKeyCredential' in window;

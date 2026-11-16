@@ -6,12 +6,16 @@
     <meta name="theme-color" content="#05050c" />
     <title>Murmel – Murmelspiel wie Oxyd und Enigma, kostenlos im Browser</title>
     <meta
+      data-i18n-attr="content"
       name="description"
       content="Murmelspiel wie Oxyd und Enigma: Murmel mit der Maus rollen, Oxyd-Steine paarweise öffnen, Enigma-Levels spielen. Kostenlos im Browser, ohne Installation."
     />
-    <meta name="keywords" content="Oxyd, Enigma, Murmelspiel, Oxyd online, Enigma Spiel, Oxyd Browser, Murmel Rätselspiel, Atari ST Spiel, Oxyd Nachfolger, Geschicklichkeitsspiel, Puzzle, kostenlos, Open Source" />
+    <meta data-i18n-attr="content" name="keywords" content="Oxyd, Enigma, Murmelspiel, Oxyd online, Enigma Spiel, Oxyd Browser, Murmel Rätselspiel, Atari ST Spiel, Oxyd Nachfolger, Geschicklichkeitsspiel, Puzzle, kostenlos, Open Source" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href="https://murmel.games/" />
+    <link rel="alternate" hreflang="de" href="https://murmel.games/" />
+    <link rel="alternate" hreflang="en" href="https://murmel.games/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://murmel.games/" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -19,9 +23,10 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Murmel" />
     <meta property="og:locale" content="de_DE" />
+    <meta property="og:locale:alternate" content="en_US" />
     <meta property="og:url" content="https://murmel.games/" />
-    <meta property="og:title" content="Murmel – Murmelspiel wie Oxyd und Enigma im Browser" />
-    <meta property="og:description" content="Rolle die Murmel, öffne die Oxyd-Steine paarweise – mit Levels aus Enigma. Kostenlos, ohne Installation, freie Software." />
+    <meta data-i18n-attr="content" property="og:title" content="Murmel – Murmelspiel wie Oxyd und Enigma im Browser" />
+    <meta data-i18n-attr="content" property="og:description" content="Rolle die Murmel, öffne die Oxyd-Steine paarweise – mit Levels aus Enigma. Kostenlos, ohne Installation, freie Software." />
     <meta property="og:image" content="https://murmel.games/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -79,17 +84,17 @@
         <span id="hud-pairs"></span>
         <span id="hud-falls"></span>
         <span id="hud-items" hidden></span>
-        <span id="hud-esc">Esc = Menü</span>
+        <span id="hud-esc" data-i18n>Esc = Menü</span>
       </div>
       <div class="hud-right">
-        <button id="btn-rest" title="Die jetzige Haltung wird zur Ruhelage (oder doppelt aufs Spielfeld tippen)">Ruhelage</button>
-        <button id="btn-rotate" title="Inventar drehen (Rechtsklick oder Tab)" hidden>Drehen</button>
-        <button id="btn-drop" title="Ersten Gegenstand ablegen (Leertaste oder Klick)" hidden>Ablegen</button>
-        <button id="btn-swap" title="Murmel wechseln (Leertaste oder Klick)" hidden>Murmel wechseln</button>
-        <button id="btn-levels" title="Levelauswahl">Levels</button>
-        <button id="btn-tipp" title="Den nächsten Schritt zeigen (H)" hidden>Tipp?</button>
-        <button id="btn-restart" title="Neustart (R)">Neustart</button>
-        <button id="btn-theme" title="Grafikstil wechseln (T)">Stil</button>
+        <button id="btn-rest" data-i18n data-i18n-attr="title" title="Die jetzige Haltung wird zur Ruhelage (oder doppelt aufs Spielfeld tippen)">Ruhelage</button>
+        <button id="btn-rotate" data-i18n data-i18n-attr="title" title="Inventar drehen (Rechtsklick oder Tab)" hidden>Drehen</button>
+        <button id="btn-drop" data-i18n data-i18n-attr="title" title="Ersten Gegenstand ablegen (Leertaste oder Klick)" hidden>Ablegen</button>
+        <button id="btn-swap" data-i18n data-i18n-attr="title" title="Murmel wechseln (Leertaste oder Klick)" hidden>Murmel wechseln</button>
+        <button id="btn-levels" data-i18n data-i18n-attr="title" title="Levelauswahl">Levels</button>
+        <button id="btn-tipp" data-i18n data-i18n-attr="title" title="Den nächsten Schritt zeigen (H)" hidden>Tipp?</button>
+        <button id="btn-restart" data-i18n data-i18n-attr="title" title="Neustart (R)">Neustart</button>
+        <button id="btn-theme" data-i18n-attr="title" title="Grafikstil wechseln (T)">Stil</button>
       </div>
     </header>
 
@@ -100,22 +105,23 @@
         <div id="level-list" hidden></div>
         <div id="ov-form" hidden></div>
         <div id="ov-buttons"></div>
+        <div id="ov-sprache" hidden></div>
       </div>
     </div>
 
     <div id="toast" hidden></div>
 
-    <div id="loading">Murmel wird geladen …</div>
+    <div id="loading" data-i18n>Murmel wird geladen …</div>
 
     <noscript>
-      <h1>Murmel – Murmelspiel wie Oxyd und Enigma im Browser</h1>
-      <p>
+      <h1 data-i18n>Murmel – Murmelspiel wie Oxyd und Enigma im Browser</h1>
+      <p data-i18n-html>
         Murmel ist ein freies Murmel-Rätselspiel in der Tradition von Oxyd und Enigma. Zum Spielen
         wird JavaScript benötigt. Mehr über das Spiel: <a href="ueber.html">Über Murmel</a>.
       </p>
     </noscript>
 
-    <footer id="credits">
+    <footer id="credits" data-i18n-html>
       <a href="ueber.html">Über das Spiel</a> · <a href="forum.html">Forum</a> · <a href="impressum.html">Impressum</a> ·
       <a href="datenschutz.html">Datenschutz</a> ·
       Freie Software (GPL-3.0-or-later) ·
