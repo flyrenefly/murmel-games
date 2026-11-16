@@ -13,7 +13,7 @@
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { levelTexts } from './lib/enigma-texte.mjs';
-import { allTileKinds, api1Kind, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, pruneCharBranches, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
+import { allTileKinds, api1Kind, bodies, api1VariableKinds, callbacksBuild, levelLibs, libFunctions, luaCode, luaFunctions, luaInit, luaProblems, pruneCharBranches, RUNTIME_WORLD, runtimeKinds } from './lua-check.mjs';
 
 const [exportDir, enigmaData] = process.argv.slice(2);
 if (!exportDir || !enigmaData) {
@@ -333,14 +333,29 @@ function* allCells(w) {
   for (let i = 0; i < w.cells.length; i++) for (const o of w.cells[i]) if (o) yield { x: i % w.w, y: Math.floor(i / w.w), o };
 }
 
+/**
+ * Empty attributes are left out (Enigma's default) – except a level's own "_…" attributes: Lua reads
+ * them back as "" (Enigmastermind: `"chooser_" .. sender["_col"]` with _col = "").
+ */
+/**
+ * More map keys after the readable ones: CJK ideographs, each one UTF-16 code unit like the others
+ * (the game reads rows by index). Only levels with more cell kinds than the readable keys use them
+ * (Chess, Bugs & Rock'n'Roll: every floor its own random force).
+ */
+const EXTRA_KEYS = Array.from({ length: 4000 }, (_, i) => String.fromCharCode(0x4e00 + i));
+
+function keepValue(k, v) {
+  return v !== '' || k.startsWith('_');
+}
+
 function objectDef(x, y, o) {
   const a = {};
-  for (const [k, v] of Object.entries(o)) if (k !== 'k' && KEEP_ATTR.test(k) && v !== '') a[k] = v;
+  for (const [k, v] of Object.entries(o)) if (k !== 'k' && KEEP_ATTR.test(k) && keepValue(k, v)) a[k] = v;
   return { x, y, k: o.k, a };
 }
 
 /** Lua of a level: code, its functions and the result of running its init on the export. */
-async function analyzeLua(xml, exp) {
+async function analyzeLua(xml, exp, initSteps, initNames = false) {
   let code = luaCode(xml);
   if (!code) return null;
   // Enigma's Lua API 1 (api1init.lua) for levels with compatibility below 1.10
@@ -373,11 +388,11 @@ async function analyzeLua(xml, exp) {
   }
   let init;
   try {
-    init = await luaInit(code, exp.world, libs, api1);
+    init = await luaInit(code, exp.world, libs, api1, initSteps, initNames);
   } catch (e) {
     init = { world: {}, error: String(e) };
   }
-  return { code, libs, api1, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
+  return { code, libs, api1, initSteps, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
 }
 
 /** Images of an Oxyd stone of a flavor (e: b's images plus the peephole mask st_oxyde, models-2d.lua). */
@@ -431,6 +446,25 @@ const KNOWN_BROKEN = new Map([
   // the horse plays Nim: it must press the trigger at home (horsehome) and push boulders; in Murmel
   // only marbles press triggers and scales (Enigma: every actor that does not fly, Trigger::actor_enter)
   ['enigma_ii/ral52_1', 'Pferd muss Auslöser drücken (Akteure auf Auslösern nicht gebaut)'],
+]);
+
+/**
+ * Levels whose init ends in a loop that waits for what its own world building makes – on the exported
+ * world (already built) it never ends. Each was read: the loop is the last call and only writes the
+ * world (ignored in Murmel's init); everything the callbacks need is defined before. Instruction budget.
+ */
+export const INIT_LOOPS = new Map([
+  // trigger_laser(): repeat … until 18 triggers without a target got one (the export has all targets)
+  ['enigma_ix/just19_1', 1_000_000],
+]);
+
+/**
+ * Levels whose init finds names its own world building gave and then overwrites them (on the export
+ * they are gone): the import collects them (LevelLua.initNames). Opt-in, as it adds data to the level.
+ */
+export const INIT_NAMES = new Set([
+  // spots_left = no["spot_left#*"]: the water floors become Oxyd stones on new floors in the same init
+  'enigma_viii/andreas58_1',
 ]);
 
 function convert(pack, meta, xml, exp, lua) {
@@ -511,7 +545,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
 
   const legend = {};
   const keyOf = new Map();
-  const pool = [...'.#o~,;:-_=+*%&$§!|/<>()[]{}^`\'"0123456789abcdefghijklmnpqrstuvwxyzÄÖÜäöüßéèêàâçñ']; // '@' and A–Z have own meanings
+  const pool = [...'.#o~,;:-_=+*%&$§!|/<>()[]{}^`\'"0123456789abcdefghijklmnpqrstuvwxyzÄÖÜäöüßéèêàâçñ', ...EXTRA_KEYS]; // '@' and A–Z have own meanings
   let oxyds = 0;
   const rows = [];
   const objs = [];
@@ -658,7 +692,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
           // ($id: Lua's named list skips it, so no group holds the stone twice)
           // (with the level's own attributes "_kind" …, which Lua reads, and oxydcolor: Lua reads it,
           // Firefox shuffles in its init until three colours differ)
-          const own = Object.fromEntries(Object.entries(st).filter(([k, v]) => /^_\w+$/.test(k) && v !== ''));
+          const own = Object.fromEntries(Object.entries(st).filter(([k, v]) => /^_\w+$/.test(k) && keepValue(k, v)));
           if (st.name) objs.push({ x, y, k: 'st_oxyd_ref', a: { $id: st.$id, name: st.name, ...own, ...(st.oxydcolor !== undefined && st.oxydcolor !== '' ? { oxydcolor: st.oxydcolor } : {}) } });
           // flavor e: b's images plus the peephole mask st_oxyde (models-2d.lua)
           for (const s of ['', '_open', '_opening']) imgs.add(`st_oxyd${flavor === 'e' ? 'b' : flavor}${s}`);
@@ -726,8 +760,16 @@ function convertLevel(pack, meta, xml, exp, lua) {
       const t = [...allCells(w)].find((c) => c.o.name === tok || '#' + c.o.$id === tok);
       if (t) dest = [t.x + 0.5, t.y + 0.5];
     }
-    // WormHole::actor_hit without a destination: it only attracts (unless a script sets one later)
-    if (!dest && (src.destination || /it_wormhole[^}\n]*destination|\.destination\s*=|\[\s*"destination"\s*\]\s*=/.test(lua?.code ?? ''))) reject('Wurmloch ohne Ziel');
+    // WormHole::actor_hit without a destination: it only attracts (unless a script sets one later).
+    // A named destination that is not in the world (getDestinationByIndex fails) counts as none when
+    // no callback can set a destination or lay a tile with that name (Double Oneways: "fromZ").
+    const code = lua?.code ?? '';
+    const body = bodies(code);
+    const nameKeys = tok && !pos ? [...code.matchAll(/ti\[\s*"([^"]*)"\s*\]\s*=([^\n]*)/g)].filter((d) => d[2].includes(`"${tok}"`)).map((d) => d[1].trim()) : [];
+    const drawn = [...body.matchAll(/"([^"]*)"/g)].map((m) => m[1]);
+    const later = /\.destination\s*=|\[\s*"destination"\s*\]\s*=/.test(body) || (tok !== '' && body.includes(tok)) || nameKeys.some((k) => k === '' || drawn.some((s) => s.includes(k)));
+    const deadName = src.destination && tok && !pos && !later;
+    if (!dest && !deadName && (src.destination || /it_wormhole[^}\n]*destination|\.destination\s*=|\[\s*"destination"\s*\]\s*=/.test(code))) reject('Wurmloch ohne Ziel');
     else if (dest) o.a.dest = `${dest[0]},${dest[1]}`;
   }
   // Cracks: wo["Fragility"]/["CrackSpreading"] of the level script as their defaults
@@ -767,7 +809,7 @@ function convertLevel(pack, meta, xml, exp, lua) {
     for (const { kind, attrs } of lua.adds ?? []) {
       if (kind !== 'ot_timer' && kind !== 'ot_counter') continue;
       const a = {};
-      for (const [k, v] of Object.entries(attrs)) if (KEEP_ATTR.test(k) && v !== '') a[k] = v;
+      for (const [k, v] of Object.entries(attrs)) if (KEEP_ATTR.test(k) && keepValue(k, v)) a[k] = v;
       // TimerGadget: ON by default; CounterGadget: state 0
       a.$state = kind === 'ot_counter' ? String(Math.trunc(Number(attrs.state)) || 0) : attrs.state === '0' || attrs.state === 'false' ? '0' : '1';
       objs.push({ x: -1, y: -1, k: kind, a });
@@ -933,11 +975,11 @@ function convertLevel(pack, meta, xml, exp, lua) {
   if (blockers.size) return null;
   for (const i of imgs) usedImages.add(i);
   const a = w.actors.find((x) => x.o.k === 'ac_marble_black') ?? w.actors.find((x) => /^ac_pearl/.test(x.o.k)) ?? w.actors.find((x) => x.o.k === 'ac_marble_glass') ?? w.actors.find((x) => x.o.k === 'ac_marble_white');
-  const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && v !== '')) };
+  const mainPearl = a.o.k === 'ac_marble_black' ? null : { k: a.o.k, a: Object.fromEntries(Object.entries(a.o).filter(([k, v]) => ACTOR_ATTR.test(k) && keepValue(k, v))) };
   if (mainPearl) actorImages(a.o.k, mainPearl.a.color).forEach((i) => usedImages.add(i));
   const others = w.actors.filter((x) => x !== a).map((x) => {
     // a horse keeps its action (Lua callback at a reached target)
-    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action|owner)$/.test(k))) && v !== ''));
+    const attrs = Object.fromEntries(Object.entries(x.o).filter(([k, v]) => (ACTOR_ATTR.test(k) || (needsLua && /^(name|_\w+)$/.test(k)) || (x.o.k === 'ac_horse' && /^(target|action|owner)$/.test(k))) && keepValue(k, v)));
     if (passiveWhite && x.o.k === 'ac_marble_white') attrs.passive = 'true';
     if (/^ac_marble_(white|black)$/.test(x.o.k) && x.o.owner === undefined) {
       attrs.passive = 'true';
@@ -990,11 +1032,11 @@ function convertLevel(pack, meta, xml, exp, lua) {
     const named = [];
     for (const c of allCells(w)) {
       if (inObjs.has(c.o.$id)) continue;
-      const a = Object.fromEntries(Object.entries(c.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && v !== ''));
+      const a = Object.fromEntries(Object.entries(c.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && keepValue(k, v)));
       if (Object.keys(a).length) named.push({ l: c.o.k.slice(0, 2), x: c.x, y: c.y, a });
     }
-    const black = Object.fromEntries(Object.entries(a.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && v !== ''));
-    luaPart = { code: lua.code, kinds, named, ...(Object.keys(black).length ? { marble: black } : {}), ...(lua.libs.length ? { libs: lua.libs.map((l) => l.name) } : {}) };
+    const black = Object.fromEntries(Object.entries(a.o).filter(([k, v]) => /^(name|_\w+)$/.test(k) && keepValue(k, v)));
+    luaPart = { code: lua.code, kinds, named, ...(Object.keys(black).length ? { marble: black } : {}), ...(lua.libs.length ? { libs: lua.libs.map((l) => l.name) } : {}), ...(lua.initSteps ? { initSteps: lua.initSteps } : {}), ...(lua.initNames ? { initNames: lua.initNames } : {}) };
   }
   return {
     id: `enigma:${exp.id}`,
@@ -1046,7 +1088,8 @@ for (const pack of readPacks()) {
     current = `${pack.name}/${meta.xpath.replace(/^\.\//, '')} (${meta.title})`;
     if (process.env.PROBE && !new RegExp(process.env.PROBE).test(current)) continue;
     if (process.env.PROGRESS) console.log('>>', current);
-    const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp));
+    const key = `${pack.name}/${meta.xpath.replace(/^\.\//, '')}`;
+    const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp, INIT_LOOPS.get(key), INIT_NAMES.has(key)));
     if (lvl) {
       levels.push(lvl);
       byPath.set(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`, lvl);

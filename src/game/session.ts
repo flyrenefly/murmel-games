@@ -259,7 +259,11 @@ export class GameSession {
       const target = a.a?.target;
       if (e?.kind === 'horse' && target) e.onReached = () => l.callback(target, true, `a:${i + 1}`);
     });
-    ow.onCallback = (fn, value, sender) => l.callback(fn, value, `o:${sender.id}`);
+    // Sensor: the actor as value from API 2 on (Object::performAction: before 1.10 toBool → 1/0)
+    ow.onCallback = (fn, value, sender, actor) => {
+      const actorRef = actor !== undefined && lv.compat >= 1.1 ? host.actorRef?.(actor) ?? undefined : undefined;
+      l.callback(fn, value, `o:${sender.id}`, actorRef);
+    };
   }
 
   /** Enigma's life rule applies to imported Enigma levels; Murmel's own levels stay unlimited. */

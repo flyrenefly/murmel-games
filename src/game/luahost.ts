@@ -177,6 +177,12 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
   };
 
   const host: LuaHost = {
+    initSteps: lua.initSteps,
+    initNames: lua.initNames,
+    actorRef(marble) {
+      for (let i = 0; i <= level.actors.length; i++) if (marbleIndex(i) === marble) return `a:${i}`;
+      return null;
+    },
     find(pattern) {
       const re = glob(pattern);
       const refs: string[] = [];

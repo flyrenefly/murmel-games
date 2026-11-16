@@ -19,10 +19,10 @@ test('Zeichnen im Rückruf: mit ti und bekannten Schlüsseln erlaubt, auch wenn 
   assert.deepEqual(problems(ok.replace('{"u y "}', '{"u z "}')), [':drawMap']);
 });
 
-test('Zeichnen im Rückruf: res.random ja, res.composer und libmap nein', () => {
+test('Zeichnen im Rückruf: res.random und res.composer ja, libmap nein', () => {
   const random = `ti["1"] = {"fl_red"}\nlocal resolver = res.random(ti, "-", {{"1", 1}})\nfunction refloor()\n    wo:drawRect(po(1,1), po(1,1), "-", resolver)\nend`;
   assert.deepEqual(problems(random), []);
-  assert.deepEqual(problems(random.replace('res.random(ti, "-", {{"1", 1}})', 'res.composer(ti)')), [':drawRect']);
+  assert.deepEqual(problems(random.replace('res.random(ti, "-", {{"1", 1}})', 'res.composer(ti)')), []);
   assert.deepEqual(problems(`function f()\n    wo:drawMap(lib.map.new(ti), po(1,1), " ", {"#"})\nend`).includes(':drawMap'), true);
 });
 
@@ -82,10 +82,10 @@ test('Laufzeit-Arten: Ersatzschlüssel von res.random und ti-Verweise zählen mi
   assert.deepEqual(runtimeKinds(code).sort(), ['fl_sand', 'it_trap']);
 });
 
-test('Resolver im Rückruf: res.autotile direkt im Zeichenaufruf ja, res.composer nein', () => {
+test('Resolver im Rückruf: res.autotile und res.composer direkt im Zeichenaufruf ja', () => {
   const code = `ti["+"] = {"fl_red"}\nti["="] = {"st_greenbrown_hollow"}\nfunction drawLine()\n    wo:drawMap(res.autotile(ti), po(1, 1), " ", {"  +="})\nend`;
   assert.deepEqual(problems(code), []);
-  assert.deepEqual(problems(code.replace('res.autotile', 'res.composer')).sort(), [':drawMap', 'res.composer']);
+  assert.deepEqual(problems(code.replace('res.autotile', 'res.composer')), []);
 });
 
 test('callbacksBuild: nur Funktionen, die die Welt ändern, zählen', async () => {
@@ -190,4 +190,45 @@ test('pruneCharBranches: Zweige einer Zeichen-Zeichenfunktion, deren Zeichen kei
   assert.equal(pruneCharBranches(code.replace('renderLine(00,"## S ##")', 'renderLine(00, row)'), ['funcTimer']).includes('ac-blackball'), true);
   // the init's own calls (outside the callbacks) do not count: "z" only there
   assert.equal(pruneCharBranches(code.replace('"## S ##"', '"## z ##"'), ['funcTimer']).includes('ac-blackball'), true);
+});
+
+/** An exported world w × h: cells [floor, stone, item] (objects {k, name?}). */
+function world(w, h, objs = {}) {
+  const cells = Array.from({ length: w * h }, (_, i) => objs[i] ?? [{ k: 'fl_bright' }, null, null]);
+  return { w, h, cells, actors: [] };
+}
+
+test('luaInit initNames: Namen, die der Weltaufbau vergab und das Init selbst überschrieb, findet no[…] im Init (Symopal)', async () => {
+  const { luaInit } = await import('./lua-check.mjs');
+  const code = 'ti[" "] = {"fl_bright"}\nti[","] = {"fl_water", "spot#"}\nti["k"] = {"fl_water", "kept#"}\nwo(ti, " ", {" ,k"})\nspots = #no["spot#*"]\nwo["_n"] = spots .. "/" .. #no["kept#*"]';
+  // the export: the spot became something else (no name), kept# is still there
+  const w = world(3, 1, { 2: [{ k: 'fl_water', name: 'kept#7' }, null, null] });
+  const off = await luaInit(code, w);
+  assert.equal(off.world._n, '0/1');
+  assert.equal(off.initNames, undefined);
+  const on = await luaInit(code, w, [], false, undefined, true);
+  assert.equal(on.error, '');
+  assert.equal(on.world._n, '1/1');
+  assert.deepEqual(on.initNames, [{ n: 'spot#1', l: 'fl', x: 1, y: 0 }]);
+});
+
+test('luaInit initSteps: ein bekannt endloses Init endet ohne Fehler (Triggered Triggers)', async () => {
+  const { luaInit } = await import('./lua-check.mjs');
+  const code = 'function f() end\nrepeat x = 1 until no["never"]:exists()';
+  const r = await luaInit(code, world(2, 1), [], false, 100_000);
+  assert.equal(r.error, '');
+  assert.equal(r.isFunction('f'), true);
+});
+
+test('Laufzeit-Arten mit res.composer: fehlende Schlüssel aus ihren Zeichen (Double Oneways: set_grates)', async () => {
+  const { runtimeKinds } = await import('./lua-check.mjs');
+  const code = `ti["# "] = {"st_greenbrown"}
+ti[" ,"] = {"fl_space"}
+ti[" -"] = {"fl_metal"}
+ti["X "] = {"st_grate"}
+ti["O "] = {"st_oxyd"}
+function set_grates()
+    wo:drawMap(res.composer(ti), po(1, 1), "  ", {"#, -X-"})
+end`;
+  assert.deepEqual(runtimeKinds(code).sort(), ['fl_metal', 'fl_space', 'st_grate', 'st_greenbrown']);
 });

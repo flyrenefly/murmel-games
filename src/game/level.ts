@@ -77,6 +77,10 @@ export interface LevelLua {
   marble?: Record<string, string>;
   /** Enigma libraries the script needs (src/lua/lib, e.g. "libpento"), run before it. */
   libs?: string[];
+  /** The init ends in a loop that never ends on the exported world: stop it after these instructions (LuaHost.initSteps). */
+  initSteps?: number;
+  /** Names the world building gave that the init overwrote itself: found by no[…] during the init only (LuaHost.initNames). */
+  initNames?: { n: string; l: string; x: number; y: number }[];
 }
 
 export interface Cell {
