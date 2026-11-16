@@ -1,5 +1,6 @@
 // Checks before sharing (docs/SPEC-editor.md §5). Errors block sharing, hints do not.
 
+import { ladefehler } from '../game/ladefehler';
 import { isDeadly, parseLevel } from '../game/level';
 import { cellOf, type EditorLevel, oxydCounts, sources, targets, toLevelFile } from './model';
 import { MAX_DOCS } from './link';
@@ -132,7 +133,7 @@ export function check(l: EditorLevel): Problem[] {
   // whatever else the game would refuse
   if (!out.some((p) => p.level === 'fehler')) {
     const msg = loadError(l);
-    if (msg) err(t('Das Spiel kann das Level nicht laden: {grund}', { grund: msg }));
+    if (msg) err(t('Das Spiel kann das Level nicht laden: {grund}', { grund: ladefehler(msg) }));
   }
   return out;
 }

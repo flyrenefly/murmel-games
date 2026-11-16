@@ -316,7 +316,8 @@ export function accountRoutes(app: FastifyInstance, opts: AccountOptions): void 
       await store.cleanup(t);
       const token = secret();
       await store.addLoginToken(email, hash(token), t, new Date(t.getTime() + LINK_MINUTES * MINUTE));
-      const link = `${origin}/#anmelden=${token}`;
+      // English requests get the English start page (/en/ reads the same hash, src/konto-ui.ts)
+      const link = `${origin}/${spracheVon(req) === 'en' ? 'en/' : ''}#anmelden=${token}`;
       try {
         const m = loginMail(spracheVon(req), link, origin);
         await mailer.send(email, m.subject, m.text);

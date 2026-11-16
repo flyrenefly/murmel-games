@@ -53,6 +53,9 @@ export default {
   'Weiße Murmel': 'White marble',
   'Schwarze Murmel': 'Black marble',
 
+  // Titel eines Editor-Levels ohne Titel (src/game/level.ts OHNE_TITEL; gespeichert bleibt der deutsche Text)
+  'Ohne Titel': 'Untitled',
+
   // Tipp-Sätze (src/game/tipp.ts)
   'oben links': 'at the top left',
   oben: 'at the top',

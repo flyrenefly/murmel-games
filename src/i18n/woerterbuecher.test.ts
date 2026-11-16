@@ -36,14 +36,22 @@ describe('Wörterbücher', () => {
         const verwaist = Object.keys(d).filter((k) => !quellen.includes(k) && !htmlKeys.has(k) && !titel.has(k));
         expect(verwaist, `${name}: nicht verwendet`).toEqual([]);
       });
-      it('kein „Oxyd online“ (Markenrecht)', () => {
-        for (const en of Object.values(d)) expect(en).not.toMatch(/oxyd\s+online/i);
+      it('kein „Oxyd online“ (Markenrecht), weder deutsch noch englisch', () => {
+        for (const [de, en] of Object.entries(d)) {
+          expect(de).not.toMatch(/oxyd\s+online/i);
+          expect(en).not.toMatch(/oxyd\s+online/i);
+        }
       });
     });
   }
 });
 
 describe('HTML-Seiten', () => {
+  it('kein „Oxyd online“ o. ä. (Markenrecht, auch auf den deutschen Seiten)', () => {
+    for (const [f, t] of Object.entries(html)) {
+      expect(t, f).not.toMatch(/oxyd\s+online|oxyd und enigma online|oxyd[\s-]+(browser|nachfolger)\b/i);
+    }
+  });
   for (const f of seiten) {
     const funde = htmlSchluessel(html[`/${f}`]);
     if (!funde.length) continue;
