@@ -8,6 +8,8 @@ import EN_PRESSE from './src/i18n/en/seite-presse';
 import EN_UEBER from './src/i18n/en/seite-ueber';
 import { englischeSeite } from './src/i18n/seiten-en';
 import { vorladeListen } from './src/vorladen-listen';
+import { LEVELZAHL, setzeLevelzahl, woerterbuchMitLevelzahl } from './src/levelzahl';
+import { levelAnzahl } from './tools/lib/levels.mjs';
 
 /** All files below dir, as paths with forward slashes. */
 function files(dir: string, rel = ''): string[] {
@@ -98,6 +100,40 @@ function levelPages(): Plugin {
 }
 
 /**
+ * Levelzahl (src/levelzahl.ts): setzt die gezählten Levels für {levelzahl} ein – in den HTML-Seiten
+ * (Build und Dev-Server) und in manifest.webmanifest (dist/ bzw. Dev-Server). Läuft vor englishPages
+ * und offline, damit die englischen Seiten und sw.js die fertigen Dateien sehen.
+ */
+function levelzahl(): Plugin {
+  let outDir = 'dist';
+  let anzahl = 0;
+  const zahl = () => (anzahl ||= levelAnzahl());
+  const manifest = () => setzeLevelzahl(readFileSync(resolve(__dirname, 'public/manifest.webmanifest'), 'utf8'), zahl(), 'de');
+  return {
+    name: 'murmel-levelzahl',
+    configResolved(c) {
+      outDir = resolve(c.root, c.build.outDir);
+    },
+    transformIndexHtml(html) {
+      return setzeLevelzahl(html, zahl(), 'de');
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split('?')[0] !== '/manifest.webmanifest') return next();
+        res.setHeader('Content-Type', 'application/manifest+json');
+        res.end(manifest());
+      });
+    },
+    closeBundle() {
+      writeFileSync(join(outDir, 'manifest.webmanifest'), manifest());
+      for (const f of files(outDir).filter((f) => /\.(html|webmanifest)$/.test(f))) {
+        if (readFileSync(join(outDir, f), 'utf8').includes(LEVELZAHL)) throw new Error(`Levelzahl: Platzhalter ${LEVELZAHL} in dist/${f} übrig`);
+      }
+    },
+  };
+}
+
+/**
  * Englische Seiten (docs/SPEC-englisch.md): dist/en/index.html, dist/en/ueber.html und dist/en/presse.html aus den deutschen
  * Seiten, übersetzt mit den Wörterbüchern unter src/i18n/en/. Läuft vor dem offline-Plugin, damit
  * en/index.html in sw.js steht; auch im Notbetrieb (MURMEL_LEVELSEITEN=0).
@@ -113,7 +149,9 @@ function englishPages(): Plugin {
     closeBundle() {
       mkdirSync(join(outDir, 'en'), { recursive: true });
       for (const [pfad, datei, en] of [['', 'index.html', EN_INDEX], ['ueber.html', 'ueber.html', EN_UEBER], ['presse.html', 'presse.html', EN_PRESSE]] as const) {
-        writeFileSync(join(outDir, 'en', datei), englischeSeite(readFileSync(join(outDir, datei), 'utf8'), en, pfad));
+        const seite = englischeSeite(readFileSync(join(outDir, datei), 'utf8'), woerterbuchMitLevelzahl(en, levelAnzahl()), pfad);
+        if (seite.includes(LEVELZAHL)) throw new Error(`Levelzahl: Platzhalter ${LEVELZAHL} in dist/en/${datei} übrig`);
+        writeFileSync(join(outDir, 'en', datei), seite);
       }
     },
   };
@@ -134,7 +172,7 @@ export default defineConfig({
   define: { __MURMEL_VERSION__: JSON.stringify(gameVersion()) },
   // Relative paths so the build works in any webspace folder.
   base: './',
-  plugins: [cspSafeFengari(), englishPages(), offline(), levelPages()],
+  plugins: [cspSafeFengari(), levelzahl(), englishPages(), offline(), levelPages()],
   // npm run dev: the API (server/, port 3000) under the same address as on the server
   server: { proxy: { '/api': { target: process.env.MURMEL_API ?? 'http://localhost:3000', ws: true } } },
   build: {

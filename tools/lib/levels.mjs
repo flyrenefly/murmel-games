@@ -27,6 +27,15 @@ export function loadLevels(root = ROOT) {
   return out;
 }
 
+/**
+ * Number of different playable levels (Murmel's own included), without the cross references: the
+ * same count as "Alle Levels" on the level pages. The press kit and the app manifest use it
+ * (src/levelzahl.ts).
+ */
+export function levelAnzahl(root = ROOT) {
+  return loadLevels(root).filter((l) => !l.ref).length;
+}
+
 /** SHA-256 of a level's content (docs/SPEC-aufzeichnung.md: levelHash binds a recording to the level). */
 export function levelHash(file) {
   return createHash('sha256').update(JSON.stringify(file)).digest('hex');

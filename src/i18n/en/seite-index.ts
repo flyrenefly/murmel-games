@@ -40,4 +40,10 @@ export default {
   Webbrowser: 'Web browser',
   'Alle (Browser)': 'Any (browser)',
   'Aktueller Webbrowser mit JavaScript': 'A current web browser with JavaScript',
+  // JSON-LD screenshot: englische Oberfläche (public/presse/en/)
+  'https://murmel.games/presse/murmel-1-klassisch.webp': 'https://murmel.games/presse/en/murmel-1-klassisch.webp',
+  'https://murmel.games/presse/murmel-2-glas.webp': 'https://murmel.games/presse/en/murmel-2-glas.webp',
+  'https://murmel.games/presse/murmel-3-levels.webp': 'https://murmel.games/presse/en/murmel-3-levels.webp',
+  'https://murmel.games/presse/murmel-4-editor.webp': 'https://murmel.games/presse/en/murmel-4-editor.webp',
+  'https://murmel.games/presse/murmel-5-handy.webp': 'https://murmel.games/presse/en/murmel-5-handy.webp',
 } as const;

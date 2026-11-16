@@ -23,8 +23,8 @@ export default {
   'Murmel ist ein kostenloses Murmel-Rätselspiel für den Browser in der Tradition von Oxyd und Enigma: freie Software, ohne Werbung, ohne Tracking und ohne Installation.':
     'Murmel is a free marble puzzle game for the browser in the tradition of Oxyd and Enigma: free software, with no ads, no tracking and nothing to install.',
   'Ein Absatz': 'One paragraph',
-  'In Murmel rollt man eine Murmel mit Maus, Tastatur oder durch Neigen des Smartphones durch verwinkelte Level und öffnet farbige Steine paarweise. Dazwischen warten Abgründe, Wasser, Türen, Schalter und schiebbare Kisten. Das Spiel läuft kostenlos im Browser auf PC, Tablet und Smartphone, nach dem ersten Besuch auch offline, und bringt über 1.100 Levels aus dem freien Spiel Enigma mit – jedes mit Autor und Lizenz genannt. Mit dem Editor baut man eigene Levels und teilt sie per Link, zu zweit spielt man gemeinsam oder im Wettrennen. Murmel ist freie Software unter der GPL, zeigt keine Werbung und verzichtet auf Tracking.':
-    'In Murmel you roll a marble through winding levels with the mouse, the keyboard or by tilting your phone, and open coloured stones in pairs. Along the way there are abysses, water, doors, switches and boxes to push. The game is free to play in the browser on PCs, tablets and phones, works offline after the first visit and comes with more than 1,100 levels from the free game Enigma – each one credited with its author and licence. With the editor you build your own levels and share them by link; two players can team up or race each other. Murmel is free software under the GPL, shows no ads and does without tracking.',
+  'In Murmel rollt man eine Murmel mit Maus, Tastatur oder durch Neigen des Smartphones durch verwinkelte Level und öffnet farbige Steine paarweise. Dazwischen warten Abgründe, Wasser, Türen, Schalter und schiebbare Kisten. Das Spiel läuft kostenlos im Browser auf PC, Tablet und Smartphone, nach dem ersten Besuch auch offline, und bringt über {levelzahl} Levels mit, fast alle aus dem freien Spiel Enigma – jedes mit Autor und Lizenz genannt. Mit dem Editor baut man eigene Levels und teilt sie per Link, zu zweit spielt man gemeinsam oder im Wettrennen. Murmel ist freie Software unter der GPL, zeigt keine Werbung und verzichtet auf Tracking.':
+    'In Murmel you roll a marble through winding levels with the mouse, the keyboard or by tilting your phone, and open coloured stones in pairs. Along the way there are abysses, water, doors, switches and boxes to push. The game is free to play in the browser on PCs, tablets and phones, works offline after the first visit and comes with more than {levelzahl} levels, almost all of them from the free game Enigma – each one credited with its author and licence. With the editor you build your own levels and share them by link; two players can team up or race each other. Murmel is free software under the GPL, shows no ads and does without tracking.',
   Fakten: 'Facts',
   Name: 'Name',
   'Murmel, murmel.games': 'Murmel, <a href="https://murmel.games/en/">murmel.games</a>',
@@ -43,8 +43,8 @@ export default {
   Offline: 'Offline',
   'Nach dem ersten Besuch ohne Internet spielbar': 'Playable without internet after the first visit',
   Levels: 'Levels',
-  'Über 1.100 Levels aus dem freien Spiel Enigma, jedes mit Namensnennung der Autorinnen und Autoren und Lizenz (alle Levels), dazu eigene Einsteiger-Levels':
-    'More than 1,100 levels from the free game <a href="https://www.nongnu.org/enigma/" rel="noopener">Enigma</a>, each credited with its authors and licence (<a href="en/level/">all levels</a>), plus Murmel’s own beginner levels',
+  'Über {levelzahl} Levels: eigene Einsteiger-Levels und die freien Levels aus dem Spiel Enigma, jedes mit Namensnennung der Autorinnen und Autoren und Lizenz (alle Levels)':
+    'More than {levelzahl} levels: Murmel’s own beginner levels and the free levels from the game <a href="https://www.nongnu.org/enigma/" rel="noopener">Enigma</a>, each credited with its authors and licence (<a href="en/level/">all levels</a>)',
   Editor: 'Editor',
   'Eigene Levels bauen, per Link teilen und als Spieler-Level veröffentlichen (CC BY-SA 4.0)': 'Build your own levels, share them by link and publish them as player levels (CC BY-SA 4.0)',
   'Zu zweit': 'Two players',
@@ -58,7 +58,7 @@ export default {
     'Independent project; gameplay in the tradition of Oxyd (Dongleware, 1990), graphics, sounds and levels from Enigma (GPL)',
   Screenshots: 'Screenshots',
   'Ein Klick öffnet das Bild in voller Größe (WebP). Für Berichte über Murmel dürfen die Screenshots frei verwendet werden; die Grafik „Klassisch“ stammt aus Enigma (GPL).':
-    'Click an image to open it at full size (WebP). You are welcome to use the screenshots in articles about Murmel; the “Classic” graphics come from Enigma (GPL). The screenshots show the German interface.',
+    'Click an image to open it at full size (WebP). You are welcome to use the screenshots in articles about Murmel; the “Classic” graphics come from Enigma (GPL).',
   'Stil „Klassisch“ mit der Grafik von Enigma': 'The “Classic” style with Enigma’s graphics',
   'Auf dem Smartphone: Steuerung durch Neigen oder Wischen': 'On a phone: control by tilting or swiping',
   'Stil „Glas“ in 3D': 'The “Glass” style in 3D',
@@ -71,6 +71,12 @@ export default {
     'Rene Benischka<br />Email: <a href="mailto:info@murmel.games">info@murmel.games</a><br />Postal address in the <a href="impressum.html" hreflang="de">legal notice (German)</a>.',
   'Über Murmel · Impressum · Datenschutz':
     '<a href="en/ueber.html">About Murmel</a> · <a href="impressum.html" hreflang="de">Legal notice (German)</a> · <a href="datenschutz.html" hreflang="de">Privacy (German)</a>',
+  // Screenshots mit englischer Oberfläche (tools/presse-bilder.mjs --lang en)
+  'presse/murmel-1-klassisch.webp': 'presse/en/murmel-1-klassisch.webp',
+  'presse/murmel-2-glas.webp': 'presse/en/murmel-2-glas.webp',
+  'presse/murmel-3-levels.webp': 'presse/en/murmel-3-levels.webp',
+  'presse/murmel-4-editor.webp': 'presse/en/murmel-4-editor.webp',
+  'presse/murmel-5-handy.webp': 'presse/en/murmel-5-handy.webp',
   // Bildbeschreibungen
   'Murmel im Stil Klassisch: Sandinseln mit Holzkisten im Wasser': 'Murmel in the Classic style: sand islands with wooden boxes in the water',
   'Murmel auf dem Smartphone: Startkarte eines Levels mit Steuerung durch Neigen': 'Murmel on a phone: a level’s start card with tilt controls',

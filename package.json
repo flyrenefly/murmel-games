@@ -15,7 +15,8 @@
     "check:levels": "node tools/check-load.mjs",
     "check:solutions": "node tools/check-solutions.mjs",
     "test:e2e:zuzweit": "node tools/e2e-mehrspieler.mjs",
-    "check:levelseiten": "node tools/levelseiten/pruefen.mjs dist"
+    "check:levelseiten": "node tools/levelseiten/pruefen.mjs dist",
+    "presse:bilder": "node tools/presse-bilder.mjs"
   },
   "license": "GPL-3.0-or-later",
   "type": "module",
