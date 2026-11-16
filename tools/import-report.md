@@ -1,6 +1,6 @@
 # Enigma-Import
 
-1262 von 1322 Levels übernommen (19 Pakete), davon 48 Querverweise auf Levels anderer Pakete.
+1263 von 1322 Levels übernommen (19 Pakete), davon 48 Querverweise auf Levels anderer Pakete.
 
 | Fehlt | blockiert Levels | davon nur daran |
 |---|---|---|
@@ -14,8 +14,3 @@
 | Überraschung mit =Z | 1 | 0 |
 | Lua: assert_bool() | 1 | 0 |
 | Lua: wo["ShowMoves"] | 1 | 0 |
-| Lua: wo["SwampSinkTime"] | 1 | 0 |
-| Lua: ac_marble_white | 1 | 0 |
-| Lua: ac_marble_black | 1 | 0 |
-| Lua: ac_pearl | 1 | 0 |
-| Lua: ac_pearl_white | 1 | 0 |
