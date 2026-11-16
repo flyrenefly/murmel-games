@@ -548,7 +548,15 @@
         außerdem Programmdateien, Grafiken, Klänge und die geöffneten Levelpakete in seinem Cache-Speicher ab
         (Service Worker). Außerdem speichert das Spiel je Level die Aufzeichnung Ihres besten Laufs, damit Sie
         gegen sich selbst als Geist spielen können (IndexedDB, Datenbank <code>murmel-geister</code>). Ob Sie die Erinnerung eingeschaltet haben, merkt sich das Spiel ebenfalls im lokalen Speicher
-        (<code>murmel.erinnerung</code>); das Abonnement selbst verwaltet Ihr Browser. Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
+        (<code>murmel.erinnerung</code>); das Abonnement selbst verwaltet Ihr Browser.
+        Wenn Sie die Sprache ausdrücklich wählen (Deutsch oder Englisch), merkt sich das Spiel diese Wahl im
+        lokalen Speicher (<code>murmel.sprache</code>) und zusätzlich im Cache-Speicher des Service Workers
+        (Cache <code>murmel-einstellungen</code>, Eintrag <code>sprache</code>), damit Erinnerungen in der
+        gewählten Sprache erscheinen; gespeichert wird nur der Wert <code>de</code> oder <code>en</code>, und er
+        verlässt Ihr Gerät nicht. Bei Anfragen an unseren Server schickt das Spiel die gewählte Sprache im Kopf
+        <code>Accept-Language</code> mit (das tut Ihr Browser sonst ohnehin mit seiner eigenen
+        Spracheinstellung), damit Meldungen des Servers und die Anmelde-Mail in dieser Sprache erscheinen;
+        gespeichert wird sie dort nicht. Diese Daten verlassen Ihr Gerät nur, wenn Sie angemeldet sind: Dann wird der
         Spielfortschritt mit Ihrem Konto abgeglichen (siehe „Fortschritt auf allen Geräten“). Mit
         „Fortschritt → Sichern“ können Sie Ihren Fortschritt als Datei auf Ihr Gerät herunterladen; auch diese
         Datei wird nicht an uns übertragen. Die Speicherung ist für die von Ihnen gewünschte Funktion
