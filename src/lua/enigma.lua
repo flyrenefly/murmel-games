@@ -191,8 +191,22 @@ po = setmetatable({}, {
 
 DEFAULT = setmetatable({}, {__name = "default"})
 
+local OBJECT_REF, OBJECT_LIST = "\1", "\2"
+local obj, newgroup
 local function decode(s)
   if s == nil then return nil end
+  -- objects as values (runtime.ts OBJECT_REF / OBJECT_LIST): "_fellow" = obj, "fellows", "rubbers"
+  local first = string.sub(s, 1, 1)
+  if first == OBJECT_REF then
+    local ref = string.sub(s, 2)
+    if string.sub(ref, 1, 2) == "n:" then ref = M.find(string.sub(ref, 3))[1] end
+    return obj(ref)
+  end
+  if first == OBJECT_LIST then
+    local l = {}
+    for ref in string.gmatch(string.sub(s, 2), "[^,]+") do l[#l + 1] = obj(ref) end
+    return newgroup(l)
+  end
   if s == "true" then return true end
   if s == "false" then return false end
   local n = tonumber(s)
@@ -235,7 +249,7 @@ end
 local cache = setmetatable({}, {__mode = "v"})
 local NULLOBJ = setmetatable({}, OBJ)
 
-local function obj(ref)
+function obj(ref)
   if ref == nil then return NULLOBJ end
   local o = cache[ref]
   if not o then
@@ -245,19 +259,23 @@ local function obj(ref)
   return o
 end
 
-local function newgroup(list)
+function newgroup(list)
   return setmetatable(list, GROUP)
 end
 
 local function send(o, msg, value)
-  if INIT or not o._ref then return nil end
+  -- in init mode the export holds the world; only the timers and counters the init itself made
+  -- (importer refs "x:<n>") take messages: The Inferno starts its loadbalancer there
+  if not o._ref or (INIT and string.sub(o._ref, 1, 2) ~= "x:") then return nil end
   return decode(M.send(o._ref, msg, encode(value)))
 end
 
 local methods = {}
 for _, m in ipairs({"open", "close", "toggle", "on", "off", "flip", "turn", "turnback", "orientate", "signal", "grow", "explode", "shovel", "closeall", "shuffle",
     -- fire messages (Floor::message, items): fl(sender):setfire() in Double play, Sanssouci
-    "setfire", "forcefire", "stopfire", "heat", "ignite"}) do
+    "setfire", "forcefire", "stopfire", "heat", "ignite",
+    -- PuzzleStone: rotate the line in a direction (libpuzzle shuffles with pull_rotate)
+    "pull_rotate", "push_rotate"}) do
   methods[m] = function(self, value) return send(self, m, value) end
 end
 function methods.message(self, msg, value) return send(self, msg, value) end
@@ -298,6 +316,14 @@ function methods.get_cluster(self)
   end
   return newgroup(l)
 end
+-- PuzzleStone "get_adjacents": all puzzle stones of its colour touching it (libpuzzle: the huddles)
+function methods.get_adjacents(self)
+  local l = {}
+  if self._ref then
+    for _, r in ipairs(M.cluster(self._ref, true)) do l[#l + 1] = obj(r) end
+  end
+  return newgroup(l)
+end
 -- obj:grid() (libmap): the grid position of the object
 function methods.grid(self)
   local p = topos(self)
@@ -317,6 +343,11 @@ OBJ.__index = function(o, k)
 end
 OBJ.__newindex = function(o, k, v)
   if INIT or not o._ref then return end
+  -- an object in an own attribute stays an object (Tinker, Tailor: obj1["_fellow"] = obj2)
+  if type(k) == "string" and string.sub(k, 1, 1) == "_" and etype_of(v) == "object" then
+    M.set(o._ref, k, v._ref and (OBJECT_REF .. v._ref) or nil)
+    return
+  end
   M.set(o._ref, k, encode(v))
 end
 OBJ.__eq = function(a, b) return a._ref == b._ref end
@@ -373,13 +404,18 @@ for m in pairs(methods) do
   end
 end
 function gmethods.exists(self) return #self > 0 end
-function gmethods.sub(self, n)
-  local l = {}
-  if n >= 0 then
-    for i = 1, math.min(n, #self) do l[#l + 1] = self[i] end
+-- group:sub(n) (first n, or the last -n), sub(start, end), sub(start, -count) (Enigma reference "Group Subset")
+function gmethods.sub(self, a, b)
+  local first, last
+  if b == nil then
+    if a >= 0 then first, last = 1, a else first, last = #self + a + 1, #self end
+  elseif b >= 0 then
+    first, last = a, b
   else
-    for i = math.max(1, #self + n + 1), #self do l[#l + 1] = self[i] end
+    first, last = a, a - b - 1
   end
+  local l = {}
+  for i = math.max(1, first), math.min(last, #self) do l[#l + 1] = self[i] end
   return newgroup(l)
 end
 -- lua.cc nearestGroup: the member closest to the object; ties go to the one further south, then east
@@ -588,8 +624,10 @@ local function settile(p, tile)
   local x, y = math.floor(p.x), math.floor(p.y)
   for _, d in ipairs(astile(tile)) do
     local kind = d[1]
+    -- lua.cc setObjectByTable: "nil" sets nothing (ti["x"] = cond(easy, {"nil"}, …), The Inferno)
+    if kind == "nil" then
     -- (only where the host makes actors during play; the Enigma upload builds its world through settile)
-    if type(kind) == "string" and string.match(kind, "^#?ac_") and M.canaddactor() then
+    elseif type(kind) == "string" and string.match(kind, "^#?ac_") and M.canaddactor() then
       -- lua.cc setObjectByTable: an actor at the exact position ("#": the cell centre), moved by
       -- the numbers in entries 2 and 3
       local ax, ay = p.x, p.y
@@ -615,12 +653,15 @@ end
 function wmethods.add(_, a, b)
   if not INIT then
     -- during play: an item into a player's inventory, a timer or counter, or a rubber band
-    if type(a) == "number" and type(b) == "table" and type(b[1]) == "string" then
-      local k = b[1]
-      -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
-      if k == "it_pipe" and type(b.connections) == "string" and b.connections ~= "" then k = "it_pipe_" .. b.connections end
-      -- a document carries its text: Murmel shows it at once, as when one is picked up
-      M.addinventory(a, k, k == "it_document" and b.text or nil)
+    -- (a tile of several items – {"it_coin_s"} .. ti{"it_coffee"}, The Inferno – adds each in turn)
+    if type(a) == "number" and type(b) == "table" and (type(b[1]) == "string" or etype_of(b) == "tile") then
+      for _, d in ipairs(astile(b)) do
+        local k = d[1]
+        -- a pipe piece keeps its connections in the kind (it_pipe_ns …)
+        if k == "it_pipe" and type(d.connections) == "string" and d.connections ~= "" then k = "it_pipe_" .. d.connections end
+        -- a document carries its text: Murmel shows it at once, as when one is picked up
+        if type(k) == "string" then M.addinventory(a, k, k == "it_document" and d.text or nil) end
+      end
       return
     end
     local d = b or a
@@ -663,19 +704,34 @@ local function evaluate(resolver, key, x, y)
   return tile
 end
 
+-- a resolver chain with a maze of lib/libmaze or a railway of lib/libtrain: they find their cells by the
+-- map's keys, so in init mode the map is read for them too (no tiles set)
+local function hasmaze(context)
+  while type(context) == "table" and etype_of(context) ~= "tiles" do
+    local impl = rawget(context, 1)
+    if impl ~= nil and (impl == rawget(res, "maze_implementation") or impl == rawget(res, "train_implementation")) then return true end
+    context = rawget(context, 3)
+  end
+  return false
+end
+
 -- api2init.lua drawMap: call the resolvers' finalizers from bottom to top
+-- (in init mode libpuzzle's finalizer only forgets its stones: the export holds them already shuffled)
 local function finalizeResolvers(context)
   if type(context) == "table" and etype_of(context) ~= "tiles" then
     finalizeResolvers(rawget(context, 3))
     local finalizer = rawget(context, 2)
-    if type(finalizer) == "function" then finalizer(context) end
+    if INIT and finalizer ~= nil and finalizer == rawget(res, "puzzle_finalization") then
+      context[5] = {}
+    elseif type(finalizer) == "function" then finalizer(context) end
   end
 end
 
--- api2init.lua drawMap during play (in init mode the export holds the world), with read directions
--- and maps from wo:newMap.
+-- api2init.lua drawMap during play (in init mode the export holds the world: only a maze or railway reads
+-- the map and finalizes – libtrain's timers, Enigmas wildcat), with read directions and maps from wo:newMap.
 function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
-  if INIT then return end
+  local readonly = INIT
+  if INIT and not hasmaze(resolver) then return end
   local origin = topos(anchor)
   local ignore, map, readdir
   if etype_of(arg3) == "map" then
@@ -706,11 +762,17 @@ function wmethods.drawMap(_, resolver, anchor, arg3, arg4, arg5)
       if key ~= ignore then
         local rx, ry = rot(x, y)
         local px, py = origin.x - 1 + rx, origin.y - 1 + ry
-        settile(newpos(px, py), evaluate(resolver, key, math.floor(px), math.floor(py)))
+        local tile = evaluate(resolver, key, math.floor(px), math.floor(py))
+        if not readonly then settile(newpos(px, py), tile) end
       end
     end
   end
   finalizeResolvers(resolver)
+end
+
+-- api2init.lua wo:_evaluate(resolver, key, x, y): the tile a resolver makes of a key (libtrain)
+function wmethods._evaluate(_, resolver, key, x, y)
+  return evaluate(resolver, key, x, y)
 end
 
 local function rectargs(arg1, arg2, arg3, arg4, arg5)
@@ -910,12 +972,14 @@ wo = setmetatable({}, {
     if not INIT then unsupported("wo() während des Spiels") end
     -- importer: the named tiles of the world building (the init may overwrite them itself: Symopal)
     local default, map = ...
-    if M.mapwanted() and type(default) == "string" and type(map) == "table" then
+    -- (a maze of lib/libmaze finds its cells by their keys: it needs the map read, too – Inverse Maze II)
+    local mapwanted = M.mapwanted()
+    if (mapwanted or hasmaze(resolver)) and type(default) == "string" and type(map) == "table" then
       local len = math.max(1, string.len(default))
       for y = 1, #map do
         for x = 1, string.len(map[y]) // len do
           local ok, tile = pcall(evaluate, resolver, string.sub(map[y], len * (x - 1) + 1, len * x), x - 1, y - 1)
-          if ok and tile then
+          if ok and tile and mapwanted then
             for _, d in ipairs(astile(tile)) do
               local name = type(d[2]) == "string" and d[2] or d.name
               if type(d[1]) == "string" and type(name) == "string" then M.maptile(x - 1, y - 1, d[1], name) end
@@ -1145,6 +1209,8 @@ NEIGHBORS_CHESS = NNE .. ENE .. ESE .. SSE .. SSW .. WSW .. WNW .. NNW
 ORI2DIR = {[WEST] = W, [SOUTH] = S, [EAST] = E, [NORTH] = N, [NODIR] = ORIGIN,
            [NORTHWEST] = NW, [SOUTHWEST] = SW, [SOUTHEAST] = SE, [NORTHEAST] = NE}
 DISPENSABLE, INDISPENSABLE, PERKIND = 0, 1, 2
+-- api2init.lua: actor controllers
+CTRL_NONE, CTRL_YIN, CTRL_YANG, CTRL_YINYANG = 0, 1, 2, 3
 MEDITATION_CALDERA, MEDITATION_HOLLOW, MEDITATION_DENT = -3, -2, -1
 MEDITATION_BUMP, MEDITATION_HILL, MEDITATION_VOLCANO = 1, 2, 3
 AUTOLENGTH = -1

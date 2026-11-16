@@ -244,12 +244,32 @@ export class GameSession {
       ph.removeSignal(x, y);
       signalsChanged();
     };
+    const setOxydColor = (x: number, y: number, symbol: string): void => {
+      const s = liveSignalAt(lv, x, y);
+      if (!s) return;
+      s.symbol = symbol;
+      this.board.setSymbol(s.index, symbol);
+    };
+    // a passive marble or pearl made during play: the per-marble state grows with it
+    const addMarble = (kind: string, x: number, y: number, a: Record<string, string>): number => {
+      const i = ph.addMarble(kind, x, y, a);
+      this.deadForever[i] = false;
+      this.inVortex[i] = 0;
+      this.shield[i] = 0;
+      this.invis[i] = 0;
+      this.drunk[i] = 0;
+      this.rotorTime[i] = 0;
+      this.falling[i] = -1;
+      this.deathKind[i] = 'fall';
+      this.startPos[i] = { x, y };
+      return i;
+    };
     const shuffleOxyd = (): void => {
       this.colorSignals();
       this.board.shuffle(this.rng);
       lv.signals.forEach((x) => (x.symbol = this.board.symbolOf(x.index)));
     };
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd, sound: (n, v) => this.ui.enigmaSound(n, v) }, this.world, this.globalForce);
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd, setOxydColor, addMarble, sound: (n, v) => this.ui.enigmaSound(n, v) }, this.world, this.globalForce);
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     this.lua = l;
     this.luaHost = host;
@@ -472,7 +492,15 @@ export class GameSession {
     this.objects.marbleGone(i);
     this.falls++;
     // player::CheckDeadActors / resurrect_actor: every death costs an extra life.
-    if (this.enigmaRules && this.level.world.InfiniteReincarnation !== 'true') {
+    const lm = physics.marbles[i];
+    if (lm.luaOwner !== undefined && !lm.essential) {
+      // a dispensable marble Lua made (The Inferno: owner YANG): back only with an extra life of its owner
+      const inv = lm.luaOwner >= 0 ? this.objects.inventories[lm.luaOwner] : null;
+      const idx = inv ? inv.indexOf('it_extralife') : -1;
+      if (inv && idx >= 0) inv.splice(idx, 1);
+      else this.deadForever[i] = true;
+      this.ui.items();
+    } else if (this.enigmaRules && this.level.world.InfiniteReincarnation !== 'true') {
       const m = physics.marbles[i];
       const owner = this.ownerOf(i);
       const inv = this.objects.inventories[owner];

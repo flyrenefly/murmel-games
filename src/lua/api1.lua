@@ -808,10 +808,11 @@ E.GetNamedObject = function(name) return orNil(no[name]) end
 E.GetFloor = function(x, y) return orNil(fl(x, y)) end
 E.GetItem = function(x, y) return orNil(it(x, y)) end
 E.GetStone = function(x, y) return orNil(st(x, y)) end
+-- lua.cc en_get_pos: the grid position, for actors too (GridPos(a->getPos()); andreas_ghosts finds its rails so)
 E.GetPos = function(o)
   local p = topos(o)
   if not p then return nil end
-  return p.x, p.y
+  return math.floor(p.x), math.floor(p.y)
 end
 E.IsSameObject = function(a, b) return a == b end
 E.SetFloor = function(x, y, o) return place("fl", x, y, o) end
@@ -833,6 +834,13 @@ E.SetActor = function(x, y, o)
       end
     end
     M.addactor(tonumber(x) or 0, tonumber(y) or 0, o._kind, table.unpack(args))
+    return NULLOBJ
+  end
+  -- in init mode the export holds the actor: a named one is found by its name (andreas_ghosts checks
+  -- GetAttrib(newghost, "name") – Pac Marble)
+  if type(o) == "table" and getmetatable(o) == NEW and type(o._attrs.name) == "string" and o._attrs.name ~= "" then
+    local found = no[o._attrs.name]
+    if found ~= nil and found._ref then return found end
   end
   return NULLOBJ
 end

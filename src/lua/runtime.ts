@@ -4,6 +4,14 @@
  * Enigma's API 2. Fengari is loaded only for levels that need it. Plain TypeScript (no Vite
  * imports, no parameter properties), so the importer can run it in Node as well.
  */
+/**
+ * Attribute values that are objects (Enigma: Value(Object), ObjectList) travel as strings with a leading
+ * control character: OBJECT_REF + a ref (or "n:" + a name, as the importer writes exported ones),
+ * OBJECT_LIST + comma separated refs.
+ */
+export const OBJECT_REF = '\u0001';
+export const OBJECT_LIST = '\u0002';
+
 /** What the Lua API may see and change of the running level. Values travel as strings. */
 export interface LuaHost {
   /** Refs of the objects whose name matches (with * and ?). */
@@ -35,8 +43,8 @@ export interface LuaHost {
   addRubber?(a1: string | null, a2: string | null, strength: string | null, length: string | null, threshold: string | null, min: string | null, max: string | null): void;
   /** wo:add({"ot_wire", name?, anchor1, anchor2}) during play: two stones become fellows. */
   addWire?(a1: string | null, a2: string | null, name: string | null): void;
-  /** PuzzleStone "get_cluster": refs of the stones of the fragment. */
-  cluster?(ref: string): string[];
+  /** PuzzleStone "get_cluster": refs of the stones of the fragment; adjacent: "get_adjacents" (all touching stones of its colour). */
+  cluster?(ref: string, adjacent?: boolean): string[];
   /** wo:shuffleOxyd() during play. */
   shuffleOxyd?(): void;
   /** obj:sound(name, volume) during play: an Enigma sound event. */
@@ -315,7 +323,7 @@ export class LuaLevel {
         return 0;
       },
       cluster: () => {
-        const refs = host.cluster?.(arg(1) ?? '') ?? [];
+        const refs = host.cluster?.(arg(1) ?? '', lua.lua_toboolean(L, 2)) ?? [];
         lua.lua_createtable(L, refs.length, 0);
         refs.forEach((r, i) => {
           push(r);

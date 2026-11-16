@@ -43,16 +43,34 @@ export const LIBS = {
   'lib/natmaze': { name: 'natmaze', kinds: [] },
   // maps (wo:newMap, map .. map, "k" * map, map:sub/paste/replace …): replaces the shim's subset
   'lib/libmap': { name: 'libmap', kinds: [], deps: ['lib/liblua'] },
+  // res.puzzle (puzzle stones joined by their cluster, then shuffled with pull_rotate): only for levels whose
+  // callbacks draw puzzles – in the init the export holds them already (Oxyd-Puzzle)
+  'lib/libpuzzle': { name: 'libpuzzle', kinds: ['st_puzzle'], when: (code) => /\bres\.puzzle\b/.test(bodies(code)) },
+  // res.maze with Enigma's generator and renderers: only for the levels that use the maze itself (its cells
+  // in the init or during play). The others draw it once in the init, which the export holds; for them the
+  // shim's res.maze only passes its resolver on (the library would build a maze nobody uses at every start).
+  'lib/libmaze': {
+    name: 'libmaze',
+    kinds: [],
+    deps: ['lib/libmap'],
+    levels: new Set(['enigma_ix/raoul33_1', 'enigma_x/raoul41_1', 'enigma_iii/nat36_2', 'enigma_vii/ral45_1', 'enigma_x/cel3_1']),
+  },
+  // res.train (a section of tiles running round a track; the init adds its timers, res.train_tick moves it)
+  'lib/libtrain': { name: 'libtrain', kinds: [], deps: ['lib/liblua'], levels: new Set(['enigma_x/cel3_1']) },
 };
 export function libCode(name) {
   return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
 }
-/** The supported libraries a level depends on (el:dependency), in order, each after its own dependencies. */
-export function levelLibs(xml) {
+/**
+ * The supported libraries a level depends on (el:dependency), in order, each after its own dependencies.
+ * key ("pack/file"): for libraries only some levels get (LIBS levels).
+ */
+export function levelLibs(xml, key = '') {
   const out = [];
+  const code = luaCode(xml);
   const add = (path) => {
     const lib = LIBS[path];
-    if (!lib || out.includes(lib)) return;
+    if (!lib || out.includes(lib) || (lib.when && !lib.when(code)) || (lib.levels && !lib.levels.has(key))) return;
     for (const d of lib.deps ?? []) add(d);
     out.push(lib);
   };
@@ -69,11 +87,13 @@ export function libFunctions(libs) {
     const code = libCode(l.name);
     for (const f of luaFunctions(code)) names.add(f);
     for (const m of code.matchAll(/^\s*[A-Za-z_]\w*\.([A-Za-z_]\w*)\s*=(?!=)/gm)) names.add(`:${m[1]}`);
+    // methods in a table constructor (libmaze: context.cellmeta = {…, pos = function (cell) …})
+    for (const m of code.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*function\b/gm)) names.add(`:${m[1]}`);
   }
   return names;
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
-const RESOLVERS = new Set(['autotile', 'composer', 'pento', 'random']);
+const RESOLVERS = new Set(['autotile', 'composer', 'maze', 'pento', 'puzzle', 'random', 'train']);
 
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
@@ -195,6 +215,12 @@ function dynamicItems(code, attr) {
 }
 
 export const RUNTIME_WORLD = new Set(['GlobalForce', 'FrictionStrength', 'ElectricStrength', 'SlopeStrength']);
+/**
+ * World attributes the game applies only when a callback sets them during play. Values the init sets are
+ * not imported (seven levels set SwampSinkTime/WaterSinkTime there – a separate decision, it changes how
+ * they play): The Inferno sets SwampSinkTime when a room is loaded.
+ */
+const PLAY_WORLD = new Set(['SwampSinkTime']);
 const API1 = /\b(set_stone|set_floor|set_item|set_actor|set_attrib|get_attrib|fill_floor|fill_stones|draw_\w+|create_world|SendMessage|enigma\.\w+)\s*\(/;
 
 /**
@@ -225,8 +251,6 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*(connections|text)\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter|wire)"/g)].length
     + [...raw.matchAll(DYNAMIC_ADD)].filter((m) => dynamicItems(code, m[2]) !== null).length;
   if (adds > ok) problems.add(':add');
-  // the rubber bands and wires of an object as Lua objects (sender["rubbers"]:kill(), Tinker, Tailor): not built
-  for (const m of raw.matchAll(/\[\s*"(rubbers|fellows)"\s*\]|\.(rubbers|fellows)\b/g)) problems.add(`obj.${m[1] ?? m[2]}`);
   // function parameters may hold functions (local f in "function scan(f)")
   for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());
   for (const m of body.matchAll(/(^|[^.:\w])([A-Za-z_]\w*)\s*\(/g)) {
@@ -238,7 +262,7 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   // the resolvers the shim builds (res.autotile, res.random, res.pento) work; draw calls are checked above
   for (const m of body.matchAll(/\b(res|lib)\.(\w+)(?:\.(\w+))?/g)) if (!(m[2] === 'math' && m[3] === 'permutation') && !(m[1] === 'lib' && fns.has(`lib.${m[2]}.${m[3]}`)) && !(m[1] === 'res' && RESOLVERS.has(m[2]))) problems.add(`${m[1]}.${m[2]}`);
   // world attributes changed during play: only those the game applies
-  for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
+  for (const m of reached.matchAll(/wo\[\s*"(\w+)"\s*\]\s*=(?!=)/g)) if (!RUNTIME_WORLD.has(m[1]) && !PLAY_WORLD.has(m[1]) && m[1] !== 'ConserveLevel') problems.add(`wo["${m[1]}"]`);
   return [...problems];
 }
 
@@ -542,12 +566,13 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
   const host = {
     initSteps,
     ...(initNames ? { mapTile, initNames: lost } : {}),
-    find: (p) => named.filter(([n]) => glob(p).test(n)).map(([, r]) => r),
+    // (the timers and counters the init made: "x:<n>", n = index in adds)
+    find: (p) => [...named.filter(([n]) => glob(p).test(n)).map(([, r]) => r), ...adds.flatMap((a, i) => (a.attrs?.name && glob(p).test(a.attrs.name) ? [`x:${i}`] : []))],
     at: (l, x, y) => {
       const ref = `c:${l}:${x}:${y}`;
       return byRef.has(ref) ? ref : null;
     },
-    exists: (r) => byRef.has(r),
+    exists: (r) => byRef.has(r) || (r.startsWith('x:') && adds[Number(r.slice(2))] !== undefined),
     pos: (r) => {
       if (r.startsWith('a:')) {
         const a = byRef.get(r);
@@ -560,10 +585,20 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
       const o = byRef.get(r);
       if (!o) return null;
       if (k === 'kind') return o.k;
+      // PuzzleStone as src/game/luahost.ts reads it: connections from $connections (n, e, s, w), hollow flag
+      if (/^st_puzzle/.test(o.k) && k === 'connections') {
+        const c = Number(o.$connections) || 0;
+        return [[8, 'n'], [4, 'e'], [2, 's'], [1, 'w']].filter(([b]) => c & b).map(([, d]) => d).join('');
+      }
+      if (/^st_puzzle/.test(o.k) && k === 'hollow') return o.$hollow === 'true' || o.hollow === 'true' ? 'true' : 'false';
       return o[k] ?? null;
     },
     set() {},
-    send() {},
+    // TimerGadget/CounterGadget made by the init: "on"/"off" in the init set the state it starts with
+    send(r, msg) {
+      const a = r.startsWith('x:') ? adds[Number(r.slice(2))] : undefined;
+      if (a && (msg === 'on' || msg === 'off')) a.attrs = { ...a.attrs, state: msg === 'on' ? '1' : '0' };
+    },
     kill() {},
     setTile() {},
     world: (k) => world[k] ?? null,
@@ -582,7 +617,18 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
     lua.describeTile(world.FallenPuzzle.slice(1));
     fallenTile = adds.splice(before).filter((a) => a.kind.startsWith('tile:')).map((a) => a.kind.slice(5));
   }
+  // lib/libtrain: res.train_tick sets the tiles of the trains' keys (train = {"key", "front key", …})
+  const trainKinds = [];
+  if (libs.some((l) => l.name === 'libtrain')) {
+    for (const m of code.matchAll(/\btrain\s*=\s*\{([^}]*)\}/g)) {
+      for (const k of [...m[1].matchAll(/"([^"]*)"/g)].map((x) => x[1])) {
+        const before = adds.length;
+        lua.describeTile(k);
+        for (const a of adds.splice(before)) if (a.kind.startsWith('tile:') && !trainKinds.includes(a.kind.slice(5))) trainKinds.push(a.kind.slice(5));
+      }
+    }
+  }
   const error = lua.lastError;
   // callback targets that name a Lua function after the init ("pento.next" in a library's table)
-  return { world, adds, fallenTile, error, ...(lost.length ? { initNames: lost } : {}), isFunction: (name) => !error && lua.isFunction(name) };
+  return { world, adds, fallenTile, trainKinds, error, ...(lost.length ? { initNames: lost } : {}), isFunction: (name) => !error && lua.isFunction(name) };
 }

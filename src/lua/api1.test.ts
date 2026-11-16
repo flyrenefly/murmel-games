@@ -187,3 +187,23 @@ describe('API 1 targetx/targety of a placed wormhole during play (Designed with 
     expect(w.host.get('wh', 'dest')).toBe('37.5,35.5');
   });
 });
+
+describe('Lua API 1: actors the export holds (Pac Marble, lib/andreas_ghosts)', () => {
+  const ghostWorld = () =>
+    fakeHost([{ ref: 'a:1', l: 'st' as const, x: 3.7, y: 4.2, a: { kind: 'ac_top', name: 'ghost_1' } }]);
+
+  it('set_actor in the init returns the exported actor of that name', async () => {
+    const w = ghostWorld();
+    const lua = await startLua('local g = set_actor("ac-top", 3.5, 4.5, {name = "ghost_1"})\nwo["_n"] = tostring(GetAttrib(g, "name"))', w.host);
+    expect(lua.lastError).toBe('');
+    expect(w.world._n).toBe('ghost_1');
+  });
+
+  it('enigma.GetPos gives the grid position of an actor (lua.cc en_get_pos: GridPos(a->getPos()))', async () => {
+    const w = ghostWorld();
+    const lua = await startLua('function f()\n  local x, y = enigma.GetPos(enigma.GetNamedObject("ghost_1"))\n  wo["_p"] = x .. "," .. y\nend', w.host);
+    lua.callback('f', true, '');
+    expect(lua.lastError).toBe('');
+    expect(w.world._p).toBe('3,4');
+  });
+});

@@ -283,6 +283,16 @@ describe('ObjectWorld', () => {
       expect(floors.get("2,2")).toBe("fl_ice");
     });
 
+    it("wo[\"FallenPuzzle\"] = \"it_strip\": a sunk stone becomes a strip with its connections, joined with one there (Enigmas wildcat)", () => {
+      const w = pw([B(2, 1, 2 | 4), { x: 2, y: 2, k: "it_strip", a: { $connections: "1" } }]);
+      w.fallenPuzzle = "it_strip";
+      floors.set("2,2", "fl_water");
+      w.hit(2, 1, 0, 0, -1, -6);
+      expect(floors.get("2,2")).toBe("fl_water");
+      // the stone is gone, one strip is left: S 2 | E 4 of the stone and W 1 of the old strip
+      expect(w.objects.filter((o) => !o.gone).map((o) => [o.kind, o.col, o.row, o.attrs.$connections])).toEqual([["it_strip", 2, 2, "7"]]);
+    });
+
     it("a blue fragment does not move into another stone", () => {
       const w = pw([B(2, 1, 4), B(3, 1, 1), B(2, 2, 0)]);
       w.hit(2, 1, 0, 0, -1, -6);

@@ -680,7 +680,7 @@ export class ObjectWorld {
   /** Lua function as action target (Object::performAction → lua::CallFunc). */
   /** actor: the marble index a sensor passes (Sensor::actor_enter → performAction(actor)). */
   onCallback: ((fn: string, value: boolean | number, sender: GameObject, actor?: number) => void) | null = null;
-  /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves. */
+  /** wo["FallenPuzzle"]: floor that a sunk puzzle stone leaves, or "it_strip": a strip with its connections. */
   fallenPuzzle = FALLEN_PUZZLE;
   /** Inventory of the player (item kinds, first = used by a click; Inventory::add_item inserts in front). */
   readonly inventories: string[][] = [[], []];
@@ -1237,7 +1237,7 @@ export class ObjectWorld {
   }
 
   /** findAdjacents: all puzzle stones of the colour touching each other. */
-  private puzzleAdjacents(o: GameObject): GameObject[] {
+  puzzleAdjacents(o: GameObject): GameObject[] {
     const color = o.attrs.color ?? '';
     const seen = new Set([o]);
     const todo = [o];
@@ -1351,6 +1351,15 @@ export class ObjectWorld {
       for (const p of list) {
         p.gone = true;
         this.unplace(p);
+        if (this.fallenPuzzle === 'it_strip') {
+          // PuzzleStone::on_floor_change: the floor stays; the stone becomes a strip with its connections,
+          // joined with those of a strip already there (SetItem replaces any item)
+          const old = this.itemAt(p.col, p.row);
+          const conn = this.conn(p) | (old?.cls === 'strip' ? stripConnections(old) : 0);
+          if (old) this.remove(old);
+          this.create('it_strip', p.col, p.row, { $connections: String(conn) });
+          continue;
+        }
         this.env.setFloor(p.col, p.row, this.fallenPuzzle);
         this.events.push({ type: 'floor', col: p.col, row: p.row });
       }
@@ -4762,7 +4771,8 @@ export function puzzleKind(kind: string, attrs: Record<string, string>): [string
     a.$connections = String([...sides].reduce((c, s) => c | ({ w: 1, s: 2, e: 4, n: 8 }[s] ?? 0), 0));
   }
   delete a.connections;
-  if (m[3]) a.$hollow = 'true';
+  // hollow = true (libpuzzle's tiles of the keys 5…9, P…Z, + and A…O) as the kind suffix
+  if (m[3] || a.hollow === 'true') a.$hollow = 'true';
   return [yellow ? 'st_puzzle_yellow' : 'st_puzzle', a];
 }
 
