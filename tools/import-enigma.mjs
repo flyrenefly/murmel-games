@@ -1056,6 +1056,8 @@ function convertLevel(pack, meta, xml, exp, lua) {
     // API 1: functions handed on as values (rails of lib/ant: construct → set_floor("fl-metal"))
     // escape the call analysis; floors named in the code are harmless, the supported ones may be set
     const api1Floors = lua.api1 ? [...new Set([...lua.code.matchAll(/"(fl-[\w-]+)"/g)].map((m) => api1Kind(m[1]) ?? m[1].replace(/-/g, '_')))] : [];
+    // lib/andreas_ghosts: ghosts_gradient(dir) = "fl-gradient"..(dir + 12), the four straight slopes under a ghost
+    if (lua.api1 && /function ghosts_gradient\b/.test(lua.code)) for (const g of ['fl-gradient13', 'fl-gradient14', 'fl-gradient15', 'fl-gradient16']) api1Floors.push(api1Kind(g) ?? g);
     for (const k of [...allTileKinds(lua.code), ...api1Floors, ...(lua.api1 ? api1VariableKinds(lua.code, callbacks) : [])]) {
       const v = kinds[k] === undefined ? runtimeKind(k) : null;
       if (!v || !runtimeOk(v)) continue;
