@@ -22,9 +22,11 @@ export function herkunftStore(sql: Sql): HerkunftStore {
 
     async rows(since) {
       // "C" collation: the same order as the JavaScript comparison of the memory store
-      return sql<HerkunftRow[]>`
+      const rows = await sql<HerkunftRow[]>`
         select to_char(day, 'YYYY-MM-DD') as day, domain, von, anzahl from herkunft_tag
         where day >= ${since} order by day, domain collate "C", von collate "C"`;
+      // a plain array of plain rows (the driver's result carries count, command, …)
+      return rows.map((r) => ({ day: r.day, domain: r.domain, von: r.von, anzahl: r.anzahl }));
     },
   };
 }
