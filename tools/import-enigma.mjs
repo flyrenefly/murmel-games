@@ -355,13 +355,13 @@ function objectDef(x, y, o) {
 }
 
 /** Lua of a level: code, its functions and the result of running its init on the export. */
-async function analyzeLua(xml, exp, initSteps, initNames = false) {
-  let code = luaCode(xml);
+async function analyzeLua(xml, exp, initSteps, initNames = false, key = '') {
+  let code = followInit(key, luaCode(xml));
   if (!code) return null;
   // Enigma's Lua API 1 (api1init.lua) for levels with compatibility below 1.10
   const api1 = (Number(attr(xml, /el:compatibility el:enigma="([0-9.]+)"/)) || 1.1) < 1.1;
   // libraries Murmel ships (libpento, API 2) run before the level, as Enigma preloads them
-  const libs = api1 ? [] : levelLibs(xml);
+  const libs = api1 ? [] : levelLibs(xml, key);
   // API 1: libraries the level preloads (el:dependency … el:preload="true", lib/ant …) run first
   if (api1) {
     // depth first: a library's own preloads come before it (lib/ralf needs lib/ant)
@@ -392,7 +392,9 @@ async function analyzeLua(xml, exp, initSteps, initNames = false) {
   } catch (e) {
     init = { world: {}, error: String(e) };
   }
-  return { code, libs, api1, initSteps, fns: new Set([...luaFunctions(code), ...libFunctions(libs)]), ...init };
+  // a maze of lib/libmaze is callable: mymaze(i, j) is its cell (Inverse Maze II)
+  const mazes = libs.some((l) => l.name === 'libmaze') ? [...code.matchAll(/^\s*(?:local\s+)?([A-Za-z_]\w*)\s*=\s*res\.maze\s*\(/gm)].map((m) => m[1]) : [];
+  return { code, libs, api1, initSteps, fns: new Set([...luaFunctions(code), ...libFunctions(libs), ...mazes]), ...init };
 }
 
 /** Images of an Oxyd stone of a flavor (e: b's images plus the peephole mask st_oxyde, models-2d.lua). */
@@ -440,9 +442,6 @@ const KNOWN_BROKEN = new Map([
   // the banana "pipe_exit" (under the white marble at the start) is not in the export; the flood
   // never starts in Murmel (Enigma: it travels through the pipes)
   ['enigma_v/andreas27_2', 'Rohrpost-Banane fehlt im Export'],
-  // the init shuffles the colour list; the first cross keeps the export's colour while Murmel's own
-  // shuffle colours the other 13 – the colours need not pair up
-  ['enigma_i/ant18_2', 'Init würfelt Oxyd-Farben (erstes Kreuz aus dem Export)'],
   // the horse plays Nim: it must press the trigger at home (horsehome) and push boulders; in Murmel
   // only marbles press triggers and scales (Enigma: every actor that does not fly, Trigger::actor_enter)
   ['enigma_ii/ral52_1', 'Pferd muss Auslöser drücken (Akteure auf Auslösern nicht gebaut)'],
@@ -466,6 +465,121 @@ export const INIT_NAMES = new Set([
   // spots_left = no["spot_left#*"]: the water floors become Oxyd stones on new floors in the same init
   'enigma_viii/andreas58_1',
 ]);
+
+/**
+ * Levels whose init throws dice for what the export already shows (Enigma's throw): Lua run right
+ * before the marker line makes Murmel's own throw agree with the exported world. Each was read.
+ */
+const INIT_FOLLOW = new Map([
+  // Ingrowing: the init shuffles 14 of 15 anchors and the 14 colours and draws the first cross at
+  // anchors[1] with oxydcolors[#anchors]. The export holds that cross (its Oxyd stone, anchor + (1, 1));
+  // its anchor lost the name under the cross's abyss, so the 14 named ones are the 13 still listed plus the
+  // one Enigma left out. The cross's floor goes first (the init removes it), its colour to place 14 – so
+  // the 13 crosses of the callbacks pair up with it.
+  ['enigma_i/ant18_2', ['-- Set the initial cross:', `-- Murmel: the first cross (anchor and colour) as Enigma threw it, from the exported world
+for o in no["oxyds#*"] do
+  anchors = (grp(fl(po(o) - po(1, 1))) + no["anchors#*"]:shuffle()):sub(1, 14)
+  for i = 1, #oxydcolors do
+    if oxydcolors[i] == o.oxydcolor then
+      oxydcolors[i], oxydcolors[#anchors] = oxydcolors[#anchors], oxydcolors[i]
+      break
+    end
+  end
+end`]],
+  // Tinker, Tailor: Goal = lib.math.cyclic_permutation(8); the init puts parahorse%Goal[j] onto paraplace%j –
+  // the exported horses show Enigma's Goal (which pattern the player has to build first)
+  ['enigma_vii/andreas46_4', ['connect(no["marble"], no["scissors_central"], true)', `-- Murmel: Goal as Enigma threw it, from the exported parahorses
+for j = 1, 8 do
+  local p = no["paraplace%"..j]
+  for k = 1, 8 do
+    local h = no["parahorse%"..k]
+    if -h and math.floor(h.x) == p.x and math.floor(h.y) == p.y then Goal[j] = k end
+  end
+end`]],
+  // Grow Your Own: the init builds a random maze (res.maze, persistent) and grows the passages of a random
+  // start cell; the export shows that start (the marble's cell: the grey cell with the most grey passages).
+  // Murmel's maze keeps those passages and has none at the start's other sides (Kruskal, start walls first).
+  ['enigma_iii/nat36_2', ['wo(maze, " ", 2*width+1, 2*height+1)', `-- Murmel: the start's passages as Enigma's maze had them, from the exported world
+maze.generator = function(m)
+  local start, most, open = nil, 0, {}
+  for cell in m do
+    if fl(cell:pos()):kind() == "fl_gray" then
+      local n, o = 0, {}
+      for d = WEST, NORTH do
+        if cell[d] ~= nil and fl(cell:pos() + ORI2DIR[d]):kind() == "fl_gray" then n, o[d] = n + 1, true end
+      end
+      if n > most then start, most, open = cell, n, o end
+    end
+  end
+  local first, rest = {}, {}
+  for cell in m do
+    for _, d in ipairs({EAST, SOUTH}) do
+      if cell[d] == false then
+        local other = cell:neighbor(d)
+        local back = m.dirs[d]
+        if (cell == start and open[d]) or (other == start and open[back]) then table.insert(first, {cell, d})
+        elseif cell ~= start and other ~= start then table.insert(rest, {cell, d}) end
+      end
+    end
+  end
+  local up = {}
+  local function root(c) while up[c] do c = up[c] end return c end
+  local shuffled = lib.lua.shuffle(rest)
+  for i = #first, 1, -1 do table.insert(shuffled, 1, first[i]) end
+  for _, wall in ipairs(shuffled) do
+    local r1, r2 = root(wall[1]), root(wall[1]:neighbor(wall[2]))
+    if r1 ~= r2 then
+      up[r2] = r1
+      wall[1]:connect(wall[2])
+    end
+  end
+end`]],
+  // Inverse Maze II: res.maze (area: the " " cells, standard renderer: passage open " " = abyss, walls "-" =
+  // wood) builds a random maze in the init; the export shows Enigma's. The cells take its passages, so the
+  // timer's updateline redraws from the maze that is there (rekruskal at the end of the init keeps it as -EAST).
+  ['enigma_vii/ral45_1', ['function remaze(value, sender)', `-- Murmel: the maze as Enigma generated it, from the exported world (open passage: abyss between two cells)
+for cell in mymaze do
+  for _, d in ipairs({EAST, SOUTH}) do
+    if cell[d] ~= nil then
+      local open = fl(cell:pos() + ORI2DIR[d]):kind() == "fl_abyss"
+      cell[d] = open
+      cell:neighbor(d)[mymaze.dirs[d]] = open
+    end
+  end
+end`]],
+]);
+
+/**
+ * Own attributes that hold objects (Enigma: Value(Object)); the export writes them as the object's
+ * name. Murmel keeps them as objects (src/lua/runtime.ts OBJECT_REF + "n:" + name). Each was read.
+ */
+const OBJECT_ATTRS = new Map([
+  // connect(): obj1["_fellow"] = obj2 – call_scissors compares it with the scissors (sender == partner)
+  ['enigma_vii/andreas46_4', ['_fellow']],
+]);
+
+/** The exported world with the OBJECT_ATTRS values as object refs (by name). */
+function objectAttrs(key, w) {
+  const keys = OBJECT_ATTRS.get(key);
+  if (!keys) return w;
+  const fix = (o) => {
+    if (!o) return o;
+    const c = { ...o };
+    for (const k of keys) if (typeof c[k] === 'string' && c[k] !== '') c[k] = `\u0001n:${c[k]}`;
+    return c;
+  };
+  return { ...w, cells: w.cells.map((c) => c.map(fix)), actors: w.actors.map((a) => ({ ...a, o: fix(a.o) })) };
+}
+
+/** The level's code with the INIT_FOLLOW lines before its marker (the marker must be there). */
+function followInit(key, code) {
+  const follow = INIT_FOLLOW.get(key);
+  if (!follow) return code;
+  const [marker, lua] = follow;
+  const i = code.indexOf(marker);
+  if (i < 0) throw new Error(`${key}: INIT_FOLLOW-Marke fehlt`);
+  return `${code.slice(0, i)}${lua}\n${code.slice(i)}`;
+}
 
 function convert(pack, meta, xml, exp, lua) {
   blockers = new Set();
@@ -1080,7 +1194,8 @@ for (const pack of readPacks()) {
       continue;
     }
     const xml = readFileSync(file, 'utf8');
-    const exp = exportIndex.get(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`);
+    const exported = exportIndex.get(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`);
+    const exp = exported && { ...exported, world: objectAttrs(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`, exported.world) };
     if (!exp) {
       reject('nicht exportiert');
       continue;
@@ -1089,7 +1204,7 @@ for (const pack of readPacks()) {
     if (process.env.PROBE && !new RegExp(process.env.PROBE).test(current)) continue;
     if (process.env.PROGRESS) console.log('>>', current);
     const key = `${pack.name}/${meta.xpath.replace(/^\.\//, '')}`;
-    const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp, INIT_LOOPS.get(key), INIT_NAMES.has(key)));
+    const lvl = convert(pack.name, meta, xml, exp, await analyzeLua(xml, exp, INIT_LOOPS.get(key), INIT_NAMES.has(key), key));
     if (lvl) {
       levels.push(lvl);
       byPath.set(`${pack.name}/${meta.xpath.replace(/^\.\//, '')}`, lvl);

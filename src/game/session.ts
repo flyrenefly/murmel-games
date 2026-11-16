@@ -244,12 +244,18 @@ export class GameSession {
       ph.removeSignal(x, y);
       signalsChanged();
     };
+    const setOxydColor = (x: number, y: number, symbol: string): void => {
+      const s = liveSignalAt(lv, x, y);
+      if (!s) return;
+      s.symbol = symbol;
+      this.board.setSymbol(s.index, symbol);
+    };
     const shuffleOxyd = (): void => {
       this.colorSignals();
       this.board.shuffle(this.rng);
       lv.signals.forEach((x) => (x.symbol = this.board.symbolOf(x.index)));
     };
-    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd, sound: (n, v) => this.ui.enigmaSound(n, v) }, this.world, this.globalForce);
+    const host = makeLuaHost({ level: lv, objects: ow, physics: ph, redraw: () => this.ui.floorChanged(), random: this.rng, addOxyd, removeOxyd, shuffleOxyd, setOxydColor, sound: (n, v) => this.ui.enigmaSound(n, v) }, this.world, this.globalForce);
     const l = await startLua(lv.lua.code, host, lv.lua.libs ?? [], lv.compat < 1.1);
     this.lua = l;
     this.luaHost = host;

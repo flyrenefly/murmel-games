@@ -126,8 +126,8 @@ test('API 1: Spiegel mit Richtung im Namen ("st-mirror-3>") sind Laufzeit-Arten 
   assert.deepEqual(runtimeKinds('function add3()\n  set_stone("st-mirror-3>", 5, 1)\nend', true).filter((k) => k.includes('mirror')), ['st_mirror_triangle_e']);
 });
 
-test('Gummibänder/Drähte eines Objekts als Lua-Objekte (sender["rubbers"]) werden abgelehnt', () => {
-  assert.deepEqual(problems('function cb(v, sender)\n  sender["rubbers"]:kill()\nend'), ['obj.rubbers']);
+test('Gummibänder/Drähte eines Objekts als Lua-Objekte (sender["rubbers"]:kill(), fellows) gehen (Tinker, Tailor)', () => {
+  assert.deepEqual(problems('function cb(v, sender)\n  sender["rubbers"]:kill()\n  local p = sender["fellows"][1]\nend'), []);
 });
 
 test('Laufzeit-Arten: Akteure als "#ac_…" und in ti-Einträgen (Road to Eden, Tutoxyd\'s Pyramid)', async () => {
@@ -231,4 +231,43 @@ function set_grates()
     wo:drawMap(res.composer(ti), po(1, 1), "  ", {"#, -X-"})
 end`;
   assert.deepEqual(runtimeKinds(code).sort(), ['fl_metal', 'fl_space', 'st_grate', 'st_greenbrown']);
+});
+
+test('lib/libpuzzle nur für Levels, deren Rückrufe res.puzzle zeichnen; im Init mischt sie nicht (Oxyd-Puzzle)', async () => {
+  const { levelLibs, luaInit, luaProblems, luaFunctions } = await import('./lua-check.mjs');
+  const dep = '<el:dependency el:path="lib/libpuzzle" el:id="lib/libpuzzle" el:release="3" el:preload="true"/>';
+  const lua = (code) => `${dep}<el:luamain><![CDATA[${code}]]></el:luamain>`;
+  const runtime = 'ti["P"] = {"st_puzzle_yellow", cluster=1}\nfunction f()\n  wo:drawMap(res.puzzle(ti, "P"), po(1, 1), " ", {"PP"})\nend';
+  assert.deepEqual(levelLibs(lua(runtime)).map((l) => l.name), ['libpuzzle']);
+  assert.deepEqual(levelLibs(lua('wo(res.puzzle(ti, "P"), " ", {"PP"})')), []);
+  assert.deepEqual([...luaProblems(runtime, luaFunctions(runtime))], []);
+  // the init's own puzzles (in the export): the finalizer only forgets them
+  const code = 'ti[" "] = {"fl_bright"}\nti["P"] = {"st_puzzle_yellow", cluster=1}\nwo(res.puzzle(ti, "P"), " ", {"PP "})\nwo["_done"] = "1"';
+  const w = world(3, 1, { 0: [{ k: 'fl_bright' }, { k: 'st_puzzle_yellow', $connections: '4' }, null], 1: [{ k: 'fl_bright' }, { k: 'st_puzzle_yellow', $connections: '1' }, null] });
+  const r = await luaInit(code, w, levelLibs(lua(runtime)), false, 2_000_000, true);
+  assert.equal(r.error, '');
+  assert.equal(r.world._done, '1');
+});
+
+test('lib/libmaze nur für die freigeschalteten Levels; Labyrinth-Zellen über Kartenschlüssel im Init (Inverse Maze II)', async () => {
+  const { levelLibs, luaInit } = await import('./lua-check.mjs');
+  const xml = '<el:dependency el:path="lib/libmaze" el:id="lib/libmaze" el:release="2" el:preload="true"/>';
+  assert.deepEqual(levelLibs(xml, 'enigma_vii/ral45_1').map((l) => l.name), ['liblua', 'libmap', 'libmaze']);
+  assert.deepEqual(levelLibs(xml, 'enigma_i/luc10_2'), []);
+  // three cells in a row (keys " "), spacing 1: the export shows the passage 0-1 open (abyss), 1-2 closed (wood)
+  const code = [
+    'ti[" "] = {"fl_abyss"}', 'ti["-"] = {"fl_wood"}', 'ti["."] = {"fl_lawn"}',
+    'm = res.maze(ti, {area = {" "}, persistent = true, render = {" ", "-", " "}})',
+    'wo(m, ".", {"     "})',
+    'for cell in m do',
+    '  if cell[EAST] ~= nil then cell[EAST] = fl(cell:pos() + E):kind() == "fl_abyss" end',
+    'end',
+    'local n = 0',
+    'for cell in m do n = n + 1 end',
+    'wo["_n"] = n .. "," .. tostring(m(0, 0)[EAST]) .. "," .. tostring(m(1, 0)[EAST])',
+  ].join('\n');
+  const cells = [[{ k: 'fl_abyss' }, null, null], [{ k: 'fl_abyss' }, null, null], [{ k: 'fl_abyss' }, null, null], [{ k: 'fl_wood' }, null, null], [{ k: 'fl_abyss' }, null, null]];
+  const r = await luaInit(code, { w: 5, h: 1, cells, actors: [] }, levelLibs(xml, 'enigma_vii/ral45_1'));
+  assert.equal(r.error, '');
+  assert.equal(r.world._n, '3,true,false');
 });

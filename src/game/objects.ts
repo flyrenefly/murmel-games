@@ -1237,7 +1237,7 @@ export class ObjectWorld {
   }
 
   /** findAdjacents: all puzzle stones of the colour touching each other. */
-  private puzzleAdjacents(o: GameObject): GameObject[] {
+  puzzleAdjacents(o: GameObject): GameObject[] {
     const color = o.attrs.color ?? '';
     const seen = new Set([o]);
     const todo = [o];
@@ -4762,7 +4762,8 @@ export function puzzleKind(kind: string, attrs: Record<string, string>): [string
     a.$connections = String([...sides].reduce((c, s) => c | ({ w: 1, s: 2, e: 4, n: 8 }[s] ?? 0), 0));
   }
   delete a.connections;
-  if (m[3]) a.$hollow = 'true';
+  // hollow = true (libpuzzle's tiles of the keys 5…9, P…Z, + and A…O) as the kind suffix
+  if (m[3] || a.hollow === 'true') a.$hollow = 'true';
   return [yellow ? 'st_puzzle_yellow' : 'st_puzzle', a];
 }
 

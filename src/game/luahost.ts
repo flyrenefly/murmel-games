@@ -8,6 +8,8 @@ import { Enemy, enemyKind } from './actors';
 import { oxydSymbol, type Level } from './level';
 import type { GameObject, ObjectWorld } from './objects';
 import type { PhysicsWorld } from './physics';
+import type { Rubberband } from './rubber';
+import { OBJECT_LIST } from '../lua/runtime';
 
 export interface LuaWorld {
   level: Level;
@@ -22,6 +24,8 @@ export interface LuaWorld {
   removeOxyd?(x: number, y: number): void;
   /** wo:shuffleOxyd() during play: colour new Oxyd stones, deal the closed ones' colours anew. */
   shuffleOxyd?(): void;
+  /** OxydStone oxydcolor set during play (Ingrowing colours each new cross): the stone's symbol. */
+  setOxydColor?(x: number, y: number, symbol: string): void;
   /** obj:sound(name, volume) during play. */
   sound?(name: string, volume: number): void;
 }
@@ -176,6 +180,46 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     else e.loop = truthy(value) && value !== '0';
   };
 
+  /** A band from the marble (index) or another actor's body to the stone a2 (following it when it moves). */
+  const stoneBand = (from: number | Enemy, a2: string, def: Parameters<PhysicsWorld['addRubber']>[3]) => {
+    const [x, y] = host.pos(a2);
+    const follow = a2.startsWith('o:') ? () => { const o = byId(a2); return o ? { x: o.col + 0.5, y: o.row + 0.5 } : null; } : undefined;
+    physics.addRubber(from, x + 0.5, y + 0.5, def, follow);
+  };
+  /** Rubber bands as Lua objects ("r:<n>", numbered as Lua first meets them): fellows, rubbers, kill. */
+  const bandIds = new Map<Rubberband, number>();
+  const bandRef = (r: Rubberband): string => {
+    let n = bandIds.get(r);
+    if (n === undefined) bandIds.set(r, (n = bandIds.size + 1));
+    return `r:${n}`;
+  };
+  const bandOf = (ref: string): Rubberband | null => physics.rubbers.find((r) => bandIds.get(r) === Number(ref.slice(2))) ?? null;
+  /** The actor ref of a band's body. */
+  const bodyRef = (b: unknown): string | null => {
+    for (let i = 0; i <= level.actors.length; i++) {
+      const m = marbleIndex(i);
+      if ((m >= 0 ? physics.marbles[m] : enemyOf(level, physics, i)) === b) return `a:${i}`;
+    }
+    return null;
+  };
+  /** Both anchors of a band: actors, or the stone at the fixed end. */
+  const anchors = (r: Rubberband): (string | null)[] => [bodyRef(r.a1), r.a2 ? bodyRef(r.a2) : host.at('st', Math.floor(r.end.x), Math.floor(r.end.y))];
+  /** Object.cc "fellows" / "rubbers": the other anchors of an object's bands (and its wire fellows) / the bands. */
+  const fellows = (ref: string): string[] => {
+    const out: string[] = [];
+    for (const r of physics.rubbers) {
+      const [a, b] = anchors(r);
+      if (a === ref && b) out.push(b);
+      else if (b === ref && a) out.push(a);
+    }
+    const o = ref.startsWith('o:') ? byId(ref) : null;
+    // wire fellows: "#<id>" of wires made during play, names from the export (whose actors are the band
+    // partners at the start – those come from the bands above, as they are now)
+    if (o) for (const t of tokens(o)) out.push(...(/^#\d+$/.test(t) ? [`o:${t.slice(1)}`] : host.find(t).filter((r) => !r.startsWith('a:'))));
+    return [...new Set(out)];
+  };
+  const rubbers = (ref: string): string[] => physics.rubbers.filter((r) => anchors(r).includes(ref)).map(bandRef);
+
   const host: LuaHost = {
     initSteps: lua.initSteps,
     initNames: lua.initNames,
@@ -205,6 +249,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     },
     exists(ref) {
       if (ref.startsWith('o:')) return byId(ref) !== null;
+      if (ref.startsWith('r:')) return bandOf(ref) !== null;
       if (ref.startsWith('w:')) return wireAlive(ref.slice(2));
       if (ref.startsWith('a:')) return true;
       const { l, x, y } = parse(ref);
@@ -225,12 +270,23 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
     },
     get(ref, key) {
       if (ref.startsWith('w:')) return key === 'name' ? ref.slice(2) : key === 'kind' ? 'ot_wire' : null;
+      if (ref.startsWith('r:')) return key === 'kind' ? 'ot_rubberband' : null;
+      if (key === 'fellows') return OBJECT_LIST + fellows(ref).join(',');
+      if (key === 'rubbers') return OBJECT_LIST + rubbers(ref).join(',');
       if (ref.startsWith('o:')) {
         const o = byId(ref);
         if (!o) return null;
         if (key === 'name') return o.name || null;
         if (key === 'kind') return o.kind;
         if (key === 'state') return String(o.state);
+        // PuzzleStone: hollow is an object flag; intensity (libpuzzle's shuffle) defaults to 3 (objects.xml)
+        if (o.cls === 'puzzle' && key === 'hollow') return o.attrs.$hollow === 'true' ? 'true' : 'false';
+        if (o.cls === 'puzzle' && key === 'intensity') return o.attrs.intensity ?? '3';
+        // connections: the open sides as Enigma names them (n, e, s, w in this order)
+        if (o.cls === 'puzzle' && key === 'connections') {
+          const c = Number(o.attrs.$connections) || 0;
+          return ([[8, 'n'], [4, 'e'], [2, 's'], [1, 'w']] as const).filter(([b]) => c & b).map(([, d]) => d).join('');
+        }
         return o.attrs[key] ?? null;
       }
       if (key === 'kind' && ref.startsWith('c:')) {
@@ -261,6 +317,12 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         if (m >= 0) physics.marbles[m].adhesion = Number.isFinite(v) ? v : 1;
         const e = enemyOf(level, physics, n);
         if (e?.kind === 'killer') e.mouseFactor = Number.isFinite(v) ? v : 2;
+      }
+      // OxydStone::setAttr("oxydcolor"): a named stone (its st_oxyd_ref) or a plain one of the map
+      if (key === 'oxydcolor' && (ref.startsWith('c:st:') || byId(ref)?.kind === 'st_oxyd_ref')) {
+        const [x, y] = host.pos(ref);
+        const symbol = oxydSymbol(value);
+        if (symbol) w.setOxydColor?.(x, y, symbol);
       }
       if (ref.startsWith('o:')) {
         const o = byId(ref);
@@ -302,6 +364,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (o) objects.sendMessage(o, msg, truthy(value) && n !== 0, Number.isFinite(n) ? n : undefined);
     },
     kill(ref) {
+      if (ref.startsWith('r:')) {
+        const r = bandOf(ref);
+        if (r) physics.removeRubber(r);
+        return;
+      }
       if (ref.startsWith('w:')) {
         const pair = wires.get(ref.slice(2));
         if (pair) unwire(...pair);
@@ -399,11 +466,11 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (key === 'GlobalForce' || key === 'FrictionStrength' || key === 'ElectricStrength') applyWorld(physics, world, force);
     },
     size: () => [level.width, level.height],
-    /** PuzzleStone "get_cluster": the stones of the fragment (none for other objects). */
-    cluster(ref) {
+    /** PuzzleStone "get_cluster" / "get_adjacents": the stones of the fragment / of the huddle (none for other objects). */
+    cluster(ref, adjacent) {
       const o = ref.startsWith('o:') ? byId(ref) : null;
       if (!o || o.cls !== 'puzzle') return [];
-      return objects.puzzleFragment(o).cluster.map((p) => `o:${p.id}`);
+      return (adjacent ? objects.puzzleAdjacents(o) : objects.puzzleFragment(o).cluster).map((p) => `o:${p.id}`);
     },
     shuffleOxyd() {
       w.shuffleOxyd?.();
@@ -462,8 +529,9 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
       if (e1 && a2) {
         const m2 = marbleOf(a2);
         const b = m2 >= 0 ? physics.marbles[m2] : enemy(a2);
-        if (!b) throw new Error('Murmel kann dieses Gummiband nicht spannen');
-        physics.addRubberBodies(e1, b, def);
+        if (b) physics.addRubberBodies(e1, b, def);
+        else if (a2.startsWith('a:')) throw new Error('Murmel kann dieses Gummiband nicht spannen');
+        else stoneBand(e1, a2, def);
         return;
       }
       if (m < 0 || !a2) throw new Error('Murmel kann dieses Gummiband nicht spannen');
@@ -477,9 +545,7 @@ export function makeLuaHost(w: LuaWorld, world: Record<string, string>, force: {
         physics.addRubberBodies(physics.marbles[m], e2, def, m);
         return;
       }
-      const [x, y] = host.pos(a2);
-      const follow = a2.startsWith('o:') ? () => { const o = byId(a2); return o ? { x: o.col + 0.5, y: o.row + 0.5 } : null; } : undefined;
-      physics.addRubber(m, x + 0.5, y + 0.5, def, follow);
+      stoneBand(m, a2, def);
     },
   };
   return host;

@@ -43,16 +43,32 @@ export const LIBS = {
   'lib/natmaze': { name: 'natmaze', kinds: [] },
   // maps (wo:newMap, map .. map, "k" * map, map:sub/paste/replace …): replaces the shim's subset
   'lib/libmap': { name: 'libmap', kinds: [], deps: ['lib/liblua'] },
+  // res.puzzle (puzzle stones joined by their cluster, then shuffled with pull_rotate): only for levels whose
+  // callbacks draw puzzles – in the init the export holds them already (Oxyd-Puzzle)
+  'lib/libpuzzle': { name: 'libpuzzle', kinds: ['st_puzzle'], when: (code) => /\bres\.puzzle\b/.test(bodies(code)) },
+  // res.maze with Enigma's generator and renderers: only for the levels that use the maze itself (its cells
+  // in the init or during play). The others draw it once in the init, which the export holds; for them the
+  // shim's res.maze only passes its resolver on (the library would build a maze nobody uses at every start).
+  'lib/libmaze': {
+    name: 'libmaze',
+    kinds: [],
+    deps: ['lib/libmap'],
+    levels: new Set(['enigma_ix/raoul33_1', 'enigma_x/raoul41_1', 'enigma_iii/nat36_2', 'enigma_vii/ral45_1']),
+  },
 };
 export function libCode(name) {
   return readFileSync(new URL(`../src/lua/lib/${name}.lua`, import.meta.url), 'utf8');
 }
-/** The supported libraries a level depends on (el:dependency), in order, each after its own dependencies. */
-export function levelLibs(xml) {
+/**
+ * The supported libraries a level depends on (el:dependency), in order, each after its own dependencies.
+ * key ("pack/file"): for libraries only some levels get (LIBS levels).
+ */
+export function levelLibs(xml, key = '') {
   const out = [];
+  const code = luaCode(xml);
   const add = (path) => {
     const lib = LIBS[path];
-    if (!lib || out.includes(lib)) return;
+    if (!lib || out.includes(lib) || (lib.when && !lib.when(code)) || (lib.levels && !lib.levels.has(key))) return;
     for (const d of lib.deps ?? []) add(d);
     out.push(lib);
   };
@@ -69,11 +85,13 @@ export function libFunctions(libs) {
     const code = libCode(l.name);
     for (const f of luaFunctions(code)) names.add(f);
     for (const m of code.matchAll(/^\s*[A-Za-z_]\w*\.([A-Za-z_]\w*)\s*=(?!=)/gm)) names.add(`:${m[1]}`);
+    // methods in a table constructor (libmaze: context.cellmeta = {…, pos = function (cell) …})
+    for (const m of code.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*function\b/gm)) names.add(`:${m[1]}`);
   }
   return names;
 }
 /** Resolvers that really work during play (the rest only pass their argument on). */
-const RESOLVERS = new Set(['autotile', 'composer', 'pento', 'random']);
+const RESOLVERS = new Set(['autotile', 'composer', 'maze', 'pento', 'puzzle', 'random']);
 
 export function luaCode(xml) {
   return /<el:luamain><!\[CDATA\[([\s\S]*?)\]\]><\/el:luamain>/.exec(xml)?.[1] ?? '';
@@ -225,8 +243,6 @@ export function luaProblems(code, fns, api1 = false, entries = undefined) {
   const ok = [...raw.matchAll(/wo:add\(\s*(YIN|YANG|[01])\s*,\s*\{\s*"it_\w+"\s*(,\s*(connections|text)\s*=[^}]*)?\}\s*\)/g)].length + [...raw.matchAll(/wo:add\(\s*\{\s*"ot_(rubberband|timer|counter|wire)"/g)].length
     + [...raw.matchAll(DYNAMIC_ADD)].filter((m) => dynamicItems(code, m[2]) !== null).length;
   if (adds > ok) problems.add(':add');
-  // the rubber bands and wires of an object as Lua objects (sender["rubbers"]:kill(), Tinker, Tailor): not built
-  for (const m of raw.matchAll(/\[\s*"(rubbers|fellows)"\s*\]|\.(rubbers|fellows)\b/g)) problems.add(`obj.${m[1] ?? m[2]}`);
   // function parameters may hold functions (local f in "function scan(f)")
   for (const m of body.matchAll(/\bfunction\b[\w\s.:]*\(([^)]*)\)/g)) for (const p of m[1].split(',')) locals.add(p.trim());
   for (const m of body.matchAll(/(^|[^.:\w])([A-Za-z_]\w*)\s*\(/g)) {
@@ -560,6 +576,12 @@ export async function luaInit(code, w, libs = [], api1 = false, initSteps = unde
       const o = byRef.get(r);
       if (!o) return null;
       if (k === 'kind') return o.k;
+      // PuzzleStone as src/game/luahost.ts reads it: connections from $connections (n, e, s, w), hollow flag
+      if (/^st_puzzle/.test(o.k) && k === 'connections') {
+        const c = Number(o.$connections) || 0;
+        return [[8, 'n'], [4, 'e'], [2, 's'], [1, 'w']].filter(([b]) => c & b).map(([, d]) => d).join('');
+      }
+      if (/^st_puzzle/.test(o.k) && k === 'hollow') return o.$hollow === 'true' || o.hollow === 'true' ? 'true' : 'false';
       return o[k] ?? null;
     },
     set() {},

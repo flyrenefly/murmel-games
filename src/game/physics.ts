@@ -798,9 +798,12 @@ export class PhysicsWorld {
     return this.rubbers.some((r) => r.a1 === m && !r.a2 && Math.abs(r.end.x - x) < 1e-6 && Math.abs(r.end.y - y) < 1e-6);
   }
 
-  /** A new band from the marble to a stone centre (st_rubberband; follow: a moving stone's centre). */
-  addRubber(i: number, x: number, y: number, def: Omit<RubberDef, 'a' | 'b'>, follow?: () => { x: number; y: number } | null): void {
-    const m = this.marbles[i];
+  /**
+   * A new band from the marble i (or another actor's body: a horse tied to a stone, Tinker, Tailor) to a
+   * stone centre (st_rubberband; follow: a moving stone's centre).
+   */
+  addRubber(i: number | Body, x: number, y: number, def: Omit<RubberDef, 'a' | 'b'>, follow?: () => { x: number; y: number } | null): void {
+    const m = typeof i === 'number' ? this.marbles[i] : i;
     const last = { x, y };
     const fixed = follow
       ? {
@@ -808,7 +811,14 @@ export class PhysicsWorld {
           get y() { const p = follow(); if (p) Object.assign(last, p); return last.y; },
         }
       : last;
-    this.rubbers.push(new Rubberband({ ...def, a: i, b: [x, y] }, m, null, fixed));
+    this.rubbers.push(new Rubberband({ ...def, a: typeof i === 'number' ? i : -1, b: [x, y] }, m, null, fixed));
+    this.recountBands();
+  }
+
+  /** Rubberband killed by Lua (sender["rubbers"]:kill()). */
+  removeRubber(r: Rubberband): void {
+    const k = this.rubbers.indexOf(r);
+    if (k >= 0) this.rubbers.splice(k, 1);
     this.recountBands();
   }
 
