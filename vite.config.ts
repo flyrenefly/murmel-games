@@ -7,6 +7,7 @@ import EN_INDEX from './src/i18n/en/seite-index';
 import EN_PRESSE from './src/i18n/en/seite-presse';
 import EN_UEBER from './src/i18n/en/seite-ueber';
 import { englischeSeite } from './src/i18n/seiten-en';
+import { vorladeListen } from './src/vorladen-listen';
 
 /** All files below dir, as paths with forward slashes. */
 function files(dir: string, rel = ''): string[] {
@@ -43,7 +44,8 @@ function cspSafeFengari(): Plugin {
 
 /**
  * Offline play: writes dist/sw.js from src/sw-template.js with the list of files to precache
- * (everything but the level packs, which are cached when opened) and a version hash of them.
+ * (everything but the level packs, which are cached when opened) and a version hash of them. The two
+ * classic graphics sets go into SAETZE: the service worker precaches only the active one (src/vorladen.ts).
  */
 function offline(): Plugin {
   let outDir = 'dist';
@@ -56,16 +58,18 @@ function offline(): Plugin {
     closeBundle() {
       // statistik.html, forum.html, loesbarkeit.html, bestenliste.html and spielerlevels.html need the server anyway: not precached;
       // the level pages (level/, docs/SPEC-levelseiten.md) and the press kit (presse.html, presse/) are for search engines and links, not for offline play
-      const skip = /^((en\/)?level\/.*|(en\/)?presse\.html|presse\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevels-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
+      const skip = /^((en\/)?level\/.*|(en\/)?presse\.html|presse\/.*|\.htaccess|sw\.js|statistik\.html|assets\/statistik-[\w-]+\.js|forum\.html|assets\/forumseite-[\w-]+\.js|loesbarkeit\.html|assets\/loesbarkeit-[\w-]+\.js|bestenliste\.html|assets\/bestenliste-[\w-]+\.js|spielerlevels\.html|assets\/spielerlevelseite-[\w-]+\.js|robots\.txt|sitemap\.xml|og-image\.png|levels\/enigma\/.*\.json)$|\.map$/;
       const list = files(outDir).filter((f) => !skip.test(f)).sort();
       const template = readFileSync(resolve(__dirname, 'src/sw-template.js'), 'utf8');
       const hash = createHash('sha256').update(template);
       for (const f of list) hash.update(f).update(readFileSync(join(outDir, f)));
       // the English start page (en/index.html) is precached as en/, like index.html as ./
-      const precache = ['./', ...list.filter((f) => f !== 'index.html').map((f) => (f === 'en/index.html' ? 'en/' : f))];
+      const { grund, saetze } = vorladeListen(list);
+      const precache = ['./', ...grund.filter((f) => f !== 'index.html').map((f) => (f === 'en/index.html' ? 'en/' : f))];
       const sw = template
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
-        .replace('__PRECACHE__', JSON.stringify(precache));
+        .replace('__PRECACHE__', JSON.stringify(precache))
+        .replace('__SAETZE__', JSON.stringify(saetze));
       writeFileSync(join(outDir, 'sw.js'), sw);
     },
   };
@@ -146,7 +150,8 @@ export default defineConfig({
         loesbarkeit: resolve(__dirname, 'loesbarkeit.html'),
         bestenliste: resolve(__dirname, 'bestenliste.html'),
         editor: resolve(__dirname, 'editor.html'),
-        spielerlevels: resolve(__dirname, 'spielerlevels.html'),
+        // not "spielerlevels": that name is also the chunk of src/spielerlevels.ts, which the game needs offline
+        spielerlevelseite: resolve(__dirname, 'spielerlevels.html'),
         presse: resolve(__dirname, 'presse.html'),
       },
       output: {

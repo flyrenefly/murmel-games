@@ -13,6 +13,7 @@ import { randomSeed } from './game/rng';
 import { emptyProgress, mergeProgress, parseProgress, type Progress, recordAttempt, recordPlay, recordWin, serializeProgress, summarize } from './game/progress';
 import { type ActorSprite, ClassicView } from './render/classic';
 import { classicSet, STYLE_ORDER, type StyleId } from './render/styles';
+import { satzFragen, satzMerken, stilWahl } from './vorladen';
 import type { ThemeId } from './render/themes';
 import { View } from './render/view';
 import { anbieterRueckkehrPruefen, beiKontoWechsel, darfEinreichen, istAdmin, kontoLabel, kontoLaden, kontoOeffnen, type KontoHost, mailLinkPruefen } from './konto-ui';
@@ -205,11 +206,29 @@ function updateHud(): void {
   btnTheme.textContent = t('Stil: {stil}', { stil: styleLabel() });
 }
 
-function cycleStyle(): void {
-  style = STYLE_ORDER[(STYLE_ORDER.indexOf(style) + 1) % STYLE_ORDER.length];
-  store.set('style', style);
-  buildRenderer();
-  updateHud();
+let stilWechselt = false;
+/**
+ * Next style. Only the graphics set of the active style is in the offline cache (src/vorladen.ts):
+ * online a missing set is fetched in the background, offline a style without its set is skipped.
+ */
+async function cycleStyle(): Promise<void> {
+  if (stilWechselt) return;
+  stilWechselt = true;
+  try {
+    const [gfx32, retro] = await Promise.all([satzFragen('gfx32', false), satzFragen('gfx32-retro', false)]);
+    const wahl = stilWahl(STYLE_ORDER, style, { gfx32, 'gfx32-retro': retro }, navigator.onLine);
+    if (wahl.uebersprungen.length) showToast(t('Dieser Stil ist offline noch nicht geladen – übersprungen.'), 2600);
+    else if (wahl.nachladen) showToast(t('Grafik wird für offline geladen …'), 2000);
+    if (wahl.nachladen) void satzFragen(wahl.nachladen, true);
+    style = wahl.stil;
+    store.set('style', style);
+    const satz = classicSet(style);
+    if (satz) void satzMerken(satz);
+    buildRenderer();
+    updateHud();
+  } finally {
+    stilWechselt = false;
+  }
 }
 
 let toastTimer = 0;
@@ -1416,7 +1435,7 @@ function frame(now: number): void {
 // ---------- wiring ----------
 btnTheme.addEventListener('click', (e) => {
   e.stopPropagation();
-  cycleStyle();
+  void cycleStyle();
 });
 btnRestart.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -1523,7 +1542,7 @@ window.addEventListener('keydown', (e) => {
     useItem();
     return;
   }
-  if (e.code === 'KeyT') cycleStyle();
+  if (e.code === 'KeyT') void cycleStyle();
   else if (e.code === 'KeyR' && mode !== 'menu') restart();
   else if (e.code === 'KeyH' && mode === 'play') void tipps.oeffnen();
   else if (e.key === '+' || e.code === 'NumpadAdd') changeMouseSpeed(1);
@@ -1650,9 +1669,20 @@ requestAnimationFrame((t) => {
 };
 
 // Offline play: the service worker (dist/sw.js, built by the offline plugin in vite.config.ts)
-// keeps the game, its graphics and every opened level pack in the browser cache.
+// keeps the game, its graphics and every opened level pack in the browser cache. It precaches only the
+// graphics set of the active style (src/vorladen.ts): named before it installs, completed once it runs.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  const register = () => void navigator.serviceWorker.register('./sw.js').catch(() => {});
+  const startSatz = classicSet(style);
+  const gemerkt = startSatz ? satzMerken(startSatz) : Promise.resolve();
+  const register = () =>
+    void gemerkt
+      .then(() => navigator.serviceWorker.register('./sw.js'))
+      .then(() => navigator.serviceWorker.ready)
+      .then(() => {
+        const satz = classicSet(style);
+        if (satz) void satzFragen(satz, true);
+      })
+      .catch(() => {});
   // main.ts waits for level data first, so the load event may already be over
   if (document.readyState === 'complete') register();
   else addEventListener('load', register);

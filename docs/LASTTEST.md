@@ -99,7 +99,7 @@ auf der Hacker-News-Startseite bringt einige tausend bis ~20 000 Besucher pro St
    `gfx32-retro` zu „klassisch-retro“ (`src/render/styles.ts`); nur den aktiven Grafiksatz vorladen und den
    anderen (`gfx32` bzw. `gfx32-retro`) erst bei Umschalten in den Cache legen – spart ≈ 1,1–1,45 MB
    und ~340 Anfragen je Erstbesuch. Alternativ die Grafiken zu einem Sprite/Atlas bündeln (eine
-   Anfrage statt 686).
+   Anfrage statt 686). **Umgesetzt**, siehe „Nachtrag: Erstbesuch verkleinern“.
 2. **Bandbreite des Tarifs klären** (IONOS-Datenblatt/Kundenkonto) und, falls < 1 Gbit/s, einen
    zweiten Lasttest von einem Rechner mit schneller Leitung oder von zwei Standorten gleichzeitig
    fahren (`node tools/lasttest.mjs --stufen 200`), um die volle 200er-Stufe zu messen.
@@ -126,6 +126,55 @@ auf der Hacker-News-Startseite bringt einige tausend bis ~20 000 Besucher pro St
 7. **API-Protokoll**: Jede Anfrage erzeugt ≈ 200 Byte Log; bei 3 × 10 MB Rotation hält das Log
    ≈ 150 000 Anfragen. Unter Ansturm sind das wenige Stunden – für die Fehlersuche während der
    Bekanntmachung rechtzeitig sichern oder `/api/health` vom Protokoll ausnehmen.
+
+## Nachtrag: Erstbesuch verkleinern (16.11.2026)
+
+Umsetzung von Empfehlung 1: Der Service Worker lädt nur noch den Grafiksatz des aktiven Stils vor.
+
+- **Build** (`vite.config.ts`, `src/vorladen-listen.ts`): `PRECACHE` enthält alles außer
+  `enigma/gfx32/` und `enigma/gfx32-retro/`; die beiden Sätze stehen getrennt in `SAETZE`. Der
+  Retro-Satz enthält zusätzlich die 4 `gfx32`-Bilder, die ihm fehlen (Rückfall in
+  `src/render/classic.ts`).
+- **Welcher Satz:** Die Seite legt den Satz des aktiven Stils vor dem Registrieren als `grafiksatz` in den
+  Cache `murmel-einstellungen` (wie die Sprache); der Service Worker liest ihn beim Installieren, ohne
+  Eintrag „Klassisch“ (`gfx32`). Die 3D-Stile ändern den Eintrag nicht – der zuletzt genutzte klassische
+  Satz bleibt vorgeladen.
+- **Stilwechsel** (`src/vorladen.ts`, `cycleStyle` in `src/main.ts`): Die Seite fragt den Service Worker
+  per Nachricht, ob ein Satz vollständig im Cache liegt. Online wird ein fehlender Satz im Hintergrund
+  nachgeladen (Hinweis „Grafik wird für offline geladen …“), Datei für Datei, sodass ein Abbruch nur den
+  Rest offen lässt. Offline wird ein Stil ohne Satz übersprungen (Hinweis „Dieser Stil ist offline noch
+  nicht geladen – übersprungen.“). Ohne Service Worker oder bei einem alten ohne diese Nachricht
+  wechselt der Stil wie bisher. Nach jedem Start ergänzt die Seite den aktiven Satz, falls etwas fehlt.
+  Der Editor lässt den Satz seiner Vorschau ebenso nachladen.
+- **Updates:** Eine neue Version legt wieder nur Grundbestand + gewählten Satz in ihren Cache; alte
+  `murmel-shell-*` werden wie bisher beim Aktivieren gelöscht.
+- **Klänge:** Alle 28 Klänge (≈ 0,49 MB) lädt `src/audio.ts` beim ersten Klick/Tastendruck auf einmal;
+  sie bleiben vorgeladen. Bei Bedarf nachladen spart beim Erstbesuch praktisch nichts (sie werden
+  sofort gebraucht) und würde offline die Klänge kosten, die nie abgerufen wurden.
+- **Nebenbefund (behoben):** Der Ausschluss `assets/spielerlevels-*.js` (gedacht für
+  `spielerlevels.html`) traf auch das Chunk von `src/spielerlevels.ts`, das Spiel und Editor laden.
+  Offline blieb das Spiel deshalb bei „Murmel wird geladen …“ stehen (auch auf main a0e70e9 im Browser
+  nachgestellt). Der Einstieg der Seite heißt jetzt `spielerlevelseite`, nur dessen Chunk bleibt draußen.
+
+**Messung** (lokaler Build, `vite preview`; Dateizahl und entpackte Größe aus dem Cache des Browsers nach
+dem Erstbesuch, gzip-Größe aus den Dateien in `dist/` berechnet, PNG-Dateien wie ausgeliefert):
+
+| Erstbesuch, vorgeladen | Dateien | entpackt | gzip (≈ übertragen) |
+|---|---:|---:|---:|
+| vorher (main a0e70e9) | 776 | 5,59 MB | 3,63 MB |
+| nachher, Stil „Klassisch“ | 437 | 4,50 MB | 2,54 MB |
+| nachher, Stil „Klassisch (Retro)“ | 437 | 4,16 MB | 2,20 MB |
+
+Also −339 Anfragen und −1,1 bis −1,4 MB je Erstbesuch (−30 bis −39 % übertragen). Der Wert „vorher“ weicht
+von den 768 Dateien/3,76 MB oben ab, weil hier der Stand a0e70e9 lokal gemessen wurde (oben: Live-Stand
+mit zstd/gzip von Caddy).
+
+Im Browser geprüft (eingebauter Browser der Claude-App; „offline“ = Vorschau-Server gestoppt und
+`navigator.onLine` auf `false` gesetzt, weil DevTools-Offline dort nicht verfügbar war): Erstbesuch mit
+„Klassisch“ (nur `gfx32`) und mit vorgewähltem Retro (nur `gfx32-retro` + 4 Ersatzbilder); Stilwechsel
+online lädt den anderen Satz nach; Versionswechsel räumt den alten Cache ab und legt nur den gewählten
+Satz neu an; offline startet das Spiel, die Murmel rollt, Retro-Bilder und Ersatzbilder kommen aus dem
+Cache, „Klassisch“ ohne Satz wird übersprungen; der Editor lädt den Satz seiner Vorschau nach.
 
 ## Wiederholen
 

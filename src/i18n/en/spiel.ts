@@ -28,6 +28,7 @@ export default {
     'The saved game doesn’t match this version of the game or this browser – the level starts over.',
   'Dieser Lauf ist gerade nicht erreichbar.': 'This run can’t be reached right now.',
   'Dieser Lauf passt nicht mehr zum Level – es geht ohne Geist weiter.': 'This run no longer fits the level – carrying on without a ghost.',
+  'Dieser Stil ist offline noch nicht geladen – übersprungen.': 'This style isn’t available offline yet – skipped.',
   'Dieses Gerät oder dieser Browser liefert keine Lagedaten. Mit Wischen geht es trotzdem.':
     'This device or browser doesn’t provide motion data. You can still play by swiping.',
   'Dieses Level fehlt in deiner Spielversion – bitte die Seite neu laden.': 'Your version of the game doesn’t have this level yet – please reload the page.',
@@ -50,6 +51,7 @@ export default {
   'Für dieses Level gibt es noch keinen Lauf. Gewinne es einmal, dann kannst du gegen dich selbst spielen.':
     'There’s no run for this level yet. Win it once, then you can race against yourself.',
   'Gegen diesen Lauf': 'Race this run',
+  'Grafik wird für offline geladen …': 'Loading graphics for offline play …',
   'Geist im Ziel: {zeit}': 'Ghost finished: {zeit}',
   'Geist ändern': 'Change ghost',
   'Geist: {name}': 'Ghost: {name}',
