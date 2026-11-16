@@ -27,6 +27,7 @@ Seiten brauchen kein Spiel-JavaScript.
 /level/<paket>/<level>/vorschau.webp      Vorschaubild, auch og:image
 /level/<paket>/<level>/klein.webp         kleines Bild (320 px) für die Übersichten
 /level/bestzeiten.js                      Nachladen der Bestzeiten (ein Skript für alle Seiten)
+/level/herkunft.js                        Herkunftszählung (alle Seiten unter level/ und en/level/, docs/SPEC-herkunft.md)
 ```
 
 - `<paket>`: Paket-ID mit `-` statt `_` (`enigma_ii` → `enigma-ii`, `murmel` → `murmel`).

@@ -328,6 +328,7 @@ ${alt}
 <meta name="twitter:card" content="summary_large_image">
 ${h.ld.map(jsonLd).join('\n')}
 <style>${CSS}</style>
+<script type="module" src="${up(langPath(h.path, h.lang))}${ROOT_DIR}/herkunft.js"></script>
 </head>`;
 }
 

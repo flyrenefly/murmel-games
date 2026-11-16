@@ -139,6 +139,17 @@ describe('Metadaten', () => {
     expect(index.match(/<h1>/g)).toHaveLength(1);
     expect(index).toContain('<a href="enigma-ii/">');
   });
+
+  it('jede Seite lädt die Herkunftszählung (level/herkunft.js, docs/SPEC-herkunft.md)', () => {
+    const sizes = new Map(packs[0].levels.map((l) => [l.path, SIZE]));
+    const script = (r: string) => `<script type="module" src="${r}level/herkunft.js"></script>\n</head>`;
+    expect(levelHtml(packs[0].levels[1], SIZE)).toContain(script('../../../'));
+    expect(levelHtml(packs[0].levels[1], SIZE, 'en')).toContain(script('../../../../'));
+    expect(packHtml(packs[0], sizes)).toContain(script('../../'));
+    expect(packHtml(packs[0], sizes, 'en')).toContain(script('../../../'));
+    expect(indexHtml(packs, sizes)).toContain(script('../'));
+    expect(indexHtml(packs, sizes, 'en')).toContain(script('../../'));
+  });
 });
 
 describe('Englisch (docs/SPEC-englisch.md)', () => {
